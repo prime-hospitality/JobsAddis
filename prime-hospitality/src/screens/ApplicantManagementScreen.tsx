@@ -310,8 +310,8 @@ export default function ApplicantManagementScreen({
       setApplicants((prev) => prev.map((a) => a.id === app.id ? { ...a, status: "shortlisted" } : a));
       setActiveTab("shortlisted");
       return true;
-    } catch {
-      showToast("Failed to shortlist. Please try again.");
+    } catch (e: any) {
+      showToast(`Error: ${e.message || "Failed to shortlist"}`);
       return false;
     } finally {
       setActionLoading(null);
@@ -324,8 +324,8 @@ export default function ApplicantManagementScreen({
       if (initData) await declineApplicant(initData, app.id);
       setApplicants((prev) => prev.filter((a) => a.id !== app.id));
       return true;
-    } catch {
-      showToast("Failed to decline. Please try again.");
+    } catch (e: any) {
+      showToast(`Error: ${e.message || "Failed to decline"}`);
       return false;
     } finally { 
       setActionLoading(null); 
@@ -339,8 +339,8 @@ export default function ApplicantManagementScreen({
       setApplicants((prev) => prev.map((a) => a.id === app.id ? { ...a, status: "pending" } : a));
       setActiveTab("all");
       return true;
-    } catch {
-      showToast("Failed to move back. Please try again.");
+    } catch (e: any) {
+      showToast(`Error: ${e.message || "Failed to move back"}`);
       return false;
     } finally { 
       setActionLoading(null); 

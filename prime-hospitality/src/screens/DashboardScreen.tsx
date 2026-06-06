@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence, LazyMotion, domAnimation } from "framer-motion";
-import { Briefcase, Users, Clock, CheckCircle, AlertCircle, RefreshCw, PlusCircle, TrendingUp, X, Pencil, Trash2 } from "lucide-react";
+import { Briefcase, Users, Clock, CheckCircle, AlertCircle, RefreshCw, PlusCircle, TrendingUp, X, Pencil, Trash2, Sun, Moon } from "lucide-react";
 import { useTelegram } from "@/hooks/useTelegram";
 import { fetchEmployerDashboard, postJob, editJob, deleteJob, updateEmployerLogo } from "@/lib/api";
 import { supabase } from "@/lib/supabase";
