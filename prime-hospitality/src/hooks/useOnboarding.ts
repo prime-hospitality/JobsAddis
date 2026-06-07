@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { createProfile, ApiError } from "@/lib/api";
 import { useTelegram } from "./useTelegram";
@@ -43,6 +43,13 @@ export function useOnboarding() {
   const { user, initData } = useTelegram();
   const [state, setState] = useState<OnboardingState>(initialState);
 
+  // Keep refs so submitProfile always reads the latest values,
+  // avoiding the stale-closure bug where initData is null at memo time.
+  const initDataRef = useRef<string | null>(initData);
+  const userRef = useRef(user);
+  useEffect(() => { initDataRef.current = initData; }, [initData]);
+  useEffect(() => { userRef.current = user; }, [user]);
+
   const updateState = useCallback(
     (updates: Partial<OnboardingState>) => {
       setState((prev) => ({ ...prev, ...updates }));
@@ -57,9 +64,13 @@ export function useOnboarding() {
   const submitProfile = useCallback(async () => {
     setState((prev) => ({ ...prev, isSubmitting: true, submitError: null }));
 
+    // Read from refs — always the latest value regardless of when this callback was created
+    const currentInitData = initDataRef.current;
+    const currentUser = userRef.current;
+
     try {
       let cvUrl: string | null = null;
-      const telegramId = user?.id || Date.now(); // fallback for dev
+      const telegramId = currentUser?.id || Date.now(); // fallback for dev
 
       // 1. Upload CV to Supabase Storage (NON-FATAL — skip if bucket missing or error)
       if (state.cvFile && state.cvUploaded) {
@@ -93,9 +104,9 @@ export function useOnboarding() {
       }
 
       // 2. Create profile via the secure Edge Function.
-      console.log("[Profile] Calling create_profile edge function. initData present:", !!initData);
+      console.log("[Profile] Calling create_profile edge function. initData present:", !!currentInitData);
       const result = await createProfile({
-        initData,
+        initData: currentInitData,
         profileData: {
           fullName: state.fullName,
           age: state.age,
@@ -134,7 +145,7 @@ export function useOnboarding() {
     } finally {
       setState((prev) => ({ ...prev, isSubmitting: false }));
     }
-  }, [state, user, initData]);
+  }, [state]); // refs give us live access — no need to list initData/user as deps
 
   return {
     state,
