@@ -108,21 +108,115 @@ serve(async (req: Request) => {
 
   try {
     const initData = req.headers.get("x-telegram-init-data");
-    
-    if (!initData) {
+    const isDev = !TELEGRAM_BOT_TOKEN || TELEGRAM_BOT_TOKEN === "";
+
+    // ── Development / Test bypass ──
+    // When no bot token is configured the HMAC check is impossible.
+    // Allow the request through with a fixed mock Telegram ID so that
+    // local development and staging environments work without real Telegram.
+    if (!initData || initData.trim() === "") {
+      if (isDev) {
+        console.warn("[DEV MODE] No initData provided — using mock user ID 123456789.");
+        // Inject a synthetic telegramUser for dev and fall through to action routing.
+        const payload = await req.json();
+        const action = payload.action;
+        const mockTelegramId = 123456789;
+
+        // Re-use the same action handlers but with the mock ID
+        if (action === "create_profile") {
+          const { profileData, cvUrl } = payload;
+          let userId: string | null = null;
+
+          const { data: existingUser } = await supabase
+            .from("users")
+            .select("id")
+            .eq("telegram_id", mockTelegramId)
+            .single();
+
+          if (!existingUser) {
+            await supabase.from("users").insert({ telegram_id: mockTelegramId, role: "job_seeker" });
+            const { data: newUser } = await supabase.from("users").select("id").eq("telegram_id", mockTelegramId).single();
+            userId = newUser?.id ?? null;
+          } else {
+            userId = existingUser.id;
+          }
+
+          if (!userId) throw new Error("Failed to resolve dev user identity");
+
+          const { error: insertError } = await supabase.from("profiles").insert({
+            user_id: userId,
+            telegram_id: mockTelegramId,
+            full_name: profileData.fullName || "",
+            age: profileData.age,
+            location: profileData.location || "",
+            willing_to_relocate: profileData.willingToRelocate,
+            gender: profileData.gender || "",
+            phone_number: profileData.contactShared ? profileData.phoneNumber : null,
+            contact_shared: profileData.contactShared,
+            selected_categories: profileData.selectedCategories,
+            experience_levels: profileData.experienceLevels,
+            cv_url: cvUrl,
+            onboarding_completed: true,
+          });
+
+          if (insertError && insertError.code !== "23505") throw insertError;
+
+          return new Response(JSON.stringify({ success: true, message: "[DEV] Profile created." }), {
+            status: 200,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+
+        if (action === "get_profile") {
+          const { data: profileData } = await supabase
+            .from("profiles")
+            .select("*")
+            .eq("telegram_id", mockTelegramId)
+            .single();
+
+          return new Response(
+            JSON.stringify({
+              success: true,
+              profile: profileData ?? null,
+              onboarding_completed: profileData?.onboarding_completed ?? false,
+              is_employer: false,
+            }),
+            { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        if (action === "update_cv") {
+          const { cvUrl } = payload;
+          await supabase.from("profiles").update({ cv_url: cvUrl }).eq("telegram_id", mockTelegramId);
+          return new Response(JSON.stringify({ success: true, message: "[DEV] CV updated." }), {
+            status: 200,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+
+        // For all other actions in dev mode, return a generic success
+        return new Response(JSON.stringify({ success: true, message: "[DEV] Action skipped." }), {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      // Production: reject requests with no initData
       return new Response(JSON.stringify({ error: "Missing x-telegram-init-data header" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // 1. Validate Telegram Signature
-    const isValid = await validateTelegramSignature(initData, TELEGRAM_BOT_TOKEN);
-    if (!isValid) {
-      return new Response(JSON.stringify({ error: "Invalid Telegram signature. Unauthorized." }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    // ── Production path: validate Telegram HMAC signature ──
+    if (!isDev) {
+      const isValid = await validateTelegramSignature(initData, TELEGRAM_BOT_TOKEN);
+      if (!isValid) {
+        return new Response(JSON.stringify({ error: "Invalid Telegram signature. Unauthorized." }), {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
     }
 
     // 2. Extract User Information
@@ -383,7 +477,7 @@ serve(async (req: Request) => {
 
     // Action: Update Employer Logo
     if (action === "update_employer_logo") {
-      const { logoUrl } = body;
+      const { logoUrl } = payload;
 
       const { data: userRow } = await supabase.from("users").select("id").eq("telegram_id", telegramId).single();
       if (!userRow) throw new Error("Employer user not found.");
