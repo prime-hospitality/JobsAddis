@@ -114,6 +114,40 @@ export default function DashboardScreen({ onJobSelect }: { onJobSelect?: (jobId:
   const [logoUploading, setLogoUploading] = useState(false);
   const [logoUrl, setLogoUrl] = useState<string | null>(dashboardCache?.logoUrl ?? null);
 
+  // ── Theme State ──
+  const [isDark, setIsDark] = useState<boolean>(() => {
+    try { return localStorage.getItem("theme") === "dark"; } catch { return false; }
+  });
+
+  const applyTheme = (dark: boolean) => {
+    setIsDark(dark);
+    try { localStorage.setItem("theme", dark ? "dark" : "light"); } catch {}
+    if (dark) {
+      document.documentElement.setAttribute("data-theme", "dark");
+    } else {
+      document.documentElement.removeAttribute("data-theme");
+    }
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new Event("themeToggle"));
+    }
+  };
+
+  useEffect(() => {
+    const syncTheme = () => {
+      try {
+        setIsDark(localStorage.getItem("theme") === "dark");
+      } catch {}
+    };
+    if (typeof window !== "undefined") {
+      window.addEventListener("themeToggle", syncTheme);
+    }
+    return () => {
+      if (typeof window !== "undefined") {
+        window.removeEventListener("themeToggle", syncTheme);
+      }
+    };
+  }, []);
+
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !employerId) return;
@@ -354,8 +388,8 @@ export default function DashboardScreen({ onJobSelect }: { onJobSelect?: (jobId:
       >
         {/* ── Header ── */}
         <div className="safe-screen-top" style={{ paddingLeft: 20, paddingRight: 20, paddingBottom: 20, flexShrink: 0 }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <div>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+            <div style={{ flex: 1, minWidth: 0, marginRight: 8 }}>
               <h1
                 style={{
                   fontSize: 22, fontWeight: 800,
@@ -371,72 +405,93 @@ export default function DashboardScreen({ onJobSelect }: { onJobSelect?: (jobId:
                   : "Manage your job listings"}
               </p>
             </div>
-            {/* Circular avatar — tap to upload logo */}
-            <label
-              title="Tap to change profile photo"
-              style={{
-                width: 48, height: 48, borderRadius: "50%",
-                flexShrink: 0,
-                cursor: logoUploading ? "wait" : "pointer",
-                opacity: logoUploading ? 0.6 : 1,
-                position: "relative",
-                display: "flex", alignItems: "center", justifyContent: "center",
-              }}
-            >
-              <input type="file" accept="image/*" style={{ display: "none" }} onChange={handleLogoUpload} disabled={logoUploading} />
-              {logoUrl ? (
-                <img
-                  src={logoUrl}
-                  alt="Logo"
-                  style={{
-                    width: 48, height: 48, borderRadius: "50%",
-                    objectFit: "cover",
-                    border: "2px solid var(--brand)",
-                  }}
-                />
-              ) : (
-                <div style={{
+
+            <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+              {/* Circular avatar — tap to upload logo */}
+              <label
+                title="Tap to change profile photo"
+                style={{
                   width: 48, height: 48, borderRadius: "50%",
-                  background: "linear-gradient(135deg, #059669 0%, #047857 100%)",
+                  flexShrink: 0,
+                  cursor: logoUploading ? "wait" : "pointer",
+                  opacity: logoUploading ? 0.6 : 1,
+                  position: "relative",
                   display: "flex", alignItems: "center", justifyContent: "center",
-                  fontSize: 18, fontWeight: 800, color: "#fff",
-                  letterSpacing: "-0.01em",
-                  boxShadow: "0 4px 14px rgba(5,150,105,0.35)",
-                  border: "2px solid rgba(5,150,105,0.3)",
-                  userSelect: "none",
+                }}
+              >
+                <input type="file" accept="image/*" style={{ display: "none" }} onChange={handleLogoUpload} disabled={logoUploading} />
+                {logoUrl ? (
+                  <img
+                    src={logoUrl}
+                    alt="Logo"
+                    style={{
+                      width: 48, height: 48, borderRadius: "50%",
+                      objectFit: "cover",
+                      border: "2px solid var(--brand)",
+                    }}
+                  />
+                ) : (
+                  <div style={{
+                    width: 48, height: 48, borderRadius: "50%",
+                    background: "linear-gradient(135deg, #059669 0%, #047857 100%)",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    fontSize: 18, fontWeight: 800, color: "#fff",
+                    letterSpacing: "-0.01em",
+                    boxShadow: "0 4px 14px rgba(5,150,105,0.35)",
+                    border: "2px solid rgba(5,150,105,0.3)",
+                    userSelect: "none",
+                  }}>
+                    {employerName
+                      ? employerName.trim().split(/\s+/).map((w: string) => w[0]).join("").toUpperCase().slice(0, 2)
+                      : "?"}
+                  </div>
+                )}
+                {/* Small camera badge */}
+                <div style={{
+                  position: "absolute", bottom: 0, right: 0,
+                  width: 16, height: 16, borderRadius: "50%",
+                  background: "var(--brand)", border: "2px solid var(--bg)",
+                  display: "flex", alignItems: "center", justifyContent: "center",
                 }}>
-                  {employerName
-                    ? employerName.trim().split(/\s+/).map((w: string) => w[0]).join("").toUpperCase().slice(0, 2)
-                    : "?"}
+                  <svg width="8" height="8" viewBox="0 0 24 24" fill="white">
+                    <path d="M12 15.2a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4z"/>
+                    <path d="M9 3L7.17 5H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-3.17L15 3H9zm3 15a5 5 0 1 1 0-10 5 5 0 0 1 0 10z"/>
+                  </svg>
                 </div>
-              )}
-              {/* Small camera badge */}
-              <div style={{
-                position: "absolute", bottom: 0, right: 0,
-                width: 16, height: 16, borderRadius: "50%",
-                background: "var(--brand)", border: "2px solid var(--bg)",
-                display: "flex", alignItems: "center", justifyContent: "center",
-              }}>
-                <svg width="8" height="8" viewBox="0 0 24 24" fill="white">
-                  <path d="M12 15.2a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4z"/>
-                  <path d="M9 3L7.17 5H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-3.17L15 3H9zm3 15a5 5 0 1 1 0-10 5 5 0 0 1 0 10z"/>
-                </svg>
-              </div>
-            </label>
-            <motion.button
-              whileTap={{ scale: 0.9 }}
-              onClick={() => fetchDashboard(true)}
-              style={{
-                width: 38, height: 38, borderRadius: 12,
-                background: "var(--card)",
-                border: "1px solid var(--border)",
-                boxShadow: "var(--card-shadow)",
-                display: "flex", alignItems: "center", justifyContent: "center",
-                cursor: "pointer",
-              }}
-            >
-              <RefreshCw size={16} color="var(--text-secondary)" />
-            </motion.button>
+              </label>
+
+              {/* Theme Toggle Button */}
+              <motion.button
+                whileTap={{ scale: 0.9 }}
+                onClick={() => applyTheme(!isDark)}
+                style={{
+                  width: 38, height: 38, borderRadius: 12,
+                  background: "var(--card)",
+                  border: "1px solid var(--border)",
+                  boxShadow: "var(--card-shadow)",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  cursor: "pointer",
+                }}
+              >
+                {isDark ? <Sun size={16} color="#F59E0B" /> : <Moon size={16} color="#818CF8" />}
+              </motion.button>
+
+              {/* Refresh Button */}
+              <motion.button
+                whileTap={{ scale: 0.9 }}
+                onClick={() => fetchDashboard(true)}
+                style={{
+                  width: 38, height: 38, borderRadius: 12,
+                  background: "var(--card)",
+                  border: "1px solid var(--border)",
+                  boxShadow: "var(--card-shadow)",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  cursor: "pointer",
+                }}
+              >
+                <RefreshCw size={16} color="var(--text-secondary)" />
+              </motion.button>
+            </div>
           </div>
         </div>
 
