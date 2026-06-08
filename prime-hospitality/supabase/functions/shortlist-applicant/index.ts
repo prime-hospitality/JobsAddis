@@ -104,17 +104,7 @@ serve(async (req: Request) => {
         .eq("id", applicationId);
       if (updateErr) throw updateErr;
 
-      const jobTitle = Array.isArray(app.jobs) ? app.jobs[0]?.title : (app.jobs as any)?.title ?? "the role";
-
-      // 3. Insert notification record (non-fatal — don't block shortlisting if this fails)
-      const { error: notifErr } = await supabase.from("notifications").insert({
-        user_telegram_id: app.telegram_id,
-        company_name: employer.business_name,
-        job_title: jobTitle,
-        type: "shortlisted",
-        read: false,
-      });
-      if (notifErr) console.error("[shortlist] Notification insert failed (non-fatal):", notifErr.message);
+      // 3. Notifications disabled — employer does not want applicants notified.
 
       // 4. Send Telegram DM (disabled per user request)
       /*
