@@ -106,14 +106,15 @@ serve(async (req: Request) => {
 
       const jobTitle = Array.isArray(app.jobs) ? app.jobs[0]?.title : (app.jobs as any)?.title ?? "the role";
 
-      // 3. Insert notification record
-      await supabase.from("notifications").insert({
+      // 3. Insert notification record (non-fatal — don't block shortlisting if this fails)
+      const { error: notifErr } = await supabase.from("notifications").insert({
         user_telegram_id: app.telegram_id,
         company_name: employer.business_name,
         job_title: jobTitle,
         type: "shortlisted",
         read: false,
       });
+      if (notifErr) console.error("[shortlist] Notification insert failed (non-fatal):", notifErr.message);
 
       // 4. Send Telegram DM (disabled per user request)
       /*
@@ -150,8 +151,9 @@ serve(async (req: Request) => {
 
     return new Response(JSON.stringify({ error: "Unknown action" }), { status: 400, headers: corsHeaders });
 
-  } catch (error) {
-    console.error("shortlist-applicant error:", error);
-    return new Response(JSON.stringify({ error: "Internal Server Error" }), { status: 500, headers: corsHeaders });
+  } catch (error: any) {
+    const detail = error?.message || error?.toString() || "Unknown error";
+    console.error("shortlist-applicant error:", detail);
+    return new Response(JSON.stringify({ error: detail }), { status: 500, headers: corsHeaders });
   }
 });
