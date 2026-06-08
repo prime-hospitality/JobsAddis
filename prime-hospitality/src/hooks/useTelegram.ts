@@ -16,6 +16,7 @@ interface UseTelegramReturn {
   initData: string | null; // Raw initData string for Edge Function auth header
   isReady: boolean;
   isEmployer: boolean;
+  startParam: string | null;
 }
 
 // Mock user for dev/browser environment (not inside Telegram)
@@ -29,6 +30,7 @@ const MOCK_DEV_USER: TelegramUser = {
 export function useTelegram(): UseTelegramReturn {
   const [user, setUser] = useState<TelegramUser | null>(null);
   const [initData, setInitData] = useState<string | null>(null);
+  const [startParam, setStartParam] = useState<string | null>(null);
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
@@ -92,14 +94,17 @@ export function useTelegram(): UseTelegramReturn {
           });
           // Capture the raw initData string for use in Edge Function auth headers
           setInitData(tgWebApp.initData || null);
+          setStartParam(tgWebApp.initDataUnsafe.start_param || null);
         } else {
           // Fallback for dev/browser environment — no real initData available
           setUser(MOCK_DEV_USER);
           setInitData(null); // null in dev; Edge Function will handle gracefully
+          setStartParam(null);
         }
       } catch {
         setUser(MOCK_DEV_USER);
         setInitData(null);
+        setStartParam(null);
       } finally {
         setIsReady(true);
       }
@@ -113,5 +118,6 @@ export function useTelegram(): UseTelegramReturn {
     initData,
     isReady,
     isEmployer: user ? isEmployer(user.id) : false,
+    startParam,
   };
 }

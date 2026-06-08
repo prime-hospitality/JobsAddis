@@ -8,6 +8,8 @@ import { JobSeekerProfile } from "@/data/profile";
 import { useTelegram } from "@/hooks/useTelegram";
 import { useCvUpload } from "@/hooks/useCvUpload";
 import { fetchProfile, getUnreadCount } from "@/lib/api";
+import { supabase } from "@/lib/supabase";
+import { mapSupabaseJobToJob } from "@/hooks/useJobs";
 
 import BottomNav, { NavTab } from "@/components/BottomNav";
 import HomeScreen from "@/screens/HomeScreen";
@@ -33,8 +35,9 @@ type AppView =
   | { screen: "applicantManagement"; jobId: string; jobTitle: string };
 
 export default function App() {
-  const { user, isEmployer: telegramIsEmployer, isReady: isTelegramReady, initData } = useTelegram();
+  const { user, isEmployer: telegramIsEmployer, isReady: isTelegramReady, initData, startParam } = useTelegram();
   const [isEmployer, setIsEmployer] = useState<boolean>(telegramIsEmployer);
+  const [deepLinkHandled, setDeepLinkHandled] = useState(false);
 
   useEffect(() => {
     setIsEmployer(telegramIsEmployer);
@@ -102,6 +105,59 @@ export default function App() {
 
     checkOnboarding();
   }, [isTelegramReady, initData]);
+
+  // Check deep link status (directing to specific job if app launched via button)
+  useEffect(() => {
+    if (!isTelegramReady || isOnboarded === null || deepLinkHandled) return;
+
+    async function handleDeepLink() {
+      if (startParam && startParam.startsWith("job_")) {
+        const jobId = startParam.replace("job_", "");
+        console.log("[Prime Hospitality] Handling deep link for job:", jobId);
+        try {
+          const { data, error } = await supabase
+            .from("jobs")
+            .select(`
+              id,
+              employer_id,
+              title,
+              category,
+              location,
+              neighborhood,
+              job_type,
+              salary_min,
+              salary_max,
+              currency,
+              description,
+              full_description,
+              requirements,
+              deadline,
+              status,
+              created_at,
+              quantity,
+              employers (
+                business_name,
+                business_type,
+                logo_url
+              )
+            `)
+            .eq("id", jobId)
+            .single();
+
+          if (error) throw error;
+          if (data) {
+            const mappedJob = mapSupabaseJobToJob(data as any);
+            setView({ screen: "jobDetail", job: mappedJob });
+          }
+        } catch (err) {
+          console.error("Failed to fetch deep-linked job:", err);
+        }
+      }
+      setDeepLinkHandled(true);
+    }
+
+    handleDeepLink();
+  }, [isTelegramReady, isOnboarded, startParam, deepLinkHandled]);
 
   // Check unread notifications count
   useEffect(() => {

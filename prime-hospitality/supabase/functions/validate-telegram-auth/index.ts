@@ -98,6 +98,104 @@ function sanitizeHtml(text: string): string {
 }
 
 // -----------------------------------------------------------------------------
+// Helper: Send Job Announcement to Telegram Group/Channel
+// -----------------------------------------------------------------------------
+async function sendGroupAnnouncement(jobId: string, jobData: any, businessName: string) {
+  const TELEGRAM_GROUP_CHAT_ID = Deno.env.get("TELEGRAM_GROUP_CHAT_ID");
+  const TELEGRAM_MINI_APP_URL = Deno.env.get("TELEGRAM_MINI_APP_URL"); // e.g. https://t.me/AddisJobsDemobot/hoteljobs
+
+  if (!TELEGRAM_GROUP_CHAT_ID || !TELEGRAM_BOT_TOKEN) {
+    console.warn("[Telegram Group] TELEGRAM_GROUP_CHAT_ID or TELEGRAM_BOT_TOKEN is not configured.");
+    return;
+  }
+
+  // Format salary
+  let salaryText = "Negotiable / Scale";
+  const min = parseInt(jobData.salaryMin) || 0;
+  const max = parseInt(jobData.salaryMax) || 0;
+  if (min > 0 && max > 0) {
+    salaryText = `${min.toLocaleString()} - ${max.toLocaleString()} ETB`;
+  } else if (min > 0) {
+    salaryText = `${min.toLocaleString()} ETB`;
+  }
+
+  // Format deadline
+  let deadlineText = "N/A";
+  if (jobData.deadline) {
+    try {
+      deadlineText = new Date(jobData.deadline).toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric"
+      });
+    } catch {
+      deadlineText = jobData.deadline;
+    }
+  }
+
+  const emojiMap: Record<string, string> = {
+    Waiter: "💁",
+    Chef: "🍳",
+    Receptionist: "🛎️",
+    Barista: "☕",
+    Housekeeper: "🧹",
+    Security: "🛡️",
+    Cashier: "💵",
+    Manager: "💼",
+  };
+  const categoryEmoji = emojiMap[jobData.category] || "🏨";
+
+  const message = `🆕 <b>New Job Opening</b>
+
+🏢 <b>${sanitizeHtml(businessName)}</b>
+${categoryEmoji} <b>${sanitizeHtml(jobData.title)}</b> (${sanitizeHtml(jobData.category)})
+📍 ${sanitizeHtml(jobData.neighborhood)}, Addis Ababa
+💰 ${salaryText} · ${sanitizeHtml(jobData.jobType)}
+👥 ${parseInt(jobData.quantity) || 1} opening(s)
+📅 Deadline: <b>${deadlineText}</b>
+
+📝 <i>${sanitizeHtml(jobData.description.substring(0, 200))}${jobData.description.length > 200 ? "..." : ""}</i>`;
+
+  // Inline Keyboard Button with deep link
+  const webAppUrl = TELEGRAM_MINI_APP_URL 
+    ? `${TELEGRAM_MINI_APP_URL}?startapp=job_${jobId}`
+    : `https://t.me/AddisJobsDemobot/hoteljobs?startapp=job_${jobId}`; // fallback
+
+  const inlineKeyboard = {
+    inline_keyboard: [
+      [
+        {
+          text: "🔍 View & Apply →",
+          url: webAppUrl,
+        }
+      ]
+    ]
+  };
+
+  try {
+    const res = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        chat_id: TELEGRAM_GROUP_CHAT_ID,
+        text: message,
+        parse_mode: "HTML",
+        reply_markup: inlineKeyboard,
+      }),
+    });
+
+    const data = await res.json();
+    if (!res.ok) {
+      console.error("[Telegram Group] Failed to send message:", data);
+    } else {
+      console.log("[Telegram Group] Message sent successfully:", data.result?.message_id);
+    }
+  } catch (err) {
+    console.error("[Telegram Group] Error sending message:", err);
+  }
+}
+
+// -----------------------------------------------------------------------------
 // Main Edge Function Handler
 // -----------------------------------------------------------------------------
 serve(async (req: Request) => {
@@ -700,7 +798,7 @@ serve(async (req: Request) => {
 
       const { data: employer, error: empErr } = await supabase
         .from("employers")
-        .select("id, status, daily_post_limit")
+        .select("id, status, daily_post_limit, business_name")
         .eq("user_id", userRow.id)
         .single();
 
@@ -745,31 +843,42 @@ serve(async (req: Request) => {
       }
 
       // 2) Insert the job listing
-      const { error: insertErr } = await supabase.from("jobs").insert({
-        employer_id: employer.id,
-        title: sanitizeHtml(title.trim()),
-        category,
-        job_type: jobType,
-        salary_min: parseInt(salaryMin) || 0,
-        salary_max: parseInt(salaryMax) || 0,
-        currency: "ETB",
-        neighborhood,
-        location: `${neighborhood}, Addis Ababa`,
-        description: sanitizeHtml(description.trim()),
-        full_description: sanitizeHtml(description.trim()),
-        status: "active",
-        deadline,
-        quantity: parseInt(quantity) || 1,
-        requirements: {
-          experience,
-          education: sanitizeHtml(education?.trim() || ""),
-          languages: ["Amharic"],
-          locationPreference: null,
-          workingHours: sanitizeHtml(workingHours?.trim() || ""),
-        },
-      });
+      const { data: newJob, error: insertErr } = await supabase
+        .from("jobs")
+        .insert({
+          employer_id: employer.id,
+          title: sanitizeHtml(title.trim()),
+          category,
+          job_type: jobType,
+          salary_min: parseInt(salaryMin) || 0,
+          salary_max: parseInt(salaryMax) || 0,
+          currency: "ETB",
+          neighborhood,
+          location: `${neighborhood}, Addis Ababa`,
+          description: sanitizeHtml(description.trim()),
+          full_description: sanitizeHtml(description.trim()),
+          status: "active",
+          deadline,
+          quantity: parseInt(quantity) || 1,
+          requirements: {
+            experience,
+            education: sanitizeHtml(education?.trim() || ""),
+            languages: ["Amharic"],
+            locationPreference: null,
+            workingHours: sanitizeHtml(workingHours?.trim() || ""),
+          },
+        })
+        .select("id")
+        .single();
 
-      if (insertErr) throw insertErr;
+      if (insertErr || !newJob) throw insertErr || new Error("Failed to insert job.");
+
+      // 3) Send announcement to connected Telegram group/channel (best-effort)
+      try {
+        await sendGroupAnnouncement(newJob.id, jobData, employer.business_name);
+      } catch (annErr) {
+        console.error("Failed to send Telegram group announcement:", annErr);
+      }
 
       return new Response(
         JSON.stringify({
