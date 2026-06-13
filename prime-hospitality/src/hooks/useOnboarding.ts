@@ -76,14 +76,14 @@ export function useOnboarding() {
       if (state.cvFile && state.cvUploaded) {
         try {
           const fileExt = state.cvFile.name.split(".").pop();
-          const fileName = `${telegramId}-${Date.now()}.${fileExt}`;
+          const fileName = `${telegramId}.${fileExt}`;
           const filePath = `cvs/${fileName}`;
 
           console.log("[CV Upload] Attempting upload to bucket 'resumes', path:", filePath);
 
           const { error: uploadError } = await supabase.storage
             .from("resumes")
-            .upload(filePath, state.cvFile);
+            .upload(filePath, state.cvFile, { upsert: true });
 
           if (uploadError) {
             // Non-fatal: log and continue without CV
