@@ -767,50 +767,57 @@ export default function ProfileScreen() {
                 {/* Phone — locked once shared */}
                 <div
                   style={{
-                    display: "flex", justifyContent: "space-between", alignItems: "center",
+                    display: "flex", flexDirection: "column",
                     padding: "14px 0",
                     borderBottom: "1px solid var(--border)",
                   }}
                 >
-                  <span style={{ fontSize: 13, color: "var(--text-muted)", fontWeight: 500, display: "flex", alignItems: "center", gap: 8 }}>
-                    <Phone size={14} color="var(--text-secondary)" /> Phone
-                  </span>
-                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                    <span style={{ fontSize: 13, color: profile.phone_number ? "var(--text-primary)" : "var(--text-muted)", fontWeight: 600 }}>
-                      {formatPhoneForDisplay(profile.phone_number)}
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%" }}>
+                    <span style={{ fontSize: 13, color: "var(--text-muted)", fontWeight: 500, display: "flex", alignItems: "center", gap: 8 }}>
+                      <Phone size={14} color="var(--text-secondary)" /> Phone
                     </span>
-                    {profile.phone_number ? (
-                      /* Locked — number already shared, cannot be edited */
-                      <span style={{
-                        display: "flex", alignItems: "center", justifyContent: "center",
-                        padding: "6px", borderRadius: 8,
-                        background: "rgba(245,158,11,0.08)",
-                        border: "1px solid rgba(245,158,11,0.2)",
-                        color: "#F59E0B",
-                      }}>
-                        <Lock size={14} />
+                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                      <span style={{ fontSize: 13, color: profile.phone_number ? "var(--text-primary)" : "var(--text-muted)", fontWeight: 600 }}>
+                        {profile.phone_number ? formatPhoneForDisplay(profile.phone_number) : "Contact number not shared"}
                       </span>
-                    ) : (
-                      /* No number yet — allow sharing via Telegram */
-                      <motion.button
-                        whileTap={{ scale: 0.88 }}
-                        onClick={handleShareContact}
-                        style={{
-                          display: "flex", alignItems: "center", gap: 5,
-                          padding: "6px 12px", borderRadius: 8,
-                          background: "var(--brand)",
-                          border: "1px solid var(--brand)",
-                          cursor: "pointer",
-                          fontSize: 12, fontWeight: 600,
-                          color: "#ffffff",
-                          fontFamily: "inherit",
-                        }}
-                      >
-                        <Phone size={11} />
-                        Share Now
-                      </motion.button>
-                    )}
+                      {profile.phone_number ? (
+                        /* Locked — number already shared, cannot be edited */
+                        <span style={{
+                          display: "flex", alignItems: "center", justifyContent: "center",
+                          padding: "6px", borderRadius: 8,
+                          background: "rgba(245,158,11,0.08)",
+                          border: "1px solid rgba(245,158,11,0.2)",
+                          color: "#F59E0B",
+                        }}>
+                          <Lock size={14} />
+                        </span>
+                      ) : (
+                        /* No number yet — allow sharing via Telegram */
+                        <motion.button
+                          whileTap={{ scale: 0.88 }}
+                          onClick={handleShareContact}
+                          style={{
+                            display: "flex", alignItems: "center", gap: 5,
+                            padding: "6px 12px", borderRadius: 8,
+                            background: "var(--brand)",
+                            border: "1px solid var(--brand)",
+                            cursor: "pointer",
+                            fontSize: 12, fontWeight: 600,
+                            color: "#ffffff",
+                            fontFamily: "inherit",
+                          }}
+                        >
+                          <Phone size={11} />
+                          Share Now
+                        </motion.button>
+                      )}
+                    </div>
                   </div>
+                  {!profile.phone_number && (
+                    <span style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 8, lineHeight: 1.4 }}>
+                      Not sharing a primary phone will impact your profile and employers wouldn't know how to contact you.
+                    </span>
+                  )}
                 </div>
 
                 {/* Secondary Phone */}
@@ -928,35 +935,42 @@ export default function ProfileScreen() {
                 {/* CV File */}
                 <div
                   style={{
-                    display: "flex", justifyContent: "space-between", alignItems: "center",
+                    display: "flex", flexDirection: "column",
                     padding: "14px 0",
                   }}
                 >
-                  <span style={{ fontSize: 13, color: "var(--text-muted)", fontWeight: 500, display: "flex", alignItems: "center", gap: 8 }}>
-                    <FileText size={14} color="var(--text-secondary)" /> Resume (CV)
-                  </span>
-                  <span style={{ fontSize: 13, color: "var(--text-primary)", fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}>
-                    {isUploadingCv ? (
-                      <span style={{ color: "var(--text-secondary)", display: "flex", alignItems: "center", gap: 4 }}>
-                        <Loader2 size={12} className="animate-spin" /> Uploading...
-                      </span>
-                    ) : profile.cv_url ? (
-                      <>
-                        <CheckCircle size={12} color="var(--success)" />
-                        <span style={{ textDecoration: "underline", color: "#6366F1", cursor: "pointer" }} onClick={() => profile.cv_url && window.open(profile.cv_url, "_blank")}>
-                          View CV
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%" }}>
+                    <span style={{ fontSize: 13, color: "var(--text-muted)", fontWeight: 500, display: "flex", alignItems: "center", gap: 8 }}>
+                      <FileText size={14} color="var(--text-secondary)" /> Resume (CV)
+                    </span>
+                    <span style={{ fontSize: 13, color: "var(--text-primary)", fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}>
+                      {isUploadingCv ? (
+                        <span style={{ color: "var(--text-secondary)", display: "flex", alignItems: "center", gap: 4 }}>
+                          <Loader2 size={12} className="animate-spin" /> Uploading...
                         </span>
-                        <span style={{ color: "var(--text-muted)", fontSize: 11, marginLeft: 2, marginRight: 2 }}>|</span>
-                        <span style={{ textDecoration: "underline", color: "var(--text-secondary)", cursor: "pointer" }} onClick={triggerCvUpload}>
-                          Change
+                      ) : profile.cv_url ? (
+                        <>
+                          <CheckCircle size={12} color="var(--success)" />
+                          <span style={{ textDecoration: "underline", color: "#6366F1", cursor: "pointer" }} onClick={() => profile.cv_url && window.open(profile.cv_url, "_blank")}>
+                            View CV
+                          </span>
+                          <span style={{ color: "var(--text-muted)", fontSize: 11, marginLeft: 2, marginRight: 2 }}>|</span>
+                          <span style={{ textDecoration: "underline", color: "var(--text-secondary)", cursor: "pointer" }} onClick={triggerCvUpload}>
+                            Change
+                          </span>
+                        </>
+                      ) : (
+                        <span style={{ textDecoration: "underline", color: "#6366F1", cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }} onClick={triggerCvUpload}>
+                          <Upload size={12} /> Upload CV
                         </span>
-                      </>
-                    ) : (
-                      <span style={{ textDecoration: "underline", color: "#6366F1", cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }} onClick={triggerCvUpload}>
-                        <Upload size={12} /> Upload CV
-                      </span>
-                    )}
-                  </span>
+                      )}
+                    </span>
+                  </div>
+                  {!isUploadingCv && !profile.cv_url && (
+                    <span style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 8, lineHeight: 1.4 }}>
+                      Not uploading a CV reduces your chances of being hired, as employers often look for detailed work history and qualifications.
+                    </span>
+                  )}
                 </div>
               </div>
             </motion.div>
