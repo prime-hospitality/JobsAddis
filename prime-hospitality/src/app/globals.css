@@ -31,21 +31,21 @@
 }
 
 [data-theme="dark"] {
-  /* Dark Theme */
-  --app-bg: #0F172A;
-  --surface: #1E293B;
-  --surface-elevated: #334155;
-  --card: #1E293B;
-  --card-hover: #334155;
+  /* Dark Theme (Deep Charcoal / Zinc) */
+  --app-bg: #09090B;
+  --surface: #18181B;
+  --surface-elevated: #27272A;
+  --card: #18181B;
+  --card-hover: #27272A;
 
   /* Text */
-  --text-primary: #F8FAFC;
-  --text-secondary: #94A3B8;
-  --text-muted: #64748B;
+  --text-primary: #FAFAFA;
+  --text-secondary: #A1A1AA;
+  --text-muted: #71717A;
 
   /* Borders & Shadows */
   --border: rgba(255, 255, 255, 0.08);
-  --border-active: rgba(34, 197, 94, 0.5);
+  --border-active: rgba(34, 197, 94, 0.4);
   --card-shadow: none;
 }
 
