@@ -699,7 +699,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                 <button 
                   type="submit"
                   disabled={deleteLoading || !adminPassword}
-                  style={{ background: "#dc2626", color: "#fff", border: "none", padding: "8px 16px", borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 8 }}
+                  style={{ background: "#dc2626", color: "#fff", border: "none", padding: "8px 16px", borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: (deleteLoading || !adminPassword) ? "not-allowed" : "pointer", opacity: (deleteLoading || !adminPassword) ? 0.5 : 1, display: "flex", alignItems: "center", gap: 8 }}
                 >
                   <Trash2 size={16} />
                   {deleteLoading ? "Deleting..." : "Permanently Delete"}
@@ -799,6 +799,94 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
           </div>
         </div>
       )}
+
+      {/* Delete User Modal */}
+      {deleteUserModal && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100 }}>
+          <div style={{ background: "#fff", borderRadius: 12, padding: 24, width: "100%", maxWidth: 400, boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1)" }}>
+            <h3 style={{ margin: "0 0 16px 0", fontSize: 18, fontWeight: 700, color: "#111827" }}>Delete User</h3>
+            <p style={{ margin: "0 0 20px 0", fontSize: 14, color: "#4b5563", lineHeight: 1.5 }}>
+              Are you sure you want to completely delete <strong>{deleteUserModal.name}</strong>? This action cannot be undone and will remove all their data including CV and applications.
+            </p>
+            <form onSubmit={handleDeleteUser} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              <div>
+                <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#374151", marginBottom: 6 }}>Admin Password Required</label>
+                <input 
+                  type="password" 
+                  value={userActionPassword}
+                  onChange={(e) => setUserActionPassword(e.target.value)}
+                  placeholder="Enter admin password"
+                  required
+                  style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid #d1d5db", fontSize: 14, boxSizing: "border-box" }}
+                />
+              </div>
+              {userActionError && <p style={{ color: "#dc2626", margin: 0, fontSize: 13 }}>{userActionError}</p>}
+              <div style={{ display: "flex", gap: 12, justifyContent: "flex-end", marginTop: 8 }}>
+                <button 
+                  type="button" 
+                  onClick={() => setDeleteUserModal(null)}
+                  disabled={userActionLoading}
+                  style={{ background: "#f3f4f6", color: "#374151", border: "none", padding: "8px 16px", borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: "pointer" }}
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit"
+                  disabled={userActionLoading || !userActionPassword}
+                  style={{ background: "#dc2626", color: "#fff", border: "none", padding: "8px 16px", borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: (userActionLoading || !userActionPassword) ? "not-allowed" : "pointer", opacity: (userActionLoading || !userActionPassword) ? 0.5 : 1, display: "flex", alignItems: "center", gap: 8 }}
+                >
+                  <Trash2 size={16} />
+                  {userActionLoading ? "Deleting..." : "Permanently Delete"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Ban User Modal */}
+      {banUserModal && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100 }}>
+          <div style={{ background: "#fff", borderRadius: 12, padding: 24, width: "100%", maxWidth: 400, boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1)" }}>
+            <h3 style={{ margin: "0 0 16px 0", fontSize: 18, fontWeight: 700, color: "#111827" }}>{banUserModal.is_banned ? "Unban" : "Ban"} User</h3>
+            <p style={{ margin: "0 0 20px 0", fontSize: 14, color: "#4b5563", lineHeight: 1.5 }}>
+              Are you sure you want to {banUserModal.is_banned ? "unban" : "ban"} <strong>{banUserModal.name}</strong>?
+            </p>
+            <form onSubmit={handleToggleBan} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              <div>
+                <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#374151", marginBottom: 6 }}>Admin Password Required</label>
+                <input 
+                  type="password" 
+                  value={userActionPassword}
+                  onChange={(e) => setUserActionPassword(e.target.value)}
+                  placeholder="Enter admin password"
+                  required
+                  style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid #d1d5db", fontSize: 14, boxSizing: "border-box" }}
+                />
+              </div>
+              {userActionError && <p style={{ color: "#dc2626", margin: 0, fontSize: 13 }}>{userActionError}</p>}
+              <div style={{ display: "flex", gap: 12, justifyContent: "flex-end", marginTop: 8 }}>
+                <button 
+                  type="button" 
+                  onClick={() => setBanUserModal(null)}
+                  disabled={userActionLoading}
+                  style={{ background: "#f3f4f6", color: "#374151", border: "none", padding: "8px 16px", borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: "pointer" }}
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit"
+                  disabled={userActionLoading || !userActionPassword}
+                  style={{ background: banUserModal.is_banned ? "#10b981" : "#ef4444", color: "#fff", border: "none", padding: "8px 16px", borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: (userActionLoading || !userActionPassword) ? "not-allowed" : "pointer", opacity: (userActionLoading || !userActionPassword) ? 0.5 : 1, display: "flex", alignItems: "center", gap: 8 }}
+                >
+                  {userActionLoading ? "Saving..." : banUserModal.is_banned ? "Unban User" : "Ban User"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
 
       {/* View Job Details Modal */}
       {viewingJob && (
