@@ -176,9 +176,6 @@ export default function HomeScreen({ onJobSelect, onSearchPress, profileName }: 
                   </svg>
                 </span>
               </h1>
-              <p style={{ fontSize: 14, color: "var(--text-secondary)", marginTop: 16, fontWeight: 500 }}>
-                200+ Hotels, Cafes, Restaurants
-              </p>
             </div>
             
             {/* Illustration */}
