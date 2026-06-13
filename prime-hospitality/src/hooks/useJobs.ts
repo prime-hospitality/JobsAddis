@@ -166,7 +166,8 @@ export function useJobs(category?: string | null): UseJobsReturn {
       jobsCache[categoryKey] = mappedJobs;
       setJobs(mappedJobs);
     } catch (err: unknown) {
-      console.error("Failed to fetch jobs:", err);
+      const msg = err instanceof Error ? err.message : JSON.stringify(err);
+      console.error("Failed to fetch jobs:", msg, err);
       setError("Could not load jobs. Please check your connection.");
     } finally {
       setIsLoading(false);
