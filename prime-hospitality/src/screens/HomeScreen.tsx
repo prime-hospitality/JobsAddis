@@ -208,7 +208,8 @@ export default function HomeScreen({ onJobSelect, onSearchPress, profileName }: 
                   objectFit: "contain", 
                   position: "absolute", 
                   right: -10, 
-                  top: -10 
+                  top: -10,
+                  mixBlendMode: "multiply"
                 }} 
               />
             </div>
