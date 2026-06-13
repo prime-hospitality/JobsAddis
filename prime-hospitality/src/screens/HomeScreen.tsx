@@ -104,7 +104,7 @@ export default function HomeScreen({ onJobSelect, onSearchPress, profileName }: 
           >
             <div>
               {/* Logo mark */}
-              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 0 }}>
                 <div
                   style={{
                     width: 32,
@@ -137,7 +137,7 @@ export default function HomeScreen({ onJobSelect, onSearchPress, profileName }: 
                   </span>
                 </span>
               </div>
-              <p style={{ fontSize: 13, fontWeight: 500, color: "var(--text-muted)", marginLeft: 40 }}>
+              <p style={{ fontSize: 13, fontWeight: 500, color: "var(--text-muted)", marginLeft: 40, marginTop: -2 }}>
                 Jobs Addis
               </p>
             </div>
