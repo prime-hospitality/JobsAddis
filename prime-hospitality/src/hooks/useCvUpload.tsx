@@ -34,13 +34,13 @@ export function CvUploadProvider({ children }: { children: ReactNode }) {
     try {
       const telegramId = user?.id || Date.now();
       const fileExt = file.name.split(".").pop();
-      const fileName = `${telegramId}-${Date.now()}.${fileExt}`;
+      const fileName = `${telegramId}.${fileExt}`;
       const filePath = `cvs/${fileName}`;
 
       console.log("[CV Upload] Uploading to resumes storage...");
       const { error: uploadError } = await supabase.storage
         .from("resumes")
-        .upload(filePath, file);
+        .upload(filePath, file, { upsert: true });
 
       if (uploadError) {
         throw new Error(uploadError.message);
