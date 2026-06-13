@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "deploy:funcs": "npx supabase functions deploy validate-telegram-auth --use-api"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.106.1",
