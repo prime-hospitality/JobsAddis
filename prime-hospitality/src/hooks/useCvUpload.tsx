@@ -34,7 +34,8 @@ export function CvUploadProvider({ children }: { children: ReactNode }) {
     try {
       const telegramId = user?.id || Date.now();
       const fileExt = file.name.split(".").pop();
-      const fileName = `${telegramId}.${fileExt}`;
+      const timestamp = Date.now();
+      const fileName = `${telegramId}_${timestamp}.${fileExt}`;
       const filePath = `cvs/${fileName}`;
 
       console.log("[CV Upload] Uploading to resumes storage...");
