@@ -571,12 +571,42 @@ serve(async (req: Request) => {
       const { secondaryPhone } = payload;
       const formatted = secondaryPhone ? sanitizeHtml(secondaryPhone.trim()) : null;
 
+      // 1. Fetch current profile to check primary phone number
+      const { data: profile, error: profileError } = await supabase
+        .from("profiles")
+        .select("phone_number")
+        .eq("telegram_id", telegramId)
+        .single();
+
+      if (profileError || !profile) {
+        return new Response(JSON.stringify({ error: "Profile not found." }), {
+          status: 404,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      // 2. Check if trying to add a secondary phone when primary doesn't exist
+      if (formatted && !profile.phone_number) {
+        return new Response(JSON.stringify({ error: "You must share your primary phone number before adding a secondary phone number." }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
       // Server-side validation
       if (formatted) {
         const digits = formatted.replace(/\D/g, "");
         const isCarrierValid = digits.startsWith("2519") || digits.startsWith("2517");
         if (digits.length !== 12 || !isCarrierValid) {
           return new Response(JSON.stringify({ error: "Invalid Ethiopian phone number format. Must start with +251 9 or +251 7 and have 9 digits after the carrier prefix." }), {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+
+        // 3. Check if primary and secondary phones are the same
+        if (profile.phone_number === formatted) {
+          return new Response(JSON.stringify({ error: "Secondary phone number cannot be the same as your primary phone number." }), {
             status: 400,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
           });

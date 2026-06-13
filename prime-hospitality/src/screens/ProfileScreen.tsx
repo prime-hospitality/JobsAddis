@@ -132,6 +132,10 @@ export default function ProfileScreen() {
   };
 
   const openSecondaryPhoneModal = () => {
+    if (!profile?.phone_number) {
+      showToast("error", "You must share your primary phone number first.");
+      return;
+    }
     const displayVal = formatPhoneForDisplay(profile?.secondary_phone);
     setSecondaryPhoneInput(displayVal === "Not set" ? "" : displayVal);
     setSecondaryPhoneModalOpen(true);
@@ -155,6 +159,19 @@ export default function ProfileScreen() {
       const formatted = normalizePhoneNumber(cleaned);
       if (!formatted) {
         showToast("error", "Invalid phone number. Use 09XXXXXXXX or 07XXXXXXXX.");
+        setSecondaryPhoneLoading(false);
+        return;
+      }
+
+      if (!profile?.phone_number) {
+        showToast("error", "You must share your primary phone number first.");
+        setSecondaryPhoneLoading(false);
+        return;
+      }
+
+      const normalizedPrimary = normalizePhoneNumber(profile.phone_number);
+      if (normalizedPrimary === formatted) {
+        showToast("error", "Secondary phone cannot be the same as your primary phone number.");
         setSecondaryPhoneLoading(false);
         return;
       }
@@ -823,62 +840,70 @@ export default function ProfileScreen() {
                 {/* Secondary Phone */}
                 <div
                   style={{
-                    display: "flex", alignItems: "center",
+                    display: "flex", flexDirection: "column",
                     padding: "14px 0",
                     borderBottom: "1px solid var(--border)",
-                    gap: 8,
-                    overflow: "hidden",
+                    gap: 4,
                   }}
                 >
-                  {/* Label — fixed width, never wraps */}
-                  <div style={{
-                    display: "flex", alignItems: "center", gap: 6,
-                    flexShrink: 0, whiteSpace: "nowrap",
-                  }}>
-                    <Phone size={14} color="var(--text-secondary)" style={{ flexShrink: 0 }} />
-                    <div style={{ display: "flex", flexDirection: "column" }}>
-                      <span style={{ fontSize: 13, color: "var(--text-muted)", fontWeight: 500 }}>
-                        2nd Phone
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, overflow: "hidden", width: "100%" }}>
+                    {/* Label — fixed width, never wraps */}
+                    <div style={{
+                      display: "flex", alignItems: "center", gap: 6,
+                      flexShrink: 0, whiteSpace: "nowrap",
+                    }}>
+                      <Phone size={14} color="var(--text-secondary)" style={{ flexShrink: 0 }} />
+                      <div style={{ display: "flex", flexDirection: "column" }}>
+                        <span style={{ fontSize: 13, color: "var(--text-muted)", fontWeight: 500 }}>
+                          2nd Phone
+                        </span>
+                        <span style={{ fontSize: 10, color: "var(--text-muted)", opacity: 0.6, marginTop: -1 }}>
+                          optional
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Value + button — fills remaining space, value truncates if needed */}
+                    <div style={{
+                      display: "flex", alignItems: "center", gap: 8,
+                      flex: 1, minWidth: 0, justifyContent: "flex-end",
+                    }}>
+                      <span style={{
+                        fontSize: 13,
+                        color: profile.secondary_phone ? "var(--text-primary)" : "var(--text-muted)",
+                        fontWeight: 600,
+                        overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                        flex: 1, minWidth: 0, textAlign: "right",
+                      }}>
+                        {formatPhoneForDisplay(profile.secondary_phone)}
                       </span>
-                      <span style={{ fontSize: 10, color: "var(--text-muted)", opacity: 0.6, marginTop: -1 }}>
-                        optional
-                      </span>
+                      <motion.button
+                        disabled={!profile?.phone_number}
+                        whileTap={!profile?.phone_number ? undefined : { scale: 0.88 }}
+                        onClick={openSecondaryPhoneModal}
+                        style={{
+                          display: "flex", alignItems: "center", gap: 5,
+                          padding: "6px 12px", borderRadius: 8,
+                          background: "var(--surface-elevated)",
+                          border: "1px solid var(--border)",
+                          cursor: !profile?.phone_number ? "not-allowed" : "pointer",
+                          opacity: !profile?.phone_number ? 0.5 : 1,
+                          fontSize: 12, fontWeight: 600,
+                          color: "var(--text-secondary)",
+                          fontFamily: "inherit",
+                          flexShrink: 0,
+                        }}
+                      >
+                        <Pencil size={11} />
+                        {profile.secondary_phone ? "Edit" : "Add"}
+                      </motion.button>
                     </div>
                   </div>
-
-                  {/* Value + button — fills remaining space, value truncates if needed */}
-                  <div style={{
-                    display: "flex", alignItems: "center", gap: 8,
-                    flex: 1, minWidth: 0, justifyContent: "flex-end",
-                  }}>
-                    <span style={{
-                      fontSize: 13,
-                      color: profile.secondary_phone ? "var(--text-primary)" : "var(--text-muted)",
-                      fontWeight: 600,
-                      overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-                      flex: 1, minWidth: 0, textAlign: "right",
-                    }}>
-                      {formatPhoneForDisplay(profile.secondary_phone)}
+                  {!profile?.phone_number && (
+                    <span style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4, lineHeight: 1.4, paddingLeft: 22 }}>
+                      You must share your primary phone number before adding a secondary one.
                     </span>
-                    <motion.button
-                      whileTap={{ scale: 0.88 }}
-                      onClick={openSecondaryPhoneModal}
-                      style={{
-                        display: "flex", alignItems: "center", gap: 5,
-                        padding: "6px 12px", borderRadius: 8,
-                        background: "var(--surface-elevated)",
-                        border: "1px solid var(--border)",
-                        cursor: "pointer",
-                        fontSize: 12, fontWeight: 600,
-                        color: "var(--text-secondary)",
-                        fontFamily: "inherit",
-                        flexShrink: 0,
-                      }}
-                    >
-                      <Pencil size={11} />
-                      {profile.secondary_phone ? "Edit" : "Add"}
-                    </motion.button>
-                  </div>
+                  )}
                 </div>
 
                 {/* Location */}
