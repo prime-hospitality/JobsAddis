@@ -203,12 +203,12 @@ export default function HomeScreen({ onJobSelect, onSearchPress, profileName }: 
               {
                 value: businessCount === 200 ? "200+" : `${businessCount}`,
                 label: "Businesses",
-                valueColor: "#60A5FA",
+                valueColor: "var(--brand)",
               },
               {
                 value: "50k+",
                 label: "Job Seekers",
-                valueColor: "#FB923C",
+                valueColor: "var(--brand)",
               },
             ].map((stat) => (
               <div
