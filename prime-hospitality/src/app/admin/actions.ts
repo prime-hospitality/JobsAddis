@@ -90,6 +90,36 @@ export async function toggleUserBan(userId: string, isBanned: boolean) {
   return { success: true };
 }
 
+export async function deleteUser(userId: string) {
+  const auth = (await cookies()).get("admin_session");
+  if (!auth?.value) throw new Error("Unauthorized");
+
+  const supabase = getSupabase();
+
+  // 1. Fetch user's profile to get the CV URL before deletion
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("cv_url")
+    .eq("user_id", userId)
+    .single();
+
+  // 2. Delete the user (this cascades to profiles, applications, employers, jobs)
+  const { error } = await supabase.from("users").delete().eq("id", userId);
+  if (error) throw error;
+
+  // 3. Delete CV from storage if it exists
+  if (profile?.cv_url) {
+    const parts = profile.cv_url.split("/resumes/");
+    if (parts.length === 2) {
+      const path = parts[1];
+      // Fire and forget deletion, or await it
+      await supabase.storage.from("resumes").remove([path]);
+    }
+  }
+
+  return { success: true };
+}
+
 export async function toggleJobStatus(jobId: string, status: "active" | "closed" | "pending") {
   const auth = (await cookies()).get("admin_session");
   if (!auth?.value) throw new Error("Unauthorized");

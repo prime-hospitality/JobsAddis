@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { approveEmployer, rejectEmployer, toggleUserBan, toggleJobStatus, logoutAdmin, addEmployer, deleteEmployer, updateEmployer, adminUpdateEmployerLogo } from "./actions";
+import { approveEmployer, rejectEmployer, toggleUserBan, toggleJobStatus, logoutAdmin, addEmployer, deleteEmployer, updateEmployer, adminUpdateEmployerLogo, deleteUser } from "./actions";
 import { Trash2, Pencil, Image as ImageIcon } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
@@ -186,6 +186,24 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
         ...prev,
         users: prev.users.map((u: any) => u.id === id ? { ...u, is_banned: !currentBanStatus } : u)
       }));
+    } finally {
+      setLoading(null);
+    }
+  };
+
+  const handleDeleteUser = async (id: string) => {
+    if (!window.confirm("Are you sure you want to permanently delete this user? This will delete their profile, applications, and CV from the database.")) return;
+    
+    setLoading(`delete-user-${id}`);
+    try {
+      await deleteUser(id);
+      setData((prev: any) => ({
+        ...prev,
+        users: prev.users.filter((u: any) => u.id !== id),
+        employers: prev.employers.filter((e: any) => e.user_id !== id),
+      }));
+    } catch (err: any) {
+      alert("Failed to delete user: " + err.message);
     } finally {
       setLoading(null);
     }
@@ -452,13 +470,23 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                       <td style={{ padding: "16px 24px", color: "#6b7280" }}>{item.telegram_id}</td>
                       <td style={{ padding: "16px 24px", textTransform: "capitalize", color: "#6b7280" }}>{item.role}</td>
                       <td style={{ padding: "16px 24px", textAlign: "right" }}>
-                        <button
-                          disabled={!!loading}
-                          onClick={() => handleToggleBan(item.id, item.is_banned)}
-                          style={{ background: item.is_banned ? "#10b981" : "#ef4444", color: "#fff", border: "none", padding: "6px 12px", borderRadius: 6, cursor: "pointer", fontSize: 12 }}
-                        >
-                          {item.is_banned ? "Unban" : "Ban"}
-                        </button>
+                        <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+                          <button
+                            disabled={!!loading}
+                            onClick={() => handleToggleBan(item.id, item.is_banned)}
+                            style={{ background: item.is_banned ? "#10b981" : "#ef4444", color: "#fff", border: "none", padding: "6px 12px", borderRadius: 6, cursor: "pointer", fontSize: 12 }}
+                          >
+                            {item.is_banned ? "Unban" : "Ban"}
+                          </button>
+                          <button
+                            disabled={!!loading}
+                            onClick={() => handleDeleteUser(item.id)}
+                            style={{ background: "transparent", color: "#ef4444", border: "none", padding: "6px", borderRadius: 6, cursor: "pointer", display: "flex", alignItems: "center" }}
+                            title="Delete User"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -574,7 +602,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                     </div>
                     <span className="text-xs font-medium text-gray-600 bg-gray-100 border border-gray-200 px-2 py-1 rounded-md capitalize">{item.role}</span>
                   </div>
-                  <div className="flex justify-end mt-2 pt-3 border-t border-gray-100">
+                  <div className="flex justify-end mt-2 pt-3 border-t border-gray-100 gap-2">
                     <button
                       disabled={!!loading}
                       onClick={() => handleToggleBan(item.id, item.is_banned)}
@@ -582,6 +610,13 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                       className="text-white border-none px-3 py-1.5 rounded-lg text-xs font-medium"
                     >
                       {item.is_banned ? "Unban" : "Ban"}
+                    </button>
+                    <button
+                      disabled={!!loading}
+                      onClick={() => handleDeleteUser(item.id)}
+                      className="bg-transparent text-red-500 p-1.5 cursor-pointer flex items-center"
+                    >
+                      <Trash2 size={16} />
                     </button>
                   </div>
                 </div>

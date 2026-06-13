@@ -77,6 +77,7 @@ export default function App() {
   // Onboarding state
   const [isOnboarded, setIsOnboarded] = useState<boolean | null>(null);
   const [userProfile, setUserProfile] = useState<any>(null);
+  const [isBanned, setIsBanned] = useState<boolean>(false);
 
   // Check onboarding status via Edge Function (uses service-role key, bypasses RLS)
   useEffect(() => {
@@ -97,9 +98,13 @@ export default function App() {
         if (result.is_employer) {
           setIsEmployer(true);
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error("Error checking onboarding status:", err);
-        setIsOnboarded(false);
+        if (err?.statusCode === 403 || (err?.message && err.message.toLowerCase().includes("banned"))) {
+          setIsBanned(true);
+        } else {
+          setIsOnboarded(false);
+        }
       }
     }
 
@@ -259,6 +264,21 @@ export default function App() {
         >
           <img src="/logo.png" alt="Prime Hospitality Logo" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
         </motion.div>
+      </div>
+    );
+  }
+
+  // Handle Banned State
+  if (isBanned) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100dvh', padding: 20, textAlign: 'center', background: '#f9fafb' }}>
+        <AlertCircle size={64} color="#EF4444" style={{ marginBottom: 24 }} />
+        <h2 style={{ color: '#111827', fontSize: 28, fontWeight: 'bold', marginBottom: 12 }}>Account Suspended</h2>
+        <p style={{ color: '#6B7280', fontSize: 16, lineHeight: 1.5 }}>
+          You have been banned from using this application.
+          <br />
+          Please contact support if you believe this is a mistake.
+        </p>
       </div>
     );
   }
