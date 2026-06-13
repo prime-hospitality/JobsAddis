@@ -198,22 +198,16 @@ export default function HomeScreen({ onJobSelect, onSearchPress, profileName }: 
               {
                 value: `${jobs.length}+`,
                 label: "Open Jobs",
-                bg: "var(--brand-subtle)",
-                border: "rgba(34, 197, 94, 0.18)",
                 valueColor: "var(--brand)",
               },
               {
                 value: businessCount === 200 ? "200+" : `${businessCount}`,
                 label: "Businesses",
-                bg: "rgba(59, 130, 246, 0.10)",
-                border: "rgba(59, 130, 246, 0.18)",
                 valueColor: "#60A5FA",
               },
               {
                 value: "50k+",
                 label: "Job Seekers",
-                bg: "rgba(251, 146, 60, 0.10)",
-                border: "rgba(251, 146, 60, 0.18)",
                 valueColor: "#FB923C",
               },
             ].map((stat) => (
@@ -221,8 +215,7 @@ export default function HomeScreen({ onJobSelect, onSearchPress, profileName }: 
                 key={stat.label}
                 style={{
                   flex: 1,
-                  background: stat.bg,
-                  border: `1px solid ${stat.border}`,
+                  background: "transparent",
                   borderRadius: 10,
                   padding: "8px 6px",
                   textAlign: "center",
