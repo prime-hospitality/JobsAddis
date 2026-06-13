@@ -81,18 +81,28 @@ export async function adminUpdateEmployerLogo(employerId: string, logoUrl: strin
   return { success: true };
 }
 
-export async function toggleUserBan(userId: string, isBanned: boolean) {
+export async function toggleUserBan(userId: string, isBanned: boolean, passwordAttempt: string) {
   const auth = (await cookies()).get("admin_session");
-  if (!auth?.value) throw new Error("Unauthorized");
+  if (!auth?.value) return { success: false, error: "Unauthorized" };
+
+  const adminPassword = process.env.ADMIN_PASSWORD || "admin123";
+  if (passwordAttempt !== adminPassword) {
+    return { success: false, error: "Incorrect admin password" };
+  }
 
   const { error } = await getSupabase().from("users").update({ is_banned: isBanned }).eq("id", userId);
-  if (error) throw error;
+  if (error) return { success: false, error: "Failed to update ban status" };
   return { success: true };
 }
 
-export async function deleteUser(userId: string) {
+export async function deleteUser(userId: string, passwordAttempt: string) {
   const auth = (await cookies()).get("admin_session");
-  if (!auth?.value) throw new Error("Unauthorized");
+  if (!auth?.value) return { success: false, error: "Unauthorized" };
+
+  const adminPassword = process.env.ADMIN_PASSWORD || "admin123";
+  if (passwordAttempt !== adminPassword) {
+    return { success: false, error: "Incorrect admin password" };
+  }
 
   const supabase = getSupabase();
 
@@ -105,7 +115,7 @@ export async function deleteUser(userId: string) {
 
   // 2. Delete the user (this cascades to profiles, applications, employers, jobs)
   const { error } = await supabase.from("users").delete().eq("id", userId);
-  if (error) throw error;
+  if (error) return { success: false, error: "Failed to delete user" };
 
   // 3. Delete CV from storage if it exists
   if (profile?.cv_url) {

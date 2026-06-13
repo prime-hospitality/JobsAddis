@@ -24,6 +24,12 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [deleteError, setDeleteError] = useState("");
 
+  const [deleteUserModal, setDeleteUserModal] = useState<{ id: string; name: string } | null>(null);
+  const [banUserModal, setBanUserModal] = useState<{ id: string; name: string; is_banned: boolean } | null>(null);
+  const [userActionPassword, setUserActionPassword] = useState("");
+  const [userActionLoading, setUserActionLoading] = useState(false);
+  const [userActionError, setUserActionError] = useState("");
+
   const [editModal, setEditModal] = useState<{ id: string; name: string; type: string; postLimit: number } | null>(null);
   const [editName, setEditName] = useState("");
   const [editType, setEditType] = useState("");
@@ -178,34 +184,52 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
     }
   };
 
-  const handleToggleBan = async (id: string, currentBanStatus: boolean) => {
-    setLoading(`ban-${id}`);
+  const handleToggleBan = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!banUserModal) return;
+    setUserActionLoading(true);
+    setUserActionError("");
     try {
-      await toggleUserBan(id, !currentBanStatus);
+      const res = await toggleUserBan(banUserModal.id, !banUserModal.is_banned, userActionPassword);
+      if (!res.success) {
+        setUserActionError(res.error || "Failed to update ban status");
+        return;
+      }
       setData((prev: any) => ({
         ...prev,
-        users: prev.users.map((u: any) => u.id === id ? { ...u, is_banned: !currentBanStatus } : u)
+        users: prev.users.map((u: any) => u.id === banUserModal.id ? { ...u, is_banned: !banUserModal.is_banned } : u)
       }));
+      setBanUserModal(null);
+      setUserActionPassword("");
+    } catch (err: any) {
+      setUserActionError(err.message || "Failed to update ban status");
     } finally {
-      setLoading(null);
+      setUserActionLoading(false);
     }
   };
 
-  const handleDeleteUser = async (id: string) => {
-    if (!window.confirm("Are you sure you want to permanently delete this user? This will delete their profile, applications, and CV from the database.")) return;
-    
-    setLoading(`delete-user-${id}`);
+  const handleDeleteUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!deleteUserModal) return;
+    setUserActionLoading(true);
+    setUserActionError("");
     try {
-      await deleteUser(id);
+      const res = await deleteUser(deleteUserModal.id, userActionPassword);
+      if (!res.success) {
+        setUserActionError(res.error || "Failed to delete user");
+        return;
+      }
       setData((prev: any) => ({
         ...prev,
-        users: prev.users.filter((u: any) => u.id !== id),
-        employers: prev.employers.filter((e: any) => e.user_id !== id),
+        users: prev.users.filter((u: any) => u.id !== deleteUserModal.id),
+        employers: prev.employers.filter((e: any) => e.user_id !== deleteUserModal.id),
       }));
+      setDeleteUserModal(null);
+      setUserActionPassword("");
     } catch (err: any) {
-      alert("Failed to delete user: " + err.message);
+      setUserActionError(err.message || "Failed to delete user");
     } finally {
-      setLoading(null);
+      setUserActionLoading(false);
     }
   };
 
@@ -473,14 +497,14 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                         <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
                           <button
                             disabled={!!loading}
-                            onClick={() => handleToggleBan(item.id, item.is_banned)}
+                            onClick={() => { setBanUserModal({ id: item.id, name: item.profiles?.full_name || "Unonboarded", is_banned: item.is_banned }); setUserActionPassword(""); setUserActionError(""); }}
                             style={{ background: item.is_banned ? "#10b981" : "#ef4444", color: "#fff", border: "none", padding: "6px 12px", borderRadius: 6, cursor: "pointer", fontSize: 12 }}
                           >
                             {item.is_banned ? "Unban" : "Ban"}
                           </button>
                           <button
                             disabled={!!loading}
-                            onClick={() => handleDeleteUser(item.id)}
+                            onClick={() => { setDeleteUserModal({ id: item.id, name: item.profiles?.full_name || "Unonboarded" }); setUserActionPassword(""); setUserActionError(""); }}
                             style={{ background: "transparent", color: "#ef4444", border: "none", padding: "6px", borderRadius: 6, cursor: "pointer", display: "flex", alignItems: "center" }}
                             title="Delete User"
                           >
@@ -605,7 +629,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                   <div className="flex justify-end mt-2 pt-3 border-t border-gray-100 gap-2">
                     <button
                       disabled={!!loading}
-                      onClick={() => handleToggleBan(item.id, item.is_banned)}
+                      onClick={() => { setBanUserModal({ id: item.id, name: item.profiles?.full_name || "Unonboarded", is_banned: item.is_banned }); setUserActionPassword(""); setUserActionError(""); }}
                       style={{ background: item.is_banned ? "#10b981" : "#ef4444" }}
                       className="text-white border-none px-3 py-1.5 rounded-lg text-xs font-medium"
                     >
@@ -613,7 +637,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                     </button>
                     <button
                       disabled={!!loading}
-                      onClick={() => handleDeleteUser(item.id)}
+                      onClick={() => { setDeleteUserModal({ id: item.id, name: item.profiles?.full_name || "Unonboarded" }); setUserActionPassword(""); setUserActionError(""); }}
                       className="bg-transparent text-red-500 p-1.5 cursor-pointer flex items-center"
                     >
                       <Trash2 size={16} />
