@@ -31,12 +31,12 @@
 }
 
 [data-theme="dark"] {
-  /* Dark Theme (Deep Charcoal / Zinc) */
-  --app-bg: #09090B;
-  --surface: #18181B;
-  --surface-elevated: #27272A;
-  --card: #18181B;
-  --card-hover: #27272A;
+  /* Dark Theme (Elevated Neutral Gray) */
+  --app-bg: #121212;
+  --surface: #1A1A1A;
+  --surface-elevated: #262626;
+  --card: #1A1A1A;
+  --card-hover: #262626;
 
   /* Text */
   --text-primary: #FAFAFA;
