@@ -285,6 +285,16 @@ serve(async (req: Request) => {
 
         if (action === "update_cv") {
           const { cvUrl } = payload;
+          
+          // Delete old CV in dev mode if it exists
+          const { data: profile } = await supabase.from("profiles").select("cv_url").eq("telegram_id", mockTelegramId).single();
+          if (profile?.cv_url && profile.cv_url !== cvUrl) {
+            const parts = profile.cv_url.split("/resumes/");
+            if (parts.length === 2) {
+              await supabase.storage.from("resumes").remove([parts[1]]).catch(console.error);
+            }
+          }
+
           await supabase.from("profiles").update({ cv_url: cvUrl }).eq("telegram_id", mockTelegramId);
           return new Response(JSON.stringify({ success: true, message: "[DEV] CV updated." }), {
             status: 200,
@@ -493,6 +503,26 @@ serve(async (req: Request) => {
     if (action === "update_cv") {
       const { cvUrl } = payload;
       
+      // 1. Fetch current profile to get old cvUrl
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("cv_url")
+        .eq("telegram_id", telegramId)
+        .single();
+
+      // 2. If it exists and is different, delete it from storage
+      if (profile?.cv_url && profile.cv_url !== cvUrl) {
+        const parts = profile.cv_url.split("/resumes/");
+        if (parts.length === 2) {
+          const path = parts[1];
+          // Delete old cv
+          await supabase.storage.from("resumes").remove([path]).catch(err => {
+             console.error("Failed to delete old CV:", err);
+          });
+        }
+      }
+
+      // 3. Update the profile with new CV url
       const { error: updateError } = await supabase
         .from("profiles")
         .update({ cv_url: cvUrl })
