@@ -638,6 +638,7 @@ export default function ProfileScreen() {
                         </p>
                         {incomplete.map((s) => {
                           const isCv = s.key === "cv";
+                          const isContact = s.key === "contact";
                           return (
                             <motion.div
                               key={s.key}
@@ -651,7 +652,7 @@ export default function ProfileScreen() {
                                 borderRadius: 10,
                                 padding: "11px 14px",
                                 display: "flex",
-                                alignItems: "center",
+                                alignItems: "flex-start",
                                 gap: 10,
                                 cursor: isCv ? "pointer" : "default",
                                 transition: "all 0.2s ease",
@@ -661,14 +662,20 @@ export default function ProfileScreen() {
                                 width: 6, height: 6, borderRadius: "50%",
                                 background: "#F59E0B",
                                 flexShrink: 0,
+                                marginTop: 5,
                               }} />
                               <div style={{ flex: 1 }}>
                                 <p style={{ fontSize: 13, fontWeight: 500, color: "var(--text-secondary)" }}>
                                   {s.label}
                                 </p>
+                                {isContact && (
+                                  <p style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 3, lineHeight: 1.4 }}>
+                                    Not sharing a primary phone will impact your profile — employers won't know how to contact you.
+                                  </p>
+                                )}
                                 {isCv && (
-                                  <p style={{ fontSize: 11, color: "#F59E0B", fontWeight: 600, marginTop: 2 }}>
-                                    {isUploadingCv ? "Uploading CV..." : "Tap to upload CV"}
+                                  <p style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 3, lineHeight: 1.4 }}>
+                                    {isUploadingCv ? "Uploading CV..." : "Not uploading a CV reduces your chances of being hired, as employers look for detailed work history and qualifications. Tap to upload."}
                                   </p>
                                 )}
                               </div>
@@ -830,11 +837,7 @@ export default function ProfileScreen() {
                       )}
                     </div>
                   </div>
-                  {!profile.phone_number && (
-                    <span style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 8, lineHeight: 1.4 }}>
-                      Not sharing a primary phone will impact your profile and employers wouldn't know how to contact you.
-                    </span>
-                  )}
+
                 </div>
 
                 {/* Secondary Phone */}
@@ -991,11 +994,7 @@ export default function ProfileScreen() {
                       )}
                     </span>
                   </div>
-                  {!isUploadingCv && !profile.cv_url && (
-                    <span style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 8, lineHeight: 1.4 }}>
-                      Not uploading a CV reduces your chances of being hired, as employers often look for detailed work history and qualifications.
-                    </span>
-                  )}
+
                 </div>
               </div>
             </motion.div>
