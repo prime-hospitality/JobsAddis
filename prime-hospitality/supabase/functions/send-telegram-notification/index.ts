@@ -31,7 +31,7 @@ serve(async (req: Request) => {
       );
     }
 
-    const message = `🎉 You have a new notification from ${business_name}. Your application for ${job_title} has been reviewed. Open AddisJobs to see the update.`;
+    const message = `🎉 You have a new notification from ${business_name}. Your application for ${job_title} has been reviewed. Open Jobs Addis to see the update.`;
 
     const telegramRes = await fetch(
       `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,

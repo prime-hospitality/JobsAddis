@@ -38,7 +38,7 @@ export default function AdminLogin() {
         boxShadow: "0 4px 6px rgba(0,0,0,0.1)", width: "100%", maxWidth: 400
       }}>
         <h1 style={{ fontSize: 24, fontWeight: 700, marginBottom: 8, color: "#111827", textAlign: "center" }}>
-          AddisJobs Admin
+          Jobs Addis Admin
         </h1>
         <p style={{ color: "#6b7280", marginBottom: 24, textAlign: "center" }}>
           Please enter your password to continue.

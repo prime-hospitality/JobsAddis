@@ -213,7 +213,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
     <div style={{ minHeight: "100vh", background: "#f9fafb", fontFamily: "system-ui, sans-serif" }}>
       {/* Header */}
       <header className="bg-white border-b border-gray-200 px-4 md:px-8 py-4 flex justify-between items-center sticky top-0 z-10">
-        <h1 className="m-0 text-lg md:text-xl font-bold text-gray-900">AddisJobs Admin</h1>
+        <h1 className="m-0 text-lg md:text-xl font-bold text-gray-900">Jobs Addis Admin</h1>
         <button onClick={handleLogout} className="bg-transparent border border-gray-300 px-3 py-1.5 md:px-4 md:py-2 rounded-lg cursor-pointer text-sm font-medium hover:bg-gray-50 transition-colors">Logout</button>
       </header>
 

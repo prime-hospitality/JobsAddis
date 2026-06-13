@@ -4,7 +4,7 @@ import AdminLogin from "./AdminLogin";
 import { getAdminData } from "./actions";
 
 export const metadata = {
-  title: "AddisJobs Admin",
+  title: "Jobs Addis Admin",
 };
 
 export default async function AdminPage() {

@@ -617,7 +617,7 @@ function Step6_Success({ state, onNext }: { state: ReturnType<typeof useOnboardi
       </motion.h1>
       
       <motion.p initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} style={{ fontSize: 16, color: "var(--text-secondary)", lineHeight: 1.6, maxWidth: 300, marginBottom: 48 }}>
-        Welcome to AddisJobs by Prime Hospitality. Your profile is ready. Let's find you the perfect job.
+        Welcome to Jobs Addis by Prime Hospitality. Your profile is ready. Let's find you the perfect job.
       </motion.p>
 
       <motion.button initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="btn-primary" onClick={onNext} style={{ width: "100%" }}>
