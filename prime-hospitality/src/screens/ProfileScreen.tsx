@@ -791,23 +791,23 @@ export default function ProfileScreen() {
                         <Lock size={14} />
                       </span>
                     ) : (
-                      /* No number yet — allow adding */
+                      /* No number yet — allow sharing via Telegram */
                       <motion.button
                         whileTap={{ scale: 0.88 }}
-                        onClick={openPhoneModal}
+                        onClick={handleShareContact}
                         style={{
                           display: "flex", alignItems: "center", gap: 5,
                           padding: "6px 12px", borderRadius: 8,
-                          background: "var(--surface-elevated)",
-                          border: "1px solid var(--border)",
+                          background: "var(--brand)",
+                          border: "1px solid var(--brand)",
                           cursor: "pointer",
                           fontSize: 12, fontWeight: 600,
-                          color: "var(--text-secondary)",
+                          color: "#ffffff",
                           fontFamily: "inherit",
                         }}
                       >
-                        <Pencil size={11} />
-                        Add
+                        <Phone size={11} />
+                        Share Now
                       </motion.button>
                     )}
                   </div>
