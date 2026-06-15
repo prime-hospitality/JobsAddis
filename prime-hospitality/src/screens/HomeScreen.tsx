@@ -59,6 +59,20 @@ export default function HomeScreen({ onJobSelect, onSearchPress, profileName }: 
   // Load real active jobs from Supabase
   const { jobs, isLoading, error, refetch } = useJobs(null);
 
+  // Track dark mode so hero illustration blend mode is correct
+  const [isDark, setIsDark] = useState<boolean>(() => {
+    if (typeof document === "undefined") return false;
+    return document.documentElement.getAttribute("data-theme") === "dark";
+  });
+
+  useEffect(() => {
+    const handleTheme = () => {
+      setIsDark(document.documentElement.getAttribute("data-theme") === "dark");
+    };
+    window.addEventListener("themeToggle", handleTheme);
+    return () => window.removeEventListener("themeToggle", handleTheme);
+  }, []);
+
   const virtualizer = useVirtualizer({
     count: jobs.length,
     getScrollElement: () => scrollRef.current,
@@ -209,7 +223,7 @@ export default function HomeScreen({ onJobSelect, onSearchPress, profileName }: 
                   position: "absolute", 
                   right: -10, 
                   top: -10,
-                  mixBlendMode: "multiply"
+                  mixBlendMode: isDark ? "screen" : "multiply",
                 }} 
               />
             </div>
