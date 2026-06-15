@@ -302,17 +302,30 @@ export default function HomeScreen({ onJobSelect, onSearchPress, profileName }: 
               
               {/* Illustration for Slide 2 */}
               <div style={{ position: "absolute", right: -30, bottom: -10, width: 180, height: 180, zIndex: 0 }}>
-                <img 
-                  src="/hero_slide_2.png" 
-                  alt="Chair and suitcase illustration" 
-                  style={{ 
-                    width: "100%", 
-                    height: "100%", 
-                    objectFit: "contain", 
-                    mixBlendMode: "multiply",
-                    opacity: isDark ? 0.8 : 1 // fallback for dark mode since we only generated one image
-                  }} 
-                />
+                {!isDark && (
+                  <img 
+                    src="/hero_slide_2.png" 
+                    alt="Chair and suitcase illustration" 
+                    style={{ 
+                      width: "100%", 
+                      height: "100%", 
+                      objectFit: "contain", 
+                      mixBlendMode: "multiply",
+                    }} 
+                  />
+                )}
+                {isDark && (
+                  <img 
+                    src="/hero_slide_2_dark.png" 
+                    alt="Chair and suitcase illustration dark mode" 
+                    style={{ 
+                      width: "100%", 
+                      height: "100%", 
+                      objectFit: "contain", 
+                      mixBlendMode: "screen",
+                    }} 
+                  />
+                )}
               </div>
             </div>
           </div>
