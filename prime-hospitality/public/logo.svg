@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <!-- Rounded square background (iOS app icon style) -->
+  <rect width="1024" height="1024" rx="224" ry="224" fill="#22C55E"/>
+
+  <!-- Arch / doorway line art -->
+  <!-- The arch: two vertical sides + semicircle top, drawn as a single path -->
+  <!-- Arch sits roughly centered: base at y=720, top of semicircle at y=250 -->
+  <!-- Left base: (312, 720), Right base: (712, 720) -->
+  <!-- Arch width: 400, radius: 200 -->
+  <path
+    d="M 312 720 L 312 520 A 200 200 0 0 1 712 520 L 712 720"
+    fill="none"
+    stroke="white"
+    stroke-width="52"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+
+  <!-- Horizontal ground line -->
+  <line
+    x1="232" y1="720"
+    x2="792" y2="720"
+    stroke="white"
+    stroke-width="52"
+    stroke-linecap="round"
+  />
+
+  <!-- Small filled white circle centered inside top of arch -->
+  <circle cx="512" cy="390" r="44" fill="white"/>
+</svg>
