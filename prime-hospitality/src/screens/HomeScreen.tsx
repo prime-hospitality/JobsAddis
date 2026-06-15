@@ -226,6 +226,22 @@ export default function HomeScreen({ onJobSelect, onSearchPress, profileName }: 
                   }}
                 />
               )}
+              {/* Black-background PNG — visible only in dark mode via screen blend */}
+              {isDark && (
+                <img
+                  src="/hero_illustration_dark.png"
+                  alt="Briefcase illustration dark"
+                  style={{
+                    width: "140%",
+                    height: "140%",
+                    objectFit: "contain",
+                    position: "absolute",
+                    right: -10,
+                    top: -10,
+                    mixBlendMode: "screen",
+                  }}
+                />
+              )}
             </div>
           </div>
 
