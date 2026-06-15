@@ -186,6 +186,7 @@ export default function HomeScreen({ onJobSelect, onSearchPress, profileName }: 
               paddingBottom: 4,
               scrollbarWidth: "none", // Firefox
               msOverflowStyle: "none", // IE
+              alignItems: "flex-start",
             }}
             className="no-scrollbar"
           >
