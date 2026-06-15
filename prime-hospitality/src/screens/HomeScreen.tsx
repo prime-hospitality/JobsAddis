@@ -120,7 +120,7 @@ export default function HomeScreen({ onJobSelect, onSearchPress, profileName }: 
                   width: 52,
                   height: 52,
                   borderRadius: 14,
-                  background: "#F0F4F0",
+                  background: "#D8E4D8",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
