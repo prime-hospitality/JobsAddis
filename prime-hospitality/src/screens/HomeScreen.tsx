@@ -274,13 +274,13 @@ export default function HomeScreen({ onJobSelect, onSearchPress, profileName }: 
               overflow: "hidden",
               minHeight: 140
             }}>
-              <div style={{ flex: 1, zIndex: 1, paddingRight: 80 }}>
+              <div style={{ flex: 1, zIndex: 1, paddingRight: 140 }}>
                 <h1 style={{ fontSize: 22, fontWeight: 800, color: "var(--text-primary)", lineHeight: 1.2, letterSpacing: "-0.02em" }}>
                   Discover<br/>
                   <span style={{ color: "var(--brand)" }}>hospitality jobs</span><br/>
                   that fit you.
                 </h1>
-                <p style={{ fontSize: 13, color: "var(--text-secondary)", marginTop: 10, marginBottom: 16, fontWeight: 500 }}>
+                <p style={{ fontSize: 13, color: "var(--text-secondary)", marginTop: 10, marginBottom: 16, fontWeight: 500, position: "relative", zIndex: 2 }}>
                   Find top opportunities in Ethiopia and build your future.
                 </p>
                 <button style={{ 
