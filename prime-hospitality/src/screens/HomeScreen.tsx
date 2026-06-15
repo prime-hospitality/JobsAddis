@@ -200,73 +200,93 @@ export default function HomeScreen({ onJobSelect, onSearchPress, profileName }: 
             className="no-scrollbar"
           >
             {/* Slide 1: Original */}
-            <div style={{ flex: "0 0 100%", scrollSnapAlign: "center", display: "flex", justifyContent: "space-between", alignItems: "center", minHeight: 140, padding: "24px 0" }}>
-              <div style={{ flex: 1 }}>
-                <h1 style={{ fontSize: 34, fontWeight: 800, color: "var(--text-primary)", lineHeight: 1.15, letterSpacing: "-0.03em" }}>
-                  Find your<br />
-                  <span style={{ color: "var(--brand)", position: "relative", display: "inline-block" }}>
-                    next job
-                    {/* Decorative curved underline */}
-                    <svg style={{ position: "absolute", bottom: -8, left: 0, width: "100%", height: 12 }} viewBox="0 0 100 12" preserveAspectRatio="none">
-                      <path d="M0 8 Q 50 0 100 8" stroke="var(--brand)" strokeWidth="3" fill="none" strokeLinecap="round" />
-                    </svg>
-                  </span>
-                </h1>
-                <p style={{ fontSize: 14, color: "var(--text-secondary)", marginTop: 16, fontWeight: 500 }}>
-                  Top hospitality jobs in Ethiopia.
-                </p>
+            <div style={{ flex: "0 0 100%", scrollSnapAlign: "center", display: "flex", flexDirection: "column", justifyContent: "center", minHeight: 140, padding: "24px 0" }}>
+              {/* Top row: heading + illustration */}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div style={{ flex: 1 }}>
+                  <h1 style={{ fontSize: 34, fontWeight: 800, color: "var(--text-primary)", lineHeight: 1.15, letterSpacing: "-0.03em" }}>
+                    Find your<br />
+                    <span style={{ color: "var(--brand)", position: "relative", display: "inline-block" }}>
+                      next job
+                      {/* Decorative curved underline */}
+                      <svg style={{ position: "absolute", bottom: -8, left: 0, width: "100%", height: 12 }} viewBox="0 0 100 12" preserveAspectRatio="none">
+                        <path d="M0 8 Q 50 0 100 8" stroke="var(--brand)" strokeWidth="3" fill="none" strokeLinecap="round" />
+                      </svg>
+                    </span>
+                  </h1>
+                  <p style={{ fontSize: 14, color: "var(--text-secondary)", marginTop: 16, fontWeight: 500 }}>
+                    Top hospitality jobs in Ethiopia.
+                  </p>
+                </div>
+
+                {/* Illustration */}
+                <div style={{ 
+                  width: 120, 
+                  height: 120, 
+                  borderRadius: "50%", 
+                  background: "var(--brand-subtle)", 
+                  display: "flex", 
+                  alignItems: "center", 
+                  justifyContent: "center", 
+                  position: "relative",
+                  flexShrink: 0,
+                  marginLeft: 16
+                }}>
+                  <div style={{ position: "absolute", width: 12, height: 12, borderRadius: "50%", background: "var(--brand-light)", top: 10, left: -20, opacity: 0.8 }} />
+                  <div style={{ position: "absolute", width: 8, height: 8, borderRadius: "50%", background: "var(--brand)", bottom: 20, left: -10, opacity: 0.6 }} />
+                  <div style={{ position: "absolute", width: 14, height: 14, borderRadius: "50%", background: "var(--brand-dim)", top: 40, right: -15, opacity: 0.7 }} />
+                  {!isDark && (
+                    <img src="/hero_illustration.png" alt="Briefcase illustration" style={{ width: "140%", height: "140%", objectFit: "contain", position: "absolute", right: -10, top: -10, mixBlendMode: "multiply" }} />
+                  )}
+                  {isDark && (
+                    <img src="/hero_illustration_dark.png" alt="Briefcase illustration dark" style={{ width: "140%", height: "140%", objectFit: "contain", position: "absolute", right: -10, top: -10, mixBlendMode: "screen" }} />
+                  )}
+                </div>
               </div>
-              
-              {/* Illustration */}
-              <div style={{ 
-                width: 120, 
-                height: 120, 
-                borderRadius: "50%", 
-                background: "var(--brand-subtle)", 
-                display: "flex", 
-                alignItems: "center", 
-                justifyContent: "center", 
-                position: "relative",
-                flexShrink: 0,
-                marginLeft: 16
-              }}>
-                {/* Decorative floating dots */}
-                <div style={{ position: "absolute", width: 12, height: 12, borderRadius: "50%", background: "var(--brand-light)", top: 10, left: -20, opacity: 0.8 }} />
-                <div style={{ position: "absolute", width: 8, height: 8, borderRadius: "50%", background: "var(--brand)", bottom: 20, left: -10, opacity: 0.6 }} />
-                <div style={{ position: "absolute", width: 14, height: 14, borderRadius: "50%", background: "var(--brand-dim)", top: 40, right: -15, opacity: 0.7 }} />
-                
-                {/* White-background PNG — visible only in light mode via multiply blend */}
-                {!isDark && (
-                  <img
-                    src="/hero_illustration.png"
-                    alt="Briefcase illustration"
-                    style={{
-                      width: "140%",
-                      height: "140%",
-                      objectFit: "contain",
-                      position: "absolute",
-                      right: -10,
-                      top: -10,
-                      mixBlendMode: "multiply",
-                    }}
-                  />
-                )}
-                {/* Black-background PNG — visible only in dark mode via screen blend */}
-                {isDark && (
-                  <img
-                    src="/hero_illustration_dark.png"
-                    alt="Briefcase illustration dark"
-                    style={{
-                      width: "140%",
-                      height: "140%",
-                      objectFit: "contain",
-                      position: "absolute",
-                      right: -10,
-                      top: -10,
-                      mixBlendMode: "screen",
-                    }}
-                  />
-                )}
+
+              {/* Trusted By logo strip inside slide 1 */}
+              <div style={{ marginTop: 20 }}>
+                <p style={{ fontSize: 10, color: "var(--text-secondary)", fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 10, opacity: 0.5 }}>
+                  Trusted by
+                </p>
+                <div style={{ overflow: "hidden", maskImage: "linear-gradient(to right, transparent 0%, black 10%, black 90%, transparent 100%)", WebkitMaskImage: "linear-gradient(to right, transparent 0%, black 10%, black 90%, transparent 100%)" }}>
+                  <div className="marquee-track">
+                    {[
+                      { name: "Marriott", domain: "marriott.com" },
+                      { name: "Best Western Plus", domain: "bestwestern.com" },
+                      { name: "Harmony Hotel", domain: "harmonyhotelethiopia.com" },
+                      { name: "Sapphire Addis", domain: "sapphireaddishotel.com" },
+                      { name: "Elilly Hotel", domain: "elillyhotel.com" },
+                      { name: "Marriott", domain: "marriott.com" },
+                      { name: "Best Western Plus", domain: "bestwestern.com" },
+                      { name: "Harmony Hotel", domain: "harmonyhotelethiopia.com" },
+                      { name: "Sapphire Addis", domain: "sapphireaddishotel.com" },
+                      { name: "Elilly Hotel", domain: "elillyhotel.com" },
+                    ].map((hotel, i) => (
+                      <div key={i} style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 7,
+                        background: "var(--card)",
+                        border: "1px solid var(--border)",
+                        borderRadius: 10,
+                        padding: "6px 12px 6px 8px",
+                        marginRight: 10,
+                        flexShrink: 0,
+                        whiteSpace: "nowrap",
+                      }}>
+                        <img
+                          src={`https://www.google.com/s2/favicons?domain=${hotel.domain}&sz=32`}
+                          alt={hotel.name}
+                          style={{ width: 20, height: 20, borderRadius: 4, objectFit: "contain" }}
+                        />
+                        <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text-primary)", letterSpacing: "-0.01em" }}>
+                          {hotel.name}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -361,46 +381,6 @@ export default function HomeScreen({ onJobSelect, onSearchPress, profileName }: 
             }
           `}} />
 
-          {/* Trusted By strip */}
-          <div style={{ marginBottom: 16, overflow: "hidden" }}>
-            <p style={{ fontSize: 11, color: "var(--text-secondary)", fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 10, opacity: 0.6 }}>
-              Trusted by
-            </p>
-            <div style={{ overflow: "hidden", maskImage: "linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%)", WebkitMaskImage: "linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%)" }}>
-              <div className="marquee-track">
-                {[
-                  { name: "Marriott Executive Apartments", color: "#8B1A1A", bg: "#FFF5F5" },
-                  { name: "Best Western Plus", color: "#003580", bg: "#F0F4FF" },
-                  { name: "Harmony Hotel", color: "#1A5C38", bg: "#F0FFF6" },
-                  { name: "Sapphire Addis Hotel", color: "#1B3A6B", bg: "#EEF4FF" },
-                  { name: "Ellily International Hotel", color: "#6B3A1B", bg: "#FFF6EE" },
-                  { name: "Marriott Executive Apartments", color: "#8B1A1A", bg: "#FFF5F5" },
-                  { name: "Best Western Plus", color: "#003580", bg: "#F0F4FF" },
-                  { name: "Harmony Hotel", color: "#1A5C38", bg: "#F0FFF6" },
-                  { name: "Sapphire Addis Hotel", color: "#1B3A6B", bg: "#EEF4FF" },
-                  { name: "Ellily International Hotel", color: "#6B3A1B", bg: "#FFF6EE" },
-                ].map((hotel, i) => (
-                  <div key={i} style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: 8,
-                    background: isDark ? "var(--card)" : hotel.bg,
-                    border: `1px solid ${isDark ? "var(--border)" : hotel.color}22`,
-                    borderRadius: 10,
-                    padding: "7px 14px",
-                    marginRight: 12,
-                    flexShrink: 0,
-                    whiteSpace: "nowrap",
-                  }}>
-                    <div style={{ width: 8, height: 8, borderRadius: "50%", background: hotel.color, opacity: 0.8 }} />
-                    <span style={{ fontSize: 12, fontWeight: 700, color: isDark ? "var(--text-primary)" : hotel.color, letterSpacing: "-0.01em" }}>
-                      {hotel.name}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
 
           {/* Search bar — tapping navigates to Search tab */}
           <motion.div
