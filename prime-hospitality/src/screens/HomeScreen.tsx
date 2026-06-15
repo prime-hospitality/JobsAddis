@@ -59,20 +59,6 @@ export default function HomeScreen({ onJobSelect, onSearchPress, profileName }: 
   // Load real active jobs from Supabase
   const { jobs, isLoading, error, refetch } = useJobs(null);
 
-  // Track dark mode so hero illustration blend mode is correct
-  const [isDark, setIsDark] = useState<boolean>(() => {
-    if (typeof document === "undefined") return false;
-    return document.documentElement.getAttribute("data-theme") === "dark";
-  });
-
-  useEffect(() => {
-    const handleTheme = () => {
-      setIsDark(document.documentElement.getAttribute("data-theme") === "dark");
-    };
-    window.addEventListener("themeToggle", handleTheme);
-    return () => window.removeEventListener("themeToggle", handleTheme);
-  }, []);
-
   const virtualizer = useVirtualizer({
     count: jobs.length,
     getScrollElement: () => scrollRef.current,
@@ -128,8 +114,8 @@ export default function HomeScreen({ onJobSelect, onSearchPress, profileName }: 
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    background: "linear-gradient(145deg, rgba(45,50,70,1) 0%, rgba(15,20,35,1) 100%)",
-                    boxShadow: "0 6px 12px rgba(0,0,0,0.6), 0 2px 4px rgba(0,0,0,0.4), inset 0 1px 1px rgba(255,255,255,0.15), inset 0 -1px 2px rgba(0,0,0,0.4), inset 0 0 0 1px rgba(5,150,105,0.5)"
+                    background: "#000000",
+                    border: "1px solid rgba(0,0,0,0.05)"
                   }}
                 >
                   <img src="/logo.png" alt="Logo" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
@@ -223,7 +209,6 @@ export default function HomeScreen({ onJobSelect, onSearchPress, profileName }: 
                   position: "absolute", 
                   right: -10, 
                   top: -10,
-                  mixBlendMode: isDark ? "screen" : "multiply",
                 }} 
               />
             </div>
