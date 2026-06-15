@@ -273,7 +273,9 @@ export default function HomeScreen({ onJobSelect, onSearchPress, profileName }: 
                 <p style={{ fontSize: 13, color: "var(--text-secondary)", marginTop: 10, marginBottom: 16, fontWeight: 500, position: "relative", zIndex: 2 }}>
                   Find top opportunities in Ethiopia and build your future.
                 </p>
-                <button style={{ 
+                <button 
+                  onClick={onSearchPress}
+                  style={{ 
                   background: "var(--brand)", 
                   color: "white", 
                   padding: "10px 20px", 
@@ -284,7 +286,8 @@ export default function HomeScreen({ onJobSelect, onSearchPress, profileName }: 
                   display: "inline-flex", 
                   alignItems: "center", 
                   gap: 8,
-                  boxShadow: "0 4px 12px rgba(34, 197, 94, 0.3)"
+                  boxShadow: "0 4px 12px rgba(34, 197, 94, 0.3)",
+                  cursor: "pointer"
                 }}>
                   Find Jobs <span style={{ fontSize: 16 }}>→</span>
                 </button>
