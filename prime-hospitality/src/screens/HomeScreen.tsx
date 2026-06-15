@@ -338,7 +338,60 @@ export default function HomeScreen({ onJobSelect, onSearchPress, profileName }: 
             .no-scrollbar::-webkit-scrollbar {
               display: none;
             }
+            @keyframes marquee {
+              0%   { transform: translateX(0); }
+              100% { transform: translateX(-50%); }
+            }
+            .marquee-track {
+              display: flex;
+              width: max-content;
+              animation: marquee 22s linear infinite;
+            }
+            .marquee-track:hover {
+              animation-play-state: paused;
+            }
           `}} />
+
+          {/* Trusted By strip */}
+          <div style={{ marginBottom: 16, overflow: "hidden" }}>
+            <p style={{ fontSize: 11, color: "var(--text-secondary)", fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 10, opacity: 0.6 }}>
+              Trusted by
+            </p>
+            <div style={{ overflow: "hidden", maskImage: "linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%)", WebkitMaskImage: "linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%)" }}>
+              <div className="marquee-track">
+                {[
+                  { name: "Marriott Executive Apartments", color: "#8B1A1A", bg: "#FFF5F5" },
+                  { name: "Best Western Plus", color: "#003580", bg: "#F0F4FF" },
+                  { name: "Harmony Hotel", color: "#1A5C38", bg: "#F0FFF6" },
+                  { name: "Sapphire Addis Hotel", color: "#1B3A6B", bg: "#EEF4FF" },
+                  { name: "Ellily International Hotel", color: "#6B3A1B", bg: "#FFF6EE" },
+                  { name: "Marriott Executive Apartments", color: "#8B1A1A", bg: "#FFF5F5" },
+                  { name: "Best Western Plus", color: "#003580", bg: "#F0F4FF" },
+                  { name: "Harmony Hotel", color: "#1A5C38", bg: "#F0FFF6" },
+                  { name: "Sapphire Addis Hotel", color: "#1B3A6B", bg: "#EEF4FF" },
+                  { name: "Ellily International Hotel", color: "#6B3A1B", bg: "#FFF6EE" },
+                ].map((hotel, i) => (
+                  <div key={i} style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 8,
+                    background: isDark ? "var(--card)" : hotel.bg,
+                    border: `1px solid ${isDark ? "var(--border)" : hotel.color}22`,
+                    borderRadius: 10,
+                    padding: "7px 14px",
+                    marginRight: 12,
+                    flexShrink: 0,
+                    whiteSpace: "nowrap",
+                  }}>
+                    <div style={{ width: 8, height: 8, borderRadius: "50%", background: hotel.color, opacity: 0.8 }} />
+                    <span style={{ fontSize: 12, fontWeight: 700, color: isDark ? "var(--text-primary)" : hotel.color, letterSpacing: "-0.01em" }}>
+                      {hotel.name}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
 
           {/* Search bar — tapping navigates to Search tab */}
           <motion.div
