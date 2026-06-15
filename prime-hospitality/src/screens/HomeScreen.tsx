@@ -190,7 +190,7 @@ export default function HomeScreen({ onJobSelect, onSearchPress, profileName }: 
             className="no-scrollbar"
           >
             {/* Slide 1: Original */}
-            <div style={{ flex: "0 0 100%", scrollSnapAlign: "center", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div style={{ flex: "0 0 100%", scrollSnapAlign: "center", display: "flex", justifyContent: "space-between", alignItems: "center", minHeight: 140, padding: "24px 0" }}>
               <div style={{ flex: 1 }}>
                 <h1 style={{ fontSize: 34, fontWeight: 800, color: "var(--text-primary)", lineHeight: 1.15, letterSpacing: "-0.03em" }}>
                   Find your<br />
