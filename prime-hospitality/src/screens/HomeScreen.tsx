@@ -200,7 +200,7 @@ export default function HomeScreen({ onJobSelect, onSearchPress, profileName }: 
             className="no-scrollbar"
           >
             {/* Slide 1: Original */}
-            <div style={{ flex: "0 0 100%", scrollSnapAlign: "center", display: "flex", flexDirection: "column", justifyContent: "center", minHeight: 140, padding: "24px 0" }}>
+            <div style={{ flex: "0 0 100%", scrollSnapAlign: "center", display: "flex", flexDirection: "column", justifyContent: "center", minHeight: 140, padding: "24px 0", overflow: "hidden", position: "relative" }}>
               {/* Top row: heading + illustration */}
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <div style={{ flex: 1 }}>
