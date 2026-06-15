@@ -175,75 +175,153 @@ export default function HomeScreen({ onJobSelect, onSearchPress, profileName }: 
           </div>
 
           {/* Hero Section */}
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
-            <div style={{ flex: 1 }}>
-              <h1 style={{ fontSize: 34, fontWeight: 800, color: "var(--text-primary)", lineHeight: 1.15, letterSpacing: "-0.03em" }}>
-                Find your<br />
-                <span style={{ color: "var(--brand)", position: "relative", display: "inline-block" }}>
-                  next job
-                  {/* Decorative curved underline */}
-                  <svg style={{ position: "absolute", bottom: -8, left: 0, width: "100%", height: 12 }} viewBox="0 0 100 12" preserveAspectRatio="none">
-                    <path d="M0 8 Q 50 0 100 8" stroke="var(--brand)" strokeWidth="3" fill="none" strokeLinecap="round" />
-                  </svg>
-                </span>
-              </h1>
-              <p style={{ fontSize: 14, color: "var(--text-secondary)", marginTop: 16, fontWeight: 500 }}>
-                Top hospitality jobs in Ethiopia.
-              </p>
-            </div>
-            
-            {/* Illustration */}
-            <div style={{ 
-              width: 120, 
-              height: 120, 
-              borderRadius: "50%", 
-              background: "var(--brand-subtle)", 
+          {/* Hero Section Carousel */}
+          <div 
+            style={{ 
               display: "flex", 
-              alignItems: "center", 
-              justifyContent: "center", 
-              position: "relative",
-              flexShrink: 0,
-              marginLeft: 16
-            }}>
-              {/* Decorative floating dots */}
-              <div style={{ position: "absolute", width: 12, height: 12, borderRadius: "50%", background: "var(--brand-light)", top: 10, left: -20, opacity: 0.8 }} />
-              <div style={{ position: "absolute", width: 8, height: 8, borderRadius: "50%", background: "var(--brand)", bottom: 20, left: -10, opacity: 0.6 }} />
-              <div style={{ position: "absolute", width: 14, height: 14, borderRadius: "50%", background: "var(--brand-dim)", top: 40, right: -15, opacity: 0.7 }} />
+              overflowX: "auto", 
+              scrollSnapType: "x mandatory", 
+              gap: 16, 
+              marginBottom: 24,
+              paddingBottom: 4,
+              scrollbarWidth: "none", // Firefox
+              msOverflowStyle: "none", // IE
+            }}
+            className="no-scrollbar"
+          >
+            {/* Slide 1: Original */}
+            <div style={{ flex: "0 0 100%", scrollSnapAlign: "center", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div style={{ flex: 1 }}>
+                <h1 style={{ fontSize: 34, fontWeight: 800, color: "var(--text-primary)", lineHeight: 1.15, letterSpacing: "-0.03em" }}>
+                  Find your<br />
+                  <span style={{ color: "var(--brand)", position: "relative", display: "inline-block" }}>
+                    next job
+                    {/* Decorative curved underline */}
+                    <svg style={{ position: "absolute", bottom: -8, left: 0, width: "100%", height: 12 }} viewBox="0 0 100 12" preserveAspectRatio="none">
+                      <path d="M0 8 Q 50 0 100 8" stroke="var(--brand)" strokeWidth="3" fill="none" strokeLinecap="round" />
+                    </svg>
+                  </span>
+                </h1>
+                <p style={{ fontSize: 14, color: "var(--text-secondary)", marginTop: 16, fontWeight: 500 }}>
+                  Top hospitality jobs in Ethiopia.
+                </p>
+              </div>
               
-              {/* White-background PNG — visible only in light mode via multiply blend */}
-              {!isDark && (
-                <img
-                  src="/hero_illustration.png"
-                  alt="Briefcase illustration"
-                  style={{
-                    width: "140%",
-                    height: "140%",
-                    objectFit: "contain",
-                    position: "absolute",
-                    right: -10,
-                    top: -10,
+              {/* Illustration */}
+              <div style={{ 
+                width: 120, 
+                height: 120, 
+                borderRadius: "50%", 
+                background: "var(--brand-subtle)", 
+                display: "flex", 
+                alignItems: "center", 
+                justifyContent: "center", 
+                position: "relative",
+                flexShrink: 0,
+                marginLeft: 16
+              }}>
+                {/* Decorative floating dots */}
+                <div style={{ position: "absolute", width: 12, height: 12, borderRadius: "50%", background: "var(--brand-light)", top: 10, left: -20, opacity: 0.8 }} />
+                <div style={{ position: "absolute", width: 8, height: 8, borderRadius: "50%", background: "var(--brand)", bottom: 20, left: -10, opacity: 0.6 }} />
+                <div style={{ position: "absolute", width: 14, height: 14, borderRadius: "50%", background: "var(--brand-dim)", top: 40, right: -15, opacity: 0.7 }} />
+                
+                {/* White-background PNG — visible only in light mode via multiply blend */}
+                {!isDark && (
+                  <img
+                    src="/hero_illustration.png"
+                    alt="Briefcase illustration"
+                    style={{
+                      width: "140%",
+                      height: "140%",
+                      objectFit: "contain",
+                      position: "absolute",
+                      right: -10,
+                      top: -10,
+                      mixBlendMode: "multiply",
+                    }}
+                  />
+                )}
+                {/* Black-background PNG — visible only in dark mode via screen blend */}
+                {isDark && (
+                  <img
+                    src="/hero_illustration_dark.png"
+                    alt="Briefcase illustration dark"
+                    style={{
+                      width: "140%",
+                      height: "140%",
+                      objectFit: "contain",
+                      position: "absolute",
+                      right: -10,
+                      top: -10,
+                      mixBlendMode: "screen",
+                    }}
+                  />
+                )}
+              </div>
+            </div>
+
+            {/* Slide 2: New Card Design */}
+            <div style={{ 
+              flex: "0 0 100%", 
+              scrollSnapAlign: "center", 
+              background: "var(--brand-subtle)", 
+              borderRadius: 20, 
+              padding: "24px 20px",
+              display: "flex", 
+              justifyContent: "space-between", 
+              alignItems: "center",
+              position: "relative",
+              overflow: "hidden",
+              minHeight: 140
+            }}>
+              <div style={{ flex: 1, zIndex: 1, paddingRight: 80 }}>
+                <h1 style={{ fontSize: 22, fontWeight: 800, color: "var(--text-primary)", lineHeight: 1.2, letterSpacing: "-0.02em" }}>
+                  Discover<br/>
+                  <span style={{ color: "var(--brand)" }}>hospitality jobs</span><br/>
+                  that fit you.
+                </h1>
+                <p style={{ fontSize: 13, color: "var(--text-secondary)", marginTop: 10, marginBottom: 16, fontWeight: 500 }}>
+                  Find top opportunities in Ethiopia and build your future.
+                </p>
+                <button style={{ 
+                  background: "var(--brand)", 
+                  color: "white", 
+                  padding: "10px 20px", 
+                  borderRadius: 12, 
+                  fontWeight: 600, 
+                  fontSize: 14, 
+                  border: "none", 
+                  display: "inline-flex", 
+                  alignItems: "center", 
+                  gap: 8,
+                  boxShadow: "0 4px 12px rgba(34, 197, 94, 0.3)"
+                }}>
+                  Find Jobs <span style={{ fontSize: 16 }}>→</span>
+                </button>
+              </div>
+              
+              {/* Illustration for Slide 2 */}
+              <div style={{ position: "absolute", right: -30, bottom: -10, width: 180, height: 180, zIndex: 0 }}>
+                <img 
+                  src="/hero_slide_2.png" 
+                  alt="Chair and suitcase illustration" 
+                  style={{ 
+                    width: "100%", 
+                    height: "100%", 
+                    objectFit: "contain", 
                     mixBlendMode: "multiply",
-                  }}
+                    opacity: isDark ? 0.8 : 1 // fallback for dark mode since we only generated one image
+                  }} 
                 />
-              )}
-              {/* Black-background PNG — visible only in dark mode via screen blend */}
-              {isDark && (
-                <img
-                  src="/hero_illustration_dark.png"
-                  alt="Briefcase illustration dark"
-                  style={{
-                    width: "140%",
-                    height: "140%",
-                    objectFit: "contain",
-                    position: "absolute",
-                    right: -10,
-                    top: -10,
-                    mixBlendMode: "screen",
-                  }}
-                />
-              )}
+              </div>
             </div>
           </div>
+          
+          <style dangerouslySetInnerHTML={{__html: `
+            .no-scrollbar::-webkit-scrollbar {
+              display: none;
+            }
+          `}} />
 
           {/* Search bar — tapping navigates to Search tab */}
           <motion.div
