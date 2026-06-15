@@ -59,6 +59,17 @@ export default function HomeScreen({ onJobSelect, onSearchPress, profileName }: 
   // Load real active jobs from Supabase
   const { jobs, isLoading, error, refetch } = useJobs(null);
 
+  // Track dark mode to handle hero illustration visibility
+  const [isDark, setIsDark] = useState<boolean>(() => {
+    if (typeof document === "undefined") return false;
+    return document.documentElement.getAttribute("data-theme") === "dark";
+  });
+  useEffect(() => {
+    const handleTheme = () => setIsDark(document.documentElement.getAttribute("data-theme") === "dark");
+    window.addEventListener("themeToggle", handleTheme);
+    return () => window.removeEventListener("themeToggle", handleTheme);
+  }, []);
+
   const virtualizer = useVirtualizer({
     count: jobs.length,
     getScrollElement: () => scrollRef.current,
@@ -199,18 +210,22 @@ export default function HomeScreen({ onJobSelect, onSearchPress, profileName }: 
               <div style={{ position: "absolute", width: 8, height: 8, borderRadius: "50%", background: "var(--brand)", bottom: 20, left: -10, opacity: 0.6 }} />
               <div style={{ position: "absolute", width: 14, height: 14, borderRadius: "50%", background: "var(--brand-dim)", top: 40, right: -15, opacity: 0.7 }} />
               
-              <img 
-                src="/hero_illustration.png" 
-                alt="Briefcase illustration" 
-                style={{ 
-                  width: "140%", 
-                  height: "140%", 
-                  objectFit: "contain", 
-                  position: "absolute", 
-                  right: -10, 
-                  top: -10,
-                }} 
-              />
+              {/* White-background PNG — visible only in light mode via multiply blend */}
+              {!isDark && (
+                <img
+                  src="/hero_illustration.png"
+                  alt="Briefcase illustration"
+                  style={{
+                    width: "140%",
+                    height: "140%",
+                    objectFit: "contain",
+                    position: "absolute",
+                    right: -10,
+                    top: -10,
+                    mixBlendMode: "multiply",
+                  }}
+                />
+              )}
             </div>
           </div>
 
