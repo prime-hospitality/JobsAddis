@@ -116,22 +116,20 @@ export default function HomeScreen({ onJobSelect, onSearchPress, profileName }: 
             <div>
               {/* Logo mark */}
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 0 }}>
-                <div style={{
-                  width: 52,
-                  height: 52,
-                  borderRadius: 14,
-                  background: "#D8E4D8",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  overflow: "hidden",
-                  flexShrink: 0,
-                }}>
-                  <img 
-                    src="/pbg_logo_light.png" 
-                    alt="Logo" 
-                    style={{ width: 44, height: 44, objectFit: "contain" }} 
-                  />
+                <div
+                  style={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: 8,
+                    overflow: "hidden",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    background: "linear-gradient(145deg, rgba(45,50,70,1) 0%, rgba(15,20,35,1) 100%)",
+                    boxShadow: "0 6px 12px rgba(0,0,0,0.6), 0 2px 4px rgba(0,0,0,0.4), inset 0 1px 1px rgba(255,255,255,0.15), inset 0 -1px 2px rgba(0,0,0,0.4), inset 0 0 0 1px rgba(5,150,105,0.5)"
+                  }}
+                >
+                  <img src="/logo.png" alt="Logo" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                 </div>
                 <span
                   style={{
