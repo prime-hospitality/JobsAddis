@@ -254,32 +254,43 @@ export default function HomeScreen({ onJobSelect, onSearchPress, profileName }: 
                     {[
                       { name: "Marriott", domain: "marriott.com" },
                       { name: "Best Western Plus", domain: "bestwestern.com" },
-                      { name: "Harmony Hotel", domain: "harmonyhotelethiopia.com" },
+                      { name: "Harmony Hotel", domain: "harmonyhotelethiopia.com", noLogo: true, initial: "H", color: "#1A5C38" },
                       { name: "Sapphire Addis", domain: "sapphireaddishotel.com" },
                       { name: "Elilly Hotel", domain: "elillyhotel.com" },
                       { name: "Marriott", domain: "marriott.com" },
                       { name: "Best Western Plus", domain: "bestwestern.com" },
-                      { name: "Harmony Hotel", domain: "harmonyhotelethiopia.com" },
+                      { name: "Harmony Hotel", domain: "harmonyhotelethiopia.com", noLogo: true, initial: "H", color: "#1A5C38" },
                       { name: "Sapphire Addis", domain: "sapphireaddishotel.com" },
                       { name: "Elilly Hotel", domain: "elillyhotel.com" },
                     ].map((hotel, i) => (
                       <div key={i} style={{
                         display: "inline-flex",
                         alignItems: "center",
-                        gap: 7,
+                        gap: 8,
                         background: "var(--card)",
                         border: "1px solid var(--border)",
                         borderRadius: 10,
-                        padding: "6px 12px 6px 8px",
+                        padding: "6px 14px 6px 8px",
                         marginRight: 10,
                         flexShrink: 0,
                         whiteSpace: "nowrap",
                       }}>
-                        <img
-                          src={`https://www.google.com/s2/favicons?domain=${hotel.domain}&sz=32`}
-                          alt={hotel.name}
-                          style={{ width: 20, height: 20, borderRadius: 4, objectFit: "contain" }}
-                        />
+                        {hotel.noLogo ? (
+                          <div style={{
+                            width: 28, height: 28, borderRadius: 6,
+                            background: hotel.color,
+                            display: "flex", alignItems: "center", justifyContent: "center",
+                            flexShrink: 0,
+                          }}>
+                            <span style={{ fontSize: 13, fontWeight: 800, color: "white" }}>{hotel.initial}</span>
+                          </div>
+                        ) : (
+                          <img
+                            src={`https://www.google.com/s2/favicons?domain=${hotel.domain}&sz=64`}
+                            alt={hotel.name}
+                            style={{ width: 28, height: 28, borderRadius: 6, objectFit: "contain" }}
+                          />
+                        )}
                         <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text-primary)", letterSpacing: "-0.01em" }}>
                           {hotel.name}
                         </span>
