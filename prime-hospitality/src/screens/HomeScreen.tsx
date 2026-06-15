@@ -186,12 +186,23 @@ export default function HomeScreen({ onJobSelect, onSearchPress, profileName }: 
               paddingBottom: 4,
               scrollbarWidth: "none", // Firefox
               msOverflowStyle: "none", // IE
-              alignItems: "flex-start",
             }}
             className="no-scrollbar"
           >
             {/* Slide 1: Original */}
-            <div style={{ flex: "0 0 100%", scrollSnapAlign: "center", display: "flex", justifyContent: "space-between", alignItems: "center", minHeight: 140, padding: "24px 0" }}>
+            <div style={{ 
+              flex: "0 0 100%", 
+              scrollSnapAlign: "center", 
+              background: "var(--brand-subtle)", 
+              borderRadius: 20, 
+              padding: "24px 20px",
+              display: "flex", 
+              justifyContent: "space-between", 
+              alignItems: "center",
+              position: "relative",
+              overflow: "hidden",
+              minHeight: 140
+            }}>
               <div style={{ flex: 1 }}>
                 <h1 style={{ fontSize: 34, fontWeight: 800, color: "var(--text-primary)", lineHeight: 1.15, letterSpacing: "-0.03em" }}>
                   Find your<br />
@@ -209,22 +220,11 @@ export default function HomeScreen({ onJobSelect, onSearchPress, profileName }: 
               </div>
               
               {/* Illustration */}
-              <div style={{ 
-                width: 120, 
-                height: 120, 
-                borderRadius: "50%", 
-                background: "var(--brand-subtle)", 
-                display: "flex", 
-                alignItems: "center", 
-                justifyContent: "center", 
-                position: "relative",
-                flexShrink: 0,
-                marginLeft: 16
-              }}>
+              <div style={{ position: "absolute", right: -10, bottom: -10, width: 140, height: 140, zIndex: 0 }}>
                 {/* Decorative floating dots */}
-                <div style={{ position: "absolute", width: 12, height: 12, borderRadius: "50%", background: "var(--brand-light)", top: 10, left: -20, opacity: 0.8 }} />
-                <div style={{ position: "absolute", width: 8, height: 8, borderRadius: "50%", background: "var(--brand)", bottom: 20, left: -10, opacity: 0.6 }} />
-                <div style={{ position: "absolute", width: 14, height: 14, borderRadius: "50%", background: "var(--brand-dim)", top: 40, right: -15, opacity: 0.7 }} />
+                <div style={{ position: "absolute", width: 12, height: 12, borderRadius: "50%", background: "var(--brand-light)", top: 10, left: 10, opacity: 0.8 }} />
+                <div style={{ position: "absolute", width: 8, height: 8, borderRadius: "50%", background: "var(--brand)", bottom: 20, left: 20, opacity: 0.6 }} />
+                <div style={{ position: "absolute", width: 14, height: 14, borderRadius: "50%", background: "var(--brand-dim)", top: 40, right: 10, opacity: 0.7 }} />
                 
                 {/* White-background PNG — visible only in light mode via multiply blend */}
                 {!isDark && (
@@ -232,12 +232,9 @@ export default function HomeScreen({ onJobSelect, onSearchPress, profileName }: 
                     src="/hero_illustration.png"
                     alt="Briefcase illustration"
                     style={{
-                      width: "140%",
-                      height: "140%",
+                      width: "100%",
+                      height: "100%",
                       objectFit: "contain",
-                      position: "absolute",
-                      right: -10,
-                      top: -10,
                       mixBlendMode: "multiply",
                     }}
                   />
@@ -248,12 +245,9 @@ export default function HomeScreen({ onJobSelect, onSearchPress, profileName }: 
                     src="/hero_illustration_dark.png"
                     alt="Briefcase illustration dark"
                     style={{
-                      width: "140%",
-                      height: "140%",
+                      width: "100%",
+                      height: "100%",
                       objectFit: "contain",
-                      position: "absolute",
-                      right: -10,
-                      top: -10,
                       mixBlendMode: "screen",
                     }}
                   />
