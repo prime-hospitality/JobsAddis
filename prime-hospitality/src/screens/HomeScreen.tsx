@@ -98,7 +98,7 @@ export default function HomeScreen({ onJobSelect, onSearchPress, profileName }: 
           style={{
             paddingLeft: 20,
             paddingRight: 20,
-            paddingBottom: 16,
+            paddingBottom: 8,
             background: "var(--app-bg)",
             position: "relative",
             flexShrink: 0,
@@ -110,7 +110,7 @@ export default function HomeScreen({ onJobSelect, onSearchPress, profileName }: 
               display: "flex",
               alignItems: "center",
               justifyContent: "space-between",
-              marginBottom: 20,
+              marginBottom: 12,
             }}
           >
             <div>
@@ -191,7 +191,7 @@ export default function HomeScreen({ onJobSelect, onSearchPress, profileName }: 
               overflowX: "auto", 
               scrollSnapType: "x mandatory", 
               gap: 16, 
-              marginBottom: 24,
+              marginBottom: 12,
               paddingBottom: 4,
               scrollbarWidth: "none", // Firefox
               msOverflowStyle: "none", // IE
