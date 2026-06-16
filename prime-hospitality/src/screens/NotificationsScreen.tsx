@@ -224,10 +224,8 @@ export default function NotificationsScreen({ onSelectJob }: NotificationsScreen
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
             {alertCategories.length > 0 ? (
               alertCategories.slice(0, 5).map(cat => {
-                const emoji = CATEGORY_ITEMS.find(c => c.name === cat)?.emoji || "📌";
                 return (
                   <div key={cat} style={{ background: "rgba(139, 92, 246, 0.1)", color: "var(--brand)", padding: "4px 10px", borderRadius: 8, fontSize: 12, fontWeight: 600, display: "flex", alignItems: "center", gap: 4 }}>
-                    <span>{emoji}</span>
                     <span>{cat}</span>
                   </div>
                 );
@@ -490,7 +488,6 @@ export default function NotificationsScreen({ onSelectJob }: NotificationsScreen
                               transition: "all 0.15s ease",
                             }}
                           >
-                            <span>{cat.emoji}</span>
                             <span>{cat.name}</span>
                             {isSelected && <Check size={14} color="#fff" />}
                           </button>

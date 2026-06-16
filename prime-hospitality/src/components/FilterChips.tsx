@@ -98,7 +98,6 @@ export default function FilterChips({ selected, onSelect }: FilterChipsProps) {
                 fontFamily: "inherit",
               }}
             >
-              <span style={{ fontSize: 14 }}>{emoji}</span>
               {label}
             </span>
           </motion.button>
