@@ -214,6 +214,35 @@ export default function NotificationsScreen({ onSelectJob }: NotificationsScreen
           </button>
         </div>
 
+        {/* Subscribed Alerts Section */}
+        <div style={{ padding: "0 20px 16px 20px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+            <h2 style={{ fontSize: 13, fontWeight: 700, color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Your Alerts</h2>
+            <span style={{ fontSize: 12, color: "var(--brand)", fontWeight: 600 }}>{alertCategories.length} Active</span>
+          </div>
+          
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+            {alertCategories.length > 0 ? (
+              alertCategories.slice(0, 5).map(cat => {
+                const emoji = CATEGORY_ITEMS.find(c => c.name === cat)?.emoji || "📌";
+                return (
+                  <div key={cat} style={{ background: "rgba(139, 92, 246, 0.1)", color: "var(--brand)", padding: "4px 10px", borderRadius: 8, fontSize: 12, fontWeight: 600, display: "flex", alignItems: "center", gap: 4 }}>
+                    <span>{emoji}</span>
+                    <span>{cat}</span>
+                  </div>
+                );
+              })
+            ) : (
+              <div style={{ fontSize: 13, color: "var(--text-muted)" }}>No active alerts. Tap the gear icon to subscribe.</div>
+            )}
+            {alertCategories.length > 5 && (
+              <div style={{ background: "var(--card)", border: "1px solid var(--border)", color: "var(--text-secondary)", padding: "4px 10px", borderRadius: 8, fontSize: 12, fontWeight: 600 }}>
+                +{alertCategories.length - 5} more
+              </div>
+            )}
+          </div>
+        </div>
+
         {/* Notifications list */}
         <div style={{ padding: "0 20px" }}>
           {isLoading && (
