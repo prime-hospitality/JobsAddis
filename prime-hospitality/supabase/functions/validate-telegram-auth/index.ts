@@ -252,6 +252,7 @@ serve(async (req: Request) => {
             phone_number: profileData.contactShared ? profileData.phoneNumber : null,
             contact_shared: profileData.contactShared,
             selected_categories: profileData.selectedCategories,
+            alert_categories: profileData.selectedCategories,
             experience_levels: profileData.experienceLevels,
             cv_url: cvUrl,
             onboarding_completed: true,
@@ -281,6 +282,15 @@ serve(async (req: Request) => {
             }),
             { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
           );
+        }
+
+        if (action === "update_alert_categories") {
+          const { categories } = payload;
+          await supabase.from("profiles").update({ alert_categories: categories }).eq("telegram_id", mockTelegramId);
+          return new Response(JSON.stringify({ success: true, message: "[DEV] Alert categories updated." }), {
+            status: 200,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
         }
 
         if (action === "update_cv") {
@@ -479,6 +489,7 @@ serve(async (req: Request) => {
         phone_number: phoneToSave,
         contact_shared: profileData.contactShared,
         selected_categories: profileData.selectedCategories,
+        alert_categories: profileData.selectedCategories,
         experience_levels: profileData.experienceLevels,
         cv_url: cvUrl,
         onboarding_completed: true,
@@ -500,6 +511,20 @@ serve(async (req: Request) => {
     }
 
     // Action: Update CV
+    if (action === "update_alert_categories") {
+      const { categories } = payload;
+      const { error: updateError } = await supabase
+        .from("profiles")
+        .update({ alert_categories: categories })
+        .eq("telegram_id", telegramId);
+
+      if (updateError) throw updateError;
+      return new Response(JSON.stringify({ success: true, message: "Alert categories updated." }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     if (action === "update_cv") {
       const { cvUrl } = payload;
       
@@ -938,6 +963,31 @@ serve(async (req: Request) => {
         await sendGroupAnnouncement(newJob.id, jobData, employer.business_name);
       } catch (annErr) {
         console.error("Failed to send Telegram group announcement:", annErr);
+      }
+
+      // 4) Send in-app vacancy alerts to subscribed users
+      try {
+        // Find users who have this category in their alert_categories
+        const { data: subscribers, error: subErr } = await supabase
+          .from("profiles")
+          .select("telegram_id")
+          .contains("alert_categories", [category]);
+
+        if (!subErr && subscribers && subscribers.length > 0) {
+          const notificationsToInsert = subscribers.map((sub: any) => ({
+            user_telegram_id: sub.telegram_id,
+            company_name: employer.business_name,
+            job_title: title,
+            type: "vacancy_alert",
+            read: false,
+            job_id: newJob.id,
+          }));
+
+          // Bulk insert notifications
+          await supabase.from("notifications").insert(notificationsToInsert);
+        }
+      } catch (alertErr) {
+        console.error("Failed to insert vacancy alerts:", alertErr);
       }
 
       return new Response(

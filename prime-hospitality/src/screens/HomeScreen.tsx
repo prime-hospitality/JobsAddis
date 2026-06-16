@@ -234,8 +234,8 @@ export default function HomeScreen({ onJobSelect, onSearchPress, profileName }: 
               overflowX: "auto", 
               scrollSnapType: "x mandatory", 
               gap: 16, 
-              marginBottom: 12,
-              paddingBottom: 4,
+              marginBottom: 0,
+              paddingBottom: 0,
               scrollbarWidth: "none", // Firefox
               msOverflowStyle: "none", // IE
               alignItems: "flex-start",
