@@ -262,7 +262,7 @@ export default function HomeScreen({ onJobSelect, onSearchPress, profileName }: 
                   {[
                     { name: "Marriott", domain: "marriott.com" },
                     { name: "Best Western Plus", domain: "bestwestern.com" },
-                    { name: "Harmony Hotel", domain: "harmonyhotelethiopia.com", noLogo: true, initial: "H", color: "#1A5C38" },
+                    { name: "Harmony Hotel", domain: "harmonyhotelethiopia.com", logoUrl: "https://www.harmonyhotelethiopia.com/assets/harmony_logo.png" },
                     { name: "Sapphire Addis", domain: "sapphireaddishotel.com" },
                     { name: "Elilly Hotel", domain: "elillyhotel.com" },
                   ].map((hotel, i) => (
@@ -277,22 +277,11 @@ export default function HomeScreen({ onJobSelect, onSearchPress, profileName }: 
                       flexShrink: 0,
                       whiteSpace: "nowrap",
                     }}>
-                      {hotel.noLogo ? (
-                        <div style={{
-                          width: 28, height: 28, borderRadius: 6,
-                          background: hotel.color,
-                          display: "flex", alignItems: "center", justifyContent: "center",
-                          flexShrink: 0,
-                        }}>
-                          <span style={{ fontSize: 13, fontWeight: 800, color: "white" }}>{hotel.initial}</span>
-                        </div>
-                      ) : (
-                        <img
-                          src={`https://www.google.com/s2/favicons?domain=${hotel.domain}&sz=64`}
-                          alt={hotel.name}
-                          style={{ width: 28, height: 28, borderRadius: 6, objectFit: "contain" }}
-                        />
-                      )}
+                      <img
+                        src={hotel.logoUrl ?? `https://www.google.com/s2/favicons?domain=${hotel.domain}&sz=64`}
+                        alt={hotel.name}
+                        style={{ width: 28, height: 28, borderRadius: 6, objectFit: "contain", background: "white" }}
+                      />
                       <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text-primary)", letterSpacing: "-0.01em" }}>
                         {hotel.name}
                       </span>
