@@ -23,6 +23,8 @@ export default function HomeScreen({ onJobSelect, onSearchPress, profileName }: 
 
   const shouldReduceMotion = useReducedMotion();
   const scrollRef = useRef<HTMLDivElement>(null);
+  const marqueeRef = useRef<HTMLDivElement>(null);
+  const isInteracting = useRef(false);
   const { user } = useTelegram();
   
   // Animated businesses counter
@@ -55,6 +57,47 @@ export default function HomeScreen({ onJobSelect, onSearchPress, profileName }: 
     animationFrameId = requestAnimationFrame(step);
     return () => cancelAnimationFrame(animationFrameId);
   }, []);
+
+  // Marquee auto-scroll logic
+  useEffect(() => {
+    const el = marqueeRef.current;
+    if (!el || shouldReduceMotion) return;
+
+    let animationFrameId: number;
+    const speed = 0.5; // pixels per frame
+
+    const scroll = () => {
+      if (!isInteracting.current && el) {
+        el.scrollLeft += speed;
+        // Seamless infinite loop: duplicate items must be in the list
+        // Reset when scrolled past halfway point
+        if (el.scrollLeft >= el.scrollWidth / 2) {
+          el.scrollLeft -= el.scrollWidth / 2;
+        }
+      }
+      animationFrameId = requestAnimationFrame(scroll);
+    };
+
+    animationFrameId = requestAnimationFrame(scroll);
+
+    const handleTouchStart = () => { isInteracting.current = true; };
+    const handleTouchEnd = () => { isInteracting.current = false; };
+
+    el.addEventListener('touchstart', handleTouchStart);
+    el.addEventListener('touchend', handleTouchEnd);
+    el.addEventListener('mousedown', handleTouchStart);
+    el.addEventListener('mouseup', handleTouchEnd);
+    el.addEventListener('mouseleave', handleTouchEnd);
+
+    return () => {
+      cancelAnimationFrame(animationFrameId);
+      el.removeEventListener('touchstart', handleTouchStart);
+      el.removeEventListener('touchend', handleTouchEnd);
+      el.removeEventListener('mousedown', handleTouchStart);
+      el.removeEventListener('mouseup', handleTouchEnd);
+      el.removeEventListener('mouseleave', handleTouchEnd);
+    };
+  }, [shouldReduceMotion]);
 
   // Load real active jobs from Supabase
   const { jobs, isLoading, error, refetch } = useJobs(null);
@@ -258,8 +301,15 @@ export default function HomeScreen({ onJobSelect, onSearchPress, profileName }: 
                   paddingBottom: 4,
                 }}
                 className="no-scrollbar"
+                ref={marqueeRef}
                 >
                   {[
+                    { name: "Marriott", domain: "marriott.com" },
+                    { name: "Best Western Plus", domain: "bestwestern.com" },
+                    { name: "Harmony Hotel", domain: "harmonyhotelethiopia.com", logoUrl: "https://www.harmonyhotelethiopia.com/assets/harmony_logo.png" },
+                    { name: "Sapphire Addis", domain: "sapphireaddishotel.com" },
+                    { name: "Elilly Hotel", domain: "elillyhotel.com" },
+                    // Duplicate for seamless infinite auto-scroll
                     { name: "Marriott", domain: "marriott.com" },
                     { name: "Best Western Plus", domain: "bestwestern.com" },
                     { name: "Harmony Hotel", domain: "harmonyhotelethiopia.com", logoUrl: "https://www.harmonyhotelethiopia.com/assets/harmony_logo.png" },
