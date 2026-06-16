@@ -278,12 +278,22 @@ export default function HomeScreen({ onJobSelect, onSearchPress, profileName }: 
                   <div style={{ position: "absolute", width: 12, height: 12, borderRadius: "50%", background: "var(--brand-light)", top: 10, left: -20, opacity: 0.8 }} />
                   <div style={{ position: "absolute", width: 8, height: 8, borderRadius: "50%", background: "var(--brand)", bottom: 20, left: -10, opacity: 0.6 }} />
                   <div style={{ position: "absolute", width: 14, height: 14, borderRadius: "50%", background: "var(--brand-dim)", top: 40, right: -15, opacity: 0.7 }} />
-                  {!isDark && (
-                    <img src="/hero_illustration.png" alt="Briefcase illustration" style={{ width: "140%", height: "140%", objectFit: "contain", position: "absolute", right: -10, top: -10, mixBlendMode: "multiply" }} />
-                  )}
-                  {isDark && (
-                    <img src="/hero_illustration_dark.png" alt="Briefcase illustration dark" style={{ width: "140%", height: "140%", objectFit: "contain", position: "absolute", right: -10, top: -10, mixBlendMode: "screen" }} />
-                  )}
+                  <img 
+                    src="/hero_illustration.png" 
+                    alt="Briefcase illustration" 
+                    style={{ 
+                      position: "absolute", top: 0, left: 0, width: "100%", height: "100%", objectFit: "contain", mixBlendMode: "multiply",
+                      opacity: isDark ? 0 : 1, transition: "opacity 0.3s ease" 
+                    }} 
+                  />
+                  <img 
+                    src="/hero_illustration_dark.png" 
+                    alt="Briefcase illustration dark" 
+                    style={{ 
+                      position: "absolute", top: 0, left: 0, width: "100%", height: "100%", objectFit: "contain", mixBlendMode: "screen",
+                      opacity: isDark ? 1 : 0, transition: "opacity 0.3s ease" 
+                    }} 
+                  />
                 </div>
               </div>
 
@@ -386,30 +396,22 @@ export default function HomeScreen({ onJobSelect, onSearchPress, profileName }: 
               
               {/* Illustration for Slide 2 */}
               <div style={{ position: "absolute", right: -30, bottom: -10, width: 180, height: 180, zIndex: 0 }}>
-                {!isDark && (
-                  <img 
-                    src="/hero_slide_2.png" 
-                    alt="Chair and suitcase illustration" 
-                    style={{ 
-                      width: "100%", 
-                      height: "100%", 
-                      objectFit: "contain", 
-                      mixBlendMode: "multiply",
-                    }} 
-                  />
-                )}
-                {isDark && (
-                  <img 
-                    src="/hero_slide_2_dark.png" 
-                    alt="Chair and suitcase illustration dark mode" 
-                    style={{ 
-                      width: "100%", 
-                      height: "100%", 
-                      objectFit: "contain", 
-                      mixBlendMode: "screen",
-                    }} 
-                  />
-                )}
+                <img 
+                  src="/hero_slide_2.png" 
+                  alt="Chair and suitcase illustration" 
+                  style={{ 
+                    position: "absolute", top: 0, left: 0, width: "100%", height: "100%", objectFit: "contain", mixBlendMode: "multiply",
+                    opacity: isDark ? 0 : 1, transition: "opacity 0.3s ease"
+                  }} 
+                />
+                <img 
+                  src="/hero_slide_2_dark.png" 
+                  alt="Chair and suitcase illustration dark mode" 
+                  style={{ 
+                    position: "absolute", top: 0, left: 0, width: "100%", height: "100%", objectFit: "contain", mixBlendMode: "screen",
+                    opacity: isDark ? 1 : 0, transition: "opacity 0.3s ease"
+                  }} 
+                />
               </div>
             </div>
           </div>
