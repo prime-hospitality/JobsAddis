@@ -213,6 +213,48 @@ export default function App() {
     setView({ screen: "applicantManagement", jobId, jobTitle });
   };
 
+  /** Navigate to job detail from a notification vacancy alert */
+  const handleSelectJobById = async (jobId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from("jobs")
+        .select(`
+          id,
+          employer_id,
+          title,
+          category,
+          location,
+          neighborhood,
+          job_type,
+          salary_min,
+          salary_max,
+          currency,
+          description,
+          full_description,
+          requirements,
+          deadline,
+          status,
+          created_at,
+          quantity,
+          employers (
+            business_name,
+            business_type,
+            logo_url
+          )
+        `)
+        .eq("id", jobId)
+        .single();
+
+      if (error) throw error;
+      if (data) {
+        const mappedJob = mapSupabaseJobToJob(data as any);
+        setView({ screen: "jobDetail", job: mappedJob });
+      }
+    } catch (err) {
+      console.error("Failed to fetch job from notification:", err);
+    }
+  };
+
   const handleApply = (job: Job) => {
     setView({ screen: "profileCheck", job });
   };
@@ -371,7 +413,7 @@ export default function App() {
       case "applications":
         return <ApplicationsScreen key="applications" />;
       case "notifications":
-        return <NotificationsScreen key="notifications" />;
+        return <NotificationsScreen key="notifications" onSelectJob={handleSelectJobById} />;
       case "profile":
         return <ProfileScreen key="profile" />;
       case "dashboard":

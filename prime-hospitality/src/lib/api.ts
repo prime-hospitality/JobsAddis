@@ -427,9 +427,10 @@ export interface Notification {
   user_telegram_id: number;
   company_name: string;
   job_title: string;
-  type: "shortlisted" | "rejected" | "message";
+  type: "shortlisted" | "rejected" | "message" | "vacancy_alert";
   read: boolean;
   created_at: string;
+  job_id?: string;
 }
 
 export async function fetchNotifications(
@@ -454,4 +455,17 @@ export async function getUnreadCount(
   initData: string | null
 ): Promise<{ success: boolean; unread_count: number }> {
   return callEdgeFunction(initData, { action: "get_unread_count" });
+}
+
+// ---------------------------------------------------------------------------
+// Action: Update alert categories for vacancy subscriptions
+// ---------------------------------------------------------------------------
+export async function updateAlertCategories(
+  initData: string | null,
+  categories: string[]
+): Promise<{ success: boolean; message: string }> {
+  return callEdgeFunction(initData, {
+    action: "update_alert_categories",
+    categories,
+  });
 }
