@@ -462,10 +462,12 @@ export async function getUnreadCount(
 // ---------------------------------------------------------------------------
 export async function updateAlertCategories(
   initData: string | null,
-  categories: string[]
+  categories: string[],
+  experienceLevel: string | null
 ): Promise<{ success: boolean; message: string }> {
   return callEdgeFunction(initData, {
     action: "update_alert_categories",
     categories,
+    experience_level: experienceLevel,
   });
 }

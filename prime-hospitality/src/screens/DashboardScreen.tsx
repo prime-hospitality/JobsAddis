@@ -62,7 +62,7 @@ function timeAgo(dateStr: string): string {
 
 // ── Post-job form constants ───────────────────────────────────────────────────
 const POST_JOB_TYPES     = ["Full Time","Part Time","Contract"] as const;
-const POST_EXP_LEVELS    = ["Entry Level","Mid Level","Senior Level"] as const;
+const POST_EXP_LEVELS    = ["Entry level","Junior","Intermediate","Senior","Expert"] as const;
 
 const POST_FORM_DEFAULT = {
   title: "", category: "", jobType: "Full Time",

@@ -512,14 +512,14 @@ serve(async (req: Request) => {
 
     // Action: Update CV
     if (action === "update_alert_categories") {
-      const { categories } = payload;
+      const { categories, experience_level } = payload;
       const { error: updateError } = await supabase
         .from("profiles")
-        .update({ alert_categories: categories })
+        .update({ alert_categories: categories, alert_experience_level: experience_level ?? null })
         .eq("telegram_id", telegramId);
 
       if (updateError) throw updateError;
-      return new Response(JSON.stringify({ success: true, message: "Alert categories updated." }), {
+      return new Response(JSON.stringify({ success: true, message: "Alert preferences updated." }), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -967,11 +967,18 @@ serve(async (req: Request) => {
 
       // 4) Send in-app vacancy alerts to subscribed users
       try {
-        // Find users who have this category in their alert_categories
-        const { data: subscribers, error: subErr } = await supabase
+        // Find users whose alert_categories contains this job's category
+        let query = supabase
           .from("profiles")
           .select("telegram_id")
           .contains("alert_categories", [category]);
+
+        // Also filter by experience_level if the job has one
+        if (experience) {
+          query = query.or(`alert_experience_level.is.null,alert_experience_level.eq.${experience}`);
+        }
+
+        const { data: subscribers, error: subErr } = await query;
 
         if (!subErr && subscribers && subscribers.length > 0) {
           const notificationsToInsert = subscribers.map((sub: any) => ({
@@ -983,7 +990,6 @@ serve(async (req: Request) => {
             job_id: newJob.id,
           }));
 
-          // Bulk insert notifications
           await supabase.from("notifications").insert(notificationsToInsert);
         }
       } catch (alertErr) {
