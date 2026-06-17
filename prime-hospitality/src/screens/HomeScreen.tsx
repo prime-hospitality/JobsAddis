@@ -314,17 +314,21 @@ export default function HomeScreen({ onJobSelect, onSearchPress, profileName }: 
                 ref={marqueeRef}
                 >
                   {[
-                    { name: "Marriott", domain: "marriott.com" },
-                    { name: "Best Western Plus", domain: "bestwestern.com" },
-                    { name: "Harmony Hotel", domain: "harmonyhotelethiopia.com", logoUrl: "https://www.harmonyhotelethiopia.com/assets/harmony_logo.png" },
-                    { name: "Sapphire Addis", domain: "sapphireaddishotel.com" },
-                    { name: "Elilly Hotel", domain: "elillyhotel.com" },
+                    { name: "DoubleTree by Hilton", domain: "hilton.com" },
+                    { name: "Inter-Luxury Hotel", domain: "interluxuryhotel.com" },
+                    { name: "Union Restaurant", domain: "union-restaurant.com" },
+                    { name: "Illy Coffee", domain: "illy.com" },
+                    { name: "Swiss Inn Nexus Hotel", domain: "nexusaddis.net" },
+                    { name: "Getfam Hotel", domain: "getfamhotel.com" },
+                    { name: "Stay Easy Plus Hotel", domain: "stayeasyplus.com" },
                     // Duplicate for seamless infinite auto-scroll
-                    { name: "Marriott", domain: "marriott.com" },
-                    { name: "Best Western Plus", domain: "bestwestern.com" },
-                    { name: "Harmony Hotel", domain: "harmonyhotelethiopia.com", logoUrl: "https://www.harmonyhotelethiopia.com/assets/harmony_logo.png" },
-                    { name: "Sapphire Addis", domain: "sapphireaddishotel.com" },
-                    { name: "Elilly Hotel", domain: "elillyhotel.com" },
+                    { name: "DoubleTree by Hilton", domain: "hilton.com" },
+                    { name: "Inter-Luxury Hotel", domain: "interluxuryhotel.com" },
+                    { name: "Union Restaurant", domain: "union-restaurant.com" },
+                    { name: "Illy Coffee", domain: "illy.com" },
+                    { name: "Swiss Inn Nexus Hotel", domain: "nexusaddis.net" },
+                    { name: "Getfam Hotel", domain: "getfamhotel.com" },
+                    { name: "Stay Easy Plus Hotel", domain: "stayeasyplus.com" },
                   ].map((hotel, i) => (
                     <div key={i} style={{
                       display: "inline-flex",
