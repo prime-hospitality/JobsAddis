@@ -314,22 +314,22 @@ export default function HomeScreen({ onJobSelect, onSearchPress, profileName }: 
                 ref={marqueeRef}
                 >
                   {([
-                    // Original 5
+                    { name: "Stay Easy Plus Hotel", domain: "stayeasyplus.com" },
+                    { name: "Go-Fresh", domain: "gofreshet.com", logoUrl: "https://gofreshet.com/wp-content/uploads/2025/04/GoFresh.png" },
                     { name: "Marriott", domain: "marriott.com" },
                     { name: "Best Western Plus", domain: "bestwestern.com" },
                     { name: "Harmony Hotel", domain: "harmonyhotelethiopia.com", logoUrl: "https://www.harmonyhotelethiopia.com/assets/harmony_logo.png" },
                     { name: "Sapphire Addis", domain: "sapphireaddishotel.com" },
                     { name: "Elilly Hotel", domain: "elillyhotel.com" },
-                    // New 7
                     { name: "DoubleTree by Hilton", domain: "hilton.com" },
                     { name: "Inter-Luxury Hotel", domain: "interluxuryhotel.com" },
                     { name: "Union Restaurant", domain: "union-restaurant.com", logoUrl: "https://lh6.googleusercontent.com/-axw_gU_yDAk/AAAAAAAAAAI/AAAAAAAAAAA/IO7BkLv8kwk/s128-c-k-mo/photo.jpg" },
                     { name: "Illy Coffee", domain: "illy.com" },
                     { name: "Swiss Inn Nexus Hotel", domain: "swissinn.net", logoUrl: "/swiss_inn_nexus_logo.png" },
                     { name: "Getfam Hotel", domain: "getfamhotel.com" },
-                    { name: "Stay Easy Plus Hotel", domain: "stayeasyplus.com" },
-                    { name: "Go-Fresh", domain: "gofreshet.com", logoUrl: "https://gofreshet.com/wp-content/uploads/2025/04/GoFresh.png" },
                     // Duplicate for seamless infinite auto-scroll
+                    { name: "Stay Easy Plus Hotel", domain: "stayeasyplus.com" },
+                    { name: "Go-Fresh", domain: "gofreshet.com", logoUrl: "https://gofreshet.com/wp-content/uploads/2025/04/GoFresh.png" },
                     { name: "Marriott", domain: "marriott.com" },
                     { name: "Best Western Plus", domain: "bestwestern.com" },
                     { name: "Harmony Hotel", domain: "harmonyhotelethiopia.com", logoUrl: "https://www.harmonyhotelethiopia.com/assets/harmony_logo.png" },
@@ -341,8 +341,6 @@ export default function HomeScreen({ onJobSelect, onSearchPress, profileName }: 
                     { name: "Illy Coffee", domain: "illy.com" },
                     { name: "Swiss Inn Nexus Hotel", domain: "swissinn.net", logoUrl: "/swiss_inn_nexus_logo.png" },
                     { name: "Getfam Hotel", domain: "getfamhotel.com" },
-                    { name: "Stay Easy Plus Hotel", domain: "stayeasyplus.com" },
-                    { name: "Go-Fresh", domain: "gofreshet.com", logoUrl: "https://gofreshet.com/wp-content/uploads/2025/04/GoFresh.png" },
                   ] as { name: string; domain: string; logoUrl?: string; noLogo?: boolean; initial?: string; color?: string }[]).map((hotel, i) => (
                     <div key={i} style={{
                       display: "inline-flex",
