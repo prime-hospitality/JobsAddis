@@ -347,31 +347,31 @@ export default function HomeScreen({ onJobSelect, onSearchPress, profileName }: 
                     <div key={i} style={{
                       display: "inline-flex",
                       alignItems: "center",
-                      gap: 10,
+                      gap: 8,
                       background: "var(--card)",
                       border: "1px solid var(--border)",
-                      borderRadius: 12,
-                      padding: "6px 16px 6px 8px",
+                      borderRadius: 10,
+                      padding: "6px 14px 6px 8px",
                       flexShrink: 0,
                       whiteSpace: "nowrap",
                     }}>
                       {hotel.noLogo ? (
                         <div style={{
-                          width: 36, height: 36, borderRadius: 8,
+                          width: 30, height: 30, borderRadius: 6,
                           background: hotel.color,
                           display: "flex", alignItems: "center", justifyContent: "center",
                           flexShrink: 0,
                         }}>
-                          <span style={{ fontSize: 16, fontWeight: 800, color: "white" }}>{hotel.initial}</span>
+                          <span style={{ fontSize: 14, fontWeight: 800, color: "white" }}>{hotel.initial}</span>
                         </div>
                       ) : (
                         <img
                           src={hotel.logoUrl ?? `https://www.google.com/s2/favicons?domain=${hotel.domain}&sz=64`}
                           alt={hotel.name}
-                          style={{ minWidth: 36, width: "auto", maxWidth: 84, height: 36, borderRadius: 8, objectFit: "contain", background: "white" }}
+                          style={{ minWidth: 30, width: "auto", maxWidth: 70, height: 30, borderRadius: 6, objectFit: "contain", background: "white" }}
                         />
                       )}
-                      <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)", letterSpacing: "-0.01em" }}>
+                      <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text-primary)", letterSpacing: "-0.01em" }}>
                         {hotel.name}
                       </span>
                     </div>
