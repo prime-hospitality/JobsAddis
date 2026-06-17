@@ -325,7 +325,7 @@ export default function HomeScreen({ onJobSelect, onSearchPress, profileName }: 
                     { name: "Inter-Luxury Hotel", domain: "interluxuryhotel.com" },
                     { name: "Union Restaurant", domain: "union-restaurant.com", logoUrl: "https://lh6.googleusercontent.com/-axw_gU_yDAk/AAAAAAAAAAI/AAAAAAAAAAA/IO7BkLv8kwk/s128-c-k-mo/photo.jpg" },
                     { name: "Illy Coffee", domain: "illy.com" },
-                    { name: "Swiss Inn Nexus Hotel", domain: "swissinn.net" },
+                    { name: "Swiss Inn Nexus Hotel", domain: "swissinn.net", logoUrl: "/swiss_inn_nexus_logo.png" },
                     { name: "Getfam Hotel", domain: "getfamhotel.com" },
                     { name: "Stay Easy Plus Hotel", domain: "stayeasyplus.com" },
                     // Duplicate for seamless infinite auto-scroll
@@ -338,7 +338,7 @@ export default function HomeScreen({ onJobSelect, onSearchPress, profileName }: 
                     { name: "Inter-Luxury Hotel", domain: "interluxuryhotel.com" },
                     { name: "Union Restaurant", domain: "union-restaurant.com", logoUrl: "https://lh6.googleusercontent.com/-axw_gU_yDAk/AAAAAAAAAAI/AAAAAAAAAAA/IO7BkLv8kwk/s128-c-k-mo/photo.jpg" },
                     { name: "Illy Coffee", domain: "illy.com" },
-                    { name: "Swiss Inn Nexus Hotel", domain: "swissinn.net" },
+                    { name: "Swiss Inn Nexus Hotel", domain: "swissinn.net", logoUrl: "/swiss_inn_nexus_logo.png" },
                     { name: "Getfam Hotel", domain: "getfamhotel.com" },
                     { name: "Stay Easy Plus Hotel", domain: "stayeasyplus.com" },
                   ] as { name: string; domain: string; logoUrl?: string; noLogo?: boolean; initial?: string; color?: string }[]).map((hotel, i) => (
