@@ -63,6 +63,7 @@ export default function NotificationsScreen({ onSelectJob }: NotificationsScreen
   const [tempCategories, setTempCategories] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [shakeId, setShakeId] = useState<string | null>(null);
 
   const loadNotifications = useCallback(async () => {
     if (!initData) {
@@ -111,11 +112,7 @@ export default function NotificationsScreen({ onSelectJob }: NotificationsScreen
   // Load profile alerts preferences
   useEffect(() => {
     async function loadProfile() {
-      if (!initData) {
-        // Dev mode mock
-        setAlertCategories(["Waiter", "Barista"]);
-        return;
-      }
+      if (!initData) return;
       try {
         const res = await fetchProfile(initData);
         if (res.success && res.profile) {
@@ -148,6 +145,11 @@ export default function NotificationsScreen({ onSelectJob }: NotificationsScreen
       if (prev.includes(catName)) {
         return prev.filter(c => c !== catName);
       } else {
+        if (prev.length >= 3) {
+          setShakeId(catName);
+          setTimeout(() => setShakeId(null), 500);
+          return prev;
+        }
         return [...prev, catName];
       }
     });
@@ -157,13 +159,7 @@ export default function NotificationsScreen({ onSelectJob }: NotificationsScreen
     cat.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const handleSelectAll = () => {
-    const filteredNames = filteredCategories.map(c => c.name);
-    setTempCategories(prev => {
-      const unique = new Set([...prev, ...filteredNames]);
-      return Array.from(unique);
-    });
-  };
+
 
   const handleClearAll = () => {
     const filteredNamesSet = new Set(filteredCategories.map(c => c.name));
@@ -438,17 +434,10 @@ export default function NotificationsScreen({ onSelectJob }: NotificationsScreen
                 </div>
 
                 {/* Quick Selection Actions */}
-                <div style={{ padding: "0 20px 12px 20px", display: "flex", gap: 10 }}>
-                  <button 
-                    onClick={handleSelectAll}
-                    style={{
-                      background: "none", border: "none", color: "var(--brand)",
-                      fontSize: 13, fontWeight: 700, cursor: "pointer"
-                    }}
-                  >
-                    Select All
-                  </button>
-                  <span style={{ color: "var(--border)" }}>|</span>
+                <div style={{ padding: "0 20px 12px 20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <span style={{ fontSize: 13, color: "var(--text-muted)", fontWeight: 500 }}>
+                    Select up to 3 categories
+                  </span>
                   <button 
                     onClick={handleClearAll}
                     style={{
@@ -474,8 +463,10 @@ export default function NotificationsScreen({ onSelectJob }: NotificationsScreen
                       {filteredCategories.map(cat => {
                         const isSelected = tempCategories.includes(cat.name);
                         return (
-                          <button
+                          <motion.button
                             key={cat.name}
+                            animate={shakeId === cat.name ? { x: [-5, 5, -5, 5, 0] } : {}}
+                            transition={{ duration: 0.3 }}
                             onClick={() => handleToggleCategory(cat.name)}
                             style={{
                               display: "inline-flex", alignItems: "center", gap: 6,
@@ -490,7 +481,7 @@ export default function NotificationsScreen({ onSelectJob }: NotificationsScreen
                           >
                             <span>{cat.name}</span>
                             {isSelected && <Check size={14} color="#fff" />}
-                          </button>
+                          </motion.button>
                         );
                       })}
                     </div>
