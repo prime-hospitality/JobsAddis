@@ -313,7 +313,7 @@ export default function HomeScreen({ onJobSelect, onSearchPress, profileName }: 
                 className="no-scrollbar"
                 ref={marqueeRef}
                 >
-                  ([
+                  {([
                     { name: "DoubleTree by Hilton", domain: "hilton.com" },
                     { name: "Inter-Luxury Hotel", domain: "interluxuryhotel.com" },
                     { name: "Union Restaurant", domain: "union-restaurant.com" },
@@ -350,7 +350,7 @@ export default function HomeScreen({ onJobSelect, onSearchPress, profileName }: 
                         {hotel.name}
                       </span>
                     </div>
-                  ))}
+                  })}`
                 </div>
               </div>
             </div>
