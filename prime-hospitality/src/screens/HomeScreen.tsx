@@ -313,7 +313,7 @@ export default function HomeScreen({ onJobSelect, onSearchPress, profileName }: 
                 className="no-scrollbar"
                 ref={marqueeRef}
                 >
-                  {[
+                  ([
                     { name: "DoubleTree by Hilton", domain: "hilton.com" },
                     { name: "Inter-Luxury Hotel", domain: "interluxuryhotel.com" },
                     { name: "Union Restaurant", domain: "union-restaurant.com" },
@@ -329,7 +329,7 @@ export default function HomeScreen({ onJobSelect, onSearchPress, profileName }: 
                     { name: "Swiss Inn Nexus Hotel", domain: "nexusaddis.net" },
                     { name: "Getfam Hotel", domain: "getfamhotel.com" },
                     { name: "Stay Easy Plus Hotel", domain: "stayeasyplus.com" },
-                  ].map((hotel, i) => (
+                  ] as { name: string; domain: string; logoUrl?: string }[]).map((hotel, i) => (
                     <div key={i} style={{
                       display: "inline-flex",
                       alignItems: "center",
