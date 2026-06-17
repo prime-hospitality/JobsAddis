@@ -327,7 +327,7 @@ export default function HomeScreen({ onJobSelect, onSearchPress, profileName }: 
                     { name: "Illy Coffee", domain: "illy.com" },
                     { name: "Swiss Inn Nexus Hotel", domain: "swissinn.net", logoUrl: "/swiss_inn_nexus_logo.png" },
                     { name: "Getfam Hotel", domain: "getfamhotel.com" },
-                    { name: "Amrogn Chicken", domain: "amrogn.com", logoUrl: "https://amrogn.com/favicon.svg" },
+                    { name: "Amrogn Chicken", domain: "amrogn.com", logoUrl: "https://amrogn.com/assets/images/Amrognlogo.png" },
                     // Duplicate for seamless infinite auto-scroll
                     { name: "Stay Easy Plus Hotel", domain: "stayeasyplus.com" },
                     { name: "Go-Fresh", domain: "gofreshet.com", logoUrl: "https://gofreshet.com/wp-content/uploads/2025/04/GoFresh.png" },
@@ -347,31 +347,31 @@ export default function HomeScreen({ onJobSelect, onSearchPress, profileName }: 
                     <div key={i} style={{
                       display: "inline-flex",
                       alignItems: "center",
-                      gap: 8,
+                      gap: 10,
                       background: "var(--card)",
                       border: "1px solid var(--border)",
-                      borderRadius: 10,
-                      padding: "6px 14px 6px 8px",
+                      borderRadius: 12,
+                      padding: "6px 16px 6px 8px",
                       flexShrink: 0,
                       whiteSpace: "nowrap",
                     }}>
                       {hotel.noLogo ? (
                         <div style={{
-                          width: 28, height: 28, borderRadius: 6,
+                          width: 36, height: 36, borderRadius: 8,
                           background: hotel.color,
                           display: "flex", alignItems: "center", justifyContent: "center",
                           flexShrink: 0,
                         }}>
-                          <span style={{ fontSize: 13, fontWeight: 800, color: "white" }}>{hotel.initial}</span>
+                          <span style={{ fontSize: 16, fontWeight: 800, color: "white" }}>{hotel.initial}</span>
                         </div>
                       ) : (
                         <img
                           src={hotel.logoUrl ?? `https://www.google.com/s2/favicons?domain=${hotel.domain}&sz=64`}
                           alt={hotel.name}
-                          style={{ width: 28, height: 28, borderRadius: 6, objectFit: "contain", background: "white" }}
+                          style={{ minWidth: 36, width: "auto", maxWidth: 84, height: 36, borderRadius: 8, objectFit: "contain", background: "white" }}
                         />
                       )}
-                      <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text-primary)", letterSpacing: "-0.01em" }}>
+                      <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)", letterSpacing: "-0.01em" }}>
                         {hotel.name}
                       </span>
                     </div>
