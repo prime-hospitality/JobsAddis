@@ -357,18 +357,18 @@ export default function HomeScreen({ onJobSelect, onSearchPress, profileName }: 
                     }}>
                       {hotel.noLogo ? (
                         <div style={{
-                          width: 30, height: 30, borderRadius: 6,
+                          width: 27, height: 27, borderRadius: 6,
                           background: hotel.color,
                           display: "flex", alignItems: "center", justifyContent: "center",
                           flexShrink: 0,
                         }}>
-                          <span style={{ fontSize: 14, fontWeight: 800, color: "white" }}>{hotel.initial}</span>
+                          <span style={{ fontSize: 12, fontWeight: 800, color: "white" }}>{hotel.initial}</span>
                         </div>
                       ) : (
                         <img
                           src={hotel.logoUrl ?? `https://www.google.com/s2/favicons?domain=${hotel.domain}&sz=64`}
                           alt={hotel.name}
-                          style={{ minWidth: 30, width: "auto", maxWidth: 70, height: 30, borderRadius: 6, objectFit: "contain", background: "white" }}
+                          style={{ minWidth: 27, width: "auto", maxWidth: 64, height: 27, borderRadius: 6, objectFit: "contain", background: "white" }}
                         />
                       )}
                       <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text-primary)", letterSpacing: "-0.01em" }}>
