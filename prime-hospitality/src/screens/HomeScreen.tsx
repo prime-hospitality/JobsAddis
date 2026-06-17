@@ -323,9 +323,9 @@ export default function HomeScreen({ onJobSelect, onSearchPress, profileName }: 
                     // New 7
                     { name: "DoubleTree by Hilton", domain: "hilton.com" },
                     { name: "Inter-Luxury Hotel", domain: "interluxuryhotel.com" },
-                    { name: "Union Restaurant", domain: "union-restaurant.com" },
+                    { name: "Union Restaurant", domain: "union-restaurant.com", noLogo: true, initial: "U", color: "#8B1A1A" },
                     { name: "Illy Coffee", domain: "illy.com" },
-                    { name: "Swiss Inn Nexus Hotel", domain: "nexusaddis.net" },
+                    { name: "Swiss Inn Nexus Hotel", domain: "swissinn.net" },
                     { name: "Getfam Hotel", domain: "getfamhotel.com" },
                     { name: "Stay Easy Plus Hotel", domain: "stayeasyplus.com" },
                     // Duplicate for seamless infinite auto-scroll
@@ -336,12 +336,12 @@ export default function HomeScreen({ onJobSelect, onSearchPress, profileName }: 
                     { name: "Elilly Hotel", domain: "elillyhotel.com" },
                     { name: "DoubleTree by Hilton", domain: "hilton.com" },
                     { name: "Inter-Luxury Hotel", domain: "interluxuryhotel.com" },
-                    { name: "Union Restaurant", domain: "union-restaurant.com" },
+                    { name: "Union Restaurant", domain: "union-restaurant.com", noLogo: true, initial: "U", color: "#8B1A1A" },
                     { name: "Illy Coffee", domain: "illy.com" },
-                    { name: "Swiss Inn Nexus Hotel", domain: "nexusaddis.net" },
+                    { name: "Swiss Inn Nexus Hotel", domain: "swissinn.net" },
                     { name: "Getfam Hotel", domain: "getfamhotel.com" },
                     { name: "Stay Easy Plus Hotel", domain: "stayeasyplus.com" },
-                  ] as { name: string; domain: string; logoUrl?: string }[]).map((hotel, i) => (
+                  ] as { name: string; domain: string; logoUrl?: string; noLogo?: boolean; initial?: string; color?: string }[]).map((hotel, i) => (
                     <div key={i} style={{
                       display: "inline-flex",
                       alignItems: "center",
@@ -353,11 +353,22 @@ export default function HomeScreen({ onJobSelect, onSearchPress, profileName }: 
                       flexShrink: 0,
                       whiteSpace: "nowrap",
                     }}>
-                      <img
-                        src={hotel.logoUrl ?? `https://www.google.com/s2/favicons?domain=${hotel.domain}&sz=64`}
-                        alt={hotel.name}
-                        style={{ width: 28, height: 28, borderRadius: 6, objectFit: "contain", background: "white" }}
-                      />
+                      {hotel.noLogo ? (
+                        <div style={{
+                          width: 28, height: 28, borderRadius: 6,
+                          background: hotel.color,
+                          display: "flex", alignItems: "center", justifyContent: "center",
+                          flexShrink: 0,
+                        }}>
+                          <span style={{ fontSize: 13, fontWeight: 800, color: "white" }}>{hotel.initial}</span>
+                        </div>
+                      ) : (
+                        <img
+                          src={hotel.logoUrl ?? `https://www.google.com/s2/favicons?domain=${hotel.domain}&sz=64`}
+                          alt={hotel.name}
+                          style={{ width: 28, height: 28, borderRadius: 6, objectFit: "contain", background: "white" }}
+                        />
+                      )}
                       <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text-primary)", letterSpacing: "-0.01em" }}>
                         {hotel.name}
                       </span>
