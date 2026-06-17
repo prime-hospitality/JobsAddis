@@ -323,7 +323,7 @@ export default function HomeScreen({ onJobSelect, onSearchPress, profileName }: 
                     // New 7
                     { name: "DoubleTree by Hilton", domain: "hilton.com" },
                     { name: "Inter-Luxury Hotel", domain: "interluxuryhotel.com" },
-                    { name: "Union Restaurant", domain: "union-restaurant.com", noLogo: true, initial: "U", color: "#8B1A1A" },
+                    { name: "Union Restaurant", domain: "union-restaurant.com", logoUrl: "https://graph.facebook.com/100069026130887/picture?type=large" },
                     { name: "Illy Coffee", domain: "illy.com" },
                     { name: "Swiss Inn Nexus Hotel", domain: "swissinn.net" },
                     { name: "Getfam Hotel", domain: "getfamhotel.com" },
@@ -336,7 +336,7 @@ export default function HomeScreen({ onJobSelect, onSearchPress, profileName }: 
                     { name: "Elilly Hotel", domain: "elillyhotel.com" },
                     { name: "DoubleTree by Hilton", domain: "hilton.com" },
                     { name: "Inter-Luxury Hotel", domain: "interluxuryhotel.com" },
-                    { name: "Union Restaurant", domain: "union-restaurant.com", noLogo: true, initial: "U", color: "#8B1A1A" },
+                    { name: "Union Restaurant", domain: "union-restaurant.com", logoUrl: "https://graph.facebook.com/100069026130887/picture?type=large" },
                     { name: "Illy Coffee", domain: "illy.com" },
                     { name: "Swiss Inn Nexus Hotel", domain: "swissinn.net" },
                     { name: "Getfam Hotel", domain: "getfamhotel.com" },
