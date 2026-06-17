@@ -437,7 +437,6 @@ export default function NotificationsScreen({ onSelectJob }: NotificationsScreen
                           {/* Search inside dropdown */}
                           <div style={{ padding: "8px 12px", borderBottom: "1px solid var(--border)" }}>
                             <input
-                              autoFocus
                               type="text"
                               placeholder="Search…"
                               value={dropdownSearch}
