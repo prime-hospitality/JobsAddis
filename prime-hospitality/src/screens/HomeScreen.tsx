@@ -350,7 +350,7 @@ export default function HomeScreen({ onJobSelect, onSearchPress, profileName }: 
                         {hotel.name}
                       </span>
                     </div>
-                  })}`
+                  ))}
                 </div>
               </div>
             </div>
