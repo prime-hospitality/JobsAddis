@@ -328,6 +328,7 @@ export default function HomeScreen({ onJobSelect, onSearchPress, profileName }: 
                     { name: "Swiss Inn Nexus Hotel", domain: "swissinn.net", logoUrl: "/swiss_inn_nexus_logo.png" },
                     { name: "Getfam Hotel", domain: "getfamhotel.com" },
                     { name: "Stay Easy Plus Hotel", domain: "stayeasyplus.com" },
+                    { name: "Go-Fresh", domain: "gofreshet.com", logoUrl: "https://gofreshet.com/wp-content/uploads/2025/04/GoFresh.png" },
                     // Duplicate for seamless infinite auto-scroll
                     { name: "Marriott", domain: "marriott.com" },
                     { name: "Best Western Plus", domain: "bestwestern.com" },
@@ -341,6 +342,7 @@ export default function HomeScreen({ onJobSelect, onSearchPress, profileName }: 
                     { name: "Swiss Inn Nexus Hotel", domain: "swissinn.net", logoUrl: "/swiss_inn_nexus_logo.png" },
                     { name: "Getfam Hotel", domain: "getfamhotel.com" },
                     { name: "Stay Easy Plus Hotel", domain: "stayeasyplus.com" },
+                    { name: "Go-Fresh", domain: "gofreshet.com", logoUrl: "https://gofreshet.com/wp-content/uploads/2025/04/GoFresh.png" },
                   ] as { name: string; domain: string; logoUrl?: string; noLogo?: boolean; initial?: string; color?: string }[]).map((hotel, i) => (
                     <div key={i} style={{
                       display: "inline-flex",
