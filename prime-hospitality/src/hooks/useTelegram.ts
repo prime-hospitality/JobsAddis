@@ -51,7 +51,8 @@ export function useTelegram(): UseTelegramReturn {
           // ── Theme Syncing ──
           // Helper to apply the current active theme
           const applyActiveTheme = () => {
-            let activeScheme = tgWebApp.colorScheme || "light";
+            // Ignore Telegram's native colorScheme to force light mode by default
+            let activeScheme = "light";
             try {
               const saved = localStorage.getItem("theme");
               if (saved === "dark" || saved === "light") {
