@@ -169,7 +169,7 @@ function Step1_JobField({ state, updateState, onNext }: StepProps) {
   return (
     <div style={{ padding: "80px 20px 40px", flex: 1, display: "flex", flexDirection: "column" }}>
       <h1 style={{ fontSize: 28, fontWeight: 800, color: "var(--text-primary)", marginBottom: 8, lineHeight: 1.2 }}>
-        What type of work are you looking for?
+        Select your profession
       </h1>
       <p style={{ fontSize: 15, color: "var(--text-secondary)", marginBottom: 32 }}>Select up to 3 categories.</p>
 
