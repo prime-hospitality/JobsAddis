@@ -168,7 +168,7 @@ function Step1_JobField({ state, updateState, onNext }: StepProps) {
   };
 
   return (
-    <div style={{ padding: "60px 16px 20px", flex: 1, display: "flex", flexDirection: "column" }}>
+    <div style={{ padding: "90px 16px 20px", flex: 1, display: "flex", flexDirection: "column" }}>
       <h1 style={{ fontSize: 24, fontWeight: 800, color: "var(--text-primary)", marginBottom: 6, lineHeight: 1.2 }}>
         What role are you looking for?
       </h1>
@@ -187,8 +187,8 @@ function Step1_JobField({ state, updateState, onNext }: StepProps) {
               transition={isShaking ? { duration: 0.3 } : {}}
               onClick={() => toggleCategory(cat.label)}
               style={{
-                background: isSelected ? "rgba(230, 126, 34, 0.1)" : "var(--card)", 
-                border: isSelected ? "1px solid var(--brand)" : "1px solid var(--border)", 
+                background: isSelected ? "rgba(230, 126, 34, 0.12)" : "transparent",
+                border: "none",
                 padding: "6px 12px",
                 borderRadius: 20,
                 display: "inline-flex", alignItems: "center",
@@ -199,26 +199,8 @@ function Step1_JobField({ state, updateState, onNext }: StepProps) {
                 fontSize: 13, fontWeight: isSelected ? 700 : 500,
                 color: isSelected ? "var(--brand)" : "var(--text-secondary)",
                 transition: "color 0.2s, font-weight 0.2s",
-                display: "inline-flex", alignItems: "center",
               }}>
                 {cat.label}
-                {isSelected && (
-                  <span style={{
-                    marginLeft: 6,
-                    fontSize: 10,
-                    fontWeight: 800,
-                    background: "var(--brand)",
-                    color: "#FFFFFF",
-                    borderRadius: "50%",
-                    width: 16,
-                    height: 16,
-                    display: "inline-flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}>
-                    {selectedIndex + 1}
-                  </span>
-                )}
               </span>
             </motion.button>
           );
