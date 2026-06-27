@@ -21,10 +21,10 @@ function timeAgo(dateStr: string): string {
 
 const CATEGORY_NAMES = [
   "Waiter", "Chef", "Executive Chef", "Sous Chef", "Barista", "Receptionist", "Night Auditor", "Guest Relations Officer", "Reservations Agent", "Housekeeper",
-  "Security", "Cashier", "Cook", "Traditional / Cultural Food Cook", "Delivery", "Driver",
+  "Security", "Cashier", "Cook", "Traditional Cook", "Delivery", "Driver",
   "Manager", "General Manager", "Marketing & Sales", "F&B", "Finance", "Cost Control",
   "Accountant", "Bellboy", "Phone Operator", "Store Keeper", "Maintenance", "Painter", "Chief Engineer",
-  "IT Officer", "Spa Attendant", "Gym Trainer", "Lifeguard", "Banquet", "Food Steward / Kitchen Assistant", "Other",
+  "IT Officer", "Spa Attendant", "Gym Trainer", "Lifeguard", "Banquet", "Steward", "Kitchen Assistant", "Other",
 ];
 
 const EXPERIENCE_LEVELS = ["Entry level", "Junior", "Intermediate", "Senior", "Expert"];

@@ -257,7 +257,7 @@ export const JOB_CATEGORIES: JobCategory[] = [
   "Executive Chef",
   "Sous Chef",
   "Cook",
-  "Traditional / Cultural Food Cook",
+  "Traditional Cook",
   "Barista",
   "Receptionist",
   "Night Auditor",
@@ -286,6 +286,7 @@ export const JOB_CATEGORIES: JobCategory[] = [
   "Spa Attendant",
   "Gym Trainer",
   "Lifeguard",
-  "Food Steward / Kitchen Assistant",
+  "Steward",
+  "Kitchen Assistant",
   "Other",
 ];

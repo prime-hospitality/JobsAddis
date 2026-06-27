@@ -89,17 +89,24 @@ export const HOTEL_JOB_CATEGORIES: JobCategoryDetail[] = [
   },
   {
     id: "cultural-cook",
-    name: "Traditional / Cultural Food Cook",
+    name: "Traditional Cook",
     nameAm: "የባህል ምግብ አብሳይ",
     department: "Kitchen & Culinary",
-    keywords: ["traditional food", "cultural food", "cultural cook", "habesha food cook", "injera", "dorowot"]
+    keywords: ["traditional food", "cultural food", "cultural cook", "habesha food cook", "injera", "dorowot", "traditional cook"]
   },
   {
     id: "kitchen-steward",
-    name: "Food Steward / Kitchen Assistant",
-    nameAm: "የኩሽና እቃ አጣቢ / ስቴዋርድ",
+    name: "Steward",
+    nameAm: "ስቴዋርድ / እቃ አጣቢ",
     department: "Kitchen & Culinary",
-    keywords: ["steward", "dishwasher", "kitchen helper", "pot washer", "utility worker", "kitchen cleaner", "stewarding", "kitchen assistant", "food steward"]
+    keywords: ["steward", "dishwasher", "pot washer", "utility worker", "kitchen cleaner", "stewarding", "food steward"]
+  },
+  {
+    id: "kitchen-assistant",
+    name: "Kitchen Assistant",
+    nameAm: "የኩሽና ረዳት",
+    department: "Kitchen & Culinary",
+    keywords: ["kitchen assistant", "kitchen helper", "kitchen hand", "kitchen staff"]
   },
 
   // ── Front Office ──
