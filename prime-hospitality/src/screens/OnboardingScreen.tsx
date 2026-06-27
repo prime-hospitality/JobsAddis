@@ -183,12 +183,24 @@ function Step1_JobField({ state, updateState, onNext }: StepProps) {
             <motion.button
               key={cat.label}
               whileTap={{ scale: 0.95 }}
-              animate={isShaking ? { x: [-5, 5, -5, 5, 0] } : {}}
-              transition={isShaking ? { duration: 0.3 } : {}}
+              animate={
+                isShaking
+                  ? { x: [-5, 5, -5, 5, 0] }
+                  : cat.label === "Other" && state.selectedCategories.length === 0
+                  ? { scale: [1, 1.06, 1], boxShadow: ["0 0 0px rgba(34,197,94,0)", "0 0 8px rgba(34,197,94,0.45)", "0 0 0px rgba(34,197,94,0)"] }
+                  : {}
+              }
+              transition={
+                isShaking
+                  ? { duration: 0.3 }
+                  : cat.label === "Other" && state.selectedCategories.length === 0
+                  ? { duration: 1.8, repeat: Infinity, repeatDelay: 2 }
+                  : {}
+              }
               onClick={() => toggleCategory(cat.label)}
               style={{
-                background: isSelected ? "rgba(230, 126, 34, 0.12)" : "transparent",
-                border: "none",
+                background: isSelected ? "rgba(230, 126, 34, 0.12)" : cat.label === "Other" ? "rgba(34,197,94,0.07)" : "transparent",
+                border: cat.label === "Other" && !isSelected ? "1px dashed rgba(34,197,94,0.5)" : "none",
                 padding: "6px 12px",
                 borderRadius: 20,
                 display: "inline-flex", alignItems: "center",
@@ -196,8 +208,8 @@ function Step1_JobField({ state, updateState, onNext }: StepProps) {
               }}
             >
               <span style={{
-                fontSize: 13, fontWeight: isSelected ? 700 : 500,
-                color: isSelected ? "var(--brand)" : "var(--text-secondary)",
+                fontSize: 13, fontWeight: isSelected ? 700 : cat.label === "Other" ? 600 : 500,
+                color: isSelected ? "var(--brand)" : cat.label === "Other" ? "var(--brand)" : "var(--text-secondary)",
                 transition: "color 0.2s, font-weight 0.2s",
               }}>
                 {cat.label}
@@ -206,6 +218,28 @@ function Step1_JobField({ state, updateState, onNext }: StepProps) {
           );
         })}
       </div>
+
+      {/* Hint tip — hidden once Other is selected */}
+      {!state.selectedCategories.includes("Other") && !shakeId && (
+        <motion.div
+          initial={{ opacity: 0, y: 4 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5 }}
+          style={{
+            marginTop: 14,
+            padding: "9px 14px",
+            borderRadius: 12,
+            background: "rgba(34,197,94,0.07)",
+            borderLeft: "3px solid var(--brand)",
+            display: "flex", alignItems: "center", gap: 8,
+          }}
+        >
+          <span style={{ fontSize: 15 }}>💡</span>
+          <span style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.4 }}>
+            Can't find your role? Tap <strong style={{ color: "var(--brand)" }}>Other</strong> to type it in.
+          </span>
+        </motion.div>
+      )}
 
       {shakeId && (
         <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ color: "var(--warning)", textAlign: "center", marginTop: 16, fontSize: 14 }}>
