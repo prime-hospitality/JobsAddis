@@ -200,12 +200,14 @@ function Step1_JobField({ state, updateState, onNext }: StepProps) {
               }
               onClick={() => toggleCategory(cat.label)}
               style={{
-                background: isSelected ? "rgba(230, 126, 34, 0.12)" : cat.label === "Other" ? "rgba(34,197,94,0.07)" : "transparent",
-                border: cat.label === "Other" && !isSelected ? "1px dashed rgba(34,197,94,0.5)" : "none",
+                flex: "1 1 auto",
+                background: isSelected ? "rgba(230, 126, 34, 0.12)" : cat.label === "Other" ? "rgba(34,197,94,0.07)" : "var(--card-hover)",
+                border: cat.label === "Other" && !isSelected ? "1px dashed rgba(34,197,94,0.5)" : isSelected ? "none" : "1px solid var(--border)",
                 padding: "5px 12px",
                 borderRadius: 20,
-                display: "inline-flex", alignItems: "center",
+                display: "inline-flex", alignItems: "center", justifyContent: "center",
                 cursor: "pointer", fontFamily: "inherit",
+                textAlign: "center",
               }}
             >
               <span style={{
