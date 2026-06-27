@@ -204,7 +204,7 @@ function Step1_JobField({ state, updateState, onNext }: StepProps) {
               onClick={() => toggleCategory(cat.label)}
               style={{
                 background: isSelected ? "rgba(230, 126, 34, 0.12)" : "transparent",
-                border: isSelected ? "1px solid var(--brand)" : "1px solid var(--border)",
+                border: "none",
                 padding: "6px 12px",
                 borderRadius: 20,
                 display: "inline-flex", alignItems: "center",
@@ -218,23 +218,6 @@ function Step1_JobField({ state, updateState, onNext }: StepProps) {
                 display: "inline-flex", alignItems: "center",
               }}>
                 {cat.label}
-                {isSelected && (
-                  <span style={{
-                    marginLeft: 6,
-                    fontSize: 10,
-                    fontWeight: 800,
-                    background: "var(--brand)",
-                    color: "#FFFFFF",
-                    borderRadius: "50%",
-                    width: 16,
-                    height: 16,
-                    display: "inline-flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}>
-                    {selectedIndex + 1}
-                  </span>
-                )}
               </span>
             </motion.button>
           );
