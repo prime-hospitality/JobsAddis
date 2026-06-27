@@ -230,50 +230,57 @@ function Step1_JobField({ state, updateState, onNext }: StepProps) {
         </motion.div>
       )}
 
-      {state.selectedCategories.length > 0 && (
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} style={{ marginTop: 32, display: "flex", flexDirection: "column" }}>
-          <p style={{ fontSize: 13, fontWeight: 600, color: "var(--text-muted)", marginBottom: 12, textTransform: "uppercase", letterSpacing: "0.05em" }}>
-            App Language
-          </p>
-          <div style={{ display: "flex", gap: 12, marginBottom: 24 }}>
-            <button
-              style={{
-                flex: 1, padding: "12px", borderRadius: 12,
-                background: "var(--brand-subtle)", border: "1px solid var(--brand)",
-                color: "var(--brand)", fontWeight: 700, fontSize: 15,
-                display: "flex", alignItems: "center", justifyContent: "center", cursor: "default"
-              }}
-            >
-              English
-            </button>
-            <button
-              style={{
-                flex: 1, padding: "12px", borderRadius: 12,
-                background: "var(--card-hover)", border: "1px solid var(--border)",
-                color: "var(--text-muted)", fontWeight: 500, fontSize: 15,
-                display: "flex", alignItems: "center", justifyContent: "center", cursor: "not-allowed",
-                opacity: 0.7
-              }}
-              disabled
-            >
-              Amharic (Soon)
-            </button>
-          </div>
+      <div style={{ marginTop: 32, display: "flex", flexDirection: "column" }}>
+        <p style={{ fontSize: 13, fontWeight: 600, color: "var(--text-muted)", marginBottom: 12, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+          App Language
+        </p>
+        <div style={{ display: "flex", gap: 12, marginBottom: 24 }}>
           <button
-            className="btn-primary"
-            style={{ width: "100%" }}
-            onClick={() => {
-              if (state.selectedCategories.includes("Other") && otherValue.trim()) {
-                const updated = state.selectedCategories.map(c => c === "Other" ? otherValue.trim() : c);
-                updateState({ selectedCategories: updated });
-              }
-              onNext();
+            style={{
+              flex: 1, padding: "12px", borderRadius: 12,
+              background: "var(--brand-subtle)", border: "1px solid var(--brand)",
+              color: "var(--brand)", fontWeight: 700, fontSize: 15,
+              display: "flex", alignItems: "center", justifyContent: "center", cursor: "default"
             }}
           >
-            Continue
+            English
           </button>
-        </motion.div>
-      )}
+          <button
+            style={{
+              flex: 1, padding: "12px", borderRadius: 12,
+              background: "var(--card-hover)", border: "1px solid var(--border)",
+              color: "var(--text-muted)", fontWeight: 500, fontSize: 15,
+              display: "flex", alignItems: "center", justifyContent: "center", cursor: "not-allowed",
+              opacity: 0.7
+            }}
+            disabled
+          >
+            Amharic (Soon)
+          </button>
+        </div>
+      </div>
+
+      <div style={{ minHeight: 48, display: "flex", alignItems: "flex-end" }}>
+        <AnimatePresence mode="wait">
+          {state.selectedCategories.length > 0 && (
+            <motion.button
+              key="continue-btn"
+              initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }}
+              className="btn-primary"
+              style={{ width: "100%" }}
+              onClick={() => {
+                if (state.selectedCategories.includes("Other") && otherValue.trim()) {
+                  const updated = state.selectedCategories.map(c => c === "Other" ? otherValue.trim() : c);
+                  updateState({ selectedCategories: updated });
+                }
+                onNext();
+              }}
+            >
+              Continue
+            </motion.button>
+          )}
+        </AnimatePresence>
+      </div>
     </div>
   );
 }
