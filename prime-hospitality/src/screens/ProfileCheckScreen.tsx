@@ -19,7 +19,7 @@ interface ProfileCheckScreenProps {
 
 const EXPERIENCE_LEVELS: ExperienceLevel[] = ["Entry Level", "Mid Level", "Senior Level"];
 const CATEGORIES: JobCategory[] = [
-  "Waiter", "Chef", "Executive Chef", "Sous Chef", "Barista", "Receptionist", "Night Auditor", "Guest Relations Officer", "Reservations Agent", "Housekeeper",
+  "Waiter", "Chef", "Executive Chef", "Sous Chef", "Barista", "Reception", "Night Auditor", "Guest Relations Officer", "Reservations Agent", "Housekeeper",
   "Security", "Cashier", "Cook", "Traditional Cook", "Delivery", "Driver",
   "Manager", "General Manager", "Marketing & Sales", "F&B", "Finance", "Cost Control",
   "Accountant", "Bellboy", "Store Keeper", "Phone Operator", "Maintenance", "Painter", "Chief Engineer",

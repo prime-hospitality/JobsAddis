@@ -117,7 +117,7 @@ const JOB_CATEGORIES_DATA = [
   { label: "Executive Chef", emoji: "👑" },
   { label: "Sous Chef", emoji: "🧑‍🍳" },
   { label: "Barista", emoji: "☕" },
-  { label: "Receptionist", emoji: "🛎️" },
+  { label: "Reception", emoji: "🛎️" },
   { label: "Night Auditor", emoji: "🌙" },
   { label: "Guest Relations Officer", emoji: "🤝" },
   { label: "Reservations Agent", emoji: "📅" },
