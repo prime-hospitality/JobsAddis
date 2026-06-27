@@ -128,16 +128,13 @@ const JOB_CATEGORIES_DATA = [
   { label: "Traditional Cook", emoji: "🥘" },
   { label: "Steward", emoji: "🫧" },
   { label: "Kitchen Assistant", emoji: "🧼" },
-  { label: "Delivery", emoji: "🛵" },
   { label: "Driver", emoji: "🚗" },
-  { label: "General Manager", emoji: "💼" },
   { label: "Marketing & Sales", emoji: "📈" },
   { label: "F&B", emoji: "🍹" },
   { label: "Finance", emoji: "💰" },
   { label: "Cost Control", emoji: "📊" },
   { label: "Accountant", emoji: "🧮" },
   { label: "Bellboy", emoji: "🧳" },
-  { label: "Phone Operator", emoji: "📞" },
   { label: "Maintenance", emoji: "🔧" },
   { label: "Painter", emoji: "🎨" },
   { label: "Chief Engineer", emoji: "⚙️" },
@@ -154,9 +151,8 @@ function Step1_JobField({ state, updateState, onNext }: StepProps) {
   const [otherValue, setOtherValue] = React.useState("");
 
   const toggleCategory = (label: string) => {
-    const isSelected = state.selectedCategories.includes(label);
-    if (isSelected) {
-      updateState({ selectedCategories: state.selectedCategories.filter(c => c !== label) });
+    if (state.selectedCategories.includes(label)) {
+      updateState({ selectedCategories: state.selectedCategories.filter((c) => c !== label) });
     } else {
       if (state.selectedCategories.length >= 3) {
         setShakeId(label);
@@ -166,6 +162,17 @@ function Step1_JobField({ state, updateState, onNext }: StepProps) {
       updateState({ selectedCategories: [...state.selectedCategories, label] });
     }
   };
+
+  let otherWarning = "";
+  if (otherValue.trim().length > 0) {
+    if (otherValue.trim().length < 3) {
+      otherWarning = "Role name is too short. Please type a valid job.";
+    } else if (otherValue.trim().length > 40) {
+      otherWarning = "Role name is too long. Keep it under 40 characters.";
+    } else if (/[^a-zA-Z\s\-]/.test(otherValue)) {
+      otherWarning = "Role name shouldn't contain numbers or special characters.";
+    }
+  }
 
   return (
     <div style={{ padding: "90px 16px 20px", flex: 1, display: "flex", flexDirection: "column" }}>
@@ -199,7 +206,7 @@ function Step1_JobField({ state, updateState, onNext }: StepProps) {
               }
               onClick={() => toggleCategory(cat.label)}
               style={{
-                background: isSelected ? "rgba(230, 126, 34, 0.12)" : "var(--card)",
+                background: isSelected ? "rgba(230, 126, 34, 0.12)" : "transparent",
                 border: isSelected ? "1px solid var(--brand)" : "1px solid var(--border)",
                 padding: "6px 12px",
                 borderRadius: 20,
@@ -279,7 +286,23 @@ function Step1_JobField({ state, updateState, onNext }: StepProps) {
               // Delay to let the keyboard appear first, then scroll into view
               setTimeout(() => e.target.scrollIntoView({ behavior: "smooth", block: "center" }), 350);
             }}
+            style={otherWarning ? { borderColor: "var(--warning)" } : {}}
           />
+          <AnimatePresence>
+            {otherWarning && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                style={{ overflow: "hidden" }}
+              >
+                <div style={{ marginTop: 8, display: "flex", gap: 6, alignItems: "flex-start", color: "var(--warning)", fontSize: 13 }}>
+                  <span style={{ fontSize: 14 }}>⚠️</span>
+                  <span style={{ lineHeight: 1.4 }}>{otherWarning}</span>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </motion.div>
       )}
 
