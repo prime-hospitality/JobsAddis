@@ -200,8 +200,8 @@ function Step1_JobField({ state, updateState, onNext }: StepProps) {
               onClick={() => toggleCategory(cat.label)}
               style={{
                 flex: "1 1 auto",
-                background: isSelected ? "rgba(230, 126, 34, 0.12)" : cat.label === "Other" ? "rgba(34,197,94,0.07)" : "var(--card-hover)",
-                border: cat.label === "Other" && !isSelected ? "1px dashed rgba(34,197,94,0.5)" : isSelected ? "none" : "1px solid var(--border)",
+                background: isSelected ? "rgba(34,197,94,0.12)" : cat.label === "Other" ? "rgba(34,197,94,0.07)" : "var(--card-hover)",
+                border: "none",
                 padding: "5px 12px",
                 borderRadius: 20,
                 display: "inline-flex", alignItems: "center", justifyContent: "center",
@@ -213,27 +213,8 @@ function Step1_JobField({ state, updateState, onNext }: StepProps) {
                 fontSize: 13.5, fontWeight: isSelected ? 700 : cat.label === "Other" ? 600 : 500,
                 color: isSelected ? "var(--brand)" : cat.label === "Other" ? "var(--brand)" : "var(--text-secondary)",
                 transition: "color 0.2s, font-weight 0.2s",
-                display: "inline-flex", alignItems: "center",
               }}>
                 {cat.label}
-                {isSelected && (
-                  <span style={{
-                    marginLeft: 5,
-                    fontSize: 10,
-                    fontWeight: 800,
-                    background: "var(--brand)",
-                    color: "#FFFFFF",
-                    borderRadius: "50%",
-                    width: 16,
-                    height: 16,
-                    display: "inline-flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    flexShrink: 0,
-                  }}>
-                    {selectedIndex + 1}
-                  </span>
-                )}
               </span>
             </motion.button>
           );
