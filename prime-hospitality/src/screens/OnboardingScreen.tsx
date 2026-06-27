@@ -209,7 +209,7 @@ function Step1_JobField({ state, updateState, onNext }: StepProps) {
               }}
             >
               <span style={{
-                fontSize: 14, fontWeight: isSelected ? 700 : cat.label === "Other" ? 600 : 500,
+                fontSize: 13.5, fontWeight: isSelected ? 700 : cat.label === "Other" ? 600 : 500,
                 color: isSelected ? "var(--brand)" : cat.label === "Other" ? "var(--brand)" : "var(--text-secondary)",
                 transition: "color 0.2s, font-weight 0.2s",
                 display: "inline-flex", alignItems: "center",
