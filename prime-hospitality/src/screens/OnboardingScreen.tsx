@@ -167,13 +167,13 @@ function Step1_JobField({ state, updateState, onNext }: StepProps) {
   };
 
   return (
-    <div style={{ padding: "80px 20px 40px", flex: 1, display: "flex", flexDirection: "column" }}>
-      <h1 style={{ fontSize: 28, fontWeight: 800, color: "var(--text-primary)", marginBottom: 8, lineHeight: 1.2 }}>
-        Select your profession
+    <div style={{ padding: "60px 16px 20px", flex: 1, display: "flex", flexDirection: "column" }}>
+      <h1 style={{ fontSize: 24, fontWeight: 800, color: "var(--text-primary)", marginBottom: 6, lineHeight: 1.2 }}>
+        What role are you looking for?
       </h1>
-      <p style={{ fontSize: 15, color: "var(--text-secondary)", marginBottom: 32 }}>Select up to 3 categories.</p>
+      <p style={{ fontSize: 14, color: "var(--text-secondary)", marginBottom: 20 }}>Select up to 3 categories.</p>
 
-      <div style={{ display: "flex", flexWrap: "wrap", gap: "12px 18px", marginBottom: "auto" }}>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: "8px 8px", marginBottom: "auto", alignContent: "flex-start" }}>
         {JOB_CATEGORIES_DATA.map((cat) => {
           const selectedIndex = state.selectedCategories.indexOf(cat.label);
           const isSelected = selectedIndex !== -1;
@@ -186,13 +186,16 @@ function Step1_JobField({ state, updateState, onNext }: StepProps) {
               transition={isShaking ? { duration: 0.3 } : {}}
               onClick={() => toggleCategory(cat.label)}
               style={{
-                background: "none", border: "none", padding: "6px 0",
+                background: isSelected ? "rgba(230, 126, 34, 0.1)" : "var(--card)", 
+                border: isSelected ? "1px solid var(--brand)" : "1px solid var(--border)", 
+                padding: "6px 12px",
+                borderRadius: 20,
                 display: "inline-flex", alignItems: "center",
                 cursor: "pointer", fontFamily: "inherit",
               }}
             >
               <span style={{
-                fontSize: 16, fontWeight: isSelected ? 700 : 500,
+                fontSize: 13, fontWeight: isSelected ? 700 : 500,
                 color: isSelected ? "var(--brand)" : "var(--text-secondary)",
                 transition: "color 0.2s, font-weight 0.2s",
                 display: "inline-flex", alignItems: "center",
@@ -201,13 +204,13 @@ function Step1_JobField({ state, updateState, onNext }: StepProps) {
                 {isSelected && (
                   <span style={{
                     marginLeft: 6,
-                    fontSize: 11,
+                    fontSize: 10,
                     fontWeight: 800,
                     background: "var(--brand)",
                     color: "#FFFFFF",
                     borderRadius: "50%",
-                    width: 18,
-                    height: 18,
+                    width: 16,
+                    height: 16,
                     display: "inline-flex",
                     alignItems: "center",
                     justifyContent: "center",
