@@ -116,7 +116,6 @@ const JOB_CATEGORIES_DATA = [
   { label: "F&B", emoji: "🍹" },
   { label: "Chef", emoji: "👨‍🍳" },
   { label: "Cook", emoji: "🍳" },
-  { label: "Other", emoji: "✨" },
   { label: "Waiter", emoji: "🍽️" },
   { label: "Driver", emoji: "🚗" },
   { label: "Painter", emoji: "🎨" },
@@ -148,6 +147,7 @@ const JOB_CATEGORIES_DATA = [
   { label: "Marketing & Sales", emoji: "📈" },
   { label: "Reservations Agent", emoji: "📅" },
   { label: "Guest Relations Officer", emoji: "🤝" },
+  { label: "Other", emoji: "✨" },
 ];
 
 function Step1_JobField({ state, updateState, onNext }: StepProps) {
@@ -202,14 +202,14 @@ function Step1_JobField({ state, updateState, onNext }: StepProps) {
               style={{
                 background: isSelected ? "rgba(230, 126, 34, 0.12)" : cat.label === "Other" ? "rgba(34,197,94,0.07)" : "transparent",
                 border: cat.label === "Other" && !isSelected ? "1px dashed rgba(34,197,94,0.5)" : "none",
-                padding: "4px 10px",
+                padding: "5px 12px",
                 borderRadius: 20,
                 display: "inline-flex", alignItems: "center",
                 cursor: "pointer", fontFamily: "inherit",
               }}
             >
               <span style={{
-                fontSize: 13, fontWeight: isSelected ? 700 : cat.label === "Other" ? 600 : 500,
+                fontSize: 14, fontWeight: isSelected ? 700 : cat.label === "Other" ? 600 : 500,
                 color: isSelected ? "var(--brand)" : cat.label === "Other" ? "var(--brand)" : "var(--text-secondary)",
                 transition: "color 0.2s, font-weight 0.2s",
                 display: "inline-flex", alignItems: "center",
