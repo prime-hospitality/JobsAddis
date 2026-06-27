@@ -211,8 +211,27 @@ function Step1_JobField({ state, updateState, onNext }: StepProps) {
                 fontSize: 13, fontWeight: isSelected ? 700 : cat.label === "Other" ? 600 : 500,
                 color: isSelected ? "var(--brand)" : cat.label === "Other" ? "var(--brand)" : "var(--text-secondary)",
                 transition: "color 0.2s, font-weight 0.2s",
+                display: "inline-flex", alignItems: "center",
               }}>
                 {cat.label}
+                {isSelected && (
+                  <span style={{
+                    marginLeft: 5,
+                    fontSize: 10,
+                    fontWeight: 800,
+                    background: "var(--brand)",
+                    color: "#FFFFFF",
+                    borderRadius: "50%",
+                    width: 16,
+                    height: 16,
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    flexShrink: 0,
+                  }}>
+                    {selectedIndex + 1}
+                  </span>
+                )}
               </span>
             </motion.button>
           );
