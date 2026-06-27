@@ -200,7 +200,7 @@ function Step1_JobField({ state, updateState, onNext }: StepProps) {
               onClick={() => toggleCategory(cat.label)}
               style={{
                 flex: "1 1 auto",
-                background: isSelected ? "rgba(34,197,94,0.12)" : cat.label === "Other" ? "rgba(34,197,94,0.07)" : "var(--card-hover)",
+                background: "transparent",
                 border: "none",
                 padding: "5px 12px",
                 borderRadius: 20,
