@@ -146,6 +146,12 @@ const JOB_CATEGORIES_DATA = [
 function Step1_JobField({ state, updateState, onNext }: StepProps) {
   const [shakeId, setShakeId] = React.useState<string | null>(null);
   const [otherValue, setOtherValue] = React.useState("");
+  const [showTip, setShowTip] = React.useState(false);
+
+  React.useEffect(() => {
+    const timer = setTimeout(() => setShowTip(true), 4000);
+    return () => clearTimeout(timer);
+  }, []);
 
   const toggleCategory = (label: string) => {
     if (state.selectedCategories.includes(label)) {
@@ -203,8 +209,14 @@ function Step1_JobField({ state, updateState, onNext }: StepProps) {
               }
               onClick={() => toggleCategory(cat.label)}
               style={{
-                background: isSelected ? "rgba(230, 126, 34, 0.12)" : "transparent",
-                border: "none",
+                background: isSelected 
+                  ? "rgba(230, 126, 34, 0.12)" 
+                  : (cat.label === "Other" && state.selectedCategories.length === 0)
+                  ? "rgba(34, 197, 94, 0.08)"
+                  : "transparent",
+                border: (cat.label === "Other" && state.selectedCategories.length === 0)
+                  ? "1px solid rgba(34, 197, 94, 0.25)"
+                  : "none",
                 padding: "6px 12px",
                 borderRadius: 20,
                 display: "inline-flex", alignItems: "center",
@@ -212,8 +224,12 @@ function Step1_JobField({ state, updateState, onNext }: StepProps) {
               }}
             >
               <span style={{
-                fontSize: 15, fontWeight: isSelected ? 700 : 500,
-                color: isSelected ? "var(--brand)" : "var(--text-secondary)",
+                fontSize: 15, fontWeight: isSelected || (cat.label === "Other" && state.selectedCategories.length === 0) ? 700 : 500,
+                color: isSelected 
+                  ? "var(--brand)" 
+                  : (cat.label === "Other" && state.selectedCategories.length === 0)
+                  ? "var(--brand)"
+                  : "var(--text-secondary)",
                 transition: "color 0.2s, font-weight 0.2s",
                 display: "inline-flex", alignItems: "center",
               }}>
@@ -242,11 +258,11 @@ function Step1_JobField({ state, updateState, onNext }: StepProps) {
       </div>
 
       {/* Hint tip — hidden once Other is selected */}
-      {!state.selectedCategories.includes("Other") && !shakeId && (
+      {showTip && !state.selectedCategories.includes("Other") && !shakeId && (
         <motion.div
           initial={{ opacity: 0, y: 4 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 4 }}
+          transition={{ duration: 0.4 }}
           style={{
             marginTop: 8,
             padding: "9px 14px",
