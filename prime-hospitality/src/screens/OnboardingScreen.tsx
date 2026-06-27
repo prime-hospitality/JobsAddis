@@ -223,9 +223,13 @@ function Step1_JobField({ state, updateState, onNext }: StepProps) {
           </p>
           <input
             className="input-base"
-            placeholder="e.g. Musician"
+            placeholder="e.g. Hotel Manager"
             value={otherValue}
             onChange={(e) => setOtherValue(e.target.value)}
+            onFocus={(e) => {
+              // Delay to let the keyboard appear first, then scroll into view
+              setTimeout(() => e.target.scrollIntoView({ behavior: "smooth", block: "center" }), 350);
+            }}
           />
         </motion.div>
       )}
