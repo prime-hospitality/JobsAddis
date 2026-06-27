@@ -137,7 +137,6 @@ const JOB_CATEGORIES_DATA = [
   { label: "Bellboy", emoji: "🧳" },
   { label: "Maintenance", emoji: "🔧" },
   { label: "Painter", emoji: "🎨" },
-  { label: "Chief Engineer", emoji: "⚙️" },
   { label: "IT Officer", emoji: "💻" },
   { label: "Spa Attendant", emoji: "💆" },
   { label: "Gym Trainer", emoji: "🏋️" },
