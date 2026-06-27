@@ -218,6 +218,23 @@ function Step1_JobField({ state, updateState, onNext }: StepProps) {
                 display: "inline-flex", alignItems: "center",
               }}>
                 {cat.label}
+                {isSelected && (
+                  <span style={{
+                    marginLeft: 6,
+                    fontSize: 10,
+                    fontWeight: 800,
+                    background: "var(--brand)",
+                    color: "#FFFFFF",
+                    borderRadius: "50%",
+                    width: 16,
+                    height: 16,
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}>
+                    {selectedIndex + 1}
+                  </span>
+                )}
               </span>
             </motion.button>
           );
