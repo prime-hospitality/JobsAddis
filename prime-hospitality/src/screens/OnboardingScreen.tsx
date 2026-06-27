@@ -112,40 +112,40 @@ export default function OnboardingScreen({ onComplete }: { onComplete: () => voi
 
 // --- Step 1: Job Field Selection ---
 const JOB_CATEGORIES_DATA = [
-  // Tier 1 — Highest demand & value (culinary leadership + front of house)
-  { label: "Chef", emoji: "👨‍🍳" },
   { label: "Waiter", emoji: "🍽️" },
-  { label: "Barista", emoji: "☕" },
+  { label: "Chef", emoji: "👨‍🍳" },
   { label: "Executive Chef", emoji: "👑" },
   { label: "Sous Chef", emoji: "🧑‍🍳" },
+  { label: "Barista", emoji: "☕" },
   { label: "Receptionist", emoji: "🛎️" },
-  // Tier 2 — Revenue & operations
+  { label: "Night Auditor", emoji: "🌙" },
+  { label: "Guest Relations Officer", emoji: "🤝" },
+  { label: "Reservations Agent", emoji: "📅" },
+  { label: "Housekeeper", emoji: "🧹" },
+  { label: "Security", emoji: "🛡️" },
+  { label: "Cashier", emoji: "💳" },
+  { label: "Cook", emoji: "🍳" },
+  { label: "Traditional Cook", emoji: "🥘" },
+  { label: "Steward", emoji: "🫧" },
+  { label: "Kitchen Assistant", emoji: "🧼" },
+  { label: "Delivery", emoji: "🛵" },
+  { label: "Driver", emoji: "🚗" },
+  { label: "General Manager", emoji: "💼" },
+  { label: "Marketing & Sales", emoji: "📈" },
   { label: "F&B", emoji: "🍹" },
   { label: "Finance", emoji: "💰" },
   { label: "Cost Control", emoji: "📊" },
-  { label: "Marketing & Sales", emoji: "📈" },
-  // Tier 3 — Guest experience & room operations
-  { label: "Cook", emoji: "🍳" },
-  { label: "Housekeeper", emoji: "🧹" },
-  { label: "Night Auditor", emoji: "🌙" },
-  { label: "Reservations Agent", emoji: "📅" },
-  { label: "Guest Relations Officer", emoji: "🤝" },
-  // Tier 4 — Support & facilities
-  { label: "Security", emoji: "🛡️" },
-  { label: "IT Officer", emoji: "💻" },
+  { label: "Accountant", emoji: "🧮" },
+  { label: "Bellboy", emoji: "🧳" },
+  { label: "Phone Operator", emoji: "📞" },
   { label: "Maintenance", emoji: "🔧" },
+  { label: "Painter", emoji: "🎨" },
+  { label: "Chief Engineer", emoji: "⚙️" },
+  { label: "IT Officer", emoji: "💻" },
+  { label: "Spa Attendant", emoji: "💆" },
   { label: "Gym Trainer", emoji: "🏋️" },
   { label: "Lifeguard", emoji: "🛟" },
-  { label: "Spa Attendant", emoji: "💆" },
-  { label: "Chief Engineer", emoji: "⚙️" },
-  // Tier 5 — Specialist support roles
-  { label: "Steward", emoji: "🫧" },
-  { label: "Cashier", emoji: "💳" },
-  { label: "Bellboy", emoji: "🧳" },
   { label: "Banquet", emoji: "🥂" },
-  { label: "Painter", emoji: "🎨" },
-  { label: "Driver", emoji: "🚗" },
-  { label: "Kitchen Assistant", emoji: "🧼" },
   { label: "Other", emoji: "✨" },
 ];
 
@@ -174,7 +174,7 @@ function Step1_JobField({ state, updateState, onNext }: StepProps) {
       </h1>
       <p style={{ fontSize: 14, color: "var(--text-secondary)", marginBottom: 20 }}>Select up to 3 categories.</p>
 
-      <div style={{ display: "flex", flexWrap: "wrap", gap: "4px 6px", alignContent: "flex-start" }}>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: "8px 8px", marginBottom: "auto", alignContent: "flex-start" }}>
         {JOB_CATEGORIES_DATA.map((cat) => {
           const selectedIndex = state.selectedCategories.indexOf(cat.label);
           const isSelected = selectedIndex !== -1;
@@ -199,22 +199,38 @@ function Step1_JobField({ state, updateState, onNext }: StepProps) {
               }
               onClick={() => toggleCategory(cat.label)}
               style={{
-                flex: "1 1 auto",
-                background: "transparent",
-                border: "none",
-                padding: "5px 12px",
+                background: isSelected ? "rgba(230, 126, 34, 0.12)" : "var(--card)",
+                border: isSelected ? "1px solid var(--brand)" : "1px solid var(--border)",
+                padding: "6px 12px",
                 borderRadius: 20,
-                display: "inline-flex", alignItems: "center", justifyContent: "center",
+                display: "inline-flex", alignItems: "center",
                 cursor: "pointer", fontFamily: "inherit",
-                textAlign: "center",
               }}
             >
               <span style={{
-                fontSize: 13.5, fontWeight: isSelected ? 700 : cat.label === "Other" ? 600 : 500,
-                color: isSelected ? "var(--brand)" : cat.label === "Other" ? "var(--brand)" : "var(--text-secondary)",
+                fontSize: 13, fontWeight: isSelected ? 700 : 500,
+                color: isSelected ? "var(--brand)" : "var(--text-secondary)",
                 transition: "color 0.2s, font-weight 0.2s",
+                display: "inline-flex", alignItems: "center",
               }}>
                 {cat.label}
+                {isSelected && (
+                  <span style={{
+                    marginLeft: 6,
+                    fontSize: 10,
+                    fontWeight: 800,
+                    background: "var(--brand)",
+                    color: "#FFFFFF",
+                    borderRadius: "50%",
+                    width: 16,
+                    height: 16,
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}>
+                    {selectedIndex + 1}
+                  </span>
+                )}
               </span>
             </motion.button>
           );
