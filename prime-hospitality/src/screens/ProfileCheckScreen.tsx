@@ -19,11 +19,11 @@ interface ProfileCheckScreenProps {
 
 const EXPERIENCE_LEVELS: ExperienceLevel[] = ["Entry Level", "Mid Level", "Senior Level"];
 const CATEGORIES: JobCategory[] = [
-  "Waiter", "Chef", "Receptionist", "Barista",
-  "Housekeeper", "Security", "Cashier", "Manager",
-  "Marketing & Sales", "F&B", "Finance", "Cost Control",
-  "Accountant", "Bellboy", "Store Keeper", "Phone Operator",
-  "Maintenance",
+  "Waiter", "Chef", "Executive Chef", "Sous Chef", "Barista", "Receptionist", "Night Auditor", "Guest Relations Officer", "Reservations Agent", "Housekeeper",
+  "Security", "Cashier", "Cook", "Traditional / Cultural Food Cook", "Delivery", "Driver",
+  "Manager", "General Manager", "Marketing & Sales", "F&B", "Finance", "Cost Control",
+  "Accountant", "Bellboy", "Store Keeper", "Phone Operator", "Maintenance", "Painter", "Chief Engineer",
+  "IT Officer", "Spa Attendant", "Gym Trainer", "Lifeguard", "Banquet", "Food Steward / Kitchen Assistant", "Other",
 ];
 const EDUCATION_OPTIONS = [
   "Grade 12 / High School",

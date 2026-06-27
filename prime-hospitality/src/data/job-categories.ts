@@ -64,7 +64,21 @@ export const HOTEL_JOB_CATEGORIES: JobCategoryDetail[] = [
     name: "Chef",
     nameAm: "ዋና ሼፍ",
     department: "Kitchen & Culinary",
-    keywords: ["chef", "head chef", "executive chef", "sous chef", "pastry chef", "chef de partie", "kitchen supervisor", "hot kitchen chef", "cold kitchen chef"]
+    keywords: ["chef", "pastry chef", "chef de partie", "kitchen supervisor", "hot kitchen chef", "cold kitchen chef"]
+  },
+  {
+    id: "executive-chef",
+    name: "Executive Chef",
+    nameAm: "ዋና ሥራ አስፈፃሚ ሼፍ",
+    department: "Kitchen & Culinary",
+    keywords: ["executive chef", "head chef", "ex chef", "exec chef"]
+  },
+  {
+    id: "sous-chef",
+    name: "Sous Chef",
+    nameAm: "ምክትል ሼፍ / ሱ ሼፍ",
+    department: "Kitchen & Culinary",
+    keywords: ["sous chef", "sous-chef", "deputy chef"]
   },
   {
     id: "cook",
@@ -74,11 +88,18 @@ export const HOTEL_JOB_CATEGORIES: JobCategoryDetail[] = [
     keywords: ["cook", "assistant cook", "commis", "junior cook", "line cook", "prep cook", "grill cook", "baker", "pizza chef", "butcher", "sauce cook", "salad maker"]
   },
   {
+    id: "cultural-cook",
+    name: "Traditional / Cultural Food Cook",
+    nameAm: "የባህል ምግብ አብሳይ",
+    department: "Kitchen & Culinary",
+    keywords: ["traditional food", "cultural food", "cultural cook", "habesha food cook", "injera", "dorowot"]
+  },
+  {
     id: "kitchen-steward",
-    name: "Kitchen Steward",
+    name: "Food Steward / Kitchen Assistant",
     nameAm: "የኩሽና እቃ አጣቢ / ስቴዋርድ",
     department: "Kitchen & Culinary",
-    keywords: ["steward", "dishwasher", "kitchen helper", "pot washer", "utility worker", "kitchen cleaner", "stewarding"]
+    keywords: ["steward", "dishwasher", "kitchen helper", "pot washer", "utility worker", "kitchen cleaner", "stewarding", "kitchen assistant", "food steward"]
   },
 
   // ── Front Office ──
@@ -87,7 +108,28 @@ export const HOTEL_JOB_CATEGORIES: JobCategoryDetail[] = [
     name: "Receptionist / Front Desk",
     nameAm: "ሪሴፕሽኒስት / እንግዳ ተቀባይ",
     department: "Front Office",
-    keywords: ["receptionist", "front desk", "front office", "night auditor", "guest relations", "guest experience", "receptionist clerk", "front desk agent"]
+    keywords: ["receptionist", "front desk", "front office", "guest relations", "guest experience", "receptionist clerk", "front desk agent"]
+  },
+  {
+    id: "night-auditor",
+    name: "Night Auditor",
+    nameAm: "የሌሊት ኦዲተር / ሂሳብ ተቆጣጣሪ",
+    department: "Front Office",
+    keywords: ["night auditor", "night audit", "front desk night auditor"]
+  },
+  {
+    id: "guest-relations",
+    name: "Guest Relations Officer",
+    nameAm: "የእንግዳ ግንኙነት ኦፊሰር",
+    department: "Front Office",
+    keywords: ["guest relations", "gro", "guest relation officer", "guest experience officer", "guest relation"]
+  },
+  {
+    id: "reservations-agent",
+    name: "Reservations Agent",
+    nameAm: "የክፍል ማስያዣ ወኪል",
+    department: "Front Office",
+    keywords: ["reservations agent", "reservation agent", "reservations officer", "booking agent"]
   },
   {
     id: "bellboy",
@@ -211,7 +253,21 @@ export const HOTEL_JOB_CATEGORIES: JobCategoryDetail[] = [
     name: "Maintenance Technician",
     nameAm: "ጥገና ሰራተኛ",
     department: "Engineering & IT",
-    keywords: ["maintenance", "technician", "electrician", "plumber", "painter", "carpenter", "mason", "handyman", "chief engineer", "engineering supervisor"]
+    keywords: ["maintenance", "technician", "electrician", "plumber", "carpenter", "mason", "handyman", "engineering supervisor"]
+  },
+  {
+    id: "painter",
+    name: "Painter",
+    nameAm: "ቀለም ቀቢ",
+    department: "Engineering & IT",
+    keywords: ["painter", "painting", "wall painter"]
+  },
+  {
+    id: "chief-engineer",
+    name: "Chief Engineer",
+    nameAm: "ቺፍ ኢንጂነር / ዋና መሐንዲስ",
+    department: "Engineering & IT",
+    keywords: ["chief engineer", "head engineer", "engineering manager", "director of engineering"]
   },
   {
     id: "it-officer",
@@ -240,10 +296,17 @@ export const HOTEL_JOB_CATEGORIES: JobCategoryDetail[] = [
   },
   {
     id: "gym-trainer",
-    name: "Gym Trainer / Lifeguard",
-    nameAm: "የጂም አሰልጣኝ / ዋናተኛ",
+    name: "Gym Trainer",
+    nameAm: "የጂም አሰልጣኝ",
     department: "Spa & Recreation",
-    keywords: ["gym", "fitness instructor", "personal trainer", "lifeguard", "pool attendant"]
+    keywords: ["gym", "fitness instructor", "personal trainer"]
+  },
+  {
+    id: "lifeguard",
+    name: "Lifeguard",
+    nameAm: "ዋናተኛ / ላይፍጋርድ",
+    department: "Spa & Recreation",
+    keywords: ["lifeguard", "pool attendant", "pool lifeguard", "swimming instructor"]
   }
 ];
 
