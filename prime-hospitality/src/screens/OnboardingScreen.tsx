@@ -112,36 +112,40 @@ export default function OnboardingScreen({ onComplete }: { onComplete: () => voi
 
 // --- Step 1: Job Field Selection ---
 const JOB_CATEGORIES_DATA = [
-  // Sorted by label length ascending so short chips cluster at top, long ones flow below
-  { label: "F&B", emoji: "🍹" },
+  // Tier 1 — Highest demand & value (culinary leadership + front of house)
   { label: "Chef", emoji: "👨‍🍳" },
-  { label: "Cook", emoji: "🍳" },
   { label: "Waiter", emoji: "🍽️" },
-  { label: "Driver", emoji: "🚗" },
-  { label: "Painter", emoji: "🎨" },
+  { label: "Barista", emoji: "☕" },
+  { label: "Executive Chef", emoji: "👑" },
+  { label: "Sous Chef", emoji: "🧑‍🍳" },
+  { label: "Receptionist", emoji: "🛎️" },
+  // Tier 2 — Revenue & operations
+  { label: "F&B", emoji: "🍹" },
   { label: "Finance", emoji: "💰" },
+  { label: "Cost Control", emoji: "📊" },
+  { label: "Marketing & Sales", emoji: "📈" },
+  // Tier 3 — Guest experience & room operations
+  { label: "Cook", emoji: "🍳" },
+  { label: "Housekeeper", emoji: "🧹" },
+  { label: "Night Auditor", emoji: "🌙" },
+  { label: "Reservations Agent", emoji: "📅" },
+  { label: "Guest Relations Officer", emoji: "🤝" },
+  // Tier 4 — Support & facilities
+  { label: "Security", emoji: "🛡️" },
+  { label: "IT Officer", emoji: "💻" },
+  { label: "Maintenance", emoji: "🔧" },
+  { label: "Gym Trainer", emoji: "🏋️" },
+  { label: "Lifeguard", emoji: "🛟" },
+  { label: "Spa Attendant", emoji: "💆" },
+  { label: "Chief Engineer", emoji: "⚙️" },
+  // Tier 5 — Specialist support roles
   { label: "Steward", emoji: "🫧" },
   { label: "Cashier", emoji: "💳" },
   { label: "Bellboy", emoji: "🧳" },
-  { label: "Barista", emoji: "☕" },
   { label: "Banquet", emoji: "🥂" },
-  { label: "Security", emoji: "🛡️" },
-  { label: "Lifeguard", emoji: "🛟" },
-  { label: "Sous Chef", emoji: "🧑‍🍳" },
-  { label: "IT Officer", emoji: "💻" },
-  { label: "Housekeeper", emoji: "🧹" },
-  { label: "Gym Trainer", emoji: "🏋️" },
-  { label: "Maintenance", emoji: "🔧" },
-  { label: "Cost Control", emoji: "📊" },
-  { label: "Receptionist", emoji: "🛎️" },
-  { label: "Spa Attendant", emoji: "💆" },
-  { label: "Night Auditor", emoji: "🌙" },
-  { label: "Executive Chef", emoji: "👑" },
-  { label: "Chief Engineer", emoji: "⚙️" },
+  { label: "Painter", emoji: "🎨" },
+  { label: "Driver", emoji: "🚗" },
   { label: "Kitchen Assistant", emoji: "🧼" },
-  { label: "Marketing & Sales", emoji: "📈" },
-  { label: "Reservations Agent", emoji: "📅" },
-  { label: "Guest Relations Officer", emoji: "🤝" },
   { label: "Other", emoji: "✨" },
 ];
 
