@@ -178,7 +178,7 @@ function Step1_JobField({ state, updateState, onNext }: StepProps) {
       </h1>
       <p style={{ fontSize: 14, color: "var(--text-secondary)", marginBottom: 20 }}>Select up to 3 categories.</p>
 
-      <div style={{ display: "flex", flexWrap: "wrap", gap: "8px 8px", marginBottom: "auto", alignContent: "flex-start" }}>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: "8px 8px", alignContent: "flex-start" }}>
         {JOB_CATEGORIES_DATA.map((cat) => {
           const selectedIndex = state.selectedCategories.indexOf(cat.label);
           const isSelected = selectedIndex !== -1;
@@ -229,7 +229,7 @@ function Step1_JobField({ state, updateState, onNext }: StepProps) {
         <motion.div
           initial={{ opacity: 0, y: 4 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5 }}
+          transition={{ delay: 4 }}
           style={{
             marginTop: 8,
             padding: "9px 14px",
@@ -286,7 +286,7 @@ function Step1_JobField({ state, updateState, onNext }: StepProps) {
         </motion.div>
       )}
 
-      <div style={{ marginTop: 32, display: "flex", flexDirection: "column" }}>
+      <div style={{ marginTop: "auto", paddingTop: 32, display: "flex", flexDirection: "column" }}>
         <p style={{ fontSize: 13, fontWeight: 600, color: "var(--text-muted)", marginBottom: 12, textTransform: "uppercase", letterSpacing: "0.05em" }}>
           App Language
         </p>
