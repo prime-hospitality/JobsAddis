@@ -1,6 +1,7 @@
 @import "tailwindcss";
 
 :root {
+  color-scheme: light;
   /* Light Theme (Upwork Green & White) */
   --app-bg: #F9FAFB;
   --surface: #FFFFFF;
@@ -31,6 +32,7 @@
 }
 
 [data-theme="dark"] {
+  color-scheme: dark;
   /* Dark Theme (Elevated Neutral Gray) */
   --app-bg: #121212;
   --surface: #1A1A1A;

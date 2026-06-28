@@ -36,6 +36,31 @@ export default function RootLayout({
         <meta name="telegram:web-app" content="true" />
         {/* Load Telegram WebApp SDK — must be synchronous so it's available on init */}
         <script src="https://telegram.org/js/telegram-web-app.js"></script>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              try {
+                var saved = localStorage.getItem('theme');
+                var isDark = saved === 'dark';
+                if (isDark) {
+                  document.documentElement.setAttribute('data-theme', 'dark');
+                  document.documentElement.style.colorScheme = 'dark';
+                } else {
+                  document.documentElement.removeAttribute('data-theme');
+                  document.documentElement.style.colorScheme = 'light';
+                }
+                if (window.Telegram && window.Telegram.WebApp) {
+                  var tg = window.Telegram.WebApp;
+                  var bg = isDark ? '#121212' : '#F9FAFB';
+                  var surface = isDark ? '#1A1A1A' : '#FFFFFF';
+                  if (tg.setHeaderColor) tg.setHeaderColor(bg);
+                  if (tg.setBackgroundColor) tg.setBackgroundColor(bg);
+                  if (tg.setBottomBarColor) tg.setBottomBarColor(surface);
+                }
+              } catch (e) {}
+            `,
+          }}
+        />
       </head>
       <body className="antialiased">
         <CvUploadProvider>
