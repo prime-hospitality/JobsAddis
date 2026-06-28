@@ -35,8 +35,7 @@ type AppView =
   | { screen: "applicantManagement"; jobId: string; jobTitle: string };
 
 // Keys to wipe when a user is deleted or needs to re-onboard.
-// 'theme' is intentionally excluded — we keep their display preference.
-const USER_LOCAL_KEYS = ["profile_privacy_dismissed"];
+const USER_LOCAL_KEYS = ["profile_privacy_dismissed", "theme"];
 
 function clearUserLocalData() {
   try {
