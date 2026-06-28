@@ -322,7 +322,7 @@ function CategoryModal({
               onClick={() => setActiveTeam(null)}
               style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", padding: "0 0 14px 0", color: "var(--brand)", fontWeight: 600, fontSize: 14 }}
             >
-              <ChevronLeft size={16} /> Back to Teams
+              <ChevronLeft size={16} /> Back to Main Category
             </button>
             <CatGrid cats={teamCats} />
           </>
