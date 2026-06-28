@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence, LazyMotion, domAnimation } from "framer-motion";
-import { Search, X, SlidersHorizontal, MapPin, Clock, ChevronDown, CheckCircle } from "lucide-react";
+import { Search, X, SlidersHorizontal, MapPin, Clock, ChevronDown, CheckCircle, ChevronLeft, ChevronRight, Users } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { Job, JobCategory, JobType, ExperienceLevel, JOB_CATEGORIES } from "@/data/jobs";
 import { SupabaseJob, mapSupabaseJobToJob } from "@/hooks/useJobs";
@@ -44,6 +44,63 @@ const DATE_OPTIONS = [
   "Last 7 days",
   "Last 30 days"
 ];
+
+const CATEGORY_TEAMS: Record<string, string[]> = {
+  "Front Office": [
+    "Receptionist",
+    "Night Auditor",
+    "Guest Relations Officer",
+    "Reservations Agent",
+    "Phone Operator",
+    "Bellboy",
+  ],
+  "Housekeeping": [
+    "Housekeeper",
+  ],
+  "Food & Beverage": [
+    "F&B",
+    "Waiter",
+    "Chef",
+    "Executive Chef",
+    "Sous Chef",
+    "Cook",
+    "Traditional Cook",
+    "Kitchen Assistant",
+    "Steward",
+    "Barista",
+    "Banquet",
+  ],
+  "Marketing": [
+    "Marketing & Sales",
+  ],
+  "Human Resources": [],
+  "Engineering & Maintenance": [
+    "Chief Engineer",
+    "Maintenance",
+    "Painter",
+    "IT Officer",
+  ],
+  "Finance & Accounting": [
+    "Finance",
+    "Accountant",
+    "Cost Control",
+    "Cashier",
+    "Store Keeper",
+  ],
+  "Unassigned": [
+    "Manager",
+    "General Manager",
+    "Security",
+    "Driver",
+    "Delivery",
+    "Spa Attendant",
+    "Gym Trainer",
+    "Lifeguard",
+    "Other",
+  ],
+};
+
+const TEAM_NAMES = Object.keys(CATEGORY_TEAMS).filter(t => t !== "Unassigned");
 
 // Helper Modal Component
 function FilterModal({ 
@@ -142,50 +199,129 @@ function CategoryModal({
   isOpen: boolean; onClose: () => void; selected: string[]; onChange: (cats: string[]) => void;
 }) {
   const [search, setSearch] = useState("");
-  const filtered = JOB_CATEGORIES.filter(c => c.toLowerCase().includes(search.toLowerCase()));
+  const [activeTeam, setActiveTeam] = useState<string | null>(null);
+
+  // Reset drill-down state when modal closes
+  useEffect(() => {
+    if (!isOpen) { setSearch(""); setActiveTeam(null); }
+  }, [isOpen]);
 
   const toggle = (cat: string) => {
     if (selected.includes(cat)) onChange(selected.filter(c => c !== cat));
     else onChange([...selected, cat]);
   };
 
+  // When searching, flat-list ALL categories across every team
+  const isSearching = search.trim().length > 0;
+  const allCats = JOB_CATEGORIES;
+  const searchFiltered = allCats.filter(c => c.toLowerCase().includes(search.toLowerCase()));
+
+  // Categories for the drilled-in team
+  const teamCats = activeTeam ? (CATEGORY_TEAMS[activeTeam] ?? []) : [];
+
+  const CatGrid = ({ cats }: { cats: string[] }) => (
+    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+      {cats.map(cat => {
+        const isSelected = selected.includes(cat);
+        return (
+          <button
+            key={cat}
+            onClick={() => toggle(cat)}
+            style={{
+              width: "100%", padding: "13px 12px", textAlign: "left", display: "flex", alignItems: "center", justifyContent: "space-between",
+              background: isSelected ? "var(--brand-subtle)" : "var(--surface-elevated)",
+              border: isSelected ? "1px solid var(--brand)" : "1px solid var(--border)",
+              borderRadius: 12, cursor: "pointer",
+            }}
+          >
+            <span style={{ fontSize: 13, fontWeight: isSelected ? 700 : 500, color: isSelected ? "var(--brand)" : "var(--text-primary)", lineHeight: 1.3 }}>
+              {cat}
+            </span>
+            <div style={{ flexShrink: 0, width: 20, height: 20, borderRadius: 6, border: isSelected ? "none" : "2px solid var(--text-muted)", background: isSelected ? "var(--brand)" : "transparent", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              {isSelected && <CheckCircle size={13} color="white" />}
+            </div>
+          </button>
+        );
+      })}
+      {cats.length === 0 && <p style={{ gridColumn: "1 / -1", textAlign: "center", color: "var(--text-muted)", padding: "24px 0" }}>No roles in this team yet.</p>}
+    </div>
+  );
+
+  const modalTitle = activeTeam && !isSearching ? activeTeam : "Select Category";
+
   return (
-    <FilterModal isOpen={isOpen} onClose={onClose} title="Select Category" onUpdate={() => {}}>
+    <FilterModal isOpen={isOpen} onClose={onClose} title={modalTitle} onUpdate={() => {}}>
       <div style={{ padding: "16px 20px" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, background: "var(--app-bg)", border: "1px solid var(--border)", borderRadius: 12, padding: "12px 16px", marginBottom: 16 }}>
-          <Search size={18} color="var(--text-muted)" />
-          <input 
-            placeholder="Search categories..."
+
+        {/* Search bar */}
+        <div style={{ display: "flex", alignItems: "center", gap: 10, background: "var(--app-bg)", border: "1px solid var(--border)", borderRadius: 12, padding: "11px 14px", marginBottom: 16 }}>
+          <Search size={17} color="var(--text-muted)" />
+          <input
+            placeholder="Search all categories..."
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => { setSearch(e.target.value); setActiveTeam(null); }}
             style={{ border: "none", outline: "none", width: "100%", fontSize: 15, background: "transparent", color: "var(--text-primary)" }}
           />
+          {search && (
+            <button onClick={() => setSearch("")} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, lineHeight: 0 }}>
+              <X size={15} color="var(--text-muted)" />
+            </button>
+          )}
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-          {filtered.map(cat => {
-            const isSelected = selected.includes(cat);
-            return (
-              <button
-                key={cat}
-                onClick={() => toggle(cat)}
-                style={{
-                  width: "100%", padding: "14px 12px", textAlign: "left", display: "flex", alignItems: "center", justifyContent: "space-between",
-                  background: isSelected ? "var(--brand-subtle)" : "var(--surface-elevated)", 
-                  border: isSelected ? "1px solid var(--brand)" : "1px solid var(--border)", 
-                  borderRadius: 12, cursor: "pointer",
-                }}
-              >
-                <span style={{ fontSize: 13, fontWeight: isSelected ? 700 : 500, color: isSelected ? "var(--brand)" : "var(--text-primary)", lineHeight: 1.2 }}>
-                  {cat}
-                </span>
-                <div style={{ flexShrink: 0, width: 20, height: 20, borderRadius: 6, border: isSelected ? "none" : "2px solid var(--text-muted)", background: isSelected ? "var(--brand)" : "transparent", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  {isSelected && <CheckCircle size={14} color="white" />}
-                </div>
-              </button>
-            );
-          })}
-          {filtered.length === 0 && <p style={{ gridColumn: "1 / -1", textAlign: "center", color: "var(--text-muted)", marginTop: 20 }}>No categories found.</p>}
-        </div>
+
+        {/* Search results */}
+        {isSearching && (
+          searchFiltered.length > 0
+            ? <CatGrid cats={searchFiltered} />
+            : <p style={{ textAlign: "center", color: "var(--text-muted)", padding: "24px 0" }}>No categories found.</p>
+        )}
+
+        {/* Team drill-down: team list */}
+        {!isSearching && !activeTeam && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+            {TEAM_NAMES.map(team => {
+              const cats = CATEGORY_TEAMS[team] ?? [];
+              const activeCount = cats.filter(c => selected.includes(c)).length;
+              return (
+                <button
+                  key={team}
+                  onClick={() => setActiveTeam(team)}
+                  style={{
+                    width: "100%", padding: "15px 4px", display: "flex", alignItems: "center", justifyContent: "space-between",
+                    background: "transparent", border: "none", borderBottom: "1px solid var(--border)", cursor: "pointer",
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                    <div style={{ width: 38, height: 38, borderRadius: 10, background: activeCount > 0 ? "var(--brand-subtle)" : "var(--surface-elevated)", border: `1px solid ${activeCount > 0 ? "var(--brand)" : "var(--border)"}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <Users size={17} color={activeCount > 0 ? "var(--brand)" : "var(--text-muted)"} />
+                    </div>
+                    <div style={{ textAlign: "left" }}>
+                      <p style={{ fontSize: 15, fontWeight: 600, color: activeCount > 0 ? "var(--brand)" : "var(--text-primary)", margin: 0 }}>{team}</p>
+                      <p style={{ fontSize: 12, color: "var(--text-muted)", margin: 0 }}>
+                        {cats.length} {cats.length === 1 ? "role" : "roles"}{activeCount > 0 ? ` · ${activeCount} selected` : ""}
+                      </p>
+                    </div>
+                  </div>
+                  <ChevronRight size={18} color="var(--text-muted)" />
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Team drill-down: category list */}
+        {!isSearching && activeTeam && (
+          <>
+            <button
+              onClick={() => setActiveTeam(null)}
+              style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", padding: "0 0 14px 0", color: "var(--brand)", fontWeight: 600, fontSize: 14 }}
+            >
+              <ChevronLeft size={16} /> Back to Teams
+            </button>
+            <CatGrid cats={teamCats} />
+          </>
+        )}
+
       </div>
     </FilterModal>
   );
