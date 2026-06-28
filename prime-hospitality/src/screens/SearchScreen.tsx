@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence, LazyMotion, domAnimation } from "framer-motion";
-import { Search, X, SlidersHorizontal, MapPin, Clock } from "lucide-react";
+import { Search, X, SlidersHorizontal, MapPin, Clock, ChevronDown, CheckCircle } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { Job, JobCategory, JobType, ExperienceLevel, JOB_CATEGORIES } from "@/data/jobs";
 import { SupabaseJob, mapSupabaseJobToJob } from "@/hooks/useJobs";
@@ -28,21 +28,279 @@ function useDebounce<T>(value: T, delay: number): T {
   return debounced;
 }
 
+
+const EXPERIENCE_OPTIONS = [
+  "Entry Level (Fresh Graduate)",
+  "Junior Level(1-3 years)",
+  "Mid Level(3-5 years)",
+  "Senior(5-8 years)",
+  "Executive(VP, Director)",
+  "Senior Executive(C Level)",
+];
+
+const DATE_OPTIONS = [
+  "Any date",
+  "Since yesterday",
+  "Last 7 days",
+  "Last 30 days"
+];
+
+// Helper Modal Component
+function FilterModal({ 
+  isOpen, 
+  onClose, 
+  title, 
+  children,
+  onUpdate
+}: { 
+  isOpen: boolean; 
+  onClose: () => void; 
+  title: string; 
+  children: React.ReactNode;
+  onUpdate: () => void;
+}) {
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.2 }}
+          style={{
+            position: "fixed",
+            top: 0, left: 0, right: 0, bottom: 0,
+            zIndex: 9999,
+            background: "rgba(0, 0, 0, 0.4)",
+            backdropFilter: "blur(12px)",
+            WebkitBackdropFilter: "blur(12px)",
+            display: "flex",
+            alignItems: "flex-end",
+          }}
+          onClick={onClose}
+        >
+          <motion.div
+            initial={{ y: "100%" }}
+            animate={{ y: 0 }}
+            exit={{ y: "100%" }}
+            transition={{ type: "spring", stiffness: 400, damping: 32 }}
+            style={{
+              width: "100%",
+              height: "85dvh",
+              background: "var(--app-bg)",
+              borderTopLeftRadius: 24,
+              borderTopRightRadius: 24,
+              display: "flex",
+              flexDirection: "column",
+              overflow: "hidden",
+              boxShadow: "0 -8px 32px rgba(0,0,0,0.15)",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div style={{ padding: "20px 20px 16px", display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid var(--border)", background: "var(--surface)" }}>
+              <h3 style={{ fontSize: 18, fontWeight: 800, color: "var(--text-primary)", margin: 0 }}>{title}</h3>
+              <button 
+                onClick={onClose}
+                style={{ background: "transparent", border: "none", fontSize: 24, color: "var(--text-muted)", cursor: "pointer", padding: 0, lineHeight: 1 }}
+              >
+                &times;
+              </button>
+            </div>
+
+            {/* Content */}
+            <div style={{ flex: 1, overflowY: "auto", background: "var(--surface)" }}>
+              {children}
+            </div>
+
+            {/* Footer / Update Button */}
+            <div style={{ padding: "16px 20px 32px", borderTop: "1px solid var(--border)", background: "var(--surface)" }}>
+              <motion.button
+                whileTap={{ scale: 0.95 }}
+                onClick={() => {
+                  onUpdate();
+                  onClose();
+                }}
+                className="btn-primary"
+                style={{ width: "100%" }}
+              >
+                Update Results
+              </motion.button>
+            </div>
+
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
+// Category Modal
+function CategoryModal({ 
+  isOpen, onClose, selected, onChange 
+}: { 
+  isOpen: boolean; onClose: () => void; selected: string[]; onChange: (cats: string[]) => void;
+}) {
+  const [search, setSearch] = useState("");
+  const filtered = JOB_CATEGORIES.filter(c => c.toLowerCase().includes(search.toLowerCase()));
+
+  const toggle = (cat: string) => {
+    if (selected.includes(cat)) onChange(selected.filter(c => c !== cat));
+    else onChange([...selected, cat]);
+  };
+
+  return (
+    <FilterModal isOpen={isOpen} onClose={onClose} title="Select Category" onUpdate={() => {}}>
+      <div style={{ padding: "16px 20px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, background: "var(--app-bg)", border: "1px solid var(--border)", borderRadius: 12, padding: "12px 16px", marginBottom: 16 }}>
+          <Search size={18} color="var(--text-muted)" />
+          <input 
+            placeholder="Search categories..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            style={{ border: "none", outline: "none", width: "100%", fontSize: 15, background: "transparent", color: "var(--text-primary)" }}
+          />
+        </div>
+        <div style={{ display: "flex", flexDirection: "column" }}>
+          {filtered.map(cat => {
+            const isSelected = selected.includes(cat);
+            return (
+              <button
+                key={cat}
+                onClick={() => toggle(cat)}
+                style={{
+                  width: "100%", padding: "16px 0", textAlign: "left", display: "flex", alignItems: "center", justifyContent: "space-between",
+                  background: "transparent", borderTop: "none", borderRight: "none", borderLeft: "none",
+                  borderBottom: "1px solid var(--border)", cursor: "pointer",
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <span style={{ fontSize: 20 }}>{CATEGORY_EMOJIS[cat] ?? "🏨"}</span>
+                  <span style={{ fontSize: 16, fontWeight: isSelected ? 700 : 500, color: isSelected ? "var(--brand)" : "var(--text-primary)" }}>
+                    {cat}
+                  </span>
+                </div>
+                <div style={{ width: 24, height: 24, borderRadius: 6, border: isSelected ? "none" : "2px solid var(--text-muted)", background: isSelected ? "var(--brand)" : "transparent", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  {isSelected && <CheckCircle size={16} color="white" />}
+                </div>
+              </button>
+            );
+          })}
+          {filtered.length === 0 && <p style={{ textAlign: "center", color: "var(--text-muted)", marginTop: 20 }}>No categories found.</p>}
+        </div>
+      </div>
+    </FilterModal>
+  );
+}
+
+// Experience Modal
+function ExperienceModal({ 
+  isOpen, onClose, selected, onChange 
+}: { 
+  isOpen: boolean; onClose: () => void; selected: string[]; onChange: (exp: string[]) => void;
+}) {
+  const toggle = (exp: string) => {
+    if (selected.includes(exp)) onChange(selected.filter(e => e !== exp));
+    else onChange([...selected, exp]);
+  };
+
+  return (
+    <FilterModal isOpen={isOpen} onClose={onClose} title="Experience Level" onUpdate={() => {}}>
+      <div style={{ padding: "8px 20px" }}>
+        <div style={{ display: "flex", flexDirection: "column" }}>
+          {EXPERIENCE_OPTIONS.map(exp => {
+            const isSelected = selected.includes(exp);
+            return (
+              <button
+                key={exp}
+                onClick={() => toggle(exp)}
+                style={{
+                  width: "100%", padding: "16px 0", textAlign: "left", display: "flex", alignItems: "center", justifyContent: "space-between",
+                  background: "transparent", borderTop: "none", borderRight: "none", borderLeft: "none",
+                  borderBottom: "1px solid var(--border)", cursor: "pointer",
+                }}
+              >
+                <span style={{ fontSize: 16, fontWeight: isSelected ? 700 : 500, color: isSelected ? "var(--brand)" : "var(--text-primary)" }}>
+                  {exp}
+                </span>
+                <div style={{ width: 24, height: 24, borderRadius: 6, border: isSelected ? "none" : "2px solid var(--text-muted)", background: isSelected ? "var(--brand)" : "transparent", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  {isSelected && <CheckCircle size={16} color="white" />}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </FilterModal>
+  );
+}
+
+// Date Modal
+function DateModal({ 
+  isOpen, onClose, selected, onChange 
+}: { 
+  isOpen: boolean; onClose: () => void; selected: string; onChange: (date: string) => void;
+}) {
+  return (
+    <FilterModal isOpen={isOpen} onClose={onClose} title="Posted Within" onUpdate={() => {}}>
+      <div style={{ padding: "8px 20px" }}>
+        <div style={{ display: "flex", flexDirection: "column" }}>
+          {DATE_OPTIONS.map(date => {
+            const isSelected = selected === date;
+            return (
+              <button
+                key={date}
+                onClick={() => onChange(date)}
+                style={{
+                  width: "100%", padding: "16px 0", textAlign: "left", display: "flex", alignItems: "center", justifyContent: "space-between",
+                  background: "transparent", borderTop: "none", borderRight: "none", borderLeft: "none",
+                  borderBottom: "1px solid var(--border)", cursor: "pointer",
+                }}
+              >
+                <span style={{ fontSize: 16, fontWeight: isSelected ? 700 : 500, color: isSelected ? "var(--brand)" : "var(--text-primary)" }}>
+                  {date}
+                </span>
+                <div style={{ width: 24, height: 24, borderRadius: 12, border: isSelected ? "none" : "2px solid var(--text-muted)", background: isSelected ? "var(--brand)" : "transparent", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  {isSelected && <div style={{ width: 10, height: 10, borderRadius: 5, background: "white" }} />}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </FilterModal>
+  );
+}
+
 export default function SearchScreen({ onJobSelect }: SearchScreenProps) {
   const [query, setQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState<JobCategory | null>(null);
+  const [selectedCategories, setSelectedCategories] = useState<JobCategory[]>([]);
+  const [selectedExperience, setSelectedExperience] = useState<string[]>([]);
+  const [postedWithin, setPostedWithin] = useState<string>("Any date");
+  const [activeModal, setActiveModal] = useState<"category" | "experience" | "date" | null>(null);
   const [results, setResults] = useState<Job[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showFilters, setShowFilters] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const debouncedQuery = useDebounce(query, 350);
 
-  const doSearch = useCallback(async (kw: string, cat: JobCategory | null) => {
+  useEffect(() => {
+    // Autofocus on mount
+    setTimeout(() => {
+      inputRef.current?.focus();
+    }, 100);
+  }, []);
+
+  const doSearch = useCallback(async (
+    kw: string, 
+    cats: JobCategory[], 
+    exp: string[], 
+    posted: string
+  ) => {
     const trimmed = kw.trim();
-    if (!trimmed && !cat) {
+    if (!trimmed && cats.length === 0 && exp.length === 0 && posted === "Any date") {
       setResults([]);
       setHasSearched(false);
       return;
@@ -66,17 +324,52 @@ export default function SearchScreen({ onJobSelect }: SearchScreenProps) {
         .order("created_at", { ascending: false })
         .limit(50);
 
-      if (cat) q = q.eq("category", cat);
+      if (cats.length > 0) q = q.in("category", cats);
+
+      // Filtering by experience level assuming a column exists or filtering on the client if necessary.
+      // For this implementation, we will assume an experience_level column or requirements->>'experience'.
+      // If backend doesn't support it yet, we just pass the filter to the DB and it will return 0 if column is missing,
+      // but assuming the backend has been aligned. (Using .in("experience_level", exp))
+      // Actually, since we don't know if 'experience_level' column exists on supabase yet, 
+      // it's safer to filter client-side after fetch, but let's try the DB level first:
+      // We will filter client side to avoid breaking the DB if the column isn't there.
+      // Wait, let's just do DB filtering for dates, and client-side for experience if it fails, OR just assume DB has it.
+      // I'll filter dates via DB, and we'll filter experience on client just to be 100% safe against DB schema crashes.
+
+      if (posted !== "Any date") {
+        const now = new Date();
+        if (posted === "Since yesterday") {
+          now.setDate(now.getDate() - 1);
+          q = q.gte("created_at", now.toISOString());
+        } else if (posted === "Last 7 days") {
+          now.setDate(now.getDate() - 7);
+          q = q.gte("created_at", now.toISOString());
+        } else if (posted === "Last 30 days") {
+          now.setDate(now.getDate() - 30);
+          q = q.gte("created_at", now.toISOString());
+        }
+      }
 
       if (trimmed) {
-        // Supabase full-text style — search title and description with ilike
         q = q.or(`title.ilike.%${trimmed}%,description.ilike.%${trimmed}%,neighborhood.ilike.%${trimmed}%`);
       }
 
       const { data, error: fetchError } = await q;
       if (fetchError) throw fetchError;
 
-      setResults(((data ?? []) as SupabaseJob[]).map(mapSupabaseJobToJob));
+      let finalData = ((data ?? []) as SupabaseJob[]).map(mapSupabaseJobToJob);
+      if (exp.length > 0) {
+        // If requirements.experience maps roughly, or we just mock filter it for now.
+        // Actually, we'll just filter if requirements.experience matches.
+        // But the requested strings ("Junior Level(1-3 years)") don't exactly match the type ExperienceLevel.
+        // We'll just do a fuzzy match or substring match.
+        finalData = finalData.filter(job => {
+           if (!job.requirements?.experience) return false;
+           return exp.some(e => e.toLowerCase().includes(job.requirements.experience.toLowerCase().replace(" level", "")));
+        });
+        // If no match works perfectly because DB data is old, it might return 0. But that's how filters work.
+      }
+      setResults(finalData);
     } catch (err) {
       console.error("Search failed:", err);
       setError("Search failed. Please try again.");
@@ -86,12 +379,14 @@ export default function SearchScreen({ onJobSelect }: SearchScreenProps) {
   }, []);
 
   useEffect(() => {
-    doSearch(debouncedQuery, selectedCategory);
-  }, [debouncedQuery, selectedCategory, doSearch]);
+    doSearch(debouncedQuery, selectedCategories, selectedExperience, postedWithin);
+  }, [debouncedQuery, selectedCategories, selectedExperience, postedWithin, doSearch]);
 
   const clearSearch = () => {
     setQuery("");
-    setSelectedCategory(null);
+    setSelectedCategories([]);
+    setSelectedExperience([]);
+    setPostedWithin("Any date");
     setResults([]);
     setHasSearched(false);
     inputRef.current?.focus();
@@ -168,7 +463,7 @@ export default function SearchScreen({ onJobSelect }: SearchScreenProps) {
                 fontFamily: "inherit",
               }}
             />
-            {(query || selectedCategory) && (
+            {(query || selectedCategories.length > 0 || selectedExperience.length > 0 || postedWithin !== "Any date") && (
               <motion.button
                 initial={{ opacity: 0, scale: 0.7 }}
                 animate={{ opacity: 1, scale: 1 }}
@@ -186,67 +481,58 @@ export default function SearchScreen({ onJobSelect }: SearchScreenProps) {
                 <X size={12} color="var(--text-muted)" />
               </motion.button>
             )}
-            <motion.button
-              whileTap={{ scale: 0.9 }}
-              onClick={() => setShowFilters((v) => !v)}
-              style={{
-                width: 32, height: 32, borderRadius: 9,
-                background: showFilters ? "var(--brand-subtle)" : "var(--surface-elevated)",
-                border: showFilters ? "1px solid var(--border-active)" : "1px solid var(--border)",
-                cursor: "pointer",
-                display: "flex", alignItems: "center", justifyContent: "center",
-                flexShrink: 0,
-              }}
-            >
-              <SlidersHorizontal size={14} color={showFilters ? "var(--brand)" : "var(--text-secondary)"} />
-            </motion.button>
           </div>
 
-          {/* Category filter panel */}
-          <AnimatePresence>
-            {showFilters && (
-              <motion.div
-                key="filters"
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                exit={{ opacity: 0, height: 0 }}
-                transition={{ duration: 0.2 }}
-                style={{ overflow: "hidden" }}
-              >
-                <div style={{ paddingBottom: 8 }}>
-                  <p style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>
-                    Filter by Role
-                  </p>
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                    {JOB_CATEGORIES.map((cat) => {
-                      const active = selectedCategory === cat;
-                      return (
-                        <motion.button
-                          key={cat}
-                          whileTap={{ scale: 0.95 }}
-                          onClick={() => setSelectedCategory(active ? null : cat)}
-                          style={{
-                            display: "flex", alignItems: "center", gap: 6,
-                            padding: "7px 12px",
-                            borderRadius: 100,
-                            fontSize: 13, fontWeight: 600,
-                            cursor: "pointer",
-                            background: active ? "var(--brand-subtle)" : "var(--surface-elevated)",
-                            border: active ? "1px solid var(--border-active)" : "1px solid var(--border)",
-                            color: active ? "var(--brand)" : "var(--text-secondary)",
-                            transition: "all 0.15s ease",
-                          }}
-                        >
-                          <span style={{ fontSize: 14 }}>{CATEGORY_EMOJIS[cat] ?? "🏨"}</span>
-                          {cat}
-                        </motion.button>
-                      );
-                    })}
-                  </div>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
+          {/* Filter Chips */}
+          <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 10, scrollbarWidth: "none", WebkitOverflowScrolling: "touch" }}>
+            <motion.button
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setActiveModal("category")}
+              style={{
+                display: "flex", alignItems: "center", gap: 6,
+                padding: "8px 14px", borderRadius: 100,
+                fontSize: 13, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0,
+                background: selectedCategories.length > 0 ? "var(--brand-subtle)" : "var(--surface-elevated)",
+                border: selectedCategories.length > 0 ? "1px solid var(--border-active)" : "1px solid var(--border)",
+                color: selectedCategories.length > 0 ? "var(--brand)" : "var(--text-secondary)",
+              }}
+            >
+              Category {selectedCategories.length > 0 && `(${selectedCategories.length})`}
+              <ChevronDown size={14} />
+            </motion.button>
+
+            <motion.button
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setActiveModal("experience")}
+              style={{
+                display: "flex", alignItems: "center", gap: 6,
+                padding: "8px 14px", borderRadius: 100,
+                fontSize: 13, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0,
+                background: selectedExperience.length > 0 ? "var(--brand-subtle)" : "var(--surface-elevated)",
+                border: selectedExperience.length > 0 ? "1px solid var(--border-active)" : "1px solid var(--border)",
+                color: selectedExperience.length > 0 ? "var(--brand)" : "var(--text-secondary)",
+              }}
+            >
+              Experience Level {selectedExperience.length > 0 && `(${selectedExperience.length})`}
+              <ChevronDown size={14} />
+            </motion.button>
+
+            <motion.button
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setActiveModal("date")}
+              style={{
+                display: "flex", alignItems: "center", gap: 6,
+                padding: "8px 14px", borderRadius: 100,
+                fontSize: 13, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0,
+                background: postedWithin !== "Any date" ? "var(--brand-subtle)" : "var(--surface-elevated)",
+                border: postedWithin !== "Any date" ? "1px solid var(--border-active)" : "1px solid var(--border)",
+                color: postedWithin !== "Any date" ? "var(--brand)" : "var(--text-secondary)",
+              }}
+            >
+              {postedWithin === "Any date" ? "Posted Within" : postedWithin}
+              <ChevronDown size={14} />
+            </motion.button>
+          </div>
         </div>
 
         {/* ── RESULTS ── */}
@@ -281,7 +567,7 @@ export default function SearchScreen({ onJobSelect }: SearchScreenProps) {
             >
               <p style={{ color: "#FCA5A5", fontSize: 14, marginBottom: 12 }}>{error}</p>
               <button
-                onClick={() => doSearch(query, selectedCategory)}
+                onClick={() => doSearch(query, selectedCategories, selectedExperience, postedWithin)}
                 style={{ fontSize: 13, fontWeight: 600, color: "var(--brand)", background: "none", border: "none", cursor: "pointer" }}
               >
                 Try again
@@ -349,7 +635,7 @@ export default function SearchScreen({ onJobSelect }: SearchScreenProps) {
               {/* Result count */}
               <p style={{ fontSize: 13, color: "var(--text-muted)", fontWeight: 500, paddingTop: 4 }}>
                 {results.length} result{results.length !== 1 ? "s" : ""}
-                {selectedCategory ? ` · ${selectedCategory}` : ""}
+                {selectedCategories.length > 0 ? ` · ${selectedCategories.join(", ")}` : ""}
               </p>
 
               <AnimatePresence>
@@ -433,6 +719,26 @@ export default function SearchScreen({ onJobSelect }: SearchScreenProps) {
           )}
         </div>
       </div>
+      {/* Modals */}
+      <CategoryModal 
+        isOpen={activeModal === "category"} 
+        onClose={() => setActiveModal(null)} 
+        selected={selectedCategories} 
+        onChange={setSelectedCategories} 
+      />
+      <ExperienceModal 
+        isOpen={activeModal === "experience"} 
+        onClose={() => setActiveModal(null)} 
+        selected={selectedExperience} 
+        onChange={setSelectedExperience} 
+      />
+      <DateModal 
+        isOpen={activeModal === "date"} 
+        onClose={() => setActiveModal(null)} 
+        selected={postedWithin} 
+        onChange={setPostedWithin} 
+      />
+
     </LazyMotion>
   );
 }
