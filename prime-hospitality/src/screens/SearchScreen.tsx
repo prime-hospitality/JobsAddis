@@ -481,6 +481,29 @@ export default function SearchScreen({ onJobSelect }: SearchScreenProps) {
 
           {/* Filter Chips */}
           <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 10, scrollbarWidth: "none", WebkitOverflowScrolling: "touch" }}>
+            {(selectedCategories.length > 0 || selectedExperience.length > 0 || postedWithin !== "Any date") && (
+              <motion.button
+                initial={{ opacity: 0, scale: 0.8, width: 0 }}
+                animate={{ opacity: 1, scale: 1, width: "auto" }}
+                exit={{ opacity: 0, scale: 0.8, width: 0 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => {
+                  setSelectedCategories([]);
+                  setSelectedExperience([]);
+                  setPostedWithin("Any date");
+                }}
+                style={{
+                  display: "flex", alignItems: "center", gap: 4,
+                  padding: "8px 12px", borderRadius: 100,
+                  fontSize: 13, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0,
+                  background: "rgba(239, 68, 68, 0.1)", 
+                  border: "1px solid rgba(239, 68, 68, 0.2)",
+                  color: "#EF4444",
+                }}
+              >
+                <X size={14} /> Clear
+              </motion.button>
+            )}
             <motion.button
               whileTap={{ scale: 0.95 }}
               onClick={() => setActiveModal("category")}
