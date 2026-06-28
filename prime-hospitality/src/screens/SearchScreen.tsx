@@ -178,7 +178,9 @@ function CategoryModal({
                 <span style={{ fontSize: 13, fontWeight: isSelected ? 700 : 500, color: isSelected ? "var(--brand)" : "var(--text-primary)", lineHeight: 1.2 }}>
                   {cat}
                 </span>
-                {isSelected && <CheckCircle size={14} color="var(--brand)" style={{ flexShrink: 0 }} />}
+                <div style={{ flexShrink: 0, width: 20, height: 20, borderRadius: 6, border: isSelected ? "none" : "2px solid var(--text-muted)", background: isSelected ? "var(--brand)" : "transparent", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  {isSelected && <CheckCircle size={14} color="white" />}
+                </div>
               </button>
             );
           })}
