@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence, useReducedMotion, LazyMotion, domAnimation } from "framer-motion";
-import { ArrowLeft, UploadCloud, CheckCircle, Smartphone, Lock, AlertTriangle } from "lucide-react";
+import { ArrowLeft, UploadCloud, CheckCircle, Smartphone, Lock, AlertTriangle, ChevronDown } from "lucide-react";
 import { useOnboarding, OnboardingStep } from "@/hooks/useOnboarding";
 import { JobCategory } from "@/data/jobs";
 import { useTelegram } from "@/hooks/useTelegram";
@@ -510,6 +510,111 @@ function Step2_Contact({ state, updateState, onNext }: StepProps) {
 // --- Step 3: Experience Level ---
 const EXPERIENCE_OPTIONS = ["No Experience", "Less than 1 year", "1 to 2 years", "3 to 5 years", "5+ years"];
 
+function CustomDropdown({ label, value, options, onSelect }: { label: string; value: string; options: string[]; onSelect: (val: string) => void }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleOutside = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    if (isOpen) {
+      document.addEventListener("mousedown", handleOutside);
+    }
+    return () => document.removeEventListener("mousedown", handleOutside);
+  }, [isOpen]);
+
+  return (
+    <div ref={containerRef} style={{ position: "relative" }}>
+      <label style={{
+        display: "block", fontSize: 13, fontWeight: 700,
+        color: "var(--brand)", marginBottom: 8,
+        textTransform: "uppercase", letterSpacing: "0.04em"
+      }}>
+        {label}
+      </label>
+      <motion.button
+        whileTap={{ scale: 0.98 }}
+        onClick={() => setIsOpen(!isOpen)}
+        style={{
+          width: "100%",
+          padding: "14px 16px",
+          borderRadius: 12,
+          border: value ? "1.5px solid var(--brand)" : "1px solid var(--border)",
+          background: value ? "rgba(34,197,94,0.06)" : "var(--card)",
+          color: value ? "var(--text-primary)" : "var(--text-muted)",
+          fontSize: 15,
+          fontWeight: value ? 600 : 400,
+          textAlign: "left",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          cursor: "pointer",
+          boxShadow: "0 2px 8px rgba(0,0,0,0.02)",
+        }}
+      >
+        {value || "Select experience level…"}
+        <motion.div animate={{ rotate: isOpen ? 180 : 0 }}>
+          <ChevronDown size={18} color={value ? "var(--brand)" : "var(--text-muted)"} />
+        </motion.div>
+      </motion.button>
+
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: -10, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -10, scale: 0.95 }}
+            transition={{ type: "spring", stiffness: 400, damping: 30 }}
+            style={{
+              position: "absolute",
+              top: "100%",
+              left: 0,
+              right: 0,
+              marginTop: 8,
+              background: "var(--surface-elevated)",
+              borderRadius: 12,
+              border: "1px solid var(--border)",
+              boxShadow: "0 12px 32px rgba(0,0,0,0.12)",
+              zIndex: 100,
+              overflow: "hidden",
+              display: "flex",
+              flexDirection: "column",
+            }}
+          >
+            {options.map((opt, i) => (
+              <button
+                key={opt}
+                onClick={() => {
+                  onSelect(opt);
+                  setIsOpen(false);
+                }}
+                style={{
+                  padding: "14px 16px",
+                  textAlign: "left",
+                  fontSize: 15,
+                  fontWeight: 500,
+                  color: value === opt ? "var(--brand)" : "var(--text-primary)",
+                  background: value === opt ? "rgba(34,197,94,0.06)" : "transparent",
+                  borderBottom: i < options.length - 1 ? "1px solid var(--border)" : "none",
+                  cursor: "pointer",
+                  transition: "background 0.2s",
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = value === opt ? "rgba(34,197,94,0.06)" : "var(--card-hover)")}
+                onMouseLeave={(e) => (e.currentTarget.style.background = value === opt ? "rgba(34,197,94,0.06)" : "transparent")}
+              >
+                {opt}
+              </button>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
 function Step3_Experience({ state, updateState, onNext }: StepProps) {
   const handleSelect = (category: string, level: string) => {
     updateState({
@@ -528,54 +633,13 @@ function Step3_Experience({ state, updateState, onNext }: StepProps) {
 
       <div style={{ display: "flex", flexDirection: "column", gap: 16, marginBottom: "auto" }}>
         {state.selectedCategories.map(cat => (
-          <div key={cat}>
-            <label style={{
-              display: "block", fontSize: 13, fontWeight: 700,
-              color: "var(--brand)", marginBottom: 8,
-              textTransform: "uppercase", letterSpacing: "0.04em"
-            }}>
-              {cat}
-            </label>
-            <div style={{ position: "relative" }}>
-              <select
-                value={state.experienceLevels[cat] || ""}
-                onChange={(e) => handleSelect(cat, e.target.value)}
-                style={{
-                  width: "100%",
-                  padding: "13px 40px 13px 16px",
-                  borderRadius: 12,
-                  border: state.experienceLevels[cat]
-                    ? "1.5px solid var(--brand)"
-                    : "1.5px solid var(--border)",
-                  background: state.experienceLevels[cat]
-                    ? "rgba(34,197,94,0.06)"
-                    : "var(--card)",
-                  color: state.experienceLevels[cat]
-                    ? "var(--text-primary)"
-                    : "var(--text-muted)",
-                  fontSize: 15,
-                  fontWeight: state.experienceLevels[cat] ? 600 : 400,
-                  fontFamily: "inherit",
-                  appearance: "none",
-                  WebkitAppearance: "none",
-                  cursor: "pointer",
-                  outline: "none",
-                }}
-              >
-                <option value="" disabled>Select experience level…</option>
-                {EXPERIENCE_OPTIONS.map(level => (
-                  <option key={level} value={level}>{level}</option>
-                ))}
-              </select>
-              {/* Custom chevron icon */}
-              <span style={{
-                position: "absolute", right: 14, top: "50%",
-                transform: "translateY(-50%)",
-                pointerEvents: "none", fontSize: 12,
-                color: state.experienceLevels[cat] ? "var(--brand)" : "var(--text-muted)",
-              }}>▼</span>
-            </div>
-          </div>
+          <CustomDropdown
+            key={cat}
+            label={cat}
+            value={state.experienceLevels[cat] || ""}
+            options={EXPERIENCE_OPTIONS}
+            onSelect={(val) => handleSelect(cat, val)}
+          />
         ))}
       </div>
 
