@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useMemo, useRef, useCallback, useEffect } from "react";
-import { motion, useReducedMotion, LazyMotion, domAnimation } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion, LazyMotion, domAnimation } from "framer-motion";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { Search, Bell } from "lucide-react";
+import { Search, Bell, HelpCircle, X, ChevronDown, Phone, Mail, MessageCircle } from "lucide-react";
 import { Job } from "@/data/jobs";
 
 import JobCard from "@/components/JobCard";
@@ -29,6 +29,8 @@ export default function HomeScreen({ onJobSelect, onSearchPress, profileName }: 
   
   // Animated businesses counter
   const [businessCount, setBusinessCount] = useState(businessAnimationHasRun ? 200 : 0);
+  const [showFaq, setShowFaq] = useState(false);
+  const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
 
   useEffect(() => {
     if (businessAnimationHasRun) return;
@@ -200,9 +202,26 @@ export default function HomeScreen({ onJobSelect, onSearchPress, profileName }: 
                   </span>
                 </span>
               </div>
-              <p style={{ fontSize: 13, fontWeight: 500, color: "var(--text-muted)", marginLeft: 40, marginTop: -2 }}>
-                Jobs Addis
-              </p>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginLeft: 40, marginTop: -2 }}>
+                <p style={{ fontSize: 13, fontWeight: 500, color: "var(--text-muted)" }}>
+                  Jobs Addis
+                </p>
+                <motion.button
+                  whileTap={{ scale: 0.9 }}
+                  onClick={() => setShowFaq(true)}
+                  style={{
+                    display: "flex", alignItems: "center", gap: 4,
+                    padding: "2px 8px", borderRadius: 100,
+                    background: "var(--surface-elevated)",
+                    border: "1px solid var(--border)",
+                    cursor: "pointer", fontSize: 11, fontWeight: 600,
+                    color: "var(--text-muted)",
+                  }}
+                >
+                  <HelpCircle size={11} />
+                  FAQ
+                </motion.button>
+              </div>
             </div>
 
             {/* Notification bell */}
@@ -677,6 +696,165 @@ export default function HomeScreen({ onJobSelect, onSearchPress, profileName }: 
           )}
         </div>
       </div>
+      {/* ── FAQ MODAL ── */}
+      <AnimatePresence>
+        {showFaq && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            style={{
+              position: "fixed", top: 0, left: 0, right: 0, bottom: 0, zIndex: 9999,
+              background: "rgba(0,0,0,0.45)",
+              backdropFilter: "blur(14px)",
+              WebkitBackdropFilter: "blur(14px)",
+              display: "flex", alignItems: "flex-end",
+            }}
+            onClick={() => { setShowFaq(false); setOpenFaqIndex(null); }}
+          >
+            <motion.div
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              transition={{ type: "spring", stiffness: 380, damping: 30 }}
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                width: "100%", height: "88dvh",
+                background: "var(--app-bg)",
+                borderTopLeftRadius: 24, borderTopRightRadius: 24,
+                display: "flex", flexDirection: "column",
+                overflow: "hidden",
+                boxShadow: "0 -8px 40px rgba(0,0,0,0.18)",
+              }}
+            >
+              {/* Header */}
+              <div style={{ padding: "22px 20px 16px", display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid var(--border)", flexShrink: 0 }}>
+                <div>
+                  <h2 style={{ fontSize: 20, fontWeight: 800, color: "var(--text-primary)", margin: 0, letterSpacing: "-0.02em" }}>Help & FAQ</h2>
+                  <p style={{ fontSize: 13, color: "var(--text-muted)", margin: "2px 0 0" }}>Frequently Asked Questions</p>
+                </div>
+                <button
+                  onClick={() => { setShowFaq(false); setOpenFaqIndex(null); }}
+                  style={{ background: "var(--surface-elevated)", border: "1px solid var(--border)", borderRadius: 10, width: 34, height: 34, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
+                >
+                  <X size={16} color="var(--text-muted)" />
+                </button>
+              </div>
+
+              {/* Scrollable content */}
+              <div style={{ flex: 1, overflowY: "auto", padding: "20px" }}>
+
+                {/* FAQ Items */}
+                {[
+                  {
+                    q: "What is Jobs Addis?",
+                    a: "Jobs Addis by Prime Hospitality is a specialized job platform connecting hospitality professionals with leading hotels, restaurants, and service businesses across Addis Ababa."
+                  },
+                  {
+                    q: "How do I apply for a job?",
+                    a: "Browse available jobs on the Home or Search tab. Tap any job card to view the full details, then press the Apply button. Your Telegram profile will be shared with the employer."
+                  },
+                  {
+                    q: "Is my personal information safe?",
+                    a: "Yes. We only share information you explicitly provide during onboarding with the employers you apply to. We do not sell your data to any third parties."
+                  },
+                  {
+                    q: "How long does it take to hear back from an employer?",
+                    a: "Response times vary by employer. Most active listings receive candidate reviews within 2–5 business days. You will be notified directly through this app if there is an update on your application."
+                  },
+                  {
+                    q: "Can I apply to more than one job at a time?",
+                    a: "Absolutely. There is no limit on the number of jobs you can apply for. We encourage you to apply to any role that matches your experience and interests."
+                  },
+                  {
+                    q: "How do I update my profile?",
+                    a: "Tap the Profile tab at the bottom of the screen. From there you can edit your full name, location, experience level, and other details that are shared with employers."
+                  },
+                  {
+                    q: "What if a job listing looks suspicious or fraudulent?",
+                    a: "Please report it immediately using the flag icon on the job detail page, or contact us directly via the support channels below. We take job quality very seriously and review all reports within 24 hours."
+                  },
+                  {
+                    q: "I'm an employer. How do I post a job?",
+                    a: "Employer accounts are managed through our Admin Dashboard. Please reach out to us via Telegram or email to get your business registered on the platform."
+                  },
+                ].map((item, i) => {
+                  const isOpen = openFaqIndex === i;
+                  return (
+                    <div
+                      key={i}
+                      style={{
+                        background: "var(--surface-elevated)",
+                        border: "1px solid var(--border)",
+                        borderRadius: 14,
+                        marginBottom: 10,
+                        overflow: "hidden",
+                      }}
+                    >
+                      <button
+                        onClick={() => setOpenFaqIndex(isOpen ? null : i)}
+                        style={{
+                          width: "100%", padding: "16px",
+                          display: "flex", alignItems: "center", justifyContent: "space-between",
+                          background: "transparent", border: "none", cursor: "pointer", gap: 12,
+                        }}
+                      >
+                        <span style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)", textAlign: "left", lineHeight: 1.4 }}>
+                          {item.q}
+                        </span>
+                        <motion.div animate={{ rotate: isOpen ? 180 : 0 }} transition={{ duration: 0.2 }} style={{ flexShrink: 0 }}>
+                          <ChevronDown size={16} color="var(--text-muted)" />
+                        </motion.div>
+                      </button>
+                      <AnimatePresence initial={false}>
+                        {isOpen && (
+                          <motion.div
+                            key="answer"
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: "auto", opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            transition={{ duration: 0.22 }}
+                            style={{ overflow: "hidden" }}
+                          >
+                            <p style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.7, padding: "0 16px 16px", margin: 0 }}>
+                              {item.a}
+                            </p>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  );
+                })}
+
+                {/* Support Contact */}
+                <div style={{ marginTop: 8, padding: "18px", background: "var(--surface-elevated)", border: "1px solid var(--border)", borderRadius: 16 }}>
+                  <p style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)", marginBottom: 14, textTransform: "uppercase", letterSpacing: "0.06em" }}>Contact Support</p>
+                  {[
+                    { icon: <MessageCircle size={16} color="var(--brand)" />, label: "Telegram", value: "@JobsAddisSupport" },
+                    { icon: <Phone size={16} color="var(--brand)" />, label: "Phone", value: "+251 91 234 5678" },
+                    { icon: <Mail size={16} color="var(--brand)" />, label: "Email", value: "support@jobsaddis.com" },
+                  ].map((c) => (
+                    <div key={c.label} style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
+                      <div style={{ width: 34, height: 34, borderRadius: 10, background: "var(--brand-subtle)", border: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                        {c.icon}
+                      </div>
+                      <div>
+                        <p style={{ fontSize: 11, color: "var(--text-muted)", margin: 0, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>{c.label}</p>
+                        <p style={{ fontSize: 13, color: "var(--text-primary)", margin: 0, fontWeight: 600 }}>{c.value}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <p style={{ textAlign: "center", fontSize: 12, color: "var(--text-muted)", marginTop: 20, paddingBottom: 8 }}>
+                  Jobs Addis · Prime Hospitality © {new Date().getFullYear()}
+                </p>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </LazyMotion>
   );
 }
