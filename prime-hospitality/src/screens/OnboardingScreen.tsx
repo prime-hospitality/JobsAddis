@@ -520,37 +520,60 @@ function Step3_Experience({ state, updateState, onNext }: StepProps) {
   const allSelected = state.selectedCategories.every(cat => state.experienceLevels[cat]);
 
   return (
-    <div style={{ padding: "130px 20px 40px", flex: 1, display: "flex", flexDirection: "column" }}>
-      <h1 style={{ fontSize: 26, fontWeight: 800, color: "var(--text-primary)", marginBottom: 8, lineHeight: 1.2 }}>
+    <div style={{ padding: "90px 20px 40px", flex: 1, display: "flex", flexDirection: "column" }}>
+      <h1 style={{ fontSize: 24, fontWeight: 800, color: "var(--text-primary)", marginBottom: 6, lineHeight: 1.2 }}>
         What is your experience level?
       </h1>
-      <p style={{ fontSize: 15, color: "var(--text-secondary)", marginBottom: 32 }}>Select for each category.</p>
+      <p style={{ fontSize: 14, color: "var(--text-secondary)", marginBottom: 28 }}>Select for each of your chosen roles.</p>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 24, marginBottom: "auto" }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 16, marginBottom: "auto" }}>
         {state.selectedCategories.map(cat => (
           <div key={cat}>
-            <h3 style={{ fontSize: 16, fontWeight: 600, color: "var(--brand)", marginBottom: 12 }}>{cat} Experience</h3>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {EXPERIENCE_OPTIONS.map(level => {
-                const isSelected = state.experienceLevels[cat] === level;
-                return (
-                  <motion.button
-                    key={level}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={() => handleSelect(cat, level)}
-                    style={{
-                      padding: "14px 16px", borderRadius: 12,
-                      background: isSelected ? "rgba(5,150,105,0.15)" : "var(--card)",
-                      border: isSelected ? "1px solid var(--brand)" : "1px solid var(--border)",
-                      color: isSelected ? "var(--brand)" : "var(--text-primary)",
-                      fontWeight: isSelected ? 600 : 500,
-                      textAlign: "left", fontSize: 15, cursor: "pointer"
-                    }}
-                  >
-                    {level}
-                  </motion.button>
-                )
-              })}
+            <label style={{
+              display: "block", fontSize: 13, fontWeight: 700,
+              color: "var(--brand)", marginBottom: 8,
+              textTransform: "uppercase", letterSpacing: "0.04em"
+            }}>
+              {cat}
+            </label>
+            <div style={{ position: "relative" }}>
+              <select
+                value={state.experienceLevels[cat] || ""}
+                onChange={(e) => handleSelect(cat, e.target.value)}
+                style={{
+                  width: "100%",
+                  padding: "13px 40px 13px 16px",
+                  borderRadius: 12,
+                  border: state.experienceLevels[cat]
+                    ? "1.5px solid var(--brand)"
+                    : "1.5px solid var(--border)",
+                  background: state.experienceLevels[cat]
+                    ? "rgba(34,197,94,0.06)"
+                    : "var(--card)",
+                  color: state.experienceLevels[cat]
+                    ? "var(--text-primary)"
+                    : "var(--text-muted)",
+                  fontSize: 15,
+                  fontWeight: state.experienceLevels[cat] ? 600 : 400,
+                  fontFamily: "inherit",
+                  appearance: "none",
+                  WebkitAppearance: "none",
+                  cursor: "pointer",
+                  outline: "none",
+                }}
+              >
+                <option value="" disabled>Select experience level…</option>
+                {EXPERIENCE_OPTIONS.map(level => (
+                  <option key={level} value={level}>{level}</option>
+                ))}
+              </select>
+              {/* Custom chevron icon */}
+              <span style={{
+                position: "absolute", right: 14, top: "50%",
+                transform: "translateY(-50%)",
+                pointerEvents: "none", fontSize: 12,
+                color: state.experienceLevels[cat] ? "var(--brand)" : "var(--text-muted)",
+              }}>▼</span>
             </div>
           </div>
         ))}
