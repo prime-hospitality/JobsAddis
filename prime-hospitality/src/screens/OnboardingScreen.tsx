@@ -851,10 +851,17 @@ function Step4_Personal({ state, updateState, onNext }: StepProps) {
             placeholder="E.g. Abebe Kebede"
             value={state.fullName}
             onChange={handleNameChange}
-            style={nameError ? { borderColor: "var(--error)" } : {}}
+            style={
+              nameError
+                ? { borderColor: "var(--error)" }
+                : state.fullName.trim().length > 2
+                ? { borderColor: "var(--brand)" }
+                : {}
+            }
           />
-          {nameError && (
+          {nameError ? (
             <motion.div
+              key="name-error"
               initial={{ opacity: 0, y: -4 }}
               animate={{ opacity: 1, y: 0 }}
               style={{ marginTop: 6, display: "flex", gap: 5, alignItems: "center", color: "var(--error)", fontSize: 13 }}
@@ -862,7 +869,17 @@ function Step4_Personal({ state, updateState, onNext }: StepProps) {
               <span>⚠️</span>
               <span>{nameError}</span>
             </motion.div>
-          )}
+          ) : state.fullName.trim().length > 2 ? (
+            <motion.div
+              key="name-valid"
+              initial={{ opacity: 0, y: -4 }}
+              animate={{ opacity: 1, y: 0 }}
+              style={{ marginTop: 6, display: "flex", gap: 5, alignItems: "center", color: "var(--brand)", fontSize: 13 }}
+            >
+              <span>✅</span>
+              <span style={{ fontWeight: 600 }}>Looks good!</span>
+            </motion.div>
+          ) : null}
         </div>
 
         <div>
