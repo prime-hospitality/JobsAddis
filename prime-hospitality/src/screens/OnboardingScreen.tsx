@@ -866,7 +866,6 @@ function Step4_Personal({ state, updateState, onNext }: StepProps) {
               animate={{ opacity: 1, y: 0 }}
               style={{ marginTop: 6, display: "flex", gap: 5, alignItems: "center", color: "var(--error)", fontSize: 13 }}
             >
-              <span>⚠️</span>
               <span>{nameError}</span>
             </motion.div>
           ) : state.fullName.trim().length > 2 ? (
@@ -876,7 +875,6 @@ function Step4_Personal({ state, updateState, onNext }: StepProps) {
               animate={{ opacity: 1, y: 0 }}
               style={{ marginTop: 6, display: "flex", gap: 5, alignItems: "center", color: "var(--brand)", fontSize: 13 }}
             >
-              <span>✅</span>
               <span style={{ fontWeight: 600 }}>Looks good!</span>
             </motion.div>
           ) : null}
