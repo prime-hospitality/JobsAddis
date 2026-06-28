@@ -187,12 +187,22 @@ function Step1_JobField({ state, updateState, onNext }: StepProps) {
 
   let otherWarning = "";
   if (otherValue.trim().length > 0) {
-    if (otherValue.trim().length < 3) {
+    const trimmed = otherValue.trim();
+    if (trimmed.length < 3) {
       otherWarning = "Role name is too short. Please type a valid job.";
-    } else if (otherValue.trim().length > 40) {
+    } else if (trimmed.length > 40) {
       otherWarning = "Role name is too long. Keep it under 40 characters.";
-    } else if (/[^a-zA-Z\s\-]/.test(otherValue)) {
+    } else if (/[^a-zA-Z\s\-]/.test(trimmed)) {
       otherWarning = "Role name shouldn't contain numbers or special characters.";
+    } else if (/^(.)\1{2,}$/i.test(trimmed.replace(/\s/g, ""))) {
+      // All characters are the same repeated letter e.g. "ggg", "aaaa"
+      otherWarning = "That doesn't look like a real job title. Please type a valid role.";
+    } else if (/(.)\1{3,}/i.test(trimmed)) {
+      // A single letter repeated 4+ times in a row e.g. "hooootel"
+      otherWarning = "That doesn't look like a real job title. Please type a valid role.";
+    } else if (trimmed.split("").every(c => c === trimmed[0] || c === " " || c === "-")) {
+      // All letters are the same character
+      otherWarning = "That doesn't look like a real job title. Please type a valid role.";
     }
   }
 
