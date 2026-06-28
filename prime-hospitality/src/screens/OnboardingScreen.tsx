@@ -2,9 +2,10 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence, useReducedMotion, LazyMotion, domAnimation } from "framer-motion";
-import { ArrowLeft, UploadCloud, CheckCircle, Smartphone, Lock, AlertTriangle, ChevronDown } from "lucide-react";
+import { ArrowLeft, UploadCloud, CheckCircle, Smartphone, Lock, AlertTriangle, ChevronDown, Search } from "lucide-react";
 import { useOnboarding, OnboardingStep } from "@/hooks/useOnboarding";
 import { JobCategory } from "@/data/jobs";
+import { LOCATIONS } from "@/data/locations";
 import { useTelegram } from "@/hooks/useTelegram";
 
 // --- Types ---
@@ -615,6 +616,143 @@ function CustomDropdown({ label, value, options, onSelect }: { label: string; va
   );
 }
 
+function SearchableLocationDropdown({ value, onSelect }: { value: string; onSelect: (val: string) => void }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleOutside = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    if (isOpen) document.addEventListener("mousedown", handleOutside);
+    return () => document.removeEventListener("mousedown", handleOutside);
+  }, [isOpen]);
+
+  const filteredLocations = LOCATIONS.filter(loc => 
+    loc.name.toLowerCase().includes(search.toLowerCase()) || 
+    loc.subCity.toLowerCase().includes(search.toLowerCase())
+  );
+
+  return (
+    <div ref={containerRef} style={{ position: "relative" }}>
+      <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "var(--text-secondary)", marginBottom: 8, textTransform: "uppercase" }}>Location (Neighborhood)</label>
+      <motion.button
+        whileTap={{ scale: 0.98 }}
+        onClick={() => setIsOpen(!isOpen)}
+        style={{
+          width: "100%",
+          padding: "14px 16px",
+          borderRadius: 12,
+          border: value ? "1.5px solid var(--brand)" : "1px solid var(--border)",
+          background: value ? "rgba(34,197,94,0.06)" : "var(--card)",
+          color: value ? "var(--text-primary)" : "var(--text-muted)",
+          fontSize: 15,
+          fontWeight: value ? 600 : 400,
+          textAlign: "left",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          cursor: "pointer",
+        }}
+      >
+        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          {value || "Search your area..."}
+        </span>
+        <motion.div animate={{ rotate: isOpen ? 180 : 0 }}>
+          <ChevronDown size={18} color={value ? "var(--brand)" : "var(--text-muted)"} />
+        </motion.div>
+      </motion.button>
+
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: -10, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -10, scale: 0.95 }}
+            transition={{ type: "spring", stiffness: 400, damping: 30 }}
+            style={{
+              position: "absolute",
+              bottom: "100%", // Open upwards so it doesn't get cut off at the bottom of the screen
+              left: 0,
+              right: 0,
+              marginBottom: 8,
+              background: "var(--surface-elevated)",
+              borderRadius: 12,
+              border: "1px solid var(--border)",
+              boxShadow: "0 12px 32px rgba(0,0,0,0.12)",
+              zIndex: 100,
+              display: "flex",
+              flexDirection: "column",
+              maxHeight: 280,
+            }}
+          >
+            {/* Search Input */}
+            <div style={{ padding: "12px", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", gap: 8 }}>
+              <Search size={18} color="var(--text-muted)" />
+              <input 
+                autoFocus
+                placeholder="Search area or sub-city..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                style={{
+                  border: "none",
+                  outline: "none",
+                  width: "100%",
+                  fontSize: 14,
+                  background: "transparent",
+                  color: "var(--text-primary)"
+                }}
+              />
+            </div>
+
+            {/* Scrollable list */}
+            <div style={{ overflowY: "auto", flex: 1 }}>
+              {filteredLocations.length > 0 ? (
+                filteredLocations.map((loc, i) => (
+                  <button
+                    key={loc.id}
+                    onClick={() => {
+                      onSelect(loc.name);
+                      setIsOpen(false);
+                      setSearch("");
+                    }}
+                    style={{
+                      width: "100%",
+                      padding: "14px 16px",
+                      textAlign: "left",
+                      fontSize: 15,
+                      fontWeight: 500,
+                      color: value === loc.name ? "var(--brand)" : "var(--text-primary)",
+                      background: value === loc.name ? "rgba(34,197,94,0.06)" : "transparent",
+                      borderBottom: i < filteredLocations.length - 1 ? "1px solid var(--border)" : "none",
+                      cursor: "pointer",
+                      transition: "background 0.2s",
+                      display: "flex",
+                      flexDirection: "column"
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = value === loc.name ? "rgba(34,197,94,0.06)" : "var(--card-hover)")}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = value === loc.name ? "rgba(34,197,94,0.06)" : "transparent")}
+                  >
+                    <span>{loc.name}</span>
+                    <span style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>{loc.subCity}</span>
+                  </button>
+                ))
+              ) : (
+                <div style={{ padding: "16px", textAlign: "center", color: "var(--text-muted)", fontSize: 14 }}>
+                  No locations found.
+                </div>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
 function Step3_Experience({ state, updateState, onNext }: StepProps) {
   const handleSelect = (category: string, level: string) => {
     updateState({
@@ -653,12 +791,6 @@ function Step3_Experience({ state, updateState, onNext }: StepProps) {
 }
 
 // --- Step 4: Personal Details ---
-const ADDIS_NEIGHBORHOODS = [
-  "Bole", "Kazanchis", "CMC", "Megenagna", "Sarbet", "Lebu", "Gerji", "Piassa",
-  "Akaki", "Lideta", "Kirkos", "Kolfe", "Yeka", "Ayat", "Kality", "Gulele",
-  "Addis Ketema", "Nifas Silk", "Jemo", "Kera", "Merkato", "Shiromeda", "Other"
-];
-
 function Step4_Personal({ state, updateState, onNext }: StepProps) {
   const [ageError, setAgeError] = useState("");
 
@@ -746,13 +878,10 @@ function Step4_Personal({ state, updateState, onNext }: StepProps) {
           </div>
         </div>
 
-        <div>
-          <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "var(--text-secondary)", marginBottom: 8, textTransform: "uppercase" }}>Location (Neighborhood)</label>
-          <select className="input-base" style={{ appearance: "none" }} value={state.location} onChange={(e) => updateState({ location: e.target.value })}>
-            <option value="">Select your area...</option>
-            {ADDIS_NEIGHBORHOODS.map(n => <option key={n} value={n}>{n}</option>)}
-          </select>
-        </div>
+        <SearchableLocationDropdown 
+          value={state.location} 
+          onSelect={(val) => updateState({ location: val })} 
+        />
 
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "var(--card)", padding: 16, borderRadius: 16, border: "1px solid var(--border)" }}>
           <div>
