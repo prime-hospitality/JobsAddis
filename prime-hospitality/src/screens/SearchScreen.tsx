@@ -655,9 +655,9 @@ export default function SearchScreen({ onJobSelect }: SearchScreenProps) {
                 display: "flex", alignItems: "center", gap: 6,
                 padding: "8px 14px", borderRadius: 100,
                 fontSize: 13, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0,
-                background: selectedCategories.length > 0 ? "rgba(5, 150, 105, 0.12)" : "var(--surface-elevated)",
-                border: selectedCategories.length > 0 ? "2px solid var(--brand)" : "2px solid #3B82F6",
-                color: selectedCategories.length > 0 ? "var(--brand)" : "#3B82F6",
+                background: selectedCategories.length > 0 ? "var(--brand-subtle)" : "var(--surface-elevated)",
+                border: selectedCategories.length > 0 ? "2px solid var(--brand)" : "2px solid #9CA3AF",
+                color: selectedCategories.length > 0 ? "var(--brand)" : "var(--text-primary)",
               }}
             >
               Category {selectedCategories.length > 0 && `(${selectedCategories.length})`}
@@ -671,9 +671,9 @@ export default function SearchScreen({ onJobSelect }: SearchScreenProps) {
                 display: "flex", alignItems: "center", gap: 6,
                 padding: "8px 14px", borderRadius: 100,
                 fontSize: 13, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0,
-                background: selectedExperience.length > 0 ? "rgba(139, 92, 246, 0.12)" : "var(--surface-elevated)",
-                border: selectedExperience.length > 0 ? "2px solid #8B5CF6" : "2px solid #8B5CF6",
-                color: selectedExperience.length > 0 ? "#7C3AED" : "#8B5CF6",
+                background: selectedExperience.length > 0 ? "var(--brand-subtle)" : "var(--surface-elevated)",
+                border: selectedExperience.length > 0 ? "2px solid var(--brand)" : "2px solid #9CA3AF",
+                color: selectedExperience.length > 0 ? "var(--brand)" : "var(--text-primary)",
               }}
             >
               Experience Level {selectedExperience.length > 0 && `(${selectedExperience.length})`}
@@ -687,9 +687,9 @@ export default function SearchScreen({ onJobSelect }: SearchScreenProps) {
                 display: "flex", alignItems: "center", gap: 6,
                 padding: "8px 14px", borderRadius: 100,
                 fontSize: 13, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0,
-                background: postedWithin !== "Any date" ? "rgba(245, 158, 11, 0.12)" : "var(--surface-elevated)",
-                border: postedWithin !== "Any date" ? "2px solid #F59E0B" : "2px solid #F59E0B",
-                color: postedWithin !== "Any date" ? "#D97706" : "#F59E0B",
+                background: postedWithin !== "Any date" ? "var(--brand-subtle)" : "var(--surface-elevated)",
+                border: postedWithin !== "Any date" ? "2px solid var(--brand)" : "2px solid #9CA3AF",
+                color: postedWithin !== "Any date" ? "var(--brand)" : "var(--text-primary)",
               }}
             >
               {postedWithin === "Any date" ? "Posted Within" : postedWithin}
