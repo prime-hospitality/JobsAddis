@@ -161,7 +161,7 @@ function CategoryModal({
             style={{ border: "none", outline: "none", width: "100%", fontSize: 15, background: "transparent", color: "var(--text-primary)" }}
           />
         </div>
-        <div style={{ display: "flex", flexDirection: "column" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
           {filtered.map(cat => {
             const isSelected = selected.includes(cat);
             return (
@@ -169,24 +169,20 @@ function CategoryModal({
                 key={cat}
                 onClick={() => toggle(cat)}
                 style={{
-                  width: "100%", padding: "16px 0", textAlign: "left", display: "flex", alignItems: "center", justifyContent: "space-between",
-                  background: "transparent", borderTop: "none", borderRight: "none", borderLeft: "none",
-                  borderBottom: "1px solid var(--border)", cursor: "pointer",
+                  width: "100%", padding: "14px 12px", textAlign: "left", display: "flex", alignItems: "center", justifyContent: "space-between",
+                  background: isSelected ? "var(--brand-subtle)" : "var(--surface-elevated)", 
+                  border: isSelected ? "1px solid var(--brand)" : "1px solid var(--border)", 
+                  borderRadius: 12, cursor: "pointer",
                 }}
               >
-                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <span style={{ fontSize: 20 }}>{CATEGORY_EMOJIS[cat] ?? "🏨"}</span>
-                  <span style={{ fontSize: 16, fontWeight: isSelected ? 700 : 500, color: isSelected ? "var(--brand)" : "var(--text-primary)" }}>
-                    {cat}
-                  </span>
-                </div>
-                <div style={{ width: 24, height: 24, borderRadius: 6, border: isSelected ? "none" : "2px solid var(--text-muted)", background: isSelected ? "var(--brand)" : "transparent", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  {isSelected && <CheckCircle size={16} color="white" />}
-                </div>
+                <span style={{ fontSize: 13, fontWeight: isSelected ? 700 : 500, color: isSelected ? "var(--brand)" : "var(--text-primary)", lineHeight: 1.2 }}>
+                  {cat}
+                </span>
+                {isSelected && <CheckCircle size={14} color="var(--brand)" style={{ flexShrink: 0 }} />}
               </button>
             );
           })}
-          {filtered.length === 0 && <p style={{ textAlign: "center", color: "var(--text-muted)", marginTop: 20 }}>No categories found.</p>}
+          {filtered.length === 0 && <p style={{ gridColumn: "1 / -1", textAlign: "center", color: "var(--text-muted)", marginTop: 20 }}>No categories found.</p>}
         </div>
       </div>
     </FilterModal>
