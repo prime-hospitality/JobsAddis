@@ -520,7 +520,7 @@ function Step3_Experience({ state, updateState, onNext }: StepProps) {
   const allSelected = state.selectedCategories.every(cat => state.experienceLevels[cat]);
 
   return (
-    <div style={{ padding: "90px 20px 40px", flex: 1, display: "flex", flexDirection: "column" }}>
+    <div style={{ padding: "130px 20px 40px", flex: 1, display: "flex", flexDirection: "column" }}>
       <h1 style={{ fontSize: 24, fontWeight: 800, color: "var(--text-primary)", marginBottom: 6, lineHeight: 1.2 }}>
         What is your experience level?
       </h1>
