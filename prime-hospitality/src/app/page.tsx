@@ -34,6 +34,16 @@ type AppView =
   | { screen: "confirmation"; job: Job }
   | { screen: "applicantManagement"; jobId: string; jobTitle: string };
 
+// Keys to wipe when a user is deleted or needs to re-onboard.
+// 'theme' is intentionally excluded — we keep their display preference.
+const USER_LOCAL_KEYS = ["profile_privacy_dismissed"];
+
+function clearUserLocalData() {
+  try {
+    USER_LOCAL_KEYS.forEach((key) => localStorage.removeItem(key));
+  } catch {}
+}
+
 export default function App() {
   const { user, isEmployer: telegramIsEmployer, isReady: isTelegramReady, initData, startParam } = useTelegram();
   const [isEmployer, setIsEmployer] = useState<boolean>(telegramIsEmployer);
@@ -93,6 +103,11 @@ export default function App() {
 
       try {
         const result = await fetchProfile(initData);
+        if (!result.onboarding_completed) {
+          // User exists in auth but hasn't completed onboarding,
+          // OR was deleted by admin (profile row gone). Clear stale local data.
+          clearUserLocalData();
+        }
         setIsOnboarded(result.onboarding_completed);
         setUserProfile(result.profile);
         if (result.is_employer) {
@@ -103,6 +118,8 @@ export default function App() {
         if (err?.statusCode === 403 || (err?.message && err.message.toLowerCase().includes("banned"))) {
           setIsBanned(true);
         } else {
+          // Could be a deleted user (404) or network error — clear local data and show onboarding
+          clearUserLocalData();
           setIsOnboarded(false);
         }
       }
