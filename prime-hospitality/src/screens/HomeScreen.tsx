@@ -499,7 +499,7 @@ export default function HomeScreen({ onJobSelect, onSearchPress, profileName }: 
           >
             {[
               {
-                value: `${jobs.length}+`,
+                value: "1000+",
                 label: "Open Jobs",
                 valueColor: "var(--brand)",
               },
