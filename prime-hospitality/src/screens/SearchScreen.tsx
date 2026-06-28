@@ -73,7 +73,13 @@ const CATEGORY_TEAMS: Record<string, string[]> = {
   "Marketing": [
     "Marketing & Sales",
   ],
-  "Human Resources": [],
+  "Human Resources": [
+    "HR Manager",
+    "HR Officer",
+    "Recruiter",
+    "Training & Development Officer",
+    "Payroll Officer",
+  ],
   "Engineering & Maintenance": [
     "Chief Engineer",
     "Maintenance",

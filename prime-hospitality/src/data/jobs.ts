@@ -288,5 +288,10 @@ export const JOB_CATEGORIES: JobCategory[] = [
   "Lifeguard",
   "Steward",
   "Kitchen Assistant",
+  "HR Manager",
+  "HR Officer",
+  "Recruiter",
+  "Training & Development Officer",
+  "Payroll Officer",
   "Other",
 ];
