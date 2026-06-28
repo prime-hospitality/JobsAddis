@@ -41,13 +41,20 @@ export default function RootLayout({
             __html: `
               try {
                 var saved = localStorage.getItem('theme');
+                // New user: no preference saved yet — lock to light mode explicitly
+                if (!saved) {
+                  localStorage.setItem('theme', 'light');
+                  saved = 'light';
+                }
                 var isDark = saved === 'dark';
                 if (isDark) {
                   document.documentElement.setAttribute('data-theme', 'dark');
                   document.documentElement.style.colorScheme = 'dark';
+                  document.documentElement.style.backgroundColor = '#121212';
                 } else {
                   document.documentElement.removeAttribute('data-theme');
                   document.documentElement.style.colorScheme = 'light';
+                  document.documentElement.style.backgroundColor = '#F9FAFB';
                 }
                 if (window.Telegram && window.Telegram.WebApp) {
                   var tg = window.Telegram.WebApp;
