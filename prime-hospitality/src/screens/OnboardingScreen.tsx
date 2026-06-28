@@ -793,11 +793,31 @@ function Step3_Experience({ state, updateState, onNext }: StepProps) {
 // --- Step 4: Personal Details ---
 function Step4_Personal({ state, updateState, onNext }: StepProps) {
   const [ageError, setAgeError] = useState("");
+  const [nameError, setNameError] = useState("");
 
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
     const capitalized = val.charAt(0).toUpperCase() + val.slice(1);
     updateState({ fullName: capitalized });
+
+    // Validate name
+    const trimmed = capitalized.trim();
+    if (trimmed.length === 0) {
+      setNameError("");
+    } else if (trimmed.length < 3) {
+      setNameError("Name is too short.");
+    } else if (/[^a-zA-Z\s\-\u1200-\u137F]/.test(trimmed)) {
+      // Allow Latin letters, spaces, hyphens, and Ethiopic script
+      setNameError("Name should only contain letters.");
+    } else if (/^(.)\1{2,}$/i.test(trimmed.replace(/\s/g, ""))) {
+      setNameError("That doesn't look like a real name.");
+    } else if (/(.)\1{3,}/i.test(trimmed)) {
+      setNameError("That doesn't look like a real name.");
+    } else if (!trimmed.includes(" ") && trimmed.length > 30) {
+      setNameError("Please enter your full name (first and last).");
+    } else {
+      setNameError("");
+    }
   };
 
   const handleAgeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -814,7 +834,7 @@ function Step4_Personal({ state, updateState, onNext }: StepProps) {
     else setAgeError("");
   };
 
-  const canProceed = state.fullName.length > 2 && state.age !== "" && state.age >= 16 && state.age <= 60 && state.location !== "" && state.gender !== "";
+  const canProceed = !nameError && state.fullName.length > 2 && state.age !== "" && state.age >= 16 && state.age <= 60 && state.location !== "" && state.gender !== "";
 
   return (
     <div style={{ padding: "130px 20px 40px", flex: 1, display: "flex", flexDirection: "column" }}>
@@ -826,7 +846,23 @@ function Step4_Personal({ state, updateState, onNext }: StepProps) {
         
         <div>
           <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "var(--text-secondary)", marginBottom: 8, textTransform: "uppercase" }}>Full Name</label>
-          <input className="input-base" placeholder="E.g. Abebe Kebede" value={state.fullName} onChange={handleNameChange} />
+          <input
+            className="input-base"
+            placeholder="E.g. Abebe Kebede"
+            value={state.fullName}
+            onChange={handleNameChange}
+            style={nameError ? { borderColor: "var(--error)" } : {}}
+          />
+          {nameError && (
+            <motion.div
+              initial={{ opacity: 0, y: -4 }}
+              animate={{ opacity: 1, y: 0 }}
+              style={{ marginTop: 6, display: "flex", gap: 5, alignItems: "center", color: "var(--error)", fontSize: 13 }}
+            >
+              <span>⚠️</span>
+              <span>{nameError}</span>
+            </motion.div>
+          )}
         </div>
 
         <div>
