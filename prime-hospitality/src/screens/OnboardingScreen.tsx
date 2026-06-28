@@ -145,7 +145,12 @@ const JOB_CATEGORIES_DATA = [
 
 function Step1_JobField({ state, updateState, onNext }: StepProps) {
   const [shakeId, setShakeId] = React.useState<string | null>(null);
-  const [otherValue, setOtherValue] = React.useState("");
+  const customCategory = state.selectedCategories.find(
+    (c) => c === "Other" || !JOB_CATEGORIES_DATA.some((preset) => preset.label === c)
+  );
+  const [otherValue, setOtherValue] = React.useState(
+    customCategory && customCategory !== "Other" ? customCategory : ""
+  );
   const [showTip, setShowTip] = React.useState(false);
 
   React.useEffect(() => {
@@ -154,8 +159,22 @@ function Step1_JobField({ state, updateState, onNext }: StepProps) {
   }, []);
 
   const toggleCategory = (label: string) => {
-    if (state.selectedCategories.includes(label)) {
-      updateState({ selectedCategories: state.selectedCategories.filter((c) => c !== label) });
+    const isOther = label === "Other";
+    const hasCustom = !!state.selectedCategories.find(c => !JOB_CATEGORIES_DATA.some(p => p.label === c));
+    const isSelected = isOther
+      ? (state.selectedCategories.includes("Other") || hasCustom)
+      : state.selectedCategories.includes(label);
+
+    if (isSelected) {
+      if (isOther) {
+        const updated = state.selectedCategories.filter(
+          (c) => JOB_CATEGORIES_DATA.some((p) => p.label === c) && c !== "Other"
+        );
+        updateState({ selectedCategories: updated });
+        setOtherValue("");
+      } else {
+        updateState({ selectedCategories: state.selectedCategories.filter((c) => c !== label) });
+      }
     } else {
       if (state.selectedCategories.length >= 3) {
         setShakeId(label);
@@ -177,6 +196,10 @@ function Step1_JobField({ state, updateState, onNext }: StepProps) {
     }
   }
 
+  const isOtherSelected = state.selectedCategories.includes("Other") || !!state.selectedCategories.find(c => !JOB_CATEGORIES_DATA.some(p => p.label === c));
+  const isOtherValid = isOtherSelected ? (otherValue.trim().length > 0 && !otherWarning) : true;
+  const canContinue = state.selectedCategories.length > 0 && isOtherValid;
+
   return (
     <div style={{ padding: "90px 16px 20px", flex: 1, display: "flex", flexDirection: "column" }}>
       <h1 style={{ fontSize: 24, fontWeight: 800, color: "var(--text-primary)", marginBottom: 6, lineHeight: 1.2 }}>
@@ -186,7 +209,9 @@ function Step1_JobField({ state, updateState, onNext }: StepProps) {
 
       <div style={{ display: "flex", flexWrap: "wrap", gap: "4px 4px", alignContent: "flex-start" }}>
         {JOB_CATEGORIES_DATA.map((cat) => {
-          const selectedIndex = state.selectedCategories.indexOf(cat.label);
+          const selectedIndex = cat.label === "Other"
+            ? state.selectedCategories.findIndex((c) => c === "Other" || !JOB_CATEGORIES_DATA.some((p) => p.label === c))
+            : state.selectedCategories.indexOf(cat.label);
           const isSelected = selectedIndex !== -1;
           const isShaking = shakeId === cat.label;
           return (
@@ -258,7 +283,10 @@ function Step1_JobField({ state, updateState, onNext }: StepProps) {
       </div>
 
       {/* Hint tip — hidden once Other is selected */}
-      {showTip && !state.selectedCategories.includes("Other") && !shakeId && (
+      {showTip && 
+       !state.selectedCategories.includes("Other") && 
+       !state.selectedCategories.some(c => !JOB_CATEGORIES_DATA.some(p => p.label === c)) && 
+       !shakeId && (
         <motion.div
           initial={{ opacity: 0, y: 4 }}
           animate={{ opacity: 1, y: 0 }}
@@ -285,7 +313,7 @@ function Step1_JobField({ state, updateState, onNext }: StepProps) {
         </motion.p>
       )}
 
-      {state.selectedCategories.includes("Other") && (
+      {(state.selectedCategories.includes("Other") || state.selectedCategories.some(c => !JOB_CATEGORIES_DATA.some(p => p.label === c))) && (
         <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} style={{ marginTop: 16 }}>
           <p style={{ fontSize: 13, fontWeight: 600, color: "var(--text-muted)", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.05em" }}>
             Please Specify
@@ -351,15 +379,22 @@ function Step1_JobField({ state, updateState, onNext }: StepProps) {
 
       <div style={{ minHeight: 48, display: "flex", alignItems: "flex-end" }}>
         <AnimatePresence mode="wait">
-          {state.selectedCategories.length > 0 && (
+          {canContinue && (
             <motion.button
               key="continue-btn"
               initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }}
               className="btn-primary"
               style={{ width: "100%" }}
               onClick={() => {
-                if (state.selectedCategories.includes("Other") && otherValue.trim()) {
-                  const updated = state.selectedCategories.map(c => c === "Other" ? otherValue.trim() : c);
+                const hasOtherSelected = state.selectedCategories.includes("Other");
+                const hasCustom = !!state.selectedCategories.find(c => !JOB_CATEGORIES_DATA.some(p => p.label === c));
+                
+                if ((hasOtherSelected || hasCustom) && otherValue.trim()) {
+                  const updated = state.selectedCategories.map(c => 
+                    (c === "Other" || !JOB_CATEGORIES_DATA.some(p => p.label === c)) 
+                      ? otherValue.trim() 
+                      : c
+                  );
                   updateState({ selectedCategories: updated });
                 }
                 onNext();
