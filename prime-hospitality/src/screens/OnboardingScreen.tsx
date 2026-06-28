@@ -706,7 +706,6 @@ function SearchableLocationDropdown({ value, onSelect }: { value: string; onSele
                 <div style={{ display: "flex", alignItems: "center", gap: 10, background: "var(--app-bg)", border: "1px solid var(--border)", borderRadius: 12, padding: "12px 16px" }}>
                   <Search size={18} color="var(--text-muted)" />
                   <input 
-                    autoFocus
                     placeholder="Search area or sub-city..."
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
