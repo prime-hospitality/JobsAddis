@@ -619,17 +619,6 @@ function CustomDropdown({ label, value, options, onSelect }: { label: string; va
 function SearchableLocationDropdown({ value, onSelect }: { value: string; onSelect: (val: string) => void }) {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState("");
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handleOutside = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setIsOpen(false);
-      }
-    };
-    if (isOpen) document.addEventListener("mousedown", handleOutside);
-    return () => document.removeEventListener("mousedown", handleOutside);
-  }, [isOpen]);
 
   const filteredLocations = LOCATIONS.filter(loc => 
     loc.name.toLowerCase().includes(search.toLowerCase()) || 
@@ -637,11 +626,11 @@ function SearchableLocationDropdown({ value, onSelect }: { value: string; onSele
   );
 
   return (
-    <div ref={containerRef} style={{ position: "relative" }}>
+    <div>
       <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "var(--text-secondary)", marginBottom: 8, textTransform: "uppercase" }}>Location (Neighborhood)</label>
       <motion.button
         whileTap={{ scale: 0.98 }}
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={() => setIsOpen(true)}
         style={{
           width: "100%",
           padding: "14px 16px",
@@ -661,91 +650,120 @@ function SearchableLocationDropdown({ value, onSelect }: { value: string; onSele
         <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
           {value || "Search your area..."}
         </span>
-        <motion.div animate={{ rotate: isOpen ? 180 : 0 }}>
-          <ChevronDown size={18} color={value ? "var(--brand)" : "var(--text-muted)"} />
-        </motion.div>
+        <ChevronDown size={18} color={value ? "var(--brand)" : "var(--text-muted)"} />
       </motion.button>
 
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            initial={{ opacity: 0, y: -10, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -10, scale: 0.95 }}
-            transition={{ type: "spring", stiffness: 400, damping: 30 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
             style={{
-              position: "absolute",
-              bottom: "100%", // Open upwards so it doesn't get cut off at the bottom of the screen
-              left: 0,
-              right: 0,
-              marginBottom: 8,
-              background: "var(--surface-elevated)",
-              borderRadius: 12,
-              border: "1px solid var(--border)",
-              boxShadow: "0 12px 32px rgba(0,0,0,0.12)",
-              zIndex: 100,
+              position: "fixed",
+              top: 0, left: 0, right: 0, bottom: 0,
+              zIndex: 9999,
+              background: "rgba(0, 0, 0, 0.4)",
+              backdropFilter: "blur(12px)",
+              WebkitBackdropFilter: "blur(12px)",
               display: "flex",
-              flexDirection: "column",
-              maxHeight: 280,
+              alignItems: "flex-end", // Align to bottom
             }}
+            onClick={() => setIsOpen(false)} // Close when clicking backdrop
           >
-            {/* Search Input */}
-            <div style={{ padding: "12px", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", gap: 8 }}>
-              <Search size={18} color="var(--text-muted)" />
-              <input 
-                autoFocus
-                placeholder="Search area or sub-city..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                style={{
-                  border: "none",
-                  outline: "none",
-                  width: "100%",
-                  fontSize: 14,
-                  background: "transparent",
-                  color: "var(--text-primary)"
-                }}
-              />
-            </div>
+            <motion.div
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              transition={{ type: "spring", stiffness: 400, damping: 32 }}
+              style={{
+                width: "100%",
+                height: "85dvh", // take up 85% of screen
+                background: "var(--app-bg)",
+                borderTopLeftRadius: 24,
+                borderTopRightRadius: 24,
+                display: "flex",
+                flexDirection: "column",
+                overflow: "hidden",
+                boxShadow: "0 -8px 32px rgba(0,0,0,0.15)",
+              }}
+              onClick={(e) => e.stopPropagation()} // Prevent click inside modal from closing
+            >
+              {/* Header */}
+              <div style={{ padding: "20px 20px 16px", display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid var(--border)", background: "var(--surface)" }}>
+                <h3 style={{ fontSize: 18, fontWeight: 800, color: "var(--text-primary)", margin: 0 }}>Select Location</h3>
+                <button 
+                  onClick={() => setIsOpen(false)}
+                  style={{ background: "transparent", border: "none", fontSize: 24, color: "var(--text-muted)", cursor: "pointer", padding: 0, lineHeight: 1 }}
+                >
+                  &times;
+                </button>
+              </div>
 
-            {/* Scrollable list */}
-            <div style={{ overflowY: "auto", flex: 1 }}>
-              {filteredLocations.length > 0 ? (
-                filteredLocations.map((loc, i) => (
-                  <button
-                    key={loc.id}
-                    onClick={() => {
-                      onSelect(loc.name);
-                      setIsOpen(false);
-                      setSearch("");
-                    }}
+              {/* Search Input */}
+              <div style={{ padding: "16px 20px", background: "var(--surface)" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, background: "var(--app-bg)", border: "1px solid var(--border)", borderRadius: 12, padding: "12px 16px" }}>
+                  <Search size={18} color="var(--text-muted)" />
+                  <input 
+                    autoFocus
+                    placeholder="Search area or sub-city..."
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
                     style={{
+                      border: "none",
+                      outline: "none",
                       width: "100%",
-                      padding: "14px 16px",
-                      textAlign: "left",
                       fontSize: 15,
-                      fontWeight: 500,
-                      color: value === loc.name ? "var(--brand)" : "var(--text-primary)",
-                      background: value === loc.name ? "rgba(34,197,94,0.06)" : "transparent",
-                      borderBottom: i < filteredLocations.length - 1 ? "1px solid var(--border)" : "none",
-                      cursor: "pointer",
-                      transition: "background 0.2s",
-                      display: "flex",
-                      flexDirection: "column"
+                      background: "transparent",
+                      color: "var(--text-primary)"
                     }}
-                    onMouseEnter={(e) => (e.currentTarget.style.background = value === loc.name ? "rgba(34,197,94,0.06)" : "var(--card-hover)")}
-                    onMouseLeave={(e) => (e.currentTarget.style.background = value === loc.name ? "rgba(34,197,94,0.06)" : "transparent")}
-                  >
-                    <span>{loc.name}</span>
-                    <span style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>{loc.subCity}</span>
-                  </button>
-                ))
-              ) : (
-                <div style={{ padding: "16px", textAlign: "center", color: "var(--text-muted)", fontSize: 14 }}>
-                  No locations found.
+                  />
                 </div>
-              )}
-            </div>
+              </div>
+
+              {/* Scrollable list */}
+              <div style={{ overflowY: "auto", flex: 1, paddingBottom: 40, background: "var(--surface)" }}>
+                {filteredLocations.length > 0 ? (
+                  filteredLocations.map((loc, i) => (
+                    <button
+                      key={loc.id}
+                      onClick={() => {
+                        onSelect(loc.name);
+                        setIsOpen(false);
+                        setSearch("");
+                      }}
+                      style={{
+                        width: "100%",
+                        padding: "16px 20px",
+                        textAlign: "left",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        background: "transparent",
+                        borderTop: "none",
+                        borderRight: "none",
+                        borderLeft: "none",
+                        borderBottom: i < filteredLocations.length - 1 ? "1px solid var(--border)" : "none",
+                        cursor: "pointer",
+                      }}
+                    >
+                      <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                        <span style={{ fontSize: 16, fontWeight: value === loc.name ? 700 : 500, color: value === loc.name ? "var(--brand)" : "var(--text-primary)" }}>
+                          {loc.name}
+                        </span>
+                        <span style={{ fontSize: 13, color: "var(--text-muted)" }}>{loc.subCity}</span>
+                      </div>
+                      {value === loc.name && <CheckCircle size={20} color="var(--brand)" />}
+                    </button>
+                  ))
+                ) : (
+                  <div style={{ padding: "32px 20px", textAlign: "center", color: "var(--text-muted)", fontSize: 15 }}>
+                    No locations found matching "{search}".
+                  </div>
+                )}
+              </div>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
