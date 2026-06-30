@@ -95,6 +95,8 @@ const INITIAL_SECTIONS: TaskSection[] = [
 
 export default function DevDashboard() {
   const [taskStates, setTaskStates] = useState<Record<string, TaskStatus>>({});
+  const [taskNotes, setTaskNotes] = useState<Record<string, string>>({});
+  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [activeSection, setActiveSection] = useState<string>("all");
@@ -102,23 +104,42 @@ export default function DevDashboard() {
 
   // Load state on mount
   useEffect(() => {
-    const saved = localStorage.getItem("jobsaddis_task_states");
-    if (saved) {
+    // Load Statuses
+    const savedStates = localStorage.getItem("jobsaddis_task_states");
+    if (savedStates) {
       try {
-        setTaskStates(JSON.parse(saved));
+        setTaskStates(JSON.parse(savedStates));
       } catch (e) {
         console.error("Failed to parse task states", e);
       }
     } else {
-      // Set defaults
-      const defaults: Record<string, TaskStatus> = {};
+      const defaultStates: Record<string, TaskStatus> = {};
       INITIAL_SECTIONS.forEach(sec => {
         sec.tasks.forEach(t => {
-          defaults[t.id] = t.defaultStatus;
+          defaultStates[t.id] = t.defaultStatus;
         });
       });
-      setTaskStates(defaults);
-      localStorage.setItem("jobsaddis_task_states", JSON.stringify(defaults));
+      setTaskStates(defaultStates);
+      localStorage.setItem("jobsaddis_task_states", JSON.stringify(defaultStates));
+    }
+
+    // Load Notes
+    const savedNotes = localStorage.getItem("jobsaddis_task_notes");
+    if (savedNotes) {
+      try {
+        setTaskNotes(JSON.parse(savedNotes));
+      } catch (e) {
+        console.error("Failed to parse task notes", e);
+      }
+    } else {
+      const defaultNotes: Record<string, string> = {};
+      INITIAL_SECTIONS.forEach(sec => {
+        sec.tasks.forEach(t => {
+          defaultNotes[t.id] = t.notes;
+        });
+      });
+      setTaskNotes(defaultNotes);
+      localStorage.setItem("jobsaddis_task_notes", JSON.stringify(defaultNotes));
     }
     setMounted(false);
     // Sync theme if localStorage theme is dark
@@ -137,6 +158,12 @@ export default function DevDashboard() {
     localStorage.setItem("jobsaddis_task_states", JSON.stringify(updated));
   };
 
+  const updateTaskNote = (id: string, newNote: string) => {
+    const updated = { ...taskNotes, [id]: newNote };
+    setTaskNotes(updated);
+    localStorage.setItem("jobsaddis_task_notes", JSON.stringify(updated));
+  };
+
   const cycleStatus = (id: string) => {
     const current = taskStates[id] || "todo";
     let next: TaskStatus = "todo";
@@ -146,15 +173,22 @@ export default function DevDashboard() {
   };
 
   const resetToDefault = () => {
-    if (confirm("Are you sure you want to reset all tasks to their default agreement analysis states?")) {
-      const defaults: Record<string, TaskStatus> = {};
+    if (confirm("Are you sure you want to reset all tasks and notes to their default agreement analysis states?")) {
+      const defaultStates: Record<string, TaskStatus> = {};
+      const defaultNotes: Record<string, string> = {};
+      
       INITIAL_SECTIONS.forEach(sec => {
         sec.tasks.forEach(t => {
-          defaults[t.id] = t.defaultStatus;
+          defaultStates[t.id] = t.defaultStatus;
+          defaultNotes[t.id] = t.notes;
         });
       });
-      setTaskStates(defaults);
-      localStorage.setItem("jobsaddis_task_states", JSON.stringify(defaults));
+      
+      setTaskStates(defaultStates);
+      localStorage.setItem("jobsaddis_task_states", JSON.stringify(defaultStates));
+      
+      setTaskNotes(defaultNotes);
+      localStorage.setItem("jobsaddis_task_notes", JSON.stringify(defaultNotes));
     }
   };
 
@@ -278,9 +312,11 @@ export default function DevDashboard() {
           {INITIAL_SECTIONS.map((section, secIdx) => {
             // Filter tasks in this section
             const filteredTasks = section.tasks.filter(task => {
+              const currentNote = taskNotes[task.id] !== undefined ? taskNotes[task.id] : task.notes;
+              
               const matchesSearch = task.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
                                     task.desc.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                                    task.notes.toLowerCase().includes(searchTerm.toLowerCase());
+                                    currentNote.toLowerCase().includes(searchTerm.toLowerCase());
               
               const status = taskStates[task.id] || "todo";
               const matchesStatus = filterStatus === "all" || status === filterStatus;
@@ -312,6 +348,7 @@ export default function DevDashboard() {
                 <div className="divide-y divide-gray-150 dark:divide-zinc-800">
                   {filteredTasks.map((task) => {
                     const status = taskStates[task.id] || "todo";
+                    const currentNote = taskNotes[task.id] !== undefined ? taskNotes[task.id] : task.notes;
                     
                     return (
                       <div 
@@ -345,12 +382,35 @@ export default function DevDashboard() {
                               {task.desc}
                             </p>
 
-                            {/* Analysis / Verification Notes */}
-                            {task.notes && (
-                              <div className="mt-1.5 sm:mt-2 md:mt-2.5 bg-gray-50 dark:bg-zinc-950 border border-gray-200/50 dark:border-zinc-850 p-1.5 sm:p-2 md:p-2.5 rounded-lg text-[10px] sm:text-xs flex items-start gap-1 sm:gap-1.5 text-gray-600 dark:text-zinc-400">
-                                <span className="font-semibold text-emerald-600 dark:text-emerald-500 shrink-0">Analysis:</span>
-                                <span className="italic leading-relaxed">{task.notes}</span>
+                            {/* Editable Analysis / Verification Notes */}
+                            {editingNoteId === task.id ? (
+                              <div className="mt-1.5 sm:mt-2 md:mt-2.5">
+                                <textarea
+                                  autoFocus
+                                  className="w-full bg-white dark:bg-zinc-900 border border-emerald-500 rounded-lg p-2 text-xs text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-emerald-500 min-h-[60px]"
+                                  value={currentNote}
+                                  onChange={(e) => updateTaskNote(task.id, e.target.value)}
+                                  onBlur={() => setEditingNoteId(null)}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Escape' || (e.key === 'Enter' && !e.shiftKey)) {
+                                      e.preventDefault();
+                                      setEditingNoteId(null);
+                                    }
+                                  }}
+                                />
+                                <p className="text-[9px] text-gray-400 mt-1">Press Enter to save, Shift+Enter for new line.</p>
                               </div>
+                            ) : (
+                              currentNote && (
+                                <div 
+                                  className="mt-1.5 sm:mt-2 md:mt-2.5 bg-gray-50 dark:bg-zinc-950 border border-gray-200/50 dark:border-zinc-850 p-1.5 sm:p-2 md:p-2.5 rounded-lg text-[10px] sm:text-xs flex items-start gap-1 sm:gap-1.5 text-gray-600 dark:text-zinc-400 group cursor-text transition-colors hover:border-emerald-500/30"
+                                  onClick={() => setEditingNoteId(task.id)}
+                                  title="Click to edit analysis notes"
+                                >
+                                  <span className="font-semibold text-emerald-600 dark:text-emerald-500 shrink-0">Analysis:</span>
+                                  <span className="italic leading-relaxed whitespace-pre-wrap">{currentNote}</span>
+                                </div>
+                              )
                             )}
                           </div>
                         </div>
