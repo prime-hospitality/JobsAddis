@@ -1097,7 +1097,7 @@ export default function ProfileScreen() {
               exit={{ x: "100%" }}
               transition={{ type: "spring", stiffness: 340, damping: 32 }}
               style={{
-                position: "fixed", top: 0, right: 0, bottom: 0,
+                position: "fixed", top: 60, right: 0, bottom: 0,
                 width: "85%", maxWidth: 400,
                 zIndex: 201,
                 background: "var(--surface)",
