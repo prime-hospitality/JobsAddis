@@ -2,12 +2,14 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, LazyMotion, domAnimation, AnimatePresence } from "framer-motion";
-import { Phone, MapPin, Briefcase, FileText, RefreshCw, CheckCircle, HelpCircle, ShieldCheck, Settings, AlertCircle, Upload, Loader2, Moon, Sun, X, Pencil, Lock } from "lucide-react";
+import { Phone, MapPin, Briefcase, FileText, RefreshCw, CheckCircle, HelpCircle, ShieldCheck, Settings, AlertCircle, Upload, Loader2, Moon, Sun, X, Pencil, Lock, ChevronRight, ChevronLeft, ChevronDown, Users, Search } from "lucide-react";
 import { fetchProfile as fetchProfileApi, updatePhone, updateSecondaryPhone } from "@/lib/api";
 import { formatPhoneForDisplay, normalizePhoneNumber } from "@/lib/phone";
 import { useTelegram } from "@/hooks/useTelegram";
 import { useCvUpload } from "@/hooks/useCvUpload";
 import { supabase } from "@/lib/supabase";
+import { JOB_CATEGORIES } from "@/data/jobs";
+import { LOCATIONS, LOCATIONS_BY_SUB_CITY } from "@/data/locations";
 
 // ── Profile completion helpers ──────────────────────────────────────────────
 interface CompletionSection {
@@ -83,6 +85,17 @@ export default function ProfileScreen() {
     try { return localStorage.getItem("profile_privacy_dismissed") === "true"; } catch { return false; }
   });
   const [settingsOpen, setSettingsOpen] = useState(false);
+  // Settings inner sub-views: null = main, 'role' = role picker, 'experience' = experience per role, 'location' = location picker
+  const [settingsView, setSettingsView] = useState<null | 'role' | 'experience' | 'location'>(null);
+  // Editable copies while settings panel is open
+  const [editRoles, setEditRoles] = useState<string[]>([]);
+  const [editExperience, setEditExperience] = useState<Record<string, string>>({});
+  const [editLocation, setEditLocation] = useState("");
+  const [locationSearch, setLocationSearch] = useState("");
+  const [roleSearch, setRoleSearch] = useState("");
+  const [roleTeamView, setRoleTeamView] = useState<string | null>(null);
+  const [isSavingSettings, setIsSavingSettings] = useState(false);
+  const [experienceRoleIndex, setExperienceRoleIndex] = useState(0);
   const [toast, setToast] = useState<{ type: "success" | "error"; message: string } | null>(null);
   
   // Primary Phone States
@@ -201,9 +214,57 @@ export default function ProfileScreen() {
     } else {
       document.documentElement.removeAttribute("data-theme");
     }
-    // Notify the useTelegram hook to update native chrome bars
     if (typeof window !== "undefined") {
       window.dispatchEvent(new Event("themeToggle"));
+    }
+  };
+
+  const openSettings = () => {
+    setEditRoles(profile?.selected_categories ?? []);
+    setEditExperience(profile?.experience_levels ?? {});
+    setEditLocation(profile?.location ?? "");
+    setSettingsView(null);
+    setRoleSearch("");
+    setRoleTeamView(null);
+    setLocationSearch("");
+    setSettingsOpen(true);
+  };
+
+  const saveRolesAndExperience = async () => {
+    if (!profile?.telegram_id) return;
+    setIsSavingSettings(true);
+    try {
+      const { error } = await supabase
+        .from("profiles")
+        .update({ selected_categories: editRoles, experience_levels: editExperience })
+        .eq("telegram_id", profile.telegram_id);
+      if (error) throw error;
+      setProfile(prev => prev ? { ...prev, selected_categories: editRoles, experience_levels: editExperience } : prev);
+      showToast("success", "Roles & experience updated!");
+      setSettingsView(null);
+    } catch (err: any) {
+      showToast("error", err.message || "Failed to save.");
+    } finally {
+      setIsSavingSettings(false);
+    }
+  };
+
+  const saveLocation = async () => {
+    if (!profile?.telegram_id || !editLocation.trim()) return;
+    setIsSavingSettings(true);
+    try {
+      const { error } = await supabase
+        .from("profiles")
+        .update({ location: editLocation.trim() })
+        .eq("telegram_id", profile.telegram_id);
+      if (error) throw error;
+      setProfile(prev => prev ? { ...prev, location: editLocation.trim() } : prev);
+      showToast("success", "Location updated!");
+      setSettingsView(null);
+    } catch (err: any) {
+      showToast("error", err.message || "Failed to save location.");
+    } finally {
+      setIsSavingSettings(false);
     }
   };
 
@@ -577,7 +638,7 @@ export default function ProfileScreen() {
                       {/* Settings button */}
                       <motion.button
                         whileTap={{ scale: 0.9 }}
-                        onClick={() => setSettingsOpen(true)}
+                        onClick={openSettings}
                         style={{
                           width: 38, height: 38, borderRadius: 12,
                           background: "var(--surface-elevated)",
@@ -1009,7 +1070,7 @@ export default function ProfileScreen() {
         />
       </div>
 
-      {/* ── Settings Bottom Sheet ── */}
+      {/* ── Settings Right Panel ── */}
       <AnimatePresence>
         {settingsOpen && (
           <>
@@ -1020,129 +1081,462 @@ export default function ProfileScreen() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
-              onClick={() => setSettingsOpen(false)}
+              onClick={() => { setSettingsOpen(false); setSettingsView(null); }}
               style={{
-                position: "fixed", inset: 0, zIndex: 100,
-                background: "rgba(0,0,0,0.5)",
-                backdropFilter: "blur(4px)",
+                position: "fixed", inset: 0, zIndex: 200,
+                background: "rgba(0,0,0,0.45)",
+                backdropFilter: "blur(6px)",
               }}
             />
 
-            {/* Sheet */}
+            {/* Sliding Panel from RIGHT */}
             <motion.div
-              key="settings-sheet"
-              initial={{ y: "100%" }}
-              animate={{ y: 0 }}
-              exit={{ y: "100%" }}
-              transition={{ type: "spring", stiffness: 320, damping: 32 }}
+              key="settings-panel"
+              initial={{ x: "100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "100%" }}
+              transition={{ type: "spring", stiffness: 340, damping: 32 }}
               style={{
-                position: "fixed", bottom: 0, left: 0, right: 0,
-                zIndex: 101,
+                position: "fixed", top: 0, right: 0, bottom: 0,
+                width: "85%", maxWidth: 400,
+                zIndex: 201,
                 background: "var(--surface)",
-                borderRadius: "24px 24px 0 0",
-                padding: "0 0 env(safe-area-inset-bottom, 24px)",
-                boxShadow: "0 -8px 40px rgba(0,0,0,0.18)",
-                maxWidth: 480,
-                margin: "0 auto",
+                borderTopLeftRadius: 20, borderBottomLeftRadius: 20,
+                boxShadow: "-8px 0 40px rgba(0,0,0,0.2)",
+                display: "flex", flexDirection: "column",
+                overflow: "hidden",
               }}
             >
-              {/* Handle bar */}
+              {/* ── HEADER ── */}
               <div style={{
-                width: 40, height: 4, borderRadius: 100,
-                background: "var(--border)", margin: "12px auto 0",
-              }} />
-
-              {/* Header */}
-              <div style={{
-                display: "flex", alignItems: "center", justifyContent: "space-between",
-                padding: "16px 20px 8px",
+                padding: "20px 16px 14px",
                 borderBottom: "1px solid var(--border)",
+                display: "flex", alignItems: "center", gap: 10,
+                flexShrink: 0, background: "var(--surface)",
               }}>
+                {settingsView !== null ? (
+                  <motion.button
+                    whileTap={{ scale: 0.9 }}
+                    onClick={() => { setSettingsView(null); setRoleTeamView(null); setRoleSearch(""); }}
+                    style={{ background: "none", border: "none", cursor: "pointer", padding: 4, lineHeight: 0 }}
+                  >
+                    <ChevronLeft size={22} color="var(--text-primary)" />
+                  </motion.button>
+                ) : (
+                  <motion.button
+                    whileTap={{ scale: 0.9 }}
+                    onClick={() => { setSettingsOpen(false); setSettingsView(null); }}
+                    style={{ background: "none", border: "none", cursor: "pointer", padding: 4, lineHeight: 0 }}
+                  >
+                    <X size={20} color="var(--text-primary)" />
+                  </motion.button>
+                )}
                 <div>
-                  <p style={{ fontSize: 18, fontWeight: 800, color: "var(--text-primary)" }}>Settings</p>
-                  <p style={{ fontSize: 13, color: "var(--text-muted)", marginTop: 2 }}>Customize your experience</p>
+                  <p style={{ fontSize: 17, fontWeight: 800, color: "var(--text-primary)", margin: 0 }}>
+                    {settingsView === "role" ? "Edit Job Roles"
+                      : settingsView === "experience" ? "Experience Levels"
+                      : settingsView === "location" ? "Change Location"
+                      : "Settings"}
+                  </p>
+                  {settingsView === null && (
+                    <p style={{ fontSize: 12, color: "var(--text-muted)", margin: 0 }}>Manage your profile preferences</p>
+                  )}
                 </div>
-                <motion.button
-                  whileTap={{ scale: 0.88 }}
-                  onClick={() => setSettingsOpen(false)}
-                  style={{
-                    width: 34, height: 34, borderRadius: "50%",
-                    background: "var(--surface-elevated)",
-                    border: "1px solid var(--border)",
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    cursor: "pointer", flexShrink: 0,
-                  }}
-                >
-                  <X size={16} color="var(--text-secondary)" />
-                </motion.button>
               </div>
 
-              {/* Settings options */}
-              <div style={{ padding: "16px 20px", display: "flex", flexDirection: "column", gap: 8 }}>
+              {/* ── SCROLLABLE BODY ── */}
+              <div style={{ flex: 1, overflowY: "auto" }}>
 
-                {/* Appearance section label */}
-                <p style={{
-                  fontSize: 11, fontWeight: 700, color: "var(--text-muted)",
-                  textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4,
-                }}>
-                  Appearance
-                </p>
+                {/* ════ MAIN SETTINGS VIEW ════ */}
+                {settingsView === null && (
+                  <div style={{ padding: "16px" }}>
 
-                {/* Dark / Light toggle row */}
-                <div style={{
-                  display: "flex", alignItems: "center", justifyContent: "space-between",
-                  background: "var(--surface-elevated)",
-                  border: "1px solid var(--border)",
-                  borderRadius: 16, padding: "14px 16px",
-                }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                    {/* Icon that switches with theme */}
-                    <div style={{
-                      width: 38, height: 38, borderRadius: 12,
-                      background: isDark ? "rgba(99,102,241,0.12)" : "rgba(245,158,11,0.12)",
-                      border: `1px solid ${isDark ? "rgba(99,102,241,0.25)" : "rgba(245,158,11,0.25)"}`,
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                      flexShrink: 0,
-                    }}>
-                      {isDark
-                        ? <Moon size={18} color="#818CF8" />
-                        : <Sun size={18} color="#F59E0B" />
-                      }
-                    </div>
-                    <div>
-                      <p style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)" }}>
-                        {isDark ? "Dark Mode" : "Light Mode"}
-                      </p>
-                      <p style={{ fontSize: 12, color: "var(--text-muted)" }}>
-                        {isDark ? "Easy on the eyes at night" : "Bright and clear display"}
-                      </p>
-                    </div>
-                  </div>
+                    {/* Profile section */}
+                    <p style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>Profile</p>
 
-                  {/* Toggle switch */}
-                  <motion.button
-                    onClick={() => applyTheme(!isDark)}
-                    style={{
-                      width: 50, height: 28, borderRadius: 100,
-                      background: isDark ? "var(--brand)" : "var(--surface)",
-                      border: `1.5px solid ${isDark ? "var(--brand)" : "var(--border)"}`,
-                      position: "relative", cursor: "pointer", flexShrink: 0,
-                      transition: "background 0.25s ease, border-color 0.25s ease",
-                    }}
-                  >
-                    <motion.div
-                      layout
-                      animate={{ x: isDark ? 22 : 2 }}
-                      transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                    {/* Edit Job Roles */}
+                    <button
+                      onClick={() => { setRoleSearch(""); setRoleTeamView(null); setSettingsView("role"); }}
                       style={{
-                        position: "absolute", top: 3,
-                        width: 20, height: 20, borderRadius: "50%",
-                        background: isDark ? "#fff" : "var(--text-muted)",
-                        boxShadow: "0 1px 4px rgba(0,0,0,0.2)",
+                        width: "100%", padding: "14px 16px", marginBottom: 8,
+                        display: "flex", alignItems: "center", justifyContent: "space-between",
+                        background: "var(--surface-elevated)", border: "1px solid var(--border)",
+                        borderRadius: 14, cursor: "pointer",
                       }}
-                    />
-                  </motion.button>
-                </div>
+                    >
+                      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                        <div style={{ width: 36, height: 36, borderRadius: 10, background: "var(--brand-subtle)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                          <Briefcase size={17} color="var(--brand)" />
+                        </div>
+                        <div style={{ textAlign: "left" }}>
+                          <p style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>Job Roles</p>
+                          <p style={{ fontSize: 12, color: "var(--text-muted)", margin: 0 }}>
+                            {(profile?.selected_categories?.length ?? 0) > 0
+                              ? profile!.selected_categories.slice(0, 2).join(", ") + (profile!.selected_categories.length > 2 ? ` +${profile!.selected_categories.length - 2}` : "")
+                              : "Not set"}
+                          </p>
+                        </div>
+                      </div>
+                      <ChevronRight size={18} color="var(--text-muted)" />
+                    </button>
+
+                    {/* Edit Experience */}
+                    <button
+                      onClick={() => { setExperienceRoleIndex(0); setSettingsView("experience"); }}
+                      style={{
+                        width: "100%", padding: "14px 16px", marginBottom: 8,
+                        display: "flex", alignItems: "center", justifyContent: "space-between",
+                        background: "var(--surface-elevated)", border: "1px solid var(--border)",
+                        borderRadius: 14, cursor: "pointer",
+                      }}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                        <div style={{ width: 36, height: 36, borderRadius: 10, background: "var(--brand-subtle)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                          <FileText size={17} color="var(--brand)" />
+                        </div>
+                        <div style={{ textAlign: "left" }}>
+                          <p style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>Experience Levels</p>
+                          <p style={{ fontSize: 12, color: "var(--text-muted)", margin: 0 }}>
+                            {editRoles.length === 0 ? "Set job roles first" : `${Object.keys(editExperience).filter(k => editRoles.includes(k)).length} of ${editRoles.length} roles set`}
+                          </p>
+                        </div>
+                      </div>
+                      <ChevronRight size={18} color="var(--text-muted)" />
+                    </button>
+
+                    {/* Edit Location */}
+                    <button
+                      onClick={() => { setLocationSearch(""); setSettingsView("location"); }}
+                      style={{
+                        width: "100%", padding: "14px 16px", marginBottom: 20,
+                        display: "flex", alignItems: "center", justifyContent: "space-between",
+                        background: "var(--surface-elevated)", border: "1px solid var(--border)",
+                        borderRadius: 14, cursor: "pointer",
+                      }}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                        <div style={{ width: 36, height: 36, borderRadius: 10, background: "var(--brand-subtle)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                          <MapPin size={17} color="var(--brand)" />
+                        </div>
+                        <div style={{ textAlign: "left" }}>
+                          <p style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>Location</p>
+                          <p style={{ fontSize: 12, color: "var(--text-muted)", margin: 0 }}>{profile?.location || "Not set"}</p>
+                        </div>
+                      </div>
+                      <ChevronRight size={18} color="var(--text-muted)" />
+                    </button>
+
+                    {/* Appearance section */}
+                    <p style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>Appearance</p>
+
+                    {/* Dark / Light toggle */}
+                    <div style={{
+                      display: "flex", alignItems: "center", justifyContent: "space-between",
+                      background: "var(--surface-elevated)", border: "1px solid var(--border)",
+                      borderRadius: 14, padding: "14px 16px",
+                    }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                        <div style={{
+                          width: 36, height: 36, borderRadius: 10,
+                          background: isDark ? "rgba(99,102,241,0.12)" : "rgba(245,158,11,0.12)",
+                          border: `1px solid ${isDark ? "rgba(99,102,241,0.25)" : "rgba(245,158,11,0.25)"}`,
+                          display: "flex", alignItems: "center", justifyContent: "center",
+                        }}>
+                          {isDark ? <Moon size={17} color="#818CF8" /> : <Sun size={17} color="#F59E0B" />}
+                        </div>
+                        <div>
+                          <p style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>{isDark ? "Dark Mode" : "Light Mode"}</p>
+                          <p style={{ fontSize: 12, color: "var(--text-muted)", margin: 0 }}>{isDark ? "Easy on the eyes at night" : "Bright and clear display"}</p>
+                        </div>
+                      </div>
+                      <motion.button
+                        onClick={() => applyTheme(!isDark)}
+                        style={{
+                          width: 48, height: 27, borderRadius: 100,
+                          background: isDark ? "var(--brand)" : "var(--surface)",
+                          border: `1.5px solid ${isDark ? "var(--brand)" : "var(--border)"}`,
+                          position: "relative", cursor: "pointer", flexShrink: 0,
+                          transition: "background 0.25s, border-color 0.25s",
+                        }}
+                      >
+                        <motion.div
+                          layout
+                          animate={{ x: isDark ? 21 : 2 }}
+                          transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                          style={{ position: "absolute", top: 3, width: 19, height: 19, borderRadius: "50%", background: isDark ? "#fff" : "var(--text-muted)", boxShadow: "0 1px 4px rgba(0,0,0,0.2)" }}
+                        />
+                      </motion.button>
+                    </div>
+
+                  </div>
+                )}
+
+                {/* ════ ROLE PICKER VIEW ════ */}
+                {settingsView === "role" && (() => {
+                  const ROLE_TEAMS: Record<string, string[]> = {
+                    "Front Office": ["Receptionist", "Night Auditor", "Guest Relations Officer", "Reservations Agent", "Phone Operator", "Bellboy"],
+                    "Housekeeping": ["Housekeeper"],
+                    "Food & Beverage": ["F&B", "Waiter", "Chef", "Executive Chef", "Sous Chef", "Cook", "Traditional Cook", "Kitchen Assistant", "Steward", "Barista", "Banquet"],
+                    "Marketing": ["Marketing & Sales"],
+                    "Human Resources": ["HR Manager", "HR Officer", "Recruiter", "Training & Development Officer", "Payroll Officer"],
+                    "Engineering & Maintenance": ["Chief Engineer", "Maintenance", "Painter", "IT Officer"],
+                    "Finance & Accounting": ["Finance", "Accountant", "Cost Control", "Cashier", "Store Keeper"],
+                    "Unassigned": ["Manager", "General Manager", "Security", "Driver", "Delivery", "Spa Attendant", "Gym Trainer", "Lifeguard", "Other"],
+                  };
+                  const teamNames = Object.keys(ROLE_TEAMS).filter(t => t !== "Unassigned");
+                  const isSearching = roleSearch.trim().length > 0;
+                  const searchResults = JOB_CATEGORIES.filter(c => c.toLowerCase().includes(roleSearch.toLowerCase()));
+                  const teamCats = roleTeamView ? (ROLE_TEAMS[roleTeamView] ?? []) : [];
+                  const toggleRole = (cat: string) => {
+                    if (editRoles.includes(cat)) {
+                      const newRoles = editRoles.filter(r => r !== cat);
+                      setEditRoles(newRoles);
+                      const newExp = { ...editExperience };
+                      delete newExp[cat];
+                      setEditExperience(newExp);
+                    } else {
+                      setEditRoles([...editRoles, cat]);
+                    }
+                  };
+                  const RoleGrid = ({ cats }: { cats: string[] }) => (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                      {cats.map(cat => {
+                        const isSel = editRoles.includes(cat);
+                        return (
+                          <button key={cat} onClick={() => toggleRole(cat)} style={{
+                            width: "100%", padding: "13px 14px",
+                            display: "flex", alignItems: "center", justifyContent: "space-between",
+                            background: isSel ? "var(--brand-subtle)" : "var(--surface-elevated)",
+                            border: isSel ? "1px solid var(--brand)" : "1px solid var(--border)",
+                            borderRadius: 12, cursor: "pointer",
+                          }}>
+                            <span style={{ fontSize: 14, fontWeight: isSel ? 700 : 500, color: isSel ? "var(--brand)" : "var(--text-primary)" }}>{cat}</span>
+                            <div style={{ width: 20, height: 20, borderRadius: 6, border: isSel ? "none" : "2px solid var(--text-muted)", background: isSel ? "var(--brand)" : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                              {isSel && <CheckCircle size={13} color="white" />}
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  );
+                  return (
+                    <div style={{ padding: "16px" }}>
+                      {/* Search */}
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, background: "var(--app-bg)", border: "1px solid var(--border)", borderRadius: 12, padding: "11px 14px", marginBottom: 14 }}>
+                        <Search size={16} color="var(--text-muted)" />
+                        <input
+                          placeholder="Search all roles..."
+                          value={roleSearch}
+                          onChange={(e) => { setRoleSearch(e.target.value); setRoleTeamView(null); }}
+                          style={{ border: "none", outline: "none", width: "100%", fontSize: 14, background: "transparent", color: "var(--text-primary)" }}
+                        />
+                        {roleSearch && <button onClick={() => setRoleSearch("")} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, lineHeight: 0 }}><X size={14} color="var(--text-muted)" /></button>}
+                      </div>
+                      {/* Search results */}
+                      {isSearching && (
+                        searchResults.length > 0 ? <RoleGrid cats={searchResults} /> : <p style={{ textAlign: "center", color: "var(--text-muted)", padding: "20px 0" }}>No roles found.</p>
+                      )}
+                      {/* Team list */}
+                      {!isSearching && !roleTeamView && (
+                        <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                          {teamNames.map(team => {
+                            const cats = ROLE_TEAMS[team] ?? [];
+                            const activeCount = cats.filter(c => editRoles.includes(c)).length;
+                            return (
+                              <button key={team} onClick={() => setRoleTeamView(team)} style={{ width: "100%", padding: "13px 4px", display: "flex", alignItems: "center", justifyContent: "space-between", background: "transparent", border: "none", borderBottom: "1px solid var(--border)", cursor: "pointer" }}>
+                                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                                  <div style={{ width: 36, height: 36, borderRadius: 10, background: activeCount > 0 ? "var(--brand-subtle)" : "var(--surface-elevated)", border: `1px solid ${activeCount > 0 ? "var(--brand)" : "var(--border)"}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                                    <Users size={16} color={activeCount > 0 ? "var(--brand)" : "var(--text-muted)"} />
+                                  </div>
+                                  <div style={{ textAlign: "left" }}>
+                                    <p style={{ fontSize: 14, fontWeight: 600, color: activeCount > 0 ? "var(--brand)" : "var(--text-primary)", margin: 0 }}>{team}</p>
+                                    <p style={{ fontSize: 12, color: "var(--text-muted)", margin: 0 }}>{cats.length} roles{activeCount > 0 ? ` · ${activeCount} selected` : ""}</p>
+                                  </div>
+                                </div>
+                                <ChevronRight size={16} color="var(--text-muted)" />
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+                      {/* Team categories */}
+                      {!isSearching && roleTeamView && (
+                        <>
+                          <button onClick={() => setRoleTeamView(null)} style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", padding: "0 0 12px 0", color: "var(--brand)", fontWeight: 600, fontSize: 13 }}>
+                            <ChevronLeft size={15} /> Back to Main Category
+                          </button>
+                          <RoleGrid cats={teamCats} />
+                        </>
+                      )}
+                      {/* Save button */}
+                      {!isSearching && !roleTeamView && (
+                        <motion.button
+                          whileTap={{ scale: 0.97 }}
+                          onClick={saveRolesAndExperience}
+                          disabled={isSavingSettings}
+                          className="btn-primary"
+                          style={{ width: "100%", marginTop: 20 }}
+                        >
+                          {isSavingSettings ? "Saving..." : "Save Roles"}
+                        </motion.button>
+                      )}
+                    </div>
+                  );
+                })()}
+
+                {/* ════ EXPERIENCE VIEW ════ */}
+                {settingsView === "experience" && (() => {
+                  const EXPERIENCE_OPTIONS = [
+                    "Entry Level (Fresh Graduate)",
+                    "Junior Level(1-3 years)",
+                    "Mid Level(3-5 years)",
+                    "Senior(5-8 years)",
+                    "Executive(VP, Director)",
+                    "Senior Executive(C Level)",
+                  ];
+                  if (editRoles.length === 0) {
+                    return (
+                      <div style={{ padding: "40px 20px", textAlign: "center" }}>
+                        <p style={{ color: "var(--text-muted)", fontSize: 14 }}>You haven't selected any job roles yet. Go to Job Roles first.</p>
+                      </div>
+                    );
+                  }
+                  const currentRole = editRoles[experienceRoleIndex] ?? editRoles[0];
+                  return (
+                    <div style={{ padding: "16px" }}>
+                      {/* Role tabs */}
+                      <div style={{ display: "flex", gap: 6, overflowX: "auto", scrollbarWidth: "none", paddingBottom: 8, marginBottom: 12 }}>
+                        {editRoles.map((role, i) => (
+                          <button
+                            key={role}
+                            onClick={() => setExperienceRoleIndex(i)}
+                            style={{
+                              flexShrink: 0, padding: "7px 12px", borderRadius: 100, fontSize: 12, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap",
+                              background: i === experienceRoleIndex ? "var(--brand)" : "var(--surface-elevated)",
+                              border: i === experienceRoleIndex ? "1px solid var(--brand)" : "1px solid var(--border)",
+                              color: i === experienceRoleIndex ? "white" : "var(--text-primary)",
+                            }}
+                          >
+                            {role} {editExperience[role] ? "✓" : ""}
+                          </button>
+                        ))}
+                      </div>
+                      <p style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)", marginBottom: 12 }}>Experience for: <span style={{ color: "var(--brand)" }}>{currentRole}</span></p>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                        {EXPERIENCE_OPTIONS.map(opt => {
+                          const isSel = editExperience[currentRole] === opt;
+                          return (
+                            <button key={opt} onClick={() => setEditExperience(prev => ({ ...prev, [currentRole]: opt }))} style={{
+                              width: "100%", padding: "13px 14px",
+                              display: "flex", alignItems: "center", justifyContent: "space-between",
+                              background: isSel ? "var(--brand-subtle)" : "var(--surface-elevated)",
+                              border: isSel ? "1px solid var(--brand)" : "1px solid var(--border)",
+                              borderRadius: 12, cursor: "pointer",
+                            }}>
+                              <span style={{ fontSize: 13, fontWeight: isSel ? 700 : 500, color: isSel ? "var(--brand)" : "var(--text-primary)", textAlign: "left" }}>{opt}</span>
+                              <div style={{ width: 20, height: 20, borderRadius: "50%", border: isSel ? "none" : "2px solid var(--text-muted)", background: isSel ? "var(--brand)" : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                                {isSel && <CheckCircle size={13} color="white" />}
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                      <motion.button
+                        whileTap={{ scale: 0.97 }}
+                        onClick={saveRolesAndExperience}
+                        disabled={isSavingSettings}
+                        className="btn-primary"
+                        style={{ width: "100%", marginTop: 20 }}
+                      >
+                        {isSavingSettings ? "Saving..." : "Save Experience"}
+                      </motion.button>
+                    </div>
+                  );
+                })()}
+
+                {/* ════ LOCATION VIEW ════ */}
+                {settingsView === "location" && (() => {
+                  const allLocs = LOCATIONS;
+                  const filtered = locationSearch.trim()
+                    ? allLocs.filter(l => l.name.toLowerCase().includes(locationSearch.toLowerCase()) || l.subCity.toLowerCase().includes(locationSearch.toLowerCase()))
+                    : allLocs;
+                  const grouped = locationSearch.trim() ? null : LOCATIONS_BY_SUB_CITY;
+                  return (
+                    <div style={{ padding: "16px" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, background: "var(--app-bg)", border: "1px solid var(--border)", borderRadius: 12, padding: "11px 14px", marginBottom: 14 }}>
+                        <Search size={16} color="var(--text-muted)" />
+                        <input
+                          placeholder="Search location..."
+                          value={locationSearch}
+                          onChange={(e) => setLocationSearch(e.target.value)}
+                          style={{ border: "none", outline: "none", width: "100%", fontSize: 14, background: "transparent", color: "var(--text-primary)" }}
+                        />
+                        {locationSearch && <button onClick={() => setLocationSearch("")} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, lineHeight: 0 }}><X size={14} color="var(--text-muted)" /></button>}
+                      </div>
+                      {editLocation && (
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 14px", background: "var(--brand-subtle)", border: "1px solid var(--brand)", borderRadius: 12, marginBottom: 12 }}>
+                          <MapPin size={14} color="var(--brand)" />
+                          <p style={{ fontSize: 13, fontWeight: 700, color: "var(--brand)", margin: 0 }}>Selected: {editLocation}</p>
+                        </div>
+                      )}
+                      {/* Flat search results */}
+                      {locationSearch.trim() ? (
+                        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                          {filtered.map(loc => {
+                            const isSel = editLocation === loc.name;
+                            return (
+                              <button key={loc.id} onClick={() => setEditLocation(loc.name)} style={{
+                                width: "100%", padding: "12px 14px", display: "flex", alignItems: "center", justifyContent: "space-between",
+                                background: isSel ? "var(--brand-subtle)" : "var(--surface-elevated)",
+                                border: isSel ? "1px solid var(--brand)" : "1px solid var(--border)",
+                                borderRadius: 12, cursor: "pointer",
+                              }}>
+                                <div style={{ textAlign: "left" }}>
+                                  <p style={{ fontSize: 13, fontWeight: 600, color: isSel ? "var(--brand)" : "var(--text-primary)", margin: 0 }}>{loc.name}</p>
+                                  <p style={{ fontSize: 11, color: "var(--text-muted)", margin: 0 }}>{loc.subCity}</p>
+                                </div>
+                                {isSel && <CheckCircle size={16} color="var(--brand)" />}
+                              </button>
+                            );
+                          })}
+                          {filtered.length === 0 && <p style={{ textAlign: "center", color: "var(--text-muted)", padding: "20px 0" }}>No locations found.</p>}
+                        </div>
+                      ) : (
+                        /* Grouped by sub-city */
+                        Object.entries(grouped!).map(([subCity, locs]) => (
+                          <div key={subCity} style={{ marginBottom: 16 }}>
+                            <p style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 6 }}>{subCity}</p>
+                            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                              {locs.map(loc => {
+                                const isSel = editLocation === loc.name;
+                                return (
+                                  <button key={loc.id} onClick={() => setEditLocation(loc.name)} style={{
+                                    width: "100%", padding: "11px 14px", display: "flex", alignItems: "center", justifyContent: "space-between",
+                                    background: isSel ? "var(--brand-subtle)" : "var(--surface-elevated)",
+                                    border: isSel ? "1px solid var(--brand)" : "1px solid var(--border)",
+                                    borderRadius: 10, cursor: "pointer",
+                                  }}>
+                                    <span style={{ fontSize: 13, fontWeight: isSel ? 700 : 500, color: isSel ? "var(--brand)" : "var(--text-primary)" }}>{loc.name}</span>
+                                    {isSel && <CheckCircle size={14} color="var(--brand)" />}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        ))
+                      )}
+                      <motion.button
+                        whileTap={{ scale: 0.97 }}
+                        onClick={saveLocation}
+                        disabled={isSavingSettings || !editLocation}
+                        className="btn-primary"
+                        style={{ width: "100%", marginTop: 16, position: "sticky", bottom: 16 }}
+                      >
+                        {isSavingSettings ? "Saving..." : "Save Location"}
+                      </motion.button>
+                    </div>
+                  );
+                })()}
 
               </div>
             </motion.div>
