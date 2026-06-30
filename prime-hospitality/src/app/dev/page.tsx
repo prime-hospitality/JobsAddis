@@ -1,8 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { CheckCircle2, Circle, Clock, RotateCcw, Search, ChevronRight, CheckSquare, Square, ArrowLeft } from "lucide-react";
-import Link from "next/link";
+import { CheckCircle2, Circle, Clock, RotateCcw, Search, ChevronRight, CheckSquare, Square } from "lucide-react";
 
 type TaskStatus = "todo" | "working" | "done";
 
@@ -185,42 +184,38 @@ export default function DevDashboard() {
   const workingPercent = totalTasks > 0 ? Math.round((workingTasks / totalTasks) * 100) : 0;
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-zinc-950 text-gray-900 dark:text-zinc-100 transition-colors duration-300">
+    <div className="min-h-screen bg-gray-50 dark:bg-zinc-950 text-gray-900 dark:text-zinc-100 transition-colors duration-300 pb-10">
       {/* Top Banner / Header */}
-      <div className="border-b border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-6 py-6 sticky top-0 z-50 shadow-xs">
-        <div className="max-w-5xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="border-b border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-4 md:px-6 py-4 md:py-6 sticky top-0 z-50 shadow-xs">
+        <div className="max-w-5xl mx-auto flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
           <div>
-            <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 font-semibold text-sm tracking-wider uppercase">
-              <Link href="/" className="inline-flex items-center gap-1 hover:text-emerald-500 transition-colors">
-                <ArrowLeft size={14} /> Back to App
-              </Link>
-              <span>•</span>
-              <span>Dev Environment</span>
+            <div className="text-emerald-600 dark:text-emerald-400 font-semibold text-xs md:text-sm tracking-wider uppercase">
+              Dev Environment
             </div>
-            <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight mt-1 text-gray-900 dark:text-white">
-              JobsAddis Agreement Tracker
+            <h1 className="text-xl md:text-3xl font-extrabold tracking-tight mt-1 text-gray-900 dark:text-white">
+              JobsAddis Tracker
             </h1>
-            <p className="text-gray-500 dark:text-zinc-400 text-sm mt-1 max-w-xl">
+            <p className="text-gray-500 dark:text-zinc-400 text-xs md:text-sm mt-1 max-w-xl leading-relaxed">
               Track implementation progress of all requirements in the Software Development Agreement (June 10, 2026).
             </p>
           </div>
 
           <button
             onClick={resetToDefault}
-            className="self-start md:self-center inline-flex items-center gap-1.5 px-3 py-1.5 border border-gray-300 dark:border-zinc-700 text-gray-600 dark:text-zinc-300 rounded-lg text-xs font-semibold hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors"
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-4 py-2 sm:px-3 sm:py-1.5 border border-gray-300 dark:border-zinc-700 text-gray-600 dark:text-zinc-300 rounded-lg text-xs md:text-sm font-semibold hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors"
           >
-            <RotateCcw size={13} /> Reset to Defaults
+            <RotateCcw size={14} /> Reset Defaults
           </button>
         </div>
 
         {/* Progress Bar Widget */}
-        <div className="max-w-5xl mx-auto mt-6 bg-gray-100 dark:bg-zinc-800 rounded-xl p-4 border border-gray-200/50 dark:border-zinc-700/50">
-          <div className="flex justify-between items-center text-xs font-bold uppercase tracking-wider mb-2">
-            <span className="text-emerald-600 dark:text-emerald-400">Progress: {progressPercent}% Completed</span>
-            <span className="text-amber-500">{workingTasks} Tasks In Progress</span>
-            <span className="text-gray-500 dark:text-zinc-400">{completedTasks} / {totalTasks} Tasks Done</span>
+        <div className="max-w-5xl mx-auto mt-4 md:mt-6 bg-gray-100 dark:bg-zinc-800 rounded-xl p-3 md:p-4 border border-gray-200/50 dark:border-zinc-700/50">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-1.5 sm:gap-2 text-[10px] md:text-xs font-bold uppercase tracking-wider mb-2">
+            <span className="text-emerald-600 dark:text-emerald-400">Progress: {progressPercent}% Done</span>
+            <span className="text-amber-500">{workingTasks} Working</span>
+            <span className="text-gray-500 dark:text-zinc-400">{completedTasks} / {totalTasks} Total</span>
           </div>
-          <div className="w-full h-3 bg-gray-200 dark:bg-zinc-700 rounded-full overflow-hidden flex">
+          <div className="w-full h-2 md:h-3 bg-gray-200 dark:bg-zinc-700 rounded-full overflow-hidden flex">
             <div 
               style={{ width: `${progressPercent}%` }} 
               className="h-full bg-emerald-500 dark:bg-emerald-600 transition-all duration-500 ease-out"
@@ -234,27 +229,27 @@ export default function DevDashboard() {
       </div>
 
       {/* Main Content Area */}
-      <div className="max-w-5xl mx-auto px-6 py-8">
+      <div className="max-w-5xl mx-auto px-4 md:px-6 py-6 md:py-8">
         
         {/* Filters and Search Bar */}
-        <div className="flex flex-col md:flex-row gap-4 mb-8">
-          <div className="relative flex-1">
+        <div className="flex flex-col gap-3 mb-6 md:mb-8">
+          <div className="relative w-full">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 dark:text-zinc-500" size={18} />
             <input
               type="text"
               placeholder="Search agreement requirements..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-11 pr-4 py-2.5 rounded-xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 text-sm"
+              className="w-full pl-11 pr-4 py-3 md:py-2.5 rounded-xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 text-sm"
             />
           </div>
 
-          <div className="flex gap-2 self-stretch overflow-x-auto pb-1 md:pb-0">
+          <div className="flex flex-col sm:flex-row gap-2 w-full">
             {/* Status Filters */}
             <select
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
-              className="px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 focus:outline-none focus:border-emerald-500 text-sm font-medium"
+              className="w-full sm:flex-1 px-3.5 py-3 md:py-2.5 rounded-xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 focus:outline-none focus:border-emerald-500 text-sm font-medium"
             >
               <option value="all">All Statuses</option>
               <option value="done">Completed (Done)</option>
@@ -266,7 +261,7 @@ export default function DevDashboard() {
             <select
               value={activeSection}
               onChange={(e) => setActiveSection(e.target.value)}
-              className="px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 focus:outline-none focus:border-emerald-500 text-sm font-medium"
+              className="w-full sm:flex-1 px-3.5 py-3 md:py-2.5 rounded-xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 focus:outline-none focus:border-emerald-500 text-sm font-medium"
             >
               <option value="all">All Sections</option>
               {INITIAL_SECTIONS.map((sec, idx) => (
@@ -319,59 +314,61 @@ export default function DevDashboard() {
                     return (
                       <div 
                         key={task.id} 
-                        className={`p-6 flex flex-col md:flex-row md:items-start gap-4 transition-colors hover:bg-gray-50/50 dark:hover:bg-zinc-900/40`}
+                        className={`p-4 md:p-6 flex flex-col md:flex-row md:items-start gap-3 md:gap-4 transition-colors hover:bg-gray-50/50 dark:hover:bg-zinc-900/40`}
                       >
-                        {/* Custom Interactive Checkbox / Circle */}
-                        <button
-                          onClick={() => cycleStatus(task.id)}
-                          className="self-start mt-0.5 text-gray-400 dark:text-zinc-600 hover:text-emerald-500 dark:hover:text-emerald-400 cursor-pointer focus:outline-none transition-colors"
-                          title="Click to cycle status"
-                        >
-                          {status === "done" && <CheckSquare className="text-emerald-500" size={21} />}
-                          {status === "working" && <CheckSquare className="text-amber-500" size={21} />}
-                          {status === "todo" && <Square size={21} />}
-                        </button>
+                        <div className="flex items-start gap-3">
+                          {/* Custom Interactive Checkbox / Circle */}
+                          <button
+                            onClick={() => cycleStatus(task.id)}
+                            className="mt-0.5 text-gray-400 dark:text-zinc-600 hover:text-emerald-500 dark:hover:text-emerald-400 cursor-pointer focus:outline-none transition-colors shrink-0"
+                            title="Click to cycle status"
+                          >
+                            {status === "done" && <CheckSquare className="text-emerald-500" size={21} />}
+                            {status === "working" && <CheckSquare className="text-amber-500" size={21} />}
+                            {status === "todo" && <Square size={21} />}
+                          </button>
 
-                        {/* Task text content */}
-                        <div className="flex-1 space-y-1">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <h3 className="text-sm font-bold text-gray-900 dark:text-white">
-                              {task.title}
-                            </h3>
-                            <span className="text-xs text-gray-400 dark:text-zinc-500 font-mono">
-                              ({task.id.toUpperCase()})
-                            </span>
-                          </div>
-                          
-                          <p className="text-xs text-gray-500 dark:text-zinc-400 leading-relaxed">
-                            {task.desc}
-                          </p>
-
-                          {/* Analysis / Verification Notes */}
-                          {task.notes && (
-                            <div className="mt-2.5 bg-gray-50 dark:bg-zinc-950 border border-gray-200/50 dark:border-zinc-850 p-2.5 rounded-lg text-xs flex items-start gap-1.5 text-gray-600 dark:text-zinc-400">
-                              <span className="font-semibold text-emerald-600 dark:text-emerald-500 shrink-0">Analysis:</span>
-                              <span className="italic">{task.notes}</span>
+                          {/* Task text content */}
+                          <div className="flex-1 space-y-1">
+                            <div className="flex flex-wrap items-center gap-1.5 md:gap-2">
+                              <h3 className="text-sm font-bold text-gray-900 dark:text-white leading-tight">
+                                {task.title}
+                              </h3>
+                              <span className="text-[10px] md:text-xs text-gray-400 dark:text-zinc-500 font-mono">
+                                ({task.id.toUpperCase()})
+                              </span>
                             </div>
-                          )}
+                            
+                            <p className="text-xs text-gray-500 dark:text-zinc-400 leading-relaxed">
+                              {task.desc}
+                            </p>
+
+                            {/* Analysis / Verification Notes */}
+                            {task.notes && (
+                              <div className="mt-2 md:mt-2.5 bg-gray-50 dark:bg-zinc-950 border border-gray-200/50 dark:border-zinc-850 p-2 md:p-2.5 rounded-lg text-xs flex items-start gap-1.5 text-gray-600 dark:text-zinc-400">
+                                <span className="font-semibold text-emerald-600 dark:text-emerald-500 shrink-0">Analysis:</span>
+                                <span className="italic leading-relaxed">{task.notes}</span>
+                              </div>
+                            )}
+                          </div>
                         </div>
 
                         {/* Status controls selector */}
-                        <div className="flex flex-row md:flex-col items-center md:items-end justify-between md:justify-start gap-2.5 min-w-[140px] pt-2 md:pt-0 border-t md:border-t-0 border-gray-100 dark:border-zinc-800">
-                          <span className="text-xs text-gray-400 dark:text-zinc-500 font-medium md:hidden">Status:</span>
-                          <div className="flex rounded-lg overflow-hidden border border-gray-200 dark:border-zinc-800 bg-gray-50 dark:bg-zinc-950 p-0.5">
+                        <div className="flex flex-col md:items-end justify-start gap-2 min-w-full md:min-w-[140px] pt-3 md:pt-0 border-t md:border-t-0 border-gray-100 dark:border-zinc-800 mt-2 md:mt-0">
+                          <span className="text-[10px] text-gray-400 dark:text-zinc-500 font-medium md:hidden uppercase tracking-wider mb-0.5">Status</span>
+                          <div className="grid grid-cols-3 md:flex md:flex-col gap-1.5 md:gap-0 md:rounded-lg md:overflow-hidden md:border md:border-gray-200 dark:md:border-zinc-800 md:bg-gray-50 dark:md:bg-zinc-950 md:p-0.5 w-full">
                             {(["todo", "working", "done"] as TaskStatus[]).map((st) => (
                               <button
                                 key={st}
                                 onClick={() => updateTaskStatus(task.id, st)}
-                                className={`px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider rounded-md cursor-pointer transition-colors ${
+                                className={`px-2 py-2 md:px-2.5 md:py-1 text-[10px] font-bold uppercase tracking-wider rounded-md md:rounded-md cursor-pointer transition-colors text-center ${
                                   status === st
                                     ? st === "done"
                                       ? "bg-emerald-500 dark:bg-emerald-600 text-white"
                                       : st === "working"
                                       ? "bg-amber-500 text-white"
                                       : "bg-gray-400 dark:bg-zinc-700 text-white"
-                                    : "text-gray-400 hover:text-gray-600 dark:hover:text-zinc-200 bg-transparent"
+                                    : "text-gray-500 bg-gray-100 dark:bg-zinc-800 md:bg-transparent hover:text-gray-700 dark:hover:text-zinc-200"
                                 }`}
                               >
                                 {st === "working" ? "Working" : st}
