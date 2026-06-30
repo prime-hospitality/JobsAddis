@@ -85,8 +85,7 @@ export default function ProfileScreen() {
     try { return localStorage.getItem("profile_privacy_dismissed") === "true"; } catch { return false; }
   });
   const [settingsOpen, setSettingsOpen] = useState(false);
-  // Settings inner sub-views: null = main, 'role' = role picker, 'experience' = experience per role, 'location' = location picker
-  const [settingsView, setSettingsView] = useState<null | 'role' | 'experience' | 'location'>(null);
+  const [settingsView, setSettingsView] = useState<null | 'roles_overview' | 'experience' | 'location'>(null);
   // Editable copies while settings panel is open
   const [editRoles, setEditRoles] = useState<string[]>([]);
   const [editExperience, setEditExperience] = useState<Record<string, string>>({});
@@ -95,7 +94,7 @@ export default function ProfileScreen() {
   const [roleSearch, setRoleSearch] = useState("");
   const [roleTeamView, setRoleTeamView] = useState<string | null>(null);
   const [isSavingSettings, setIsSavingSettings] = useState(false);
-  const [experienceRoleIndex, setExperienceRoleIndex] = useState(0);
+  const [pendingRole, setPendingRole] = useState<string | null>(null);
   const [toast, setToast] = useState<{ type: "success" | "error"; message: string } | null>(null);
   
   // Primary Phone States
@@ -226,6 +225,7 @@ export default function ProfileScreen() {
     setSettingsView(null);
     setRoleSearch("");
     setRoleTeamView(null);
+    setPendingRole(null);
     setLocationSearch("");
     setSettingsOpen(true);
   };
@@ -1117,7 +1117,16 @@ export default function ProfileScreen() {
                 {settingsView !== null ? (
                   <motion.button
                     whileTap={{ scale: 0.9 }}
-                    onClick={() => { setSettingsView(null); setRoleTeamView(null); setRoleSearch(""); }}
+                    onClick={() => { 
+                      if (settingsView === "experience") {
+                         setSettingsView("roles_overview");
+                      } else {
+                         setSettingsView(null); 
+                         setRoleTeamView(null); 
+                         setRoleSearch(""); 
+                         setPendingRole(null);
+                      }
+                    }}
                     style={{ background: "none", border: "none", cursor: "pointer", padding: 4, lineHeight: 0 }}
                   >
                     <ChevronLeft size={22} color="var(--text-primary)" />
@@ -1133,8 +1142,8 @@ export default function ProfileScreen() {
                 )}
                 <div>
                   <p style={{ fontSize: 17, fontWeight: 800, color: "var(--text-primary)", margin: 0 }}>
-                    {settingsView === "role" ? "Edit Job Roles"
-                      : settingsView === "experience" ? "Experience Levels"
+                    {settingsView === "roles_overview" ? "Job Roles & Experience"
+                      : settingsView === "experience" ? "Select Experience"
                       : settingsView === "location" ? "Change Location"
                       : "Settings"}
                   </p>
@@ -1154,9 +1163,9 @@ export default function ProfileScreen() {
                     {/* Profile section */}
                     <p style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>Profile</p>
 
-                    {/* Edit Job Roles */}
+                    {/* Edit Job Roles & Experience */}
                     <button
-                      onClick={() => { setRoleSearch(""); setRoleTeamView(null); setSettingsView("role"); }}
+                      onClick={() => { setRoleSearch(""); setRoleTeamView(null); setPendingRole(null); setSettingsView("roles_overview"); }}
                       style={{
                         width: "100%", padding: "14px 16px", marginBottom: 8,
                         display: "flex", alignItems: "center", justifyContent: "space-between",
@@ -1169,35 +1178,11 @@ export default function ProfileScreen() {
                           <Briefcase size={17} color="var(--brand)" />
                         </div>
                         <div style={{ textAlign: "left" }}>
-                          <p style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>Job Roles</p>
+                          <p style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>Job Roles & Experience</p>
                           <p style={{ fontSize: 12, color: "var(--text-muted)", margin: 0 }}>
-                            {(profile?.selected_categories?.length ?? 0) > 0
-                              ? profile!.selected_categories.slice(0, 2).join(", ") + (profile!.selected_categories.length > 2 ? ` +${profile!.selected_categories.length - 2}` : "")
+                            {editRoles.length > 0 
+                              ? `${editRoles.length} selected`
                               : "Not set"}
-                          </p>
-                        </div>
-                      </div>
-                      <ChevronRight size={18} color="var(--text-muted)" />
-                    </button>
-
-                    {/* Edit Experience */}
-                    <button
-                      onClick={() => { setExperienceRoleIndex(0); setSettingsView("experience"); }}
-                      style={{
-                        width: "100%", padding: "14px 16px", marginBottom: 8,
-                        display: "flex", alignItems: "center", justifyContent: "space-between",
-                        background: "var(--surface-elevated)", border: "1px solid var(--border)",
-                        borderRadius: 14, cursor: "pointer",
-                      }}
-                    >
-                      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                        <div style={{ width: 36, height: 36, borderRadius: 10, background: "var(--brand-subtle)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                          <FileText size={17} color="var(--brand)" />
-                        </div>
-                        <div style={{ textAlign: "left" }}>
-                          <p style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>Experience Levels</p>
-                          <p style={{ fontSize: 12, color: "var(--text-muted)", margin: 0 }}>
-                            {editRoles.length === 0 ? "Set job roles first" : `${Object.keys(editExperience).filter(k => editRoles.includes(k)).length} of ${editRoles.length} roles set`}
                           </p>
                         </div>
                       </div>
@@ -1271,8 +1256,8 @@ export default function ProfileScreen() {
                   </div>
                 )}
 
-                {/* ════ ROLE PICKER VIEW ════ */}
-                {settingsView === "role" && (() => {
+                {/* ════ ROLES & EXPERIENCE OVERVIEW ════ */}
+                {settingsView === "roles_overview" && (() => {
                   const ROLE_TEAMS: Record<string, string[]> = {
                     "Front Office": ["Receptionist", "Night Auditor", "Guest Relations Officer", "Reservations Agent", "Phone Operator", "Bellboy"],
                     "Housekeeping": ["Housekeeper"],
@@ -1287,32 +1272,39 @@ export default function ProfileScreen() {
                   const isSearching = roleSearch.trim().length > 0;
                   const searchResults = JOB_CATEGORIES.filter(c => c.toLowerCase().includes(roleSearch.toLowerCase()));
                   const teamCats = roleTeamView ? (ROLE_TEAMS[roleTeamView] ?? []) : [];
-                  const toggleRole = (cat: string) => {
-                    if (editRoles.includes(cat)) {
-                      const newRoles = editRoles.filter(r => r !== cat);
-                      setEditRoles(newRoles);
-                      const newExp = { ...editExperience };
-                      delete newExp[cat];
-                      setEditExperience(newExp);
-                    } else {
-                      setEditRoles([...editRoles, cat]);
+                  
+                  const handleRoleClick = (cat: string) => {
+                    if (!editRoles.includes(cat) && editRoles.length >= 3) {
+                      showToast("error", "You can only select up to 3 job roles.");
+                      return;
                     }
+                    setPendingRole(cat);
                   };
+
+                  const removeRole = (cat: string) => {
+                    setEditRoles(editRoles.filter(r => r !== cat));
+                    const newExp = { ...editExperience };
+                    delete newExp[cat];
+                    setEditExperience(newExp);
+                    if (pendingRole === cat) setPendingRole(null);
+                  };
+
                   const RoleGrid = ({ cats }: { cats: string[] }) => (
                     <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                       {cats.map(cat => {
-                        const isSel = editRoles.includes(cat);
+                        const isPending = pendingRole === cat;
+                        const isAlreadyAdded = editRoles.includes(cat);
                         return (
-                          <button key={cat} onClick={() => toggleRole(cat)} style={{
+                          <button key={cat} onClick={() => handleRoleClick(cat)} style={{
                             width: "100%", padding: "13px 14px",
                             display: "flex", alignItems: "center", justifyContent: "space-between",
-                            background: isSel ? "var(--brand-subtle)" : "var(--surface-elevated)",
-                            border: isSel ? "1px solid var(--brand)" : "1px solid var(--border)",
+                            background: isPending || isAlreadyAdded ? "var(--brand-subtle)" : "var(--surface-elevated)",
+                            border: isPending || isAlreadyAdded ? "1px solid var(--brand)" : "1px solid var(--border)",
                             borderRadius: 12, cursor: "pointer",
                           }}>
-                            <span style={{ fontSize: 14, fontWeight: isSel ? 700 : 500, color: isSel ? "var(--brand)" : "var(--text-primary)" }}>{cat}</span>
-                            <div style={{ width: 20, height: 20, borderRadius: 6, border: isSel ? "none" : "2px solid var(--text-muted)", background: isSel ? "var(--brand)" : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                              {isSel && <CheckCircle size={13} color="white" />}
+                            <span style={{ fontSize: 14, fontWeight: isPending || isAlreadyAdded ? 700 : 500, color: isPending || isAlreadyAdded ? "var(--brand)" : "var(--text-primary)" }}>{cat}</span>
+                            <div style={{ width: 20, height: 20, borderRadius: 6, border: isPending || isAlreadyAdded ? "none" : "2px solid var(--text-muted)", background: isPending || isAlreadyAdded ? "var(--brand)" : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                              {(isPending || isAlreadyAdded) && <CheckCircle size={13} color="white" />}
                             </div>
                           </button>
                         );
@@ -1321,65 +1313,116 @@ export default function ProfileScreen() {
                   );
                   return (
                     <div style={{ padding: "16px" }}>
-                      {/* Search */}
-                      <div style={{ display: "flex", alignItems: "center", gap: 8, background: "var(--app-bg)", border: "1px solid var(--border)", borderRadius: 12, padding: "11px 14px", marginBottom: 14 }}>
-                        <Search size={16} color="var(--text-muted)" />
-                        <input
-                          placeholder="Search all roles..."
-                          value={roleSearch}
-                          onChange={(e) => { setRoleSearch(e.target.value); setRoleTeamView(null); }}
-                          style={{ border: "none", outline: "none", width: "100%", fontSize: 14, background: "transparent", color: "var(--text-primary)" }}
-                        />
-                        {roleSearch && <button onClick={() => setRoleSearch("")} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, lineHeight: 0 }}><X size={14} color="var(--text-muted)" /></button>}
-                      </div>
-                      {/* Search results */}
-                      {isSearching && (
-                        searchResults.length > 0 ? <RoleGrid cats={searchResults} /> : <p style={{ textAlign: "center", color: "var(--text-muted)", padding: "20px 0" }}>No roles found.</p>
-                      )}
-                      {/* Team list */}
-                      {!isSearching && !roleTeamView && (
-                        <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                          {teamNames.map(team => {
-                            const cats = ROLE_TEAMS[team] ?? [];
-                            const activeCount = cats.filter(c => editRoles.includes(c)).length;
-                            return (
-                              <button key={team} onClick={() => setRoleTeamView(team)} style={{ width: "100%", padding: "13px 4px", display: "flex", alignItems: "center", justifyContent: "space-between", background: "transparent", border: "none", borderBottom: "1px solid var(--border)", cursor: "pointer" }}>
-                                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                                  <div style={{ width: 36, height: 36, borderRadius: 10, background: activeCount > 0 ? "var(--brand-subtle)" : "var(--surface-elevated)", border: `1px solid ${activeCount > 0 ? "var(--brand)" : "var(--border)"}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                                    <Users size={16} color={activeCount > 0 ? "var(--brand)" : "var(--text-muted)"} />
-                                  </div>
-                                  <div style={{ textAlign: "left" }}>
-                                    <p style={{ fontSize: 14, fontWeight: 600, color: activeCount > 0 ? "var(--brand)" : "var(--text-primary)", margin: 0 }}>{team}</p>
-                                    <p style={{ fontSize: 12, color: "var(--text-muted)", margin: 0 }}>{cats.length} roles{activeCount > 0 ? ` · ${activeCount} selected` : ""}</p>
-                                  </div>
+                      
+                      {/* Selected Roles List */}
+                      {editRoles.length > 0 && (
+                        <div style={{ marginBottom: 24 }}>
+                          <p style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>Selected Roles ({editRoles.length}/3)</p>
+                          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                            {editRoles.map(role => (
+                              <div key={role} style={{
+                                width: "100%", padding: "12px 14px",
+                                display: "flex", alignItems: "center", justifyContent: "space-between",
+                                background: "var(--surface-elevated)", border: "1px solid var(--brand)",
+                                borderRadius: 12,
+                              }}>
+                                <div>
+                                  <p style={{ fontSize: 14, fontWeight: 700, color: "var(--brand)", margin: 0 }}>{role}</p>
+                                  <p style={{ fontSize: 11, color: "var(--text-muted)", margin: 0 }}>Exp: {editExperience[role] || "Not set"}</p>
                                 </div>
-                                <ChevronRight size={16} color="var(--text-muted)" />
-                              </button>
-                            );
-                          })}
+                                <div style={{ display: "flex", gap: 8 }}>
+                                  <button onClick={() => { setPendingRole(role); setSettingsView("experience"); }} style={{ padding: "6px 10px", background: "var(--brand)", color: "white", borderRadius: 8, fontSize: 11, fontWeight: 700, border: "none", cursor: "pointer" }}>Edit Exp</button>
+                                  <button onClick={() => removeRole(role)} style={{ padding: "6px 10px", background: "var(--surface)", color: "var(--text-muted)", borderRadius: 8, fontSize: 11, fontWeight: 700, border: "1px solid var(--border)", cursor: "pointer" }}>Remove</button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
                         </div>
                       )}
-                      {/* Team categories */}
-                      {!isSearching && roleTeamView && (
+
+                      {/* Add New Role Section */}
+                      {editRoles.length < 3 && (
                         <>
-                          <button onClick={() => setRoleTeamView(null)} style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", padding: "0 0 12px 0", color: "var(--brand)", fontWeight: 600, fontSize: 13 }}>
-                            <ChevronLeft size={15} /> Back to Main Category
-                          </button>
-                          <RoleGrid cats={teamCats} />
+                          <p style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>Add Role</p>
+                          {/* Search */}
+                          <div style={{ display: "flex", alignItems: "center", gap: 8, background: "var(--app-bg)", border: "1px solid var(--border)", borderRadius: 12, padding: "11px 14px", marginBottom: 14 }}>
+                            <Search size={16} color="var(--text-muted)" />
+                            <input
+                              placeholder="Search roles..."
+                              value={roleSearch}
+                              onChange={(e) => { setRoleSearch(e.target.value); setRoleTeamView(null); setPendingRole(null); }}
+                              style={{ border: "none", outline: "none", width: "100%", fontSize: 14, background: "transparent", color: "var(--text-primary)" }}
+                            />
+                            {roleSearch && <button onClick={() => { setRoleSearch(""); setPendingRole(null); }} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, lineHeight: 0 }}><X size={14} color="var(--text-muted)" /></button>}
+                          </div>
+                          
+                          {/* Search results */}
+                          {isSearching && (
+                            searchResults.length > 0 ? <RoleGrid cats={searchResults} /> : <p style={{ textAlign: "center", color: "var(--text-muted)", padding: "20px 0" }}>No roles found.</p>
+                          )}
+                          
+                          {/* Team list */}
+                          {!isSearching && !roleTeamView && (
+                            <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                              {teamNames.map(team => {
+                                const cats = ROLE_TEAMS[team] ?? [];
+                                const activeCount = cats.filter(c => editRoles.includes(c)).length;
+                                return (
+                                  <button key={team} onClick={() => { setRoleTeamView(team); setPendingRole(null); }} style={{ width: "100%", padding: "13px 4px", display: "flex", alignItems: "center", justifyContent: "space-between", background: "transparent", border: "none", borderBottom: "1px solid var(--border)", cursor: "pointer" }}>
+                                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                                      <div style={{ width: 36, height: 36, borderRadius: 10, background: activeCount > 0 ? "var(--brand-subtle)" : "var(--surface-elevated)", border: `1px solid ${activeCount > 0 ? "var(--brand)" : "var(--border)"}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                                        <Users size={16} color={activeCount > 0 ? "var(--brand)" : "var(--text-muted)"} />
+                                      </div>
+                                      <div style={{ textAlign: "left" }}>
+                                        <p style={{ fontSize: 14, fontWeight: 600, color: activeCount > 0 ? "var(--brand)" : "var(--text-primary)", margin: 0 }}>{team}</p>
+                                        <p style={{ fontSize: 12, color: "var(--text-muted)", margin: 0 }}>{cats.length} roles</p>
+                                      </div>
+                                    </div>
+                                    <ChevronRight size={16} color="var(--text-muted)" />
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          )}
+                          
+                          {/* Team categories */}
+                          {!isSearching && roleTeamView && (
+                            <>
+                              <button onClick={() => { setRoleTeamView(null); setPendingRole(null); }} style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", padding: "0 0 12px 0", color: "var(--brand)", fontWeight: 600, fontSize: 13 }}>
+                                <ChevronLeft size={15} /> Back to Main Category
+                              </button>
+                              <RoleGrid cats={teamCats} />
+                            </>
+                          )}
                         </>
                       )}
-                      {/* Save button */}
-                      {!isSearching && !roleTeamView && (
-                        <motion.button
-                          whileTap={{ scale: 0.97 }}
-                          onClick={saveRolesAndExperience}
-                          disabled={isSavingSettings}
-                          className="btn-primary"
-                          style={{ width: "100%", marginTop: 20 }}
-                        >
-                          {isSavingSettings ? "Saving..." : "Save Roles"}
-                        </motion.button>
-                      )}
+
+                      {/* Next/Save buttons sticky at bottom */}
+                      <div style={{ position: "sticky", bottom: 16, marginTop: 24, display: "flex", flexDirection: "column", gap: 8 }}>
+                        {pendingRole && !editRoles.includes(pendingRole) && (
+                          <motion.button
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            whileTap={{ scale: 0.97 }}
+                            onClick={() => setSettingsView("experience")}
+                            className="btn-primary"
+                            style={{ width: "100%", boxShadow: "0 4px 16px rgba(0,0,0,0.2)" }}
+                          >
+                            Next: Select Experience for {pendingRole}
+                          </motion.button>
+                        )}
+                        {!pendingRole && (
+                          <motion.button
+                            whileTap={{ scale: 0.97 }}
+                            onClick={saveRolesAndExperience}
+                            disabled={isSavingSettings}
+                            className="btn-primary"
+                            style={{ width: "100%", background: editRoles.length === 0 ? "var(--surface-elevated)" : "var(--brand)", color: editRoles.length === 0 ? "var(--text-muted)" : "white" }}
+                          >
+                            {isSavingSettings ? "Saving..." : "Save Changes"}
+                          </motion.button>
+                        )}
+                      </div>
                     </div>
                   );
                 })()}
@@ -1394,34 +1437,29 @@ export default function ProfileScreen() {
                     "Executive(VP, Director)",
                     "Senior Executive(C Level)",
                   ];
-                  if (editRoles.length === 0) {
-                    return (
-                      <div style={{ padding: "40px 20px", textAlign: "center" }}>
-                        <p style={{ color: "var(--text-muted)", fontSize: 14 }}>You haven't selected any job roles yet. Go to Job Roles first.</p>
-                      </div>
-                    );
-                  }
-                  const currentRole = editRoles[experienceRoleIndex] ?? editRoles[0];
+                  
+                  const currentRole = pendingRole;
+                  if (!currentRole) return null;
+
+                  const handleSaveExperience = () => {
+                    if (!editExperience[currentRole]) {
+                      showToast("error", "Please select an experience level.");
+                      return;
+                    }
+                    if (!editRoles.includes(currentRole)) {
+                      setEditRoles([...editRoles, currentRole]);
+                    }
+                    setPendingRole(null);
+                    setRoleSearch("");
+                    setRoleTeamView(null);
+                    setSettingsView("roles_overview");
+                  };
+
                   return (
                     <div style={{ padding: "16px" }}>
-                      {/* Role tabs */}
-                      <div style={{ display: "flex", gap: 6, overflowX: "auto", scrollbarWidth: "none", paddingBottom: 8, marginBottom: 12 }}>
-                        {editRoles.map((role, i) => (
-                          <button
-                            key={role}
-                            onClick={() => setExperienceRoleIndex(i)}
-                            style={{
-                              flexShrink: 0, padding: "7px 12px", borderRadius: 100, fontSize: 12, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap",
-                              background: i === experienceRoleIndex ? "var(--brand)" : "var(--surface-elevated)",
-                              border: i === experienceRoleIndex ? "1px solid var(--brand)" : "1px solid var(--border)",
-                              color: i === experienceRoleIndex ? "white" : "var(--text-primary)",
-                            }}
-                          >
-                            {role} {editExperience[role] ? "✓" : ""}
-                          </button>
-                        ))}
-                      </div>
-                      <p style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)", marginBottom: 12 }}>Experience for: <span style={{ color: "var(--brand)" }}>{currentRole}</span></p>
+                      <p style={{ fontSize: 16, fontWeight: 700, color: "var(--text-primary)", marginBottom: 4 }}>{currentRole}</p>
+                      <p style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 20 }}>Select your experience level for this role.</p>
+                      
                       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                         {EXPERIENCE_OPTIONS.map(opt => {
                           const isSel = editExperience[currentRole] === opt;
@@ -1441,14 +1479,14 @@ export default function ProfileScreen() {
                           );
                         })}
                       </div>
+                      
                       <motion.button
                         whileTap={{ scale: 0.97 }}
-                        onClick={saveRolesAndExperience}
-                        disabled={isSavingSettings}
+                        onClick={handleSaveExperience}
                         className="btn-primary"
-                        style={{ width: "100%", marginTop: 20 }}
+                        style={{ width: "100%", marginTop: 24 }}
                       >
-                        {isSavingSettings ? "Saving..." : "Save Experience"}
+                        {editRoles.includes(currentRole) ? "Update Experience" : "Add Role"}
                       </motion.button>
                     </div>
                   );
