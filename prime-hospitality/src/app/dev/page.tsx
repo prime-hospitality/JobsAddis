@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { CheckCircle2, Circle, Clock, RotateCcw, Search, ChevronRight, CheckSquare, Square } from "lucide-react";
+import { supabase } from "@/lib/supabase";
 
 type TaskStatus = "todo" | "working" | "done";
 
@@ -104,44 +105,6 @@ export default function DevDashboard() {
 
   // Load state on mount
   useEffect(() => {
-    // Load Statuses
-    const savedStates = localStorage.getItem("jobsaddis_task_states");
-    if (savedStates) {
-      try {
-        setTaskStates(JSON.parse(savedStates));
-      } catch (e) {
-        console.error("Failed to parse task states", e);
-      }
-    } else {
-      const defaultStates: Record<string, TaskStatus> = {};
-      INITIAL_SECTIONS.forEach(sec => {
-        sec.tasks.forEach(t => {
-          defaultStates[t.id] = t.defaultStatus;
-        });
-      });
-      setTaskStates(defaultStates);
-      localStorage.setItem("jobsaddis_task_states", JSON.stringify(defaultStates));
-    }
-
-    // Load Notes
-    const savedNotes = localStorage.getItem("jobsaddis_task_notes");
-    if (savedNotes) {
-      try {
-        setTaskNotes(JSON.parse(savedNotes));
-      } catch (e) {
-        console.error("Failed to parse task notes", e);
-      }
-    } else {
-      const defaultNotes: Record<string, string> = {};
-      INITIAL_SECTIONS.forEach(sec => {
-        sec.tasks.forEach(t => {
-          defaultNotes[t.id] = t.notes;
-        });
-      });
-      setTaskNotes(defaultNotes);
-      localStorage.setItem("jobsaddis_task_notes", JSON.stringify(defaultNotes));
-    }
-    setMounted(false);
     // Sync theme if localStorage theme is dark
     const theme = localStorage.getItem("theme");
     if (theme === "dark") {
@@ -149,19 +112,80 @@ export default function DevDashboard() {
     } else {
       document.documentElement.removeAttribute("data-theme");
     }
-    setMounted(true);
+
+    const loadGlobalState = async () => {
+      try {
+        const { data, error } = await supabase.from('dev_tracker').select('task_states, task_notes').eq('id', 1).single();
+        
+        if (data && !error) {
+          let dbStates = data.task_states || {};
+          let dbNotes = data.task_notes || {};
+          
+          if (Object.keys(dbStates).length === 0) {
+            dbStates = {};
+            dbNotes = {};
+            INITIAL_SECTIONS.forEach(sec => {
+              sec.tasks.forEach(t => {
+                dbStates[t.id] = t.defaultStatus;
+                dbNotes[t.id] = t.notes;
+              });
+            });
+            await supabase.from('dev_tracker').update({ task_states: dbStates, task_notes: dbNotes }).eq('id', 1);
+          }
+          
+          setTaskStates(dbStates);
+          setTaskNotes(dbNotes);
+          setMounted(true);
+        } else {
+          fallbackToLocal();
+        }
+      } catch (err) {
+        fallbackToLocal();
+      }
+    };
+
+    const fallbackToLocal = () => {
+      // Load Statuses
+      const savedStates = localStorage.getItem("jobsaddis_task_states");
+      let initialStates: Record<string, TaskStatus> = {};
+      if (savedStates) {
+        try { initialStates = JSON.parse(savedStates); } catch (e) {}
+      } else {
+        INITIAL_SECTIONS.forEach(sec => sec.tasks.forEach(t => initialStates[t.id] = t.defaultStatus));
+      }
+      setTaskStates(initialStates);
+
+      // Load Notes
+      const savedNotes = localStorage.getItem("jobsaddis_task_notes");
+      let initialNotes: Record<string, string> = {};
+      if (savedNotes) {
+        try { initialNotes = JSON.parse(savedNotes); } catch (e) {}
+      } else {
+        INITIAL_SECTIONS.forEach(sec => sec.tasks.forEach(t => initialNotes[t.id] = t.notes));
+      }
+      setTaskNotes(initialNotes);
+      setMounted(true);
+    };
+
+    loadGlobalState();
   }, []);
 
-  const updateTaskStatus = (id: string, newStatus: TaskStatus) => {
+  const updateTaskStatus = async (id: string, newStatus: TaskStatus) => {
     const updated = { ...taskStates, [id]: newStatus };
     setTaskStates(updated);
+    // Best effort local storage backup
     localStorage.setItem("jobsaddis_task_states", JSON.stringify(updated));
+    // Global sync
+    await supabase.from('dev_tracker').update({ task_states: updated }).eq('id', 1);
   };
 
-  const updateTaskNote = (id: string, newNote: string) => {
+  const updateTaskNote = async (id: string, newNote: string) => {
     const updated = { ...taskNotes, [id]: newNote };
     setTaskNotes(updated);
+    // Best effort local storage backup
     localStorage.setItem("jobsaddis_task_notes", JSON.stringify(updated));
+    // Global sync
+    await supabase.from('dev_tracker').update({ task_notes: updated }).eq('id', 1);
   };
 
   const cycleStatus = (id: string) => {
@@ -172,8 +196,8 @@ export default function DevDashboard() {
     updateTaskStatus(id, next);
   };
 
-  const resetToDefault = () => {
-    if (confirm("Are you sure you want to reset all tasks and notes to their default agreement analysis states?")) {
+  const resetToDefault = async () => {
+    if (confirm("Are you sure you want to reset all tasks and notes to their default agreement analysis states globally?")) {
       const defaultStates: Record<string, TaskStatus> = {};
       const defaultNotes: Record<string, string> = {};
       
@@ -185,10 +209,11 @@ export default function DevDashboard() {
       });
       
       setTaskStates(defaultStates);
-      localStorage.setItem("jobsaddis_task_states", JSON.stringify(defaultStates));
-      
       setTaskNotes(defaultNotes);
+      localStorage.setItem("jobsaddis_task_states", JSON.stringify(defaultStates));
       localStorage.setItem("jobsaddis_task_notes", JSON.stringify(defaultNotes));
+      
+      await supabase.from('dev_tracker').update({ task_states: defaultStates, task_notes: defaultNotes }).eq('id', 1);
     }
   };
 
