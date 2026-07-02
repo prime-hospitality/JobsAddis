@@ -200,6 +200,11 @@ export default function HomeScreen({ onJobSelect, onSearchPress, profileName }: 
                   </span>
                 </span>
               </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginLeft: 40, marginTop: -2 }}>
+                <p style={{ fontSize: 13, fontWeight: 500, color: "var(--text-muted)" }}>
+                  Jobs Addis
+                </p>
+              </div>
             </div>
 
             {/* Notification bell */}
