@@ -85,7 +85,8 @@ export default function ProfileScreen() {
     try { return localStorage.getItem("profile_privacy_dismissed") === "true"; } catch { return false; }
   });
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [settingsView, setSettingsView] = useState<null | 'roles_overview' | 'experience' | 'location'>(null);
+  const [settingsView, setSettingsView] = useState<null | 'roles_overview' | 'experience' | 'location' | 'faq'>(null);
+  const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
   // Editable copies while settings panel is open
   const [editRoles, setEditRoles] = useState<string[]>([]);
   const [editExperience, setEditExperience] = useState<Record<string, string>>({});
@@ -1145,6 +1146,7 @@ export default function ProfileScreen() {
                     {settingsView === "roles_overview" ? "Job Roles & Experience"
                       : settingsView === "experience" ? "Select Experience"
                       : settingsView === "location" ? "Change Location"
+                      : settingsView === "faq" ? "Help & FAQ"
                       : "Settings"}
                   </p>
                   {settingsView === null && (
@@ -1213,6 +1215,31 @@ export default function ProfileScreen() {
 
                     {/* Appearance section */}
                     <p style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>Appearance</p>
+
+                    {/* Help & FAQ */}
+                    <button
+                      onClick={() => { setOpenFaqIndex(null); setSettingsView("faq"); }}
+                      style={{
+                        width: "100%", textAlign: "left",
+                        display: "flex", alignItems: "center", justifyContent: "space-between",
+                        background: "var(--surface-elevated)", border: "1px solid var(--border)",
+                        borderRadius: 14, padding: "14px 16px", marginBottom: 12, cursor: "pointer",
+                      }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                        <div style={{
+                          width: 36, height: 36, borderRadius: 10,
+                          background: "var(--brand-subtle)", border: "1px solid var(--border)",
+                          display: "flex", alignItems: "center", justifyContent: "center",
+                        }}>
+                          <HelpCircle size={17} color="var(--brand)" />
+                        </div>
+                        <div>
+                          <p style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>Help & FAQ</p>
+                          <p style={{ fontSize: 12, color: "var(--text-muted)", margin: 0 }}>Frequently Asked Questions</p>
+                        </div>
+                      </div>
+                      <ChevronRight size={18} color="var(--text-muted)" />
+                    </button>
 
                     {/* Dark / Light toggle */}
                     <div style={{
@@ -1517,7 +1544,6 @@ export default function ProfileScreen() {
                           <p style={{ fontSize: 13, fontWeight: 700, color: "var(--brand)", margin: 0 }}>Selected: {editLocation}</p>
                         </div>
                       )}
-                      {/* Flat search results */}
                       {locationSearch.trim() ? (
                         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                           {filtered.map(loc => {
@@ -1540,7 +1566,6 @@ export default function ProfileScreen() {
                           {filtered.length === 0 && <p style={{ textAlign: "center", color: "var(--text-muted)", padding: "20px 0" }}>No locations found.</p>}
                         </div>
                       ) : (
-                        /* Grouped by sub-city */
                         Object.entries(grouped!).map(([subCity, locs]) => (
                           <div key={subCity} style={{ marginBottom: 16 }}>
                             <p style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 6 }}>{subCity}</p>
@@ -1575,6 +1600,70 @@ export default function ProfileScreen() {
                     </div>
                   );
                 })()}
+
+                {/* ════ FAQ VIEW ════ */}
+                {settingsView === "faq" && (
+                  <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
+                    <div style={{ flex: 1, overflowY: "auto", paddingBottom: "env(safe-area-inset-bottom, 20px)" }}>
+                      {[
+                        { q: "What is Jobs Addis?", a: "Jobs Addis by Prime Hospitality is a specialized job platform connecting hospitality professionals with leading hotels, restaurants, and service businesses across Addis Ababa." },
+                        { q: "How do I apply for a job?", a: "Browse available jobs on the Home or Search tab. Tap any job card to view the full details, then press the Apply button. Your Telegram profile will be shared with the employer." },
+                        { q: "Is my personal information safe?", a: "Yes. We only share information you explicitly provide during onboarding with the employers you apply to. We do not sell your data to any third parties." },
+                        { q: "How long does it take to hear back from an employer?", a: "Response times vary by employer. Most active listings receive candidate reviews within 2–5 business days. You will be notified directly through this app if there is an update on your application." },
+                        { q: "Can I apply to more than one job at a time?", a: "Absolutely. There is no limit on the number of jobs you can apply for. We encourage you to apply to any role that matches your experience and interests." },
+                        { q: "How do I update my profile?", a: "Tap the Profile tab at the bottom of the screen. Then tap the Settings gear icon. From there you can edit your roles, experience level, and location." },
+                        { q: "What if a job listing looks suspicious or fraudulent?", a: "Please report it immediately using the flag icon on the job detail page, or contact us directly via the support channels below. We take job quality very seriously and review all reports within 24 hours." },
+                        { q: "I'm an employer. How do I post a job?", a: "Employer accounts are managed through our Admin Dashboard. Please reach out to us via Telegram or email to get your business registered on the platform." },
+                      ].map((item, i) => {
+                        const isOpen = openFaqIndex === i;
+                        return (
+                          <div key={i} style={{ background: "var(--surface-elevated)", border: "1px solid var(--border)", borderRadius: 14, marginBottom: 10, overflow: "hidden" }}>
+                            <button
+                              onClick={() => setOpenFaqIndex(isOpen ? null : i)}
+                              style={{ width: "100%", padding: "16px", display: "flex", alignItems: "center", justifyContent: "space-between", background: "transparent", border: "none", cursor: "pointer", gap: 12 }}
+                            >
+                              <span style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)", textAlign: "left", lineHeight: 1.4 }}>{item.q}</span>
+                              <motion.div animate={{ rotate: isOpen ? 180 : 0 }} transition={{ duration: 0.2 }} style={{ flexShrink: 0 }}>
+                                <ChevronDown size={16} color="var(--text-muted)" />
+                              </motion.div>
+                            </button>
+                            <AnimatePresence initial={false}>
+                              {isOpen && (
+                                <motion.div key="answer" initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.22 }} style={{ overflow: "hidden" }}>
+                                  <p style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.7, padding: "0 16px 16px", margin: 0 }}>{item.a}</p>
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
+                          </div>
+                        );
+                      })}
+
+                      {/* Support Contact */}
+                      <div style={{ marginTop: 8, padding: "18px", background: "var(--surface-elevated)", border: "1px solid var(--border)", borderRadius: 16 }}>
+                        <p style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)", marginBottom: 14, textTransform: "uppercase", letterSpacing: "0.06em" }}>Contact Support</p>
+                        {[
+                          { icon: <HelpCircle size={16} color="var(--brand)" />, label: "Telegram", value: "@JobsAddisSupport" },
+                          { icon: <Phone size={16} color="var(--brand)" />, label: "Phone", value: "+251 91 234 5678" },
+                          { icon: <AlertCircle size={16} color="var(--brand)" />, label: "Email", value: "support@jobsaddis.com" },
+                        ].map((c) => (
+                          <div key={c.label} style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
+                            <div style={{ width: 34, height: 34, borderRadius: 10, background: "var(--brand-subtle)", border: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                              {c.icon}
+                            </div>
+                            <div>
+                              <p style={{ fontSize: 11, color: "var(--text-muted)", margin: 0, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>{c.label}</p>
+                              <p style={{ fontSize: 13, color: "var(--text-primary)", margin: 0, fontWeight: 600 }}>{c.value}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      <p style={{ textAlign: "center", fontSize: 12, color: "var(--text-muted)", marginTop: 20, paddingBottom: 8 }}>
+                        Jobs Addis · Prime Hospitality © {new Date().getFullYear()}
+                      </p>
+                    </div>
+                  </div>
+                )}
 
               </div>
             </motion.div>
