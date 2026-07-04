@@ -39,6 +39,8 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
   const [editError, setEditError] = useState("");
   const [viewingJob, setViewingJob] = useState<any | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [overviewEmployerId, setOverviewEmployerId] = useState<string>("__all__");
+  const [overviewDuration, setOverviewDuration] = useState<"7" | "30" | "90">("30");
 
   const navItems = [
     { id: "overview", label: "Admin Overview", icon: LayoutDashboard },
@@ -272,7 +274,18 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
       <aside className={`fixed inset-y-0 left-0 z-50 w-72 bg-white border-r border-gray-200 transform transition-transform duration-200 ease-in-out md:translate-x-0 md:static md:shrink-0 flex flex-col ${mobileMenuOpen ? "translate-x-0" : "-translate-x-full"}`}>
         {/* Logo Area */}
         <div className="h-16 flex items-center px-6 border-b border-gray-100 shrink-0">
-          <img src="/icon.png" alt="Addis Jobs" className="w-8 h-8 rounded-md mr-3 object-contain" />
+          <div
+            style={{
+              width: 36, height: 36, borderRadius: 10, flexShrink: 0,
+              display: "flex", alignItems: "center", justifyContent: "center",
+              overflow: "hidden",
+              background: "linear-gradient(145deg, rgba(45,50,70,1) 0%, rgba(15,20,35,1) 100%)",
+              boxShadow: "0 4px 12px rgba(0,0,0,0.5), inset 0 1px 1px rgba(255,255,255,0.12), inset 0 0 0 1px rgba(5,150,105,0.4)",
+              marginRight: 10,
+            }}
+          >
+            <img src="/logo.png" alt="Prime Hospitality Logo" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+          </div>
           <span className="text-xl font-bold text-gray-900">Addis Jobs</span>
           <button onClick={() => setMobileMenuOpen(false)} className="ml-auto md:hidden text-gray-500 hover:text-gray-700">
             <X className="w-5 h-5" />
@@ -336,10 +349,178 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
 
         {/* Content Area */}
         <main className="flex-1 overflow-y-auto p-4 md:p-8">
+
+          {/* ========== ADMIN OVERVIEW ========== */}
+          {activeTab === "overview" && (() => {
+            const employers: any[] = data.employers;
+            const jobs: any[] = data.jobs;
+            const users: any[] = data.users;
+
+            const daysAgo = (n: number) => { const d = new Date(); d.setDate(d.getDate() - n); return d; };
+            const cutoff = daysAgo(Number(overviewDuration));
+            const inWindow = (dateStr: string) => new Date(dateStr) >= cutoff;
+
+            // Employer performance - selected or all
+            const perfEmployers = overviewEmployerId === "__all__" ? employers : employers.filter(e => e.id === overviewEmployerId);
+            const perfData = perfEmployers.map(emp => {
+              const empJobs = jobs.filter(j => j.employer_id === emp.id && inWindow(j.created_at));
+              return { name: emp.business_name, posts: empJobs.length, active: empJobs.filter(j => j.status === "active").length };
+            }).filter(d => d.posts > 0 || overviewEmployerId !== "__all__");
+
+            const maxBar = Math.max(...perfData.map(d => d.posts), 1);
+
+            // Activity feed - all employer job events merged
+            const activityFeed = jobs
+              .filter(j => employers.some(e => e.id === j.employer_id))
+              .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+              .slice(0, 20)
+              .map(j => ({
+                id: j.id,
+                employer: j.employers?.business_name || "Unknown Employer",
+                action: j.status === "active" ? "Posted a new job" : j.status === "closed" ? "Closed a job posting" : "Submitted job for review",
+                detail: j.title,
+                status: j.status,
+                time: j.created_at,
+              }));
+
+            const fmtTime = (iso: string) => {
+              const d = new Date(iso);
+              const diff = Math.floor((Date.now() - d.getTime()) / 1000);
+              if (diff < 60) return `${diff}s ago`;
+              if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+              if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+              return `${Math.floor(diff / 86400)}d ago`;
+            };
+
+            const statusDot: Record<string, string> = { active: "#10b981", closed: "#ef4444", pending: "#f59e0b" };
+
+            return (
+              <div className="max-w-6xl mx-auto space-y-6">
+
+                {/* ---- Overall Stats ---- */}
+                <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+                  <h2 className="text-base font-bold text-gray-800 mb-5">Overall Stats</h2>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {[
+                      { label: "Total Employers", value: employers.length, icon: "🏢", color: "#6366f1" },
+                      { label: "Active Job Seekers", value: users.length, icon: "👤", color: "#0284c7" },
+                      { label: "Pending Moderation", value: jobs.filter(j => j.status === "pending").length, icon: "⏳", color: "#f59e0b" },
+                      { label: "Total Job Posts", value: jobs.length, icon: "📋", color: "#10b981" },
+                    ].map(stat => (
+                      <div key={stat.label} className="rounded-xl border border-gray-100 bg-gray-50 p-4 flex items-start gap-3">
+                        <div className="text-2xl leading-none mt-0.5">{stat.icon}</div>
+                        <div>
+                          <p className="text-xs text-gray-500 font-medium mb-1">{stat.label}</p>
+                          <p className="text-2xl font-bold" style={{ color: stat.color }}>{stat.value}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* ---- Employer Performance ---- */}
+                <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+                  <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+                    <h2 className="text-base font-bold text-gray-800">Employer Performance</h2>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {/* Employer selector */}
+                      <select
+                        value={overviewEmployerId}
+                        onChange={e => setOverviewEmployerId(e.target.value)}
+                        className="text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        <option value="__all__">All Employers</option>
+                        {employers.map(emp => (
+                          <option key={emp.id} value={emp.id}>{emp.business_name}</option>
+                        ))}
+                      </select>
+                      {/* Duration */}
+                      <select
+                        value={overviewDuration}
+                        onChange={e => setOverviewDuration(e.target.value as "7" | "30" | "90")}
+                        className="text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        <option value="7">Last 7 days</option>
+                        <option value="30">Last 30 days</option>
+                        <option value="90">Last 90 days</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {perfData.length === 0 ? (
+                    <div className="text-center py-12 text-gray-400 text-sm">No job activity in this period.</div>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <div className="flex items-end gap-4 min-w-max pb-2" style={{ minHeight: 180 }}>
+                        {perfData.map((d, i) => (
+                          <div key={i} className="flex flex-col items-center gap-1" style={{ width: 72 }}>
+                            <div className="flex items-end gap-1" style={{ height: 140 }}>
+                              {/* Total posts bar */}
+                              <div
+                                title={`${d.posts} total posts`}
+                                style={{
+                                  width: 22, height: `${Math.max((d.posts / maxBar) * 130, 4)}px`,
+                                  background: "#6366f1", borderRadius: "4px 4px 0 0", transition: "height .4s"
+                                }}
+                              />
+                              {/* Active jobs bar */}
+                              <div
+                                title={`${d.active} active`}
+                                style={{
+                                  width: 22, height: `${Math.max((d.active / maxBar) * 130, 4)}px`,
+                                  background: "#10b981", borderRadius: "4px 4px 0 0", transition: "height .4s"
+                                }}
+                              />
+                            </div>
+                            <p className="text-[10px] text-gray-500 text-center leading-tight" style={{ maxWidth: 72, wordBreak: "break-word" }}>{d.name}</p>
+                          </div>
+                        ))}
+                      </div>
+                      {/* Legend */}
+                      <div className="flex items-center gap-4 mt-3">
+                        <div className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm inline-block" style={{ background: "#6366f1" }} /><span className="text-xs text-gray-500">Total Posts</span></div>
+                        <div className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm inline-block" style={{ background: "#10b981" }} /><span className="text-xs text-gray-500">Active Jobs</span></div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* ---- Employer Activity ---- */}
+                <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+                  <h2 className="text-base font-bold text-gray-800 mb-5">Employer Activity</h2>
+                  {activityFeed.length === 0 ? (
+                    <div className="text-center py-10 text-gray-400 text-sm">No activity yet.</div>
+                  ) : (
+                    <div className="space-y-0 divide-y divide-gray-100">
+                      {activityFeed.map((item, i) => (
+                        <div key={item.id} className="flex items-start gap-3 py-3">
+                          {/* Status dot */}
+                          <div className="mt-1 flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center"
+                            style={{ background: (statusDot[item.status] || "#6b7280") + "20" }}
+                          >
+                            <div className="w-2.5 h-2.5 rounded-full" style={{ background: statusDot[item.status] || "#6b7280" }} />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-semibold text-gray-800 truncate">{item.employer}</p>
+                            <p className="text-sm text-gray-600 truncate">{item.action}: <span className="italic text-gray-500">{item.detail}</span></p>
+                          </div>
+                          <span className="text-xs text-gray-400 whitespace-nowrap mt-1 flex-shrink-0">{fmtTime(item.time)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+              </div>
+            );
+          })()}
+
+          {/* ========== OTHER TABS ========== */}
+          {activeTab !== "overview" && (
           <div className="max-w-6xl mx-auto bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
           <div className="p-4 md:p-6 border-b border-gray-200 flex justify-between items-center">
             <h2 className="m-0 text-lg md:text-xl font-semibold capitalize text-gray-800">
-              {activeTab === "jobs" && selectedEmployerId ? "Jobs by Employer" : `${activeTab} Management`}
+              {activeTab === "jobs" && selectedEmployerId ? "Jobs by Employer" : navItems.find(n => n.id === activeTab)?.label || activeTab}
             </h2>
             {activeTab === "jobs" && selectedEmployerId && (
               <button 
@@ -708,15 +889,14 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
               </div>
             )}
             
-            {["overview", "monetization", "settings"].includes(activeTab) && (
+            {["monetization", "settings"].includes(activeTab) && (
               <div className="flex flex-col items-center justify-center py-20 px-4 text-center">
                 <div className="bg-gray-50 rounded-full p-4 mb-4">
-                  {activeTab === "overview" && <LayoutDashboard className="w-8 h-8 text-gray-400" />}
                   {activeTab === "monetization" && <CreditCard className="w-8 h-8 text-gray-400" />}
                   {activeTab === "settings" && <Settings className="w-8 h-8 text-gray-400" />}
                 </div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-1">
-                  {activeTab === "overview" ? "Admin Overview" : activeTab === "monetization" ? "Monetization & Plans" : "System Settings"}
+                  {activeTab === "monetization" ? "Monetization & Plans" : "System Settings"}
                 </h3>
                 <p className="text-sm text-gray-500 max-w-sm">
                   This section is currently under construction and will be available in a future update.
@@ -735,6 +915,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
             )}
           </div>
           </div>
+          )}
         </main>
       </div>
 
