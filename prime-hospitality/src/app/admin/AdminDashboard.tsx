@@ -5,6 +5,59 @@ import { approveEmployer, rejectEmployer, toggleUserBan, toggleJobStatus, logout
 import { Trash2, Pencil, Image as ImageIcon, Menu, X, LayoutDashboard, Briefcase, FileText, Users, LogOut, Settings, CreditCard } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
+
+function CustomInput(props: any) {
+  return (
+    <input
+      {...props}
+      className={`w-full px-4 py-3 bg-gray-50/50 hover:bg-white border border-gray-200 rounded-xl text-sm text-gray-900 focus:outline-none focus:ring-4 focus:ring-[#0284c7]/10 focus:border-[#0284c7] transition-all placeholder-gray-400 font-medium ${props.className || ""}`}
+      style={undefined}
+    />
+  );
+}
+
+function CustomSelect({ value, onChange, options, placeholder, className = "" }: { value: string, onChange: (v: string) => void, options: {value: string | number, label: string}[], placeholder: string, className?: string }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const selected = options.find(o => String(o.value) === String(value));
+  
+  return (
+    <div className={`relative ${className}`}>
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full px-4 py-3 bg-gray-50/50 hover:bg-white border border-gray-200 rounded-xl text-sm text-gray-900 focus:outline-none focus:ring-4 focus:ring-[#0284c7]/10 focus:border-[#0284c7] transition-all flex items-center justify-between text-left font-medium"
+      >
+        <span className={selected ? "text-gray-900" : "text-gray-400"}>{selected ? selected.label : placeholder}</span>
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`text-gray-400 transition-transform ${isOpen ? "rotate-180" : ""}`}><path d="m6 9 6 6 6-6"/></svg>
+      </button>
+      
+      {isOpen && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
+          <div className="absolute z-50 w-full mt-2 bg-white border border-gray-200 rounded-xl shadow-xl max-h-60 overflow-y-auto top-full py-1">
+            {options.map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                className={`w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 transition-colors flex items-center justify-between ${String(value) === String(opt.value) ? "text-[#0284c7] bg-[#eff6ff]" : "text-gray-700"}`}
+                onClick={() => {
+                  onChange(String(opt.value));
+                  setIsOpen(false);
+                }}
+              >
+                <span className={String(value) === String(opt.value) ? "font-bold" : "font-medium"}>{opt.label}</span>
+                {String(value) === String(opt.value) && (
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#0284c7]"><path d="M20 6 9 17l-5-5"/></svg>
+                )}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 type Tab = "overview" | "employers" | "jobs" | "users" | "monetization" | "settings";
 
 export default function AdminDashboard({ initialData }: { initialData: any }) {
@@ -279,8 +332,8 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
               width: 36, height: 36, borderRadius: 10, flexShrink: 0,
               display: "flex", alignItems: "center", justifyContent: "center",
               overflow: "hidden",
-              background: "linear-gradient(145deg, rgba(45,50,70,1) 0%, rgba(15,20,35,1) 100%)",
-              boxShadow: "0 4px 12px rgba(0,0,0,0.5), inset 0 1px 1px rgba(255,255,255,0.12), inset 0 0 0 1px rgba(5,150,105,0.4)",
+              background: "linear-gradient(145deg, #3b82f6 0%, #4f46e5 100%)",
+              boxShadow: "0 4px 10px rgba(79, 70, 229, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.4), inset 0 0 0 1px rgba(79, 70, 229, 0.5)",
               marginRight: 10,
             }}
           >
@@ -440,25 +493,24 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                   <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
                       <h2 className="text-base font-bold text-gray-800">Employer Performance</h2>
                       <div className="flex items-center gap-2 flex-wrap">
-                        <select
+                        <CustomSelect
                           value={overviewEmployerId}
-                          onChange={e => setOverviewEmployerId(e.target.value)}
-                          className="text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        >
-                          <option value="" disabled>Select Employer</option>
-                          {employers.map(emp => (
-                            <option key={emp.id} value={emp.id}>{emp.business_name}</option>
-                          ))}
-                        </select>
-                        <select
+                          onChange={(v) => setOverviewEmployerId(v)}
+                          placeholder="Select Employer"
+                          options={employers.map(emp => ({ value: emp.id, label: emp.business_name }))}
+                          className="w-48"
+                        />
+                        <CustomSelect
                           value={overviewDuration}
-                          onChange={e => setOverviewDuration(e.target.value as "7" | "30" | "90")}
-                          className="text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        >
-                          <option value="7">Last 7 days</option>
-                          <option value="30">Last 30 days</option>
-                          <option value="90">Last 90 days</option>
-                        </select>
+                          onChange={(v) => setOverviewDuration(v as "7" | "30" | "90")}
+                          placeholder="Duration"
+                          options={[
+                            { value: "7", label: "Last 7 days" },
+                            { value: "30", label: "Last 30 days" },
+                            { value: "90", label: "Last 90 days" }
+                          ]}
+                          className="w-40"
+                        />
                       </div>
                     </div>
 
