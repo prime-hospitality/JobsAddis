@@ -27,8 +27,8 @@ function CustomSelect({ value, onChange, options, placeholder, className = "" }:
         onClick={() => setIsOpen(!isOpen)}
         className="w-full px-4 py-3 bg-gray-50/50 hover:bg-white border border-gray-200 rounded-xl text-sm text-gray-900 focus:outline-none focus:ring-4 focus:ring-[#0284c7]/10 focus:border-[#0284c7] transition-all flex items-center justify-between text-left font-medium"
       >
-        <span className={selected ? "text-gray-900" : "text-gray-400"}>{selected ? selected.label : placeholder}</span>
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`text-gray-400 transition-transform ${isOpen ? "rotate-180" : ""}`}><path d="m6 9 6 6 6-6"/></svg>
+        <span className={`${selected ? "text-gray-900" : "text-gray-400"} truncate mr-2`}>{selected ? selected.label : placeholder}</span>
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`text-gray-400 flex-shrink-0 transition-transform ${isOpen ? "rotate-180" : ""}`}><path d="m6 9 6 6 6-6"/></svg>
       </button>
       
       {isOpen && (
@@ -490,15 +490,15 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
 
                 {/* ---- ROW 2: Employer Performance ---- */}
                 <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-                  <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-6">
                       <h2 className="text-base font-bold text-gray-800">Employer Performance</h2>
-                      <div className="flex items-center gap-2 flex-wrap">
+                      <div className="flex items-center gap-2 w-full sm:w-auto">
                         <CustomSelect
                           value={overviewEmployerId}
                           onChange={(v) => setOverviewEmployerId(v)}
                           placeholder="Select Employer"
                           options={employers.map(emp => ({ value: emp.id, label: emp.business_name }))}
-                          className="w-48"
+                          className="flex-1 sm:w-48"
                         />
                         <CustomSelect
                           value={overviewDuration}
@@ -509,7 +509,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                             { value: "30", label: "Last 30 days" },
                             { value: "90", label: "Last 90 days" }
                           ]}
-                          className="w-40"
+                          className="w-28 sm:w-40"
                         />
                       </div>
                     </div>
