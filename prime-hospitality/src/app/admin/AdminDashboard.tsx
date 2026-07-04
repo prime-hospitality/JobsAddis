@@ -337,7 +337,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
               marginRight: 10,
             }}
           >
-            <img src="/logo.png" alt="Prime Hospitality Logo" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+            <img src="/pbg_logo_light.png" alt="Prime Hospitality Logo" style={{ width: "100%", height: "100%", objectFit: "contain", padding: "4px" }} />
           </div>
           <span className="text-xl font-bold text-gray-900">Addis Jobs</span>
           <button onClick={() => setMobileMenuOpen(false)} className="ml-auto md:hidden text-gray-500 hover:text-gray-700">
