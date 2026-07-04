@@ -347,6 +347,24 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
           </button>
         </header>
 
+        {/* Desktop Header */}
+        <header className="hidden md:flex bg-white h-[72px] items-center justify-between px-8 shrink-0 shadow-sm z-10 border-b border-gray-200">
+          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Admin Dashboard</h1>
+          <div className="flex items-center gap-6">
+            <button className="text-gray-500 hover:text-gray-700 relative transition-colors cursor-pointer border-none bg-transparent">
+              <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full border border-white"></span>
+              <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+            </button>
+            <div className="flex items-center gap-3">
+              <img src="https://ui-avatars.com/api/?name=Jane+Admin&background=random" alt="Jane Admin" className="w-10 h-10 rounded-full object-cover border border-gray-200" />
+              <div className="flex flex-col">
+                <span className="text-sm font-bold text-gray-900 leading-none mb-1">Jane Admin</span>
+                <span className="text-xs text-gray-500 font-medium leading-none">(CEO)</span>
+              </div>
+            </div>
+          </div>
+        </header>
+
         {/* Content Area */}
         <main className="flex-1 overflow-y-auto p-4 md:p-8">
 
@@ -418,12 +436,9 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                   </div>
                 </div>
 
-                {/* ---- ROW 2: Two columns — Performance (left) ---- */}
-                <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
-
-                  {/* Employer Performance — spans 3/5 */}
-                  <div className="lg:col-span-3 bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-                    <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+                {/* ---- ROW 2: Employer Performance ---- */}
+                <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+                  <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
                       <h2 className="text-base font-bold text-gray-800">Employer Performance</h2>
                       <div className="flex items-center gap-2 flex-wrap">
                         <select
@@ -472,27 +487,6 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                       </div>
                     )}
                   </div>
-
-                  {/* Right column — Quick Stats Summary */}
-                  <div className="lg:col-span-2 bg-white rounded-xl border border-gray-200 shadow-sm p-6 flex flex-col gap-4">
-                    <h2 className="text-base font-bold text-gray-800">Job Status Breakdown</h2>
-                    {[
-                      { label: "Active Jobs", value: jobs.filter(j => j.status === "active").length, color: "#10b981", bg: "#d1fae5" },
-                      { label: "Pending Review", value: jobs.filter(j => j.status === "pending").length, color: "#f59e0b", bg: "#fef3c7" },
-                      { label: "Closed Jobs", value: jobs.filter(j => j.status === "closed").length, color: "#ef4444", bg: "#fee2e2" },
-                      { label: "Approved Employers", value: employers.filter(e => e.status === "approved").length, color: "#6366f1", bg: "#ede9fe" },
-                      { label: "Pending Employers", value: employers.filter(e => e.status === "pending").length, color: "#0284c7", bg: "#dbeafe" },
-                    ].map(row => (
-                      <div key={row.label} className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: row.color }} />
-                          <span className="text-sm text-gray-600">{row.label}</span>
-                        </div>
-                        <span className="text-sm font-bold px-2.5 py-0.5 rounded-full" style={{ color: row.color, background: row.bg }}>{row.value}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
 
                 {/* ---- ROW 3: Employer Activity — full width ---- */}
                 <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
