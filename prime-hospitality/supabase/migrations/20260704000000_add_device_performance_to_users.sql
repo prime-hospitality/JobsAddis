@@ -1,1 +1,1 @@
-ALTER TABLE "public"."users" ADD COLUMN "device_performance" text;
+ALTER TABLE "public"."users" ADD COLUMN IF NOT EXISTS "device_performance" text;

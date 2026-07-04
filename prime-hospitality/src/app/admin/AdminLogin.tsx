@@ -66,8 +66,8 @@ export default function AdminLogin() {
           <div style={{ width: "80%", height: "1px", background: "rgba(255,255,255,0.2)", marginBottom: "32px" }} />
 
           <div style={{ textAlign: "center", display: "flex", flexDirection: "column", gap: "4px" }}>
-            <span style={{ fontSize: "28px", fontWeight: 300, letterSpacing: "-0.5px" }}>Manage</span>
-            <span style={{ fontSize: "36px", fontWeight: 700, letterSpacing: "-1px" }}>System</span>
+            <span style={{ fontSize: "28px", fontWeight: 300, letterSpacing: "-0.5px" }}>Addis JOBS</span>
+            <span style={{ fontSize: "36px", fontWeight: 700, letterSpacing: "-1px" }}>Dashboard</span>
           </div>
         </div>
       </div>
