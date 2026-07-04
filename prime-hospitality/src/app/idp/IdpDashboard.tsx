@@ -55,47 +55,47 @@ export default function IdpDashboard({ initialData, error }: { initialData: any,
 
         {!error && data && (
           <>
-            {/* Telemetry Stats */}
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 24, marginBottom: 32 }}>
+            {/* Telemetry Stats - 4 Columns side-by-side on all screens */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 32 }}>
               
-              <div style={{ background: "#171717", border: "1px solid #262626", borderRadius: 12, padding: 20 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
-                  <div style={{ background: "rgba(168, 85, 247, 0.1)", padding: 8, borderRadius: 8, color: "#a855f7" }}><Users size={18} /></div>
-                  <h3 style={{ fontSize: 14, fontWeight: 600, margin: 0, color: "#d1d5db" }}>Total Tracked Users</h3>
+              <div style={{ background: "#171717", border: "1px solid #262626", borderRadius: 12, padding: "12px 16px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+                  <div style={{ background: "rgba(168, 85, 247, 0.1)", padding: 6, borderRadius: 6, color: "#a855f7", display: "flex" }}><Users size={16} /></div>
+                  <h3 style={{ fontSize: "clamp(10px, 1.8vw, 13px)", fontWeight: 600, margin: 0, color: "#d1d5db", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>Total Users</h3>
                 </div>
-                <div style={{ fontSize: 32, fontWeight: 700, color: "#fff" }}>{data.stats.totalUsers}</div>
+                <div style={{ fontSize: "clamp(18px, 3vw, 28px)", fontWeight: 700, color: "#fff" }}>{data.stats.totalUsers}</div>
               </div>
 
-              <div style={{ background: "#171717", border: "1px solid #262626", borderRadius: 12, padding: 20 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
-                  <div style={{ background: "rgba(16, 185, 129, 0.1)", padding: 8, borderRadius: 8, color: "#10b981" }}><Server size={18} /></div>
-                  <h3 style={{ fontSize: 14, fontWeight: 600, margin: 0, color: "#d1d5db" }}>High Performance</h3>
+              <div style={{ background: "#171717", border: "1px solid #262626", borderRadius: 12, padding: "12px 16px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+                  <div style={{ background: "rgba(16, 185, 129, 0.1)", padding: 6, borderRadius: 6, color: "#10b981", display: "flex" }}><Server size={16} /></div>
+                  <h3 style={{ fontSize: "clamp(10px, 1.8vw, 13px)", fontWeight: 600, margin: 0, color: "#d1d5db", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>High Perf</h3>
                 </div>
-                <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-                  <div style={{ fontSize: 32, fontWeight: 700, color: "#10b981" }}>{data.stats.performanceBreakdown.high}</div>
-                  <div style={{ fontSize: 14, color: "#9ca3af" }}>({pct(data.stats.performanceBreakdown.high)}%)</div>
-                </div>
-              </div>
-
-              <div style={{ background: "#171717", border: "1px solid #262626", borderRadius: 12, padding: 20 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
-                  <div style={{ background: "rgba(59, 130, 246, 0.1)", padding: 8, borderRadius: 8, color: "#3b82f6" }}><Smartphone size={18} /></div>
-                  <h3 style={{ fontSize: 14, fontWeight: 600, margin: 0, color: "#d1d5db" }}>Medium Performance</h3>
-                </div>
-                <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-                  <div style={{ fontSize: 32, fontWeight: 700, color: "#3b82f6" }}>{data.stats.performanceBreakdown.medium}</div>
-                  <div style={{ fontSize: 14, color: "#9ca3af" }}>({pct(data.stats.performanceBreakdown.medium)}%)</div>
+                <div style={{ display: "flex", alignItems: "baseline", gap: 4, flexWrap: "wrap" }}>
+                  <div style={{ fontSize: "clamp(18px, 3vw, 28px)", fontWeight: 700, color: "#10b981" }}>{data.stats.performanceBreakdown.high}</div>
+                  <div style={{ fontSize: "clamp(10px, 1.5vw, 12px)", color: "#9ca3af" }}>({pct(data.stats.performanceBreakdown.high)}%)</div>
                 </div>
               </div>
 
-              <div style={{ background: "#171717", border: "1px solid #262626", borderRadius: 12, padding: 20 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
-                  <div style={{ background: "rgba(239, 68, 68, 0.1)", padding: 8, borderRadius: 8, color: "#ef4444" }}><Activity size={18} /></div>
-                  <h3 style={{ fontSize: 14, fontWeight: 600, margin: 0, color: "#d1d5db" }}>Low Performance</h3>
+              <div style={{ background: "#171717", border: "1px solid #262626", borderRadius: 12, padding: "12px 16px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+                  <div style={{ background: "rgba(59, 130, 246, 0.1)", padding: 6, borderRadius: 6, color: "#3b82f6", display: "flex" }}><Smartphone size={16} /></div>
+                  <h3 style={{ fontSize: "clamp(10px, 1.8vw, 13px)", fontWeight: 600, margin: 0, color: "#d1d5db", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>Mid Perf</h3>
                 </div>
-                <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-                  <div style={{ fontSize: 32, fontWeight: 700, color: "#ef4444" }}>{data.stats.performanceBreakdown.low}</div>
-                  <div style={{ fontSize: 14, color: "#9ca3af" }}>({pct(data.stats.performanceBreakdown.low)}%)</div>
+                <div style={{ display: "flex", alignItems: "baseline", gap: 4, flexWrap: "wrap" }}>
+                  <div style={{ fontSize: "clamp(18px, 3vw, 28px)", fontWeight: 700, color: "#3b82f6" }}>{data.stats.performanceBreakdown.medium}</div>
+                  <div style={{ fontSize: "clamp(10px, 1.5vw, 12px)", color: "#9ca3af" }}>({pct(data.stats.performanceBreakdown.medium)}%)</div>
+                </div>
+              </div>
+
+              <div style={{ background: "#171717", border: "1px solid #262626", borderRadius: 12, padding: "12px 16px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+                  <div style={{ background: "rgba(239, 68, 68, 0.1)", padding: 6, borderRadius: 6, color: "#ef4444", display: "flex" }}><Activity size={16} /></div>
+                  <h3 style={{ fontSize: "clamp(10px, 1.8vw, 13px)", fontWeight: 600, margin: 0, color: "#d1d5db", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>Low Perf</h3>
+                </div>
+                <div style={{ display: "flex", alignItems: "baseline", gap: 4, flexWrap: "wrap" }}>
+                  <div style={{ fontSize: "clamp(18px, 3vw, 28px)", fontWeight: 700, color: "#ef4444" }}>{data.stats.performanceBreakdown.low}</div>
+                  <div style={{ fontSize: "clamp(10px, 1.5vw, 12px)", color: "#9ca3af" }}>({pct(data.stats.performanceBreakdown.low)}%)</div>
                 </div>
               </div>
 
