@@ -50,15 +50,6 @@ export default function AdminLogin() {
         }} />
 
         <div style={{ zIndex: 1, display: "flex", flexDirection: "column", alignItems: "center" }}>
-          <img 
-            src="/pbg_logo_light.png" 
-            alt="Prime Hospitality Logo" 
-            style={{ width: "120px", height: "auto", marginBottom: "16px", objectFit: "contain" }}
-            onError={(e) => {
-              // Fallback to logo.png if pbg_logo_light.png is not the intended one
-              e.currentTarget.src = "/logo.png";
-            }}
-          />
           
           <h1 style={{ 
             fontFamily: "'Playfair Display', 'Times New Roman', serif", 
