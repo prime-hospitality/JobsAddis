@@ -280,24 +280,30 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-1">
+        <nav className="flex-1 overflow-y-auto py-6 px-4 space-y-2">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;
+            
+            // Add a visual separator before the Monetization tab for better grouping
+            const isBottomSection = item.id === "monetization";
+            
             return (
-              <button
-                key={item.id}
-                onClick={() => { setActiveTab(item.id as Tab); setSelectedEmployerId(null); setMobileMenuOpen(false); }}
-                className={`w-full flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors ${
-                  isActive 
-                    ? "bg-blue-50 text-blue-700 font-semibold" 
-                    : "text-gray-700 hover:bg-gray-100 hover:text-gray-900"
-                }`}
-                style={{ border: "none", cursor: "pointer", textAlign: "left" }}
-              >
-                <Icon className={`mr-3 flex-shrink-0 h-5 w-5 ${isActive ? "text-blue-700" : "text-gray-400 group-hover:text-gray-500"}`} />
-                {item.label}
-              </button>
+              <div key={item.id}>
+                {isBottomSection && <div className="h-px bg-gray-200 my-4 mx-2" />}
+                <button
+                  onClick={() => { setActiveTab(item.id as Tab); setSelectedEmployerId(null); setMobileMenuOpen(false); }}
+                  className={`w-full flex items-center px-4 py-3 text-[15px] rounded-xl transition-all duration-200 ${
+                    isActive 
+                      ? "bg-[#0284c7] text-white shadow-md shadow-sky-500/20 font-semibold" 
+                      : "text-slate-600 font-medium hover:bg-slate-100 hover:text-slate-900"
+                  }`}
+                  style={{ border: "none", cursor: "pointer", textAlign: "left" }}
+                >
+                  <Icon className={`mr-3.5 flex-shrink-0 h-[22px] w-[22px] ${isActive ? "text-white" : "text-slate-400"}`} />
+                  {item.label}
+                </button>
+              </div>
             );
           })}
         </nav>
