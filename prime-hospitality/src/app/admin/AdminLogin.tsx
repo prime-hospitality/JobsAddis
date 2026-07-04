@@ -3,13 +3,6 @@
 import { useState } from "react";
 import { loginAdmin } from "./actions";
 
-const MercedesLogo = () => (
-  <svg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-    <circle cx="50" cy="50" r="46" fill="none" stroke="white" strokeWidth="2.5"/>
-    <path d="M50 4 L54 48 L93 71 L50 53 L7 71 L46 48 Z" fill="white"/>
-  </svg>
-);
-
 export default function AdminLogin() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -57,13 +50,21 @@ export default function AdminLogin() {
         }} />
 
         <div style={{ zIndex: 1, display: "flex", flexDirection: "column", alignItems: "center" }}>
-          <MercedesLogo />
+          <img 
+            src="/pbg_logo_light.png" 
+            alt="Prime Hospitality Logo" 
+            style={{ width: "120px", height: "auto", marginBottom: "16px", objectFit: "contain" }}
+            onError={(e) => {
+              // Fallback to logo.png if pbg_logo_light.png is not the intended one
+              e.currentTarget.src = "/logo.png";
+            }}
+          />
           
           <h1 style={{ 
             fontFamily: "'Playfair Display', 'Times New Roman', serif", 
             fontSize: "42px", 
             fontWeight: 400, 
-            marginTop: "24px",
+            marginTop: "8px",
             marginBottom: "32px",
             letterSpacing: "0.5px",
             textAlign: "center"
