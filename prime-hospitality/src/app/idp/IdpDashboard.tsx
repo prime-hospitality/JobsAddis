@@ -102,46 +102,48 @@ export default function IdpDashboard({ initialData, error }: { initialData: any,
             </div>
 
             {/* User Data Table */}
-            <div style={{ background: "#171717", border: "1px solid #262626", borderRadius: 12, overflow: "hidden" }}>
-              <div style={{ padding: "16px 24px", borderBottom: "1px solid #262626" }}>
-                <h2 style={{ fontSize: 15, fontWeight: 600, margin: 0, color: "#f3f4f6" }}>Raw User Telemetry</h2>
+            <div style={{ background: "#171717", border: "1px solid #262626", borderRadius: "clamp(6px, 1.5vw, 12px)", overflow: "hidden", width: "100%", boxSizing: "border-box" }}>
+              <div style={{ padding: "clamp(12px, 2vw, 16px) clamp(12px, 2vw, 24px)", borderBottom: "1px solid #262626" }}>
+                <h2 style={{ fontSize: "clamp(13px, 2.5vw, 15px)", fontWeight: 600, margin: 0, color: "#f3f4f6" }}>Raw User Telemetry</h2>
               </div>
-              <div style={{ overflowX: "auto" }}>
-                <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: 13 }}>
+              <div style={{ width: "100%", overflow: "hidden" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: "clamp(9px, 2vw, 13px)", tableLayout: "fixed" }}>
                   <thead>
                     <tr style={{ background: "#121212", color: "#9ca3af", textTransform: "uppercase", letterSpacing: 0.5 }}>
-                      <th style={{ padding: "12px 24px", fontWeight: 600 }}>Telegram ID</th>
-                      <th style={{ padding: "12px 24px", fontWeight: 600 }}>Name</th>
-                      <th style={{ padding: "12px 24px", fontWeight: 600 }}>Role</th>
-                      <th style={{ padding: "12px 24px", fontWeight: 600 }}>Performance Tier</th>
-                      <th style={{ padding: "12px 24px", fontWeight: 600 }}>Join Date</th>
+                      <th style={{ padding: "clamp(6px, 1vw, 12px) clamp(4px, 1vw, 24px)", fontWeight: 600, width: "22%" }}>ID</th>
+                      <th style={{ padding: "clamp(6px, 1vw, 12px) clamp(4px, 1vw, 24px)", fontWeight: 600, width: "25%" }}>Name</th>
+                      <th style={{ padding: "clamp(6px, 1vw, 12px) clamp(4px, 1vw, 24px)", fontWeight: 600, width: "18%" }}>Role</th>
+                      <th style={{ padding: "clamp(6px, 1vw, 12px) clamp(4px, 1vw, 24px)", fontWeight: 600, width: "18%" }}>Tier</th>
+                      <th style={{ padding: "clamp(6px, 1vw, 12px) clamp(4px, 1vw, 24px)", fontWeight: 600, width: "17%" }}>Date</th>
                     </tr>
                   </thead>
                   <tbody>
                     {data.users.map((user: any) => {
-                      const perf = user.device_performance || "medium";
-                      const color = getPerfColor(perf);
+                      const rawPerf = user.device_performance || "medium";
+                      const perf = rawPerf === "medium" ? "mid" : rawPerf;
+                      const color = getPerfColor(rawPerf);
                       return (
                         <tr key={user.id} style={{ borderBottom: "1px solid #262626" }}>
-                          <td style={{ padding: "16px 24px", color: "#d1d5db" }}>{user.telegram_id}</td>
-                          <td style={{ padding: "16px 24px", color: "#9ca3af" }}>{user.profiles?.full_name || "—"}</td>
-                          <td style={{ padding: "16px 24px", color: "#9ca3af", textTransform: "capitalize" }}>{user.role}</td>
-                          <td style={{ padding: "16px 24px" }}>
+                          <td style={{ padding: "clamp(8px, 1.5vw, 16px) clamp(4px, 1vw, 24px)", color: "#d1d5db", wordBreak: "break-all" }}>{user.telegram_id}</td>
+                          <td style={{ padding: "clamp(8px, 1.5vw, 16px) clamp(4px, 1vw, 24px)", color: "#9ca3af", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{user.profiles?.full_name || "—"}</td>
+                          <td style={{ padding: "clamp(8px, 1.5vw, 16px) clamp(4px, 1vw, 24px)", color: "#9ca3af", textTransform: "capitalize", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{user.role}</td>
+                          <td style={{ padding: "clamp(8px, 1.5vw, 16px) clamp(4px, 1vw, 24px)" }}>
                             <span style={{
                               background: color.bg,
                               color: color.text,
                               border: `1px solid ${color.border}`,
-                              padding: "4px 10px",
+                              padding: "clamp(2px, 0.5vw, 4px) clamp(4px, 1vw, 10px)",
                               borderRadius: 100,
-                              fontSize: 11,
+                              fontSize: "clamp(8px, 1.5vw, 11px)",
                               fontWeight: 600,
-                              textTransform: "uppercase"
+                              textTransform: "uppercase",
+                              display: "inline-block"
                             }}>
                               {perf}
                             </span>
                           </td>
-                          <td style={{ padding: "16px 24px", color: "#6b7280" }}>
-                            {new Date(user.created_at).toLocaleDateString()}
+                          <td style={{ padding: "clamp(8px, 1.5vw, 16px) clamp(4px, 1vw, 24px)", color: "#6b7280", whiteSpace: "nowrap" }}>
+                            {new Date(user.created_at).toLocaleDateString(undefined, { month: "numeric", day: "numeric", year: "2-digit" })}
                           </td>
                         </tr>
                       );
