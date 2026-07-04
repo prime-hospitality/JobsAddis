@@ -48,7 +48,7 @@ export default function AdminLogin() {
     <div className="flex flex-col md:flex-row min-h-screen w-full" style={{ fontFamily: "'Inter', sans-serif" }}>
       {/* Left Side */}
       <div 
-        className="w-full md:w-1/2 lg:flex-1 flex flex-col justify-center items-center text-white relative p-8 md:p-10 min-h-[40vh] md:min-h-screen shrink-0"
+        className="w-full md:w-1/2 lg:flex-1 flex flex-col justify-center items-center text-white relative py-10 px-6 md:p-10 md:min-h-screen shrink-0"
         style={{ background: "linear-gradient(135deg, #4b5563 0%, #1f2937 100%)" }}
       >
         {/* Background Overlay effect */}
@@ -62,21 +62,22 @@ export default function AdminLogin() {
           
           <h1 style={{ 
             fontFamily: "'Playfair Display', 'Times New Roman', serif", 
-            fontSize: "42px", 
+            fontSize: "clamp(28px, 6vw, 42px)", 
             fontWeight: 400, 
             marginTop: "8px",
-            marginBottom: "32px",
+            marginBottom: "24px",
             letterSpacing: "0.5px",
-            textAlign: "center"
+            textAlign: "center",
+            lineHeight: "1.2"
           }}>
             Prime Hospitality<br/>Business Group
           </h1>
 
-          <div style={{ width: "80%", height: "1px", background: "rgba(255,255,255,0.2)", marginBottom: "32px" }} />
+          <div style={{ width: "80%", height: "1px", background: "rgba(255,255,255,0.2)", marginBottom: "24px" }} />
 
-          <div style={{ textAlign: "center", display: "flex", flexDirection: "column", gap: "4px" }}>
-            <span style={{ fontSize: "28px", fontWeight: 300, letterSpacing: "-0.5px" }}>Addis JOBS</span>
-            <span style={{ fontSize: "36px", fontWeight: 700, letterSpacing: "-1px" }}>Dashboard</span>
+          <div style={{ textAlign: "center", display: "flex", flexDirection: "column", gap: "2px" }}>
+            <span style={{ fontSize: "clamp(20px, 4vw, 28px)", fontWeight: 300, letterSpacing: "-0.5px" }}>Addis JOBS</span>
+            <span style={{ fontSize: "clamp(24px, 5vw, 36px)", fontWeight: 700, letterSpacing: "-1px" }}>Dashboard</span>
           </div>
         </div>
       </div>
@@ -207,16 +208,14 @@ export default function AdminLogin() {
 
         <div style={{
           position: "absolute",
-          bottom: "40px",
+          bottom: "16px",
           color: "#9ca3af",
           fontSize: "13px",
           display: "flex",
           gap: "12px",
           alignItems: "center"
         }}>
-          <a href="#" style={{ color: "inherit", textDecoration: "none" }}>Forgot your login?</a>
-          <span>•</span>
-          <a href="#" style={{ color: "inherit", textDecoration: "none" }}>Privacy Policy</a>
+          <a href="#" style={{ color: "inherit", textDecoration: "none" }}>Forgot your pin?</a>
         </div>
       </div>
     </div>
