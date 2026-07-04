@@ -45,19 +45,12 @@ export default function AdminLogin() {
   };
 
   return (
-    <div style={{ display: "flex", minHeight: "100vh", fontFamily: "'Inter', sans-serif" }}>
+    <div className="flex flex-col md:flex-row min-h-screen w-full" style={{ fontFamily: "'Inter', sans-serif" }}>
       {/* Left Side */}
-      <div style={{
-        flex: 1,
-        background: "linear-gradient(135deg, #4b5563 0%, #1f2937 100%)",
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "center",
-        alignItems: "center",
-        color: "white",
-        position: "relative",
-        padding: "40px"
-      }}>
+      <div 
+        className="w-full md:w-1/2 lg:flex-1 flex flex-col justify-center items-center text-white relative p-8 md:p-10 min-h-[40vh] md:min-h-screen shrink-0"
+        style={{ background: "linear-gradient(135deg, #4b5563 0%, #1f2937 100%)" }}
+      >
         {/* Background Overlay effect */}
         <div style={{
           position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
@@ -89,16 +82,7 @@ export default function AdminLogin() {
       </div>
 
       {/* Right Side */}
-      <div style={{
-        flex: 1,
-        background: "#ffffff",
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "center",
-        alignItems: "center",
-        position: "relative",
-        padding: "40px"
-      }}>
+      <div className="w-full md:w-1/2 lg:flex-1 bg-white flex flex-col justify-center items-center relative p-8 md:p-10 min-h-[60vh] md:min-h-screen shrink-0">
         <div style={{ width: "100%", maxWidth: "380px" }}>
           <p style={{ 
             color: "#9ca3af", 
