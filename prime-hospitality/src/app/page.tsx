@@ -133,6 +133,18 @@ export default function App() {
           setIsOnboarded(false);
         }
       }
+
+      // Track device performance silently
+      if (initData && user?.id) {
+        fetch("/api/device", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            telegramId: user.id,
+            performanceClass: performanceClass
+          })
+        }).catch(e => console.error("Telemetry error:", e));
+      }
     }
 
     checkOnboarding();
