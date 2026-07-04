@@ -2,14 +2,14 @@
 
 import { useState } from "react";
 import { approveEmployer, rejectEmployer, toggleUserBan, toggleJobStatus, logoutAdmin, addEmployer, deleteEmployer, updateEmployer, adminUpdateEmployerLogo, deleteUser } from "./actions";
-import { Trash2, Pencil, Image as ImageIcon, Menu, X, LayoutDashboard, Briefcase, FileText, Users, LogOut } from "lucide-react";
+import { Trash2, Pencil, Image as ImageIcon, Menu, X, LayoutDashboard, Briefcase, FileText, Users, LogOut, Settings, CreditCard } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
-type Tab = "employers" | "jobs" | "users";
+type Tab = "overview" | "employers" | "jobs" | "users" | "monetization" | "settings";
 
 export default function AdminDashboard({ initialData }: { initialData: any }) {
   const [data, setData] = useState(initialData);
-  const [activeTab, setActiveTab] = useState<Tab>("employers");
+  const [activeTab, setActiveTab] = useState<Tab>("overview");
   const [selectedEmployerId, setSelectedEmployerId] = useState<string | null>(null);
   const [loading, setLoading] = useState<string | null>(null);
 
@@ -41,9 +41,12 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const navItems = [
+    { id: "overview", label: "Admin Overview", icon: LayoutDashboard },
     { id: "employers", label: "Employers & Companies", icon: Briefcase },
-    { id: "jobs", label: "Job Postings", icon: FileText },
-    { id: "users", label: "User Profiles", icon: Users },
+    { id: "users", label: "Job Seeker Profiles", icon: Users },
+    { id: "jobs", label: "Job Posting Moderation", icon: FileText },
+    { id: "monetization", label: "Monetization & Plans", icon: CreditCard },
+    { id: "settings", label: "System Settings", icon: Settings },
   ] as const;
 
   const POST_LIMIT_OPTIONS = [
@@ -693,9 +696,25 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
               ))}
             </div>
             
-            {activeTab !== "jobs" && data[activeTab].length === 0 && (
+            {["employers", "users"].includes(activeTab) && data[activeTab as "employers" | "users"].length === 0 && (
               <div style={{ padding: 40, textAlign: "center", color: "#6b7280" }}>
                 No {activeTab} found.
+              </div>
+            )}
+            
+            {["overview", "monetization", "settings"].includes(activeTab) && (
+              <div className="flex flex-col items-center justify-center py-20 px-4 text-center">
+                <div className="bg-gray-50 rounded-full p-4 mb-4">
+                  {activeTab === "overview" && <LayoutDashboard className="w-8 h-8 text-gray-400" />}
+                  {activeTab === "monetization" && <CreditCard className="w-8 h-8 text-gray-400" />}
+                  {activeTab === "settings" && <Settings className="w-8 h-8 text-gray-400" />}
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                  {activeTab === "overview" ? "Admin Overview" : activeTab === "monetization" ? "Monetization & Plans" : "System Settings"}
+                </h3>
+                <p className="text-sm text-gray-500 max-w-sm">
+                  This section is currently under construction and will be available in a future update.
+                </p>
               </div>
             )}
             {activeTab === "jobs" && !selectedEmployerId && data.jobs.length === 0 && (
