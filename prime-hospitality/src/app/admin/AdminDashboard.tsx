@@ -477,13 +477,13 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                       { label: "Pending Moderation", value: jobs.filter(j => j.status === "pending").length, icon: "/icons/pending.svg", color: "#f59e0b" },
                       { label: "Total Job Posts", value: jobs.length, icon: "/icons/jobs.svg", color: "#10b981" },
                     ].map(stat => (
-                      <div key={stat.label} className="rounded-xl border border-gray-100 bg-gray-50/80 p-4 flex items-center gap-4 transition-all hover:bg-white hover:shadow-md hover:-translate-y-0.5 cursor-default">
-                        <div className="flex items-center justify-center w-14 h-14 rounded-xl bg-white shadow-sm border border-gray-100 flex-shrink-0">
-                          <img src={stat.icon} alt={stat.label} className="w-8 h-8 object-contain drop-shadow-sm" />
+                      <div key={stat.label} className="rounded-xl border border-gray-100 bg-gray-50/80 p-3 sm:p-4 flex flex-col lg:flex-row items-start lg:items-center gap-2 lg:gap-4 transition-all hover:bg-white hover:shadow-md hover:-translate-y-0.5 cursor-default">
+                        <div className="flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 lg:w-14 lg:h-14 rounded-xl bg-white shadow-sm border border-gray-100 flex-shrink-0">
+                          <img src={stat.icon} alt={stat.label} className="w-6 h-6 sm:w-7 sm:h-7 lg:w-8 lg:h-8 object-contain drop-shadow-sm" />
                         </div>
-                        <div>
-                          <p className="text-xs text-gray-500 font-bold tracking-wide uppercase mb-0.5">{stat.label}</p>
-                          <p className="text-2xl font-black tracking-tight" style={{ color: stat.color }}>{stat.value}</p>
+                        <div className="min-w-0">
+                          <p className="text-[10px] sm:text-xs text-gray-500 font-bold tracking-wider uppercase mb-1 leading-snug">{stat.label}</p>
+                          <p className="text-xl sm:text-2xl font-black tracking-tight leading-none" style={{ color: stat.color }}>{stat.value}</p>
                         </div>
                       </div>
                     ))}
