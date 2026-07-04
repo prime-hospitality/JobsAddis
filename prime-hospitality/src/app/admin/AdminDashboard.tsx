@@ -332,8 +332,8 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
               width: 36, height: 36, borderRadius: 10, flexShrink: 0,
               display: "flex", alignItems: "center", justifyContent: "center",
               overflow: "hidden",
-              background: "linear-gradient(145deg, #3b82f6 0%, #4f46e5 100%)",
-              boxShadow: "0 4px 10px rgba(79, 70, 229, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.4), inset 0 0 0 1px rgba(79, 70, 229, 0.5)",
+              background: "linear-gradient(135deg, #4b5563 0%, #1f2937 100%)",
+              boxShadow: "0 4px 10px rgba(31, 41, 55, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.4), inset 0 0 0 1px rgba(31, 41, 55, 0.5)",
               marginRight: 10,
             }}
           >
