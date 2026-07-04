@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { approveEmployer, rejectEmployer, toggleUserBan, toggleJobStatus, logoutAdmin, addEmployer, deleteEmployer, updateEmployer, adminUpdateEmployerLogo, deleteUser } from "./actions";
-import { Trash2, Pencil, Image as ImageIcon } from "lucide-react";
+import { Trash2, Pencil, Image as ImageIcon, Menu, X, LayoutDashboard, Briefcase, FileText, Users, LogOut } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
 type Tab = "employers" | "jobs" | "users";
@@ -38,6 +38,13 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
   const [editLogoFile, setEditLogoFile] = useState<File | null>(null);
   const [editError, setEditError] = useState("");
   const [viewingJob, setViewingJob] = useState<any | null>(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const navItems = [
+    { id: "employers", label: "Employers & Companies", icon: Briefcase },
+    { id: "jobs", label: "Job Postings", icon: FileText },
+    { id: "users", label: "User Profiles", icon: Users },
+  ] as const;
 
   const POST_LIMIT_OPTIONS = [
     { value: 3, label: "3 / day", description: "Basic" },
@@ -252,36 +259,75 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
   };
 
   return (
-    <div style={{ minHeight: "100vh", background: "#f9fafb", fontFamily: "system-ui, sans-serif" }}>
-      {/* Header */}
-      <header className="bg-white border-b border-gray-200 px-4 md:px-8 py-4 flex justify-between items-center sticky top-0 z-10">
-        <h1 className="m-0 text-lg md:text-xl font-bold text-gray-900">Jobs Addis Admin</h1>
-        <button onClick={handleLogout} className="bg-transparent border border-gray-300 px-3 py-1.5 md:px-4 md:py-2 rounded-lg cursor-pointer text-sm font-medium hover:bg-gray-50 transition-colors">Logout</button>
-      </header>
+    <div className="flex h-screen bg-gray-50 font-sans overflow-hidden">
+      {/* Mobile Sidebar Overlay */}
+      {mobileMenuOpen && (
+        <div className="fixed inset-0 z-40 bg-gray-900/50 md:hidden" onClick={() => setMobileMenuOpen(false)} />
+      )}
 
-      {/* Main Layout */}
-      <div className="flex flex-col md:flex-row max-w-7xl mx-auto p-4 md:p-8 gap-6 md:gap-8">
-        
-        {/* Sidebar Nav */}
-        <aside className="w-full md:w-[200px] shrink-0">
-          <nav className="flex flex-row md:flex-col gap-2 overflow-x-auto pb-2 md:pb-0 scrollbar-hide">
-            {(["employers", "jobs", "users"] as const).map(tab => (
+      {/* Sidebar */}
+      <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 transform transition-transform duration-200 ease-in-out md:translate-x-0 md:static md:shrink-0 flex flex-col ${mobileMenuOpen ? "translate-x-0" : "-translate-x-full"}`}>
+        {/* Logo Area */}
+        <div className="h-16 flex items-center px-6 border-b border-gray-100 shrink-0">
+          <img src="/icon.png" alt="Addis Jobs" className="w-8 h-8 rounded-md mr-3 object-contain" />
+          <span className="text-xl font-bold text-gray-900">Addis Jobs</span>
+          <button onClick={() => setMobileMenuOpen(false)} className="ml-auto md:hidden text-gray-500 hover:text-gray-700">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Navigation */}
+        <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-1">
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = activeTab === item.id;
+            return (
               <button
-                key={tab}
-                onClick={() => { setActiveTab(tab); setSelectedEmployerId(null); }}
-                className={`text-center md:text-left px-4 py-2.5 rounded-lg font-medium capitalize whitespace-nowrap transition-colors ${
-                  activeTab === tab ? "bg-sky-100 text-sky-700 font-semibold" : "bg-transparent text-gray-600 hover:bg-gray-100"
+                key={item.id}
+                onClick={() => { setActiveTab(item.id as Tab); setSelectedEmployerId(null); setMobileMenuOpen(false); }}
+                className={`w-full flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors ${
+                  isActive 
+                    ? "bg-blue-50 text-blue-700 font-semibold" 
+                    : "text-gray-700 hover:bg-gray-100 hover:text-gray-900"
                 }`}
-                style={{ border: "none", cursor: "pointer" }}
+                style={{ border: "none", cursor: "pointer", textAlign: "left" }}
               >
-                {tab}
+                <Icon className={`mr-3 flex-shrink-0 h-5 w-5 ${isActive ? "text-blue-700" : "text-gray-400 group-hover:text-gray-500"}`} />
+                {item.label}
               </button>
-            ))}
-          </nav>
-        </aside>
+            );
+          })}
+        </nav>
+
+        {/* Logout */}
+        <div className="p-4 border-t border-gray-100 shrink-0">
+          <button
+            onClick={handleLogout}
+            className="w-full flex items-center px-3 py-2.5 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-100 hover:text-gray-900 transition-colors"
+            style={{ border: "none", cursor: "pointer", textAlign: "left" }}
+          >
+            <LogOut className="mr-3 flex-shrink-0 h-5 w-5 text-gray-400 group-hover:text-gray-500" />
+            Sign Out
+          </button>
+        </div>
+      </aside>
+
+      {/* Main Content Wrapper */}
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        {/* Mobile Header */}
+        <header className="md:hidden bg-white border-b border-gray-200 h-16 flex items-center justify-between px-4 shrink-0">
+          <div className="flex items-center">
+            <img src="/icon.png" alt="Addis Jobs" className="w-8 h-8 rounded-md mr-3 object-contain" />
+            <span className="text-lg font-bold text-gray-900">Addis Jobs</span>
+          </div>
+          <button onClick={() => setMobileMenuOpen(true)} className="text-gray-500 hover:text-gray-700 focus:outline-none">
+            <Menu className="w-6 h-6" />
+          </button>
+        </header>
 
         {/* Content Area */}
-        <main className="flex-1 bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
+        <main className="flex-1 overflow-y-auto p-4 md:p-8">
+          <div className="max-w-6xl mx-auto bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
           <div className="p-4 md:p-6 border-b border-gray-200 flex justify-between items-center">
             <h2 className="m-0 text-lg md:text-xl font-semibold capitalize text-gray-800">
               {activeTab === "jobs" && selectedEmployerId ? "Jobs by Employer" : `${activeTab} Management`}
@@ -662,6 +708,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                 This employer has no jobs.
               </div>
             )}
+          </div>
           </div>
         </main>
       </div>
