@@ -2,10 +2,12 @@
 
 import { useState } from "react";
 import { logoutIdp } from "./actions";
-import { LogOut, Cpu, Users, Smartphone, Server, Activity } from "lucide-react";
+import { LogOut, Cpu, Users, Smartphone, Server, Activity, Search, Filter } from "lucide-react";
 
 export default function IdpDashboard({ initialData, error }: { initialData: any, error?: string | null }) {
   const [data] = useState(initialData);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [genderFilter, setGenderFilter] = useState("all");
 
   const handleLogout = async () => {
     await logoutIdp();
@@ -103,8 +105,32 @@ export default function IdpDashboard({ initialData, error }: { initialData: any,
 
             {/* User Data Table */}
             <div style={{ background: "#171717", border: "1px solid #262626", borderRadius: "clamp(6px, 1.5vw, 12px)", overflow: "hidden", width: "100%", boxSizing: "border-box" }}>
-              <div style={{ padding: "clamp(12px, 2vw, 16px) clamp(12px, 2vw, 24px)", borderBottom: "1px solid #262626" }}>
+              <div style={{ padding: "clamp(12px, 2vw, 16px) clamp(12px, 2vw, 24px)", borderBottom: "1px solid #262626", display: "flex", flexDirection: "column", gap: 12 }}>
                 <h2 style={{ fontSize: "clamp(13px, 2.5vw, 15px)", fontWeight: 600, margin: 0, color: "#f3f4f6" }}>Raw User Telemetry</h2>
+                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                  <div style={{ position: "relative", flex: 1 }}>
+                    <Search size={14} style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }} />
+                    <input
+                      type="text"
+                      placeholder="Search ID or Name..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      style={{ width: "100%", background: "#121212", border: "1px solid #3f3f46", color: "#e5e7eb", padding: "6px 12px 6px 30px", borderRadius: 6, fontSize: "clamp(11px, 2vw, 13px)", outline: "none", boxSizing: "border-box" }}
+                    />
+                  </div>
+                  <div style={{ position: "relative" }}>
+                    <select
+                      value={genderFilter}
+                      onChange={(e) => setGenderFilter(e.target.value)}
+                      style={{ appearance: "none", background: "#121212", border: "1px solid #3f3f46", color: "#e5e7eb", padding: "6px 28px 6px 12px", borderRadius: 6, fontSize: "clamp(11px, 2vw, 13px)", outline: "none", cursor: "pointer", boxSizing: "border-box" }}
+                    >
+                      <option value="all">All Genders</option>
+                      <option value="male">Men</option>
+                      <option value="female">Women</option>
+                    </select>
+                    <Filter size={12} style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", color: "#9ca3af", pointerEvents: "none" }} />
+                  </div>
+                </div>
               </div>
               <div style={{ width: "100%", overflow: "hidden" }}>
                 <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: "clamp(9px, 2vw, 13px)", tableLayout: "fixed" }}>
@@ -118,41 +144,60 @@ export default function IdpDashboard({ initialData, error }: { initialData: any,
                     </tr>
                   </thead>
                   <tbody>
-                    {data.users.map((user: any) => {
-                      const rawPerf = user.device_performance || "medium";
-                      const perf = rawPerf === "medium" ? "mid" : rawPerf;
-                      const color = getPerfColor(rawPerf);
-                      return (
-                        <tr key={user.id} style={{ borderBottom: "1px solid #262626" }}>
-                          <td style={{ padding: "clamp(8px, 1.5vw, 16px) clamp(4px, 1vw, 24px)", color: "#d1d5db", wordBreak: "break-all" }}>{user.telegram_id}</td>
-                          <td style={{ padding: "clamp(8px, 1.5vw, 16px) clamp(4px, 1vw, 24px)", color: "#9ca3af", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{user.profiles?.full_name || "—"}</td>
-                          <td style={{ padding: "clamp(8px, 1.5vw, 16px) clamp(4px, 1vw, 24px)", color: "#9ca3af", textTransform: "capitalize", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{user.role}</td>
-                          <td style={{ padding: "clamp(8px, 1.5vw, 16px) clamp(4px, 1vw, 24px)" }}>
-                            <span style={{
-                              background: color.bg,
-                              color: color.text,
-                              border: `1px solid ${color.border}`,
-                              padding: "clamp(2px, 0.5vw, 4px) clamp(4px, 1vw, 10px)",
-                              borderRadius: 100,
-                              fontSize: "clamp(8px, 1.5vw, 11px)",
-                              fontWeight: 600,
-                              textTransform: "uppercase",
-                              display: "inline-block"
-                            }}>
-                              {perf}
-                            </span>
-                          </td>
-                          <td style={{ padding: "clamp(8px, 1.5vw, 16px) clamp(4px, 1vw, 24px)", color: "#6b7280", whiteSpace: "nowrap" }}>
-                            {new Date(user.created_at).toLocaleDateString(undefined, { month: "numeric", day: "numeric", year: "2-digit" })}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                    {data.users.length === 0 && (
-                      <tr>
-                        <td colSpan={5} style={{ padding: 40, textAlign: "center", color: "#6b7280" }}>No telemetry data available</td>
-                      </tr>
-                    )}
+                    {(() => {
+                      const filteredUsers = data.users.filter((user: any) => {
+                        const gender = user.profiles?.gender?.toLowerCase() || "";
+                        if (genderFilter === "male" && gender !== "male" && gender !== "m") return false;
+                        if (genderFilter === "female" && gender !== "female" && gender !== "f") return false;
+                        
+                        if (searchQuery) {
+                          const query = searchQuery.toLowerCase();
+                          const name = (user.profiles?.full_name || "").toLowerCase();
+                          const id = (user.telegram_id || "").toString().toLowerCase();
+                          if (!name.includes(query) && !id.includes(query)) return false;
+                        }
+                        return true;
+                      });
+
+                      if (filteredUsers.length === 0) {
+                        return (
+                          <tr>
+                            <td colSpan={5} style={{ padding: 40, textAlign: "center", color: "#6b7280" }}>No telemetry data matches your filter.</td>
+                          </tr>
+                        );
+                      }
+
+                      return filteredUsers.map((user: any) => {
+                        const rawPerf = user.device_performance || "medium";
+                        const perf = rawPerf === "medium" ? "mid" : rawPerf;
+                        const color = getPerfColor(rawPerf);
+                        return (
+                          <tr key={user.id} style={{ borderBottom: "1px solid #262626" }}>
+                            <td style={{ padding: "clamp(8px, 1.5vw, 16px) clamp(4px, 1vw, 24px)", color: "#d1d5db", wordBreak: "break-all" }}>{user.telegram_id}</td>
+                            <td style={{ padding: "clamp(8px, 1.5vw, 16px) clamp(4px, 1vw, 24px)", color: "#9ca3af", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{user.profiles?.full_name || "—"}</td>
+                            <td style={{ padding: "clamp(8px, 1.5vw, 16px) clamp(4px, 1vw, 24px)", color: "#9ca3af", textTransform: "capitalize", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{user.role}</td>
+                            <td style={{ padding: "clamp(8px, 1.5vw, 16px) clamp(4px, 1vw, 24px)" }}>
+                              <span style={{
+                                background: color.bg,
+                                color: color.text,
+                                border: `1px solid ${color.border}`,
+                                padding: "clamp(2px, 0.5vw, 4px) clamp(4px, 1vw, 10px)",
+                                borderRadius: 100,
+                                fontSize: "clamp(8px, 1.5vw, 11px)",
+                                fontWeight: 600,
+                                textTransform: "uppercase",
+                                display: "inline-block"
+                              }}>
+                                {perf}
+                              </span>
+                            </td>
+                            <td style={{ padding: "clamp(8px, 1.5vw, 16px) clamp(4px, 1vw, 24px)", color: "#6b7280", whiteSpace: "nowrap" }}>
+                              {new Date(user.created_at).toLocaleDateString(undefined, { month: "numeric", day: "numeric", year: "2-digit" })}
+                            </td>
+                          </tr>
+                        );
+                      });
+                    })()}
                   </tbody>
                 </table>
               </div>

@@ -30,7 +30,7 @@ export async function getIdpData() {
   // Note: relies on the database having a 'device_performance' column
   const { data: users, error } = await getSupabase()
     .from("users")
-    .select("id, telegram_id, role, created_at, is_banned, device_performance, profiles(full_name)")
+    .select("id, telegram_id, role, created_at, is_banned, device_performance, profiles(full_name, gender)")
     .order("created_at", { ascending: false });
 
   if (error) {
