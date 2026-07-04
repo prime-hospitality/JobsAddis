@@ -14,19 +14,12 @@ const verifyIdpAuth = async () => {
   if (!auth?.value) throw new Error("Unauthorized");
 };
 
+// ── Auth ─────────────────────────────────────────────────────────────
+
 export async function loginIdp(password: string) {
   const supabase = getSupabase();
-
-  // Check app_config for overridden password first
-  const { data: config } = await supabase
-    .from("app_config")
-    .select("value")
-    .eq("key", "admin_password")
-    .single();
-
-  const storedPassword = config?.value && config.value.trim() !== ""
-    ? config.value
-    : (process.env.ADMIN_PASSWORD || "admin123");
+  const { data: pCfg } = await supabase.from("app_config").select("value").eq("key", "admin_password").single();
+  const storedPassword = pCfg?.value?.trim() || process.env.ADMIN_PASSWORD || "admin123";
 
   if (password === storedPassword) {
     (await cookies()).set("idp_session", "true", { maxAge: 60 * 60 * 24, httpOnly: true, secure: process.env.NODE_ENV === "production" });
@@ -39,11 +32,12 @@ export async function logoutIdp() {
   (await cookies()).delete("idp_session");
 }
 
+// ── Telemetry ─────────────────────────────────────────────────────────
+
 export async function getIdpData() {
   await verifyIdpAuth();
   const supabase = getSupabase();
 
-  // Fetch all users for telemetry analysis
   const { data: users, error } = await supabase
     .from("users")
     .select("id, telegram_id, role, created_at, is_banned, device_performance, profiles(full_name, gender)")
@@ -54,7 +48,6 @@ export async function getIdpData() {
     throw new Error("Failed to fetch user telemetry");
   }
 
-  // Calculate some basic stats
   const totalUsers = users?.length || 0;
   const highEnd = users?.filter(u => u.device_performance === "high").length || 0;
   const midEnd = users?.filter(u => u.device_performance === "medium" || !u.device_performance).length || 0;
@@ -64,118 +57,45 @@ export async function getIdpData() {
     users: users ?? [],
     stats: {
       totalUsers,
-      performanceBreakdown: {
-        high: highEnd,
-        medium: midEnd,
-        low: lowEnd
-      }
+      performanceBreakdown: { high: highEnd, medium: midEnd, low: lowEnd }
     }
   };
 }
 
-// ── Password Management ──────────────────────────────────────────────
+// ── Admin Credential Management ──────────────────────────────────────
 
-/** Get current admin password (masked) and the source it came from */
-export async function getAdminPasswordInfo() {
+/** Get current admin username (for display) */
+export async function getAdminUsername(): Promise<string> {
   await verifyIdpAuth();
   const supabase = getSupabase();
-
-  const { data: config } = await supabase
-    .from("app_config")
-    .select("value, updated_at")
-    .eq("key", "admin_password")
-    .single();
-
-  const isDbOverridden = !!(config?.value && config.value.trim() !== "");
-  return {
-    source: isDbOverridden ? "database" : "environment",
-    updatedAt: config?.updated_at || null,
-  };
+  const { data } = await supabase.from("app_config").select("value").eq("key", "admin_username").single();
+  return data?.value?.trim() || "admin";
 }
 
-/** Change the admin password (stored in app_config table) */
-export async function changeAdminPassword(currentPassword: string, newPassword: string) {
+/** Change the admin dashboard username */
+export async function changeAdminUsername(newUsername: string) {
   await verifyIdpAuth();
-
-  if (!newPassword || newPassword.length < 6) {
-    return { success: false, error: "New password must be at least 6 characters." };
+  if (!newUsername || newUsername.trim().length < 3) {
+    return { success: false, error: "Username must be at least 3 characters." };
   }
-
   const supabase = getSupabase();
-
-  // Verify the current password first
-  const { data: config } = await supabase
+  const { error } = await supabase
     .from("app_config")
-    .select("value")
-    .eq("key", "admin_password")
-    .single();
+    .upsert({ key: "admin_username", value: newUsername.trim(), updated_at: new Date().toISOString() });
+  if (error) return { success: false, error: "Failed to update username." };
+  return { success: true };
+}
 
-  const activePassword = config?.value && config.value.trim() !== ""
-    ? config.value
-    : (process.env.ADMIN_PASSWORD || "admin123");
-
-  if (currentPassword !== activePassword) {
-    return { success: false, error: "Current password is incorrect." };
+/** Change the admin dashboard password */
+export async function changeAdminPassword(newPassword: string) {
+  await verifyIdpAuth();
+  if (!newPassword || newPassword.length < 6) {
+    return { success: false, error: "Password must be at least 6 characters." };
   }
-
-  // Upsert new password into app_config
+  const supabase = getSupabase();
   const { error } = await supabase
     .from("app_config")
     .upsert({ key: "admin_password", value: newPassword, updated_at: new Date().toISOString() });
-
   if (error) return { success: false, error: "Failed to update password." };
-
   return { success: true };
-}
-
-/** Get all users with their basic info for password management */
-export async function getManagedUsers() {
-  await verifyIdpAuth();
-  const supabase = getSupabase();
-
-  const { data: users, error } = await supabase
-    .from("users")
-    .select("id, telegram_id, role, created_at, is_banned, profiles(full_name)")
-    .order("created_at", { ascending: false });
-
-  if (error) throw new Error("Failed to fetch users");
-  return (users ?? []).map((u: any) => ({
-    ...u,
-    profiles: Array.isArray(u.profiles) ? (u.profiles[0] || null) : (u.profiles || null)
-  }));
-}
-
-/** Reset/set a user's password override (stored in app_config as user:<id>:password) */
-export async function setUserPasswordOverride(userId: string, newPassword: string) {
-  await verifyIdpAuth();
-
-  if (!newPassword || newPassword.length < 4) {
-    return { success: false, error: "Password must be at least 4 characters." };
-  }
-
-  const supabase = getSupabase();
-  const key = `user:${userId}:password`;
-
-  const { error } = await supabase
-    .from("app_config")
-    .upsert({ key, value: newPassword, updated_at: new Date().toISOString() });
-
-  if (error) return { success: false, error: "Failed to set user password." };
-  return { success: true };
-}
-
-/** Get user password overrides (returns list of userIds that have overrides) */
-export async function getUserPasswordOverrides() {
-  await verifyIdpAuth();
-  const supabase = getSupabase();
-
-  const { data } = await supabase
-    .from("app_config")
-    .select("key, value, updated_at")
-    .like("key", "user:%:password");
-
-  return (data ?? []).map(row => ({
-    userId: row.key.split(":")[1],
-    updatedAt: row.updated_at,
-  }));
 }

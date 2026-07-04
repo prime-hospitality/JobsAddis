@@ -15,7 +15,7 @@ export default function AdminLogin() {
     setError("");
 
     try {
-      const res = await loginAdmin(password);
+      const res = await loginAdmin(username, password);
       if (res.success) {
         window.location.reload();
       } else {

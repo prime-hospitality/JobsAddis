@@ -9,14 +9,22 @@ const getSupabase = () => {
   return createClient(supabaseUrl, supabaseServiceKey);
 };
 
-export async function loginAdmin(password: string) {
-  const adminPassword = process.env.ADMIN_PASSWORD || "admin123";
-  if (password === adminPassword) {
-    // Set cookie for 24 hours
+export async function loginAdmin(username: string, password: string) {
+  const supabase = getSupabase();
+
+  // Get stored username (default: "admin")
+  const { data: uCfg } = await supabase.from("app_config").select("value").eq("key", "admin_username").single();
+  const storedUsername = uCfg?.value?.trim() || "admin";
+
+  // Get stored password (fallback to env var)
+  const { data: pCfg } = await supabase.from("app_config").select("value").eq("key", "admin_password").single();
+  const storedPassword = pCfg?.value?.trim() || process.env.ADMIN_PASSWORD || "admin123";
+
+  if (username === storedUsername && password === storedPassword) {
     (await cookies()).set("admin_session", "true", { maxAge: 60 * 60 * 24, httpOnly: true, secure: process.env.NODE_ENV === "production" });
     return { success: true };
   }
-  return { success: false, error: "Invalid password" };
+  return { success: false, error: "Invalid username or password" };
 }
 
 export async function logoutAdmin() {
