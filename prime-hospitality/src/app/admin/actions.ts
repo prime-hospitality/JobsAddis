@@ -20,7 +20,7 @@ export async function loginAdmin(username: string, password: string) {
   const { data: pCfg } = await supabase.from("app_config").select("value").eq("key", "admin_password").single();
   const storedPassword = pCfg?.value?.trim() || process.env.ADMIN_PASSWORD || "admin123";
 
-  if (username === storedUsername && password === storedPassword) {
+  if (username.toLowerCase() === storedUsername.toLowerCase() && password === storedPassword) {
     (await cookies()).set("admin_session", "true", { maxAge: 60 * 60 * 24, httpOnly: true, secure: process.env.NODE_ENV === "production" });
     return { success: true };
   }
