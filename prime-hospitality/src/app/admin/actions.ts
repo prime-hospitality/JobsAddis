@@ -55,10 +55,15 @@ export async function getAdminData() {
     .neq("role", "employer")
     .order("created_at", { ascending: false });
 
+  const supabase = getSupabase();
+  const { data: uCfg } = await supabase.from("app_config").select("value").eq("key", "admin_username").single();
+  const adminUsername = uCfg?.value?.trim() || "admin";
+
   return {
     employers: employers ?? [],
     jobs: jobs ?? [],
     users: users ?? [],
+    adminUsername
   };
 }
 
