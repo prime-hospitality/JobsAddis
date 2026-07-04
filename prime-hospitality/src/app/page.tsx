@@ -25,6 +25,7 @@ import SearchScreen from "@/screens/SearchScreen";
 import DashboardScreen from "@/screens/DashboardScreen";
 import ApplicantManagementScreen from "@/screens/ApplicantManagementScreen";
 import NotificationsScreen from "@/screens/NotificationsScreen";
+import NotificationPanel from "@/components/NotificationPanel";
 
 // ── App navigation state ──
 type AppView =
@@ -76,6 +77,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<NavTab>(telegramIsEmployer ? "dashboard" : "home");
   const [view, setView] = useState<AppView>({ screen: "home" });
   const [unreadCount, setUnreadCount] = useState(0);
+  const [notifPanelOpen, setNotifPanelOpen] = useState(false);
 
   // Track when upload transitions from true → false to flash a "Done" tick or show error
   useEffect(() => {
@@ -444,7 +446,7 @@ export default function App() {
             key="home"
             onJobSelect={handleJobSelect}
             onSearchPress={() => setActiveTab("search")}
-            onBellPress={() => handleTabChange("notifications")}
+            onBellPress={() => setNotifPanelOpen(true)}
             unreadCount={unreadCount}
             profileName={userProfile?.full_name}
             pageSize={pageSize}
@@ -467,7 +469,7 @@ export default function App() {
             key="home"
             onJobSelect={handleJobSelect}
             onSearchPress={() => setActiveTab("search")}
-            onBellPress={() => handleTabChange("notifications")}
+            onBellPress={() => setNotifPanelOpen(true)}
             unreadCount={unreadCount}
             profileName={userProfile?.full_name}
             pageSize={pageSize}
@@ -504,6 +506,18 @@ export default function App() {
             unreadCount={unreadCount}
           />
         )}
+
+        {/* ── Global Notification Slide-up Panel ── */}
+        <NotificationPanel
+          isOpen={notifPanelOpen}
+          onClose={() => setNotifPanelOpen(false)}
+          isEmployer={isEmployer}
+          onSelectJob={(jobId) => {
+            setNotifPanelOpen(false);
+            handleSelectJobById(jobId);
+          }}
+          onUnreadCleared={() => setUnreadCount(0)}
+        />
 
         {/* ── Global CV Upload Progress Pill ── */}
         {/* Stays visible on ALL tabs so the user knows upload is ongoing */}
