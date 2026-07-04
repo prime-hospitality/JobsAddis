@@ -444,6 +444,8 @@ export default function App() {
             key="home"
             onJobSelect={handleJobSelect}
             onSearchPress={() => setActiveTab("search")}
+            onBellPress={() => handleTabChange("notifications")}
+            unreadCount={unreadCount}
             profileName={userProfile?.full_name}
             pageSize={pageSize}
             enableAnimations={enableAnimations}
@@ -454,7 +456,7 @@ export default function App() {
       case "applications":
         return <ApplicationsScreen key="applications" />;
       case "notifications":
-        return <NotificationsScreen key="notifications" onSelectJob={handleSelectJobById} />;
+        return <NotificationsScreen key="notifications" onSelectJob={handleSelectJobById} isEmployer={isEmployer} />;
       case "profile":
         return <ProfileScreen key="profile" />;
       case "dashboard":
@@ -465,6 +467,8 @@ export default function App() {
             key="home"
             onJobSelect={handleJobSelect}
             onSearchPress={() => setActiveTab("search")}
+            onBellPress={() => handleTabChange("notifications")}
+            unreadCount={unreadCount}
             profileName={userProfile?.full_name}
             pageSize={pageSize}
             enableAnimations={enableAnimations}

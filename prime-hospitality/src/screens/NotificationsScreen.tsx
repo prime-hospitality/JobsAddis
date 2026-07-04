@@ -31,9 +31,10 @@ const EXPERIENCE_LEVELS = ["Entry level", "Junior", "Intermediate", "Senior", "E
 
 export interface NotificationsScreenProps {
   onSelectJob?: (jobId: string) => void;
+  isEmployer?: boolean; // Used internally to filter/route notifications by role. Not rendered in UI.
 }
 
-export default function NotificationsScreen({ onSelectJob }: NotificationsScreenProps) {
+export default function NotificationsScreen({ onSelectJob, isEmployer = false }: NotificationsScreenProps) {
   const { initData } = useTelegram();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isLoading, setIsLoading] = useState(true);

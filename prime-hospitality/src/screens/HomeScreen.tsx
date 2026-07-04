@@ -14,6 +14,8 @@ import { useTelegram } from "@/hooks/useTelegram";
 interface HomeScreenProps {
   onJobSelect: (job: Job) => void;
   onSearchPress?: () => void;
+  onBellPress?: () => void;
+  unreadCount?: number;
   profileName?: string;
   pageSize?: number;
   enableAnimations?: boolean;
@@ -21,7 +23,7 @@ interface HomeScreenProps {
 
 let businessAnimationHasRun = false;
 
-export default function HomeScreen({ onJobSelect, onSearchPress, profileName, pageSize, enableAnimations }: HomeScreenProps) {
+export default function HomeScreen({ onJobSelect, onSearchPress, onBellPress, unreadCount = 0, profileName, pageSize, enableAnimations }: HomeScreenProps) {
 
   const shouldReduceMotion = useReducedMotion();
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -212,6 +214,7 @@ export default function HomeScreen({ onJobSelect, onSearchPress, profileName, pa
             {/* Notification bell */}
             <motion.button
               whileTap={{ scale: 0.9 }}
+              onClick={onBellPress}
               style={{
                 width: 40,
                 height: 40,
@@ -224,9 +227,22 @@ export default function HomeScreen({ onJobSelect, onSearchPress, profileName, pa
                 justifyContent: "center",
                 cursor: "pointer",
                 flexShrink: 0,
+                position: "relative",
               }}
             >
-              <Bell size={18} color="var(--text-secondary)" />
+              <Bell size={18} color={unreadCount > 0 ? "var(--brand)" : "var(--text-secondary)"} />
+              {unreadCount > 0 && (
+                <div style={{
+                  position: "absolute",
+                  top: 6,
+                  right: 6,
+                  width: 8,
+                  height: 8,
+                  borderRadius: "50%",
+                  background: "var(--brand)",
+                  border: "2px solid var(--card)",
+                }} />
+              )}
             </motion.button>
           </div>
 
