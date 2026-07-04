@@ -411,7 +411,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
               <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(data.adminUsername || "Admin")}&background=random`} alt={data.adminUsername || "Admin"} className="w-10 h-10 rounded-full object-cover border border-gray-200" />
               <div className="flex flex-col">
                 <span className="text-sm font-bold text-gray-900 leading-none mb-1">{data.adminUsername || "Admin"}</span>
-                <span className="text-xs text-gray-500 font-medium leading-none">(Super Admin)</span>
+                <span className="text-xs text-gray-500 font-medium leading-none">Super Admin</span>
               </div>
             </div>
           </div>
