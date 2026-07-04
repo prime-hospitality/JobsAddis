@@ -7,22 +7,38 @@ export default function AdminLogin() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [hasError, setHasError] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!username.trim()) {
+      setError("Please enter your username.");
+      setHasError(true);
+      return;
+    }
+    if (!password) {
+      setError("Please enter your password.");
+      setHasError(true);
+      return;
+    }
+
     setLoading(true);
     setError("");
+    setHasError(false);
 
     try {
       const res = await loginAdmin(username, password);
       if (res.success) {
         window.location.reload();
       } else {
-        setError(res.error || "Login failed");
+        setError(res.error || "Login failed.");
+        setHasError(true);
       }
     } catch (err: any) {
-      setError("An error occurred");
+      setError("Something went wrong. Please try again.");
+      setHasError(true);
     } finally {
       setLoading(false);
     }
@@ -99,26 +115,27 @@ export default function AdminLogin() {
               <input
                 type="text"
                 value={username}
-                onChange={(e) => setUsername(e.target.value)}
+                onChange={(e) => { setUsername(e.target.value); setHasError(false); setError(""); }}
                 placeholder="USERNAME"
                 style={{
                   width: "100%",
                   padding: "16px 48px 16px 24px",
                   borderRadius: "9999px",
-                  border: "1px solid #e5e7eb",
+                  border: `1px solid ${hasError ? "#ef4444" : "#e5e7eb"}`,
                   fontSize: "13px",
                   fontWeight: 600,
                   letterSpacing: "1px",
                   color: "#374151",
                   outline: "none",
                   boxSizing: "border-box",
-                  textTransform: "uppercase"
+                  textTransform: "uppercase",
+                  transition: "border-color 0.2s"
                 }}
               />
               <svg 
-                width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2" 
+                width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={hasError ? "#ef4444" : "#9ca3af"} strokeWidth="2" 
                 strokeLinecap="round" strokeLinejoin="round"
-                style={{ position: "absolute", right: "20px", top: "50%", transform: "translateY(-50%)" }}
+                style={{ position: "absolute", right: "20px", top: "50%", transform: "translateY(-50%)", transition: "stroke 0.2s" }}
               >
                 <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
                 <polyline points="22 4 12 14.01 9 11.01"></polyline>
@@ -129,25 +146,45 @@ export default function AdminLogin() {
               <input
                 type="password"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) => { setPassword(e.target.value); setHasError(false); setError(""); }}
                 placeholder="PASSWORD"
                 style={{
                   width: "100%",
                   padding: "16px 24px",
                   borderRadius: "9999px",
-                  border: "1px solid #e5e7eb",
+                  border: `1px solid ${hasError ? "#ef4444" : "#e5e7eb"}`,
                   fontSize: "13px",
                   fontWeight: 600,
                   letterSpacing: "1px",
                   color: "#374151",
                   outline: "none",
                   boxSizing: "border-box",
-                  textTransform: "uppercase"
+                  textTransform: "uppercase",
+                  transition: "border-color 0.2s"
                 }}
               />
             </div>
 
-            {error && <p style={{ color: "#ef4444", fontSize: "14px", margin: "0" }}>{error}</p>}
+            {error && (
+              <div style={{
+                display: "flex",
+                alignItems: "flex-start",
+                gap: "10px",
+                background: "#fef2f2",
+                border: "1px solid #fecaca",
+                borderRadius: "12px",
+                padding: "14px 16px",
+                margin: "0",
+                animation: "fadeIn 0.2s ease"
+              }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: 1 }}>
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="12" y1="8" x2="12" y2="12"></line>
+                  <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                </svg>
+                <p style={{ color: "#dc2626", fontSize: "13px", margin: 0, fontWeight: 500, lineHeight: "1.5" }}>{error}</p>
+              </div>
+            )}
 
             <button
               type="submit"
