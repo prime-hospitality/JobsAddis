@@ -39,7 +39,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
   const [editError, setEditError] = useState("");
   const [viewingJob, setViewingJob] = useState<any | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [overviewEmployerId, setOverviewEmployerId] = useState<string>("__all__");
+  const [overviewEmployerId, setOverviewEmployerId] = useState<string>("");
   const [overviewDuration, setOverviewDuration] = useState<"7" | "30" | "90">("30");
 
   const navItems = [
@@ -360,12 +360,12 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
             const cutoff = daysAgo(Number(overviewDuration));
             const inWindow = (dateStr: string) => new Date(dateStr) >= cutoff;
 
-            // Employer performance - selected or all
-            const perfEmployers = overviewEmployerId === "__all__" ? employers : employers.filter(e => e.id === overviewEmployerId);
-            const perfData = perfEmployers.map(emp => {
-              const empJobs = jobs.filter(j => j.employer_id === emp.id && inWindow(j.created_at));
-              return { name: emp.business_name, posts: empJobs.length, active: empJobs.filter(j => j.status === "active").length };
-            }).filter(d => d.posts > 0 || overviewEmployerId !== "__all__");
+            // Employer performance - only for a selected employer
+            const perfEmployer = employers.find(e => e.id === overviewEmployerId);
+            const perfData = perfEmployer ? (() => {
+              const empJobs = jobs.filter(j => j.employer_id === perfEmployer.id && inWindow(j.created_at));
+              return [{ name: perfEmployer.business_name, posts: empJobs.length, active: empJobs.filter(j => j.status === "active").length }];
+            })() : [];
 
             const maxBar = Math.max(...perfData.map(d => d.posts), 1);
 
@@ -429,7 +429,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                         onChange={e => setOverviewEmployerId(e.target.value)}
                         className="text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
                       >
-                        <option value="__all__">All Employers</option>
+                        <option value="" disabled>Select Employer</option>
                         {employers.map(emp => (
                           <option key={emp.id} value={emp.id}>{emp.business_name}</option>
                         ))}
@@ -447,8 +447,10 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                     </div>
                   </div>
 
-                  {perfData.length === 0 ? (
-                    <div className="text-center py-12 text-gray-400 text-sm">No job activity in this period.</div>
+                  {!overviewEmployerId ? (
+                    <div className="text-center py-12 text-gray-400 text-sm">Select an employer above to view their performance.</div>
+                  ) : perfData.length === 0 || perfData[0].posts === 0 ? (
+                    <div className="text-center py-12 text-gray-400 text-sm">No job activity in this period for the selected employer.</div>
                   ) : (
                     <div className="overflow-x-auto">
                       <div className="flex items-end gap-4 min-w-max pb-2" style={{ minHeight: 180 }}>
