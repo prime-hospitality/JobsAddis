@@ -395,9 +395,9 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
             const statusDot: Record<string, string> = { active: "#10b981", closed: "#ef4444", pending: "#f59e0b" };
 
             return (
-              <div className="max-w-6xl mx-auto space-y-6">
+              <div className="max-w-6xl mx-auto space-y-5">
 
-                {/* ---- Overall Stats ---- */}
+                {/* ---- ROW 1: Overall Stats — full width ---- */}
                 <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
                   <h2 className="text-base font-bold text-gray-800 mb-5">Overall Stats</h2>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -418,93 +418,100 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                   </div>
                 </div>
 
-                {/* ---- Employer Performance ---- */}
-                <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-                  <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
-                    <h2 className="text-base font-bold text-gray-800">Employer Performance</h2>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      {/* Employer selector */}
-                      <select
-                        value={overviewEmployerId}
-                        onChange={e => setOverviewEmployerId(e.target.value)}
-                        className="text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      >
-                        <option value="" disabled>Select Employer</option>
-                        {employers.map(emp => (
-                          <option key={emp.id} value={emp.id}>{emp.business_name}</option>
-                        ))}
-                      </select>
-                      {/* Duration */}
-                      <select
-                        value={overviewDuration}
-                        onChange={e => setOverviewDuration(e.target.value as "7" | "30" | "90")}
-                        className="text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      >
-                        <option value="7">Last 7 days</option>
-                        <option value="30">Last 30 days</option>
-                        <option value="90">Last 90 days</option>
-                      </select>
+                {/* ---- ROW 2: Two columns — Performance (left) ---- */}
+                <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
+
+                  {/* Employer Performance — spans 3/5 */}
+                  <div className="lg:col-span-3 bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+                    <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+                      <h2 className="text-base font-bold text-gray-800">Employer Performance</h2>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <select
+                          value={overviewEmployerId}
+                          onChange={e => setOverviewEmployerId(e.target.value)}
+                          className="text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                          <option value="" disabled>Select Employer</option>
+                          {employers.map(emp => (
+                            <option key={emp.id} value={emp.id}>{emp.business_name}</option>
+                          ))}
+                        </select>
+                        <select
+                          value={overviewDuration}
+                          onChange={e => setOverviewDuration(e.target.value as "7" | "30" | "90")}
+                          className="text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                          <option value="7">Last 7 days</option>
+                          <option value="30">Last 30 days</option>
+                          <option value="90">Last 90 days</option>
+                        </select>
+                      </div>
                     </div>
+
+                    {!overviewEmployerId ? (
+                      <div className="text-center py-12 text-gray-400 text-sm">Select an employer above to view their performance.</div>
+                    ) : perfData.length === 0 || perfData[0].posts === 0 ? (
+                      <div className="text-center py-12 text-gray-400 text-sm">No job activity in this period for the selected employer.</div>
+                    ) : (
+                      <div className="overflow-x-auto">
+                        <div className="flex items-end gap-4 min-w-max pb-2" style={{ minHeight: 180 }}>
+                          {perfData.map((d, i) => (
+                            <div key={i} className="flex flex-col items-center gap-1" style={{ width: 72 }}>
+                              <div className="flex items-end gap-1" style={{ height: 140 }}>
+                                <div title={`${d.posts} total posts`} style={{ width: 22, height: `${Math.max((d.posts / maxBar) * 130, 4)}px`, background: "#6366f1", borderRadius: "4px 4px 0 0", transition: "height .4s" }} />
+                                <div title={`${d.active} active`} style={{ width: 22, height: `${Math.max((d.active / maxBar) * 130, 4)}px`, background: "#10b981", borderRadius: "4px 4px 0 0", transition: "height .4s" }} />
+                              </div>
+                              <p className="text-[10px] text-gray-500 text-center leading-tight" style={{ maxWidth: 72, wordBreak: "break-word" }}>{d.name}</p>
+                            </div>
+                          ))}
+                        </div>
+                        <div className="flex items-center gap-4 mt-3">
+                          <div className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm inline-block" style={{ background: "#6366f1" }} /><span className="text-xs text-gray-500">Total Posts</span></div>
+                          <div className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm inline-block" style={{ background: "#10b981" }} /><span className="text-xs text-gray-500">Active Jobs</span></div>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
-                  {!overviewEmployerId ? (
-                    <div className="text-center py-12 text-gray-400 text-sm">Select an employer above to view their performance.</div>
-                  ) : perfData.length === 0 || perfData[0].posts === 0 ? (
-                    <div className="text-center py-12 text-gray-400 text-sm">No job activity in this period for the selected employer.</div>
-                  ) : (
-                    <div className="overflow-x-auto">
-                      <div className="flex items-end gap-4 min-w-max pb-2" style={{ minHeight: 180 }}>
-                        {perfData.map((d, i) => (
-                          <div key={i} className="flex flex-col items-center gap-1" style={{ width: 72 }}>
-                            <div className="flex items-end gap-1" style={{ height: 140 }}>
-                              {/* Total posts bar */}
-                              <div
-                                title={`${d.posts} total posts`}
-                                style={{
-                                  width: 22, height: `${Math.max((d.posts / maxBar) * 130, 4)}px`,
-                                  background: "#6366f1", borderRadius: "4px 4px 0 0", transition: "height .4s"
-                                }}
-                              />
-                              {/* Active jobs bar */}
-                              <div
-                                title={`${d.active} active`}
-                                style={{
-                                  width: 22, height: `${Math.max((d.active / maxBar) * 130, 4)}px`,
-                                  background: "#10b981", borderRadius: "4px 4px 0 0", transition: "height .4s"
-                                }}
-                              />
-                            </div>
-                            <p className="text-[10px] text-gray-500 text-center leading-tight" style={{ maxWidth: 72, wordBreak: "break-word" }}>{d.name}</p>
-                          </div>
-                        ))}
+                  {/* Right column — Quick Stats Summary */}
+                  <div className="lg:col-span-2 bg-white rounded-xl border border-gray-200 shadow-sm p-6 flex flex-col gap-4">
+                    <h2 className="text-base font-bold text-gray-800">Job Status Breakdown</h2>
+                    {[
+                      { label: "Active Jobs", value: jobs.filter(j => j.status === "active").length, color: "#10b981", bg: "#d1fae5" },
+                      { label: "Pending Review", value: jobs.filter(j => j.status === "pending").length, color: "#f59e0b", bg: "#fef3c7" },
+                      { label: "Closed Jobs", value: jobs.filter(j => j.status === "closed").length, color: "#ef4444", bg: "#fee2e2" },
+                      { label: "Approved Employers", value: employers.filter(e => e.status === "approved").length, color: "#6366f1", bg: "#ede9fe" },
+                      { label: "Pending Employers", value: employers.filter(e => e.status === "pending").length, color: "#0284c7", bg: "#dbeafe" },
+                    ].map(row => (
+                      <div key={row.label} className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: row.color }} />
+                          <span className="text-sm text-gray-600">{row.label}</span>
+                        </div>
+                        <span className="text-sm font-bold px-2.5 py-0.5 rounded-full" style={{ color: row.color, background: row.bg }}>{row.value}</span>
                       </div>
-                      {/* Legend */}
-                      <div className="flex items-center gap-4 mt-3">
-                        <div className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm inline-block" style={{ background: "#6366f1" }} /><span className="text-xs text-gray-500">Total Posts</span></div>
-                        <div className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm inline-block" style={{ background: "#10b981" }} /><span className="text-xs text-gray-500">Active Jobs</span></div>
-                      </div>
-                    </div>
-                  )}
+                    ))}
+                  </div>
                 </div>
 
-                {/* ---- Employer Activity ---- */}
+                {/* ---- ROW 3: Employer Activity — full width ---- */}
                 <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-                  <h2 className="text-base font-bold text-gray-800 mb-5">Employer Activity</h2>
+                  <h2 className="text-base font-bold text-gray-800 mb-1">Employer Activity</h2>
+                  <p className="text-xs text-gray-400 mb-5">Latest actions taken by employers on the platform</p>
                   {activityFeed.length === 0 ? (
                     <div className="text-center py-10 text-gray-400 text-sm">No activity yet.</div>
                   ) : (
-                    <div className="space-y-0 divide-y divide-gray-100">
-                      {activityFeed.map((item, i) => (
+                    <div className="divide-y divide-gray-100">
+                      {activityFeed.map((item) => (
                         <div key={item.id} className="flex items-start gap-3 py-3">
-                          {/* Status dot */}
-                          <div className="mt-1 flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center"
+                          <div className="mt-0.5 flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center"
                             style={{ background: (statusDot[item.status] || "#6b7280") + "20" }}
                           >
-                            <div className="w-2.5 h-2.5 rounded-full" style={{ background: statusDot[item.status] || "#6b7280" }} />
+                            <div className="w-3 h-3 rounded-full" style={{ background: statusDot[item.status] || "#6b7280" }} />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-semibold text-gray-800 truncate">{item.employer}</p>
-                            <p className="text-sm text-gray-600 truncate">{item.action}: <span className="italic text-gray-500">{item.detail}</span></p>
+                            <p className="text-sm font-semibold text-gray-800">{item.employer}</p>
+                            <p className="text-sm text-gray-500">{item.action} — <span className="font-medium text-gray-700">{item.detail}</span></p>
                           </div>
                           <span className="text-xs text-gray-400 whitespace-nowrap mt-1 flex-shrink-0">{fmtTime(item.time)}</span>
                         </div>
