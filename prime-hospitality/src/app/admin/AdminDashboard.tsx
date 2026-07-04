@@ -339,8 +339,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
         {/* Mobile Header */}
         <header className="md:hidden bg-white border-b border-gray-200 h-16 flex items-center justify-between px-4 shrink-0">
           <div className="flex items-center">
-            <img src="/icon.png" alt="Addis Jobs" className="w-8 h-8 rounded-md mr-3 object-contain" />
-            <span className="text-lg font-bold text-gray-900">Addis Jobs</span>
+            <span className="text-lg font-bold text-gray-900 tracking-tight">Admin Dashboard</span>
           </div>
           <button onClick={() => setMobileMenuOpen(true)} className="text-gray-500 hover:text-gray-700 focus:outline-none">
             <Menu className="w-6 h-6" />
