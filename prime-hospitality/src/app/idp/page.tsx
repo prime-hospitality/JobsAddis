@@ -16,13 +16,14 @@ export default async function IdpPage() {
   }
 
   // Fetch initial telemetry data securely on the server
-  let data;
+  let data = null;
+  let errorMsg = null;
   try {
     data = await getIdpData();
-  } catch (err) {
-    // If auth fails or data fetch fails, show login
-    return <IdpLogin />;
+  } catch (err: any) {
+    console.error("IDP telemetry load error:", err);
+    errorMsg = err.message || "Failed to load telemetry data";
   }
 
-  return <IdpDashboard initialData={data} />;
+  return <IdpDashboard initialData={data} error={errorMsg} />;
 }

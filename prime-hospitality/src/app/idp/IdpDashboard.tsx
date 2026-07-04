@@ -4,7 +4,7 @@ import { useState } from "react";
 import { logoutIdp } from "./actions";
 import { LogOut, Cpu, Users, Smartphone, Server, Activity } from "lucide-react";
 
-export default function IdpDashboard({ initialData }: { initialData: any }) {
+export default function IdpDashboard({ initialData, error }: { initialData: any, error?: string | null }) {
   const [data] = useState(initialData);
 
   const handleLogout = async () => {
@@ -20,7 +20,7 @@ export default function IdpDashboard({ initialData }: { initialData: any }) {
   };
 
   const pct = (val: number) => {
-    if (data.stats.totalUsers === 0) return 0;
+    if (!data || data.stats.totalUsers === 0) return 0;
     return Math.round((val / data.stats.totalUsers) * 100);
   };
 
@@ -43,108 +43,120 @@ export default function IdpDashboard({ initialData }: { initialData: any }) {
       </header>
 
       <main style={{ padding: 32, maxWidth: 1200, margin: "0 auto" }}>
-        
-        {/* Telemetry Stats */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 24, marginBottom: 32 }}>
-          
-          <div style={{ background: "#171717", border: "1px solid #262626", borderRadius: 12, padding: 20 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
-              <div style={{ background: "rgba(168, 85, 247, 0.1)", padding: 8, borderRadius: 8, color: "#a855f7" }}><Users size={18} /></div>
-              <h3 style={{ fontSize: 14, fontWeight: 600, margin: 0, color: "#d1d5db" }}>Total Tracked Users</h3>
-            </div>
-            <div style={{ fontSize: 32, fontWeight: 700, color: "#fff" }}>{data.stats.totalUsers}</div>
+        {error && (
+          <div style={{ background: "rgba(239, 68, 68, 0.1)", color: "#fca5a5", padding: "20px", borderRadius: 12, marginBottom: 32, border: "1px solid rgba(239, 68, 68, 0.2)", display: "flex", flexDirection: "column", gap: 8 }}>
+            <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>Telemetry Load Failure</h3>
+            <p style={{ margin: 0, fontSize: 13, opacity: 0.8 }}>{error}</p>
+            <p style={{ margin: 0, fontSize: 12, color: "#9ca3af", marginTop: 8 }}>
+              💡 Common issue: Ensure the `device_performance` column exists on your `users` table in Supabase.
+            </p>
           </div>
+        )}
 
-          <div style={{ background: "#171717", border: "1px solid #262626", borderRadius: 12, padding: 20 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
-              <div style={{ background: "rgba(16, 185, 129, 0.1)", padding: 8, borderRadius: 8, color: "#10b981" }}><Server size={18} /></div>
-              <h3 style={{ fontSize: 14, fontWeight: 600, margin: 0, color: "#d1d5db" }}>High Performance</h3>
-            </div>
-            <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-              <div style={{ fontSize: 32, fontWeight: 700, color: "#10b981" }}>{data.stats.performanceBreakdown.high}</div>
-              <div style={{ fontSize: 14, color: "#9ca3af" }}>({pct(data.stats.performanceBreakdown.high)}%)</div>
-            </div>
-          </div>
+        {!error && data && (
+          <>
+            {/* Telemetry Stats */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 24, marginBottom: 32 }}>
+              
+              <div style={{ background: "#171717", border: "1px solid #262626", borderRadius: 12, padding: 20 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
+                  <div style={{ background: "rgba(168, 85, 247, 0.1)", padding: 8, borderRadius: 8, color: "#a855f7" }}><Users size={18} /></div>
+                  <h3 style={{ fontSize: 14, fontWeight: 600, margin: 0, color: "#d1d5db" }}>Total Tracked Users</h3>
+                </div>
+                <div style={{ fontSize: 32, fontWeight: 700, color: "#fff" }}>{data.stats.totalUsers}</div>
+              </div>
 
-          <div style={{ background: "#171717", border: "1px solid #262626", borderRadius: 12, padding: 20 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
-              <div style={{ background: "rgba(59, 130, 246, 0.1)", padding: 8, borderRadius: 8, color: "#3b82f6" }}><Smartphone size={18} /></div>
-              <h3 style={{ fontSize: 14, fontWeight: 600, margin: 0, color: "#d1d5db" }}>Medium Performance</h3>
-            </div>
-            <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-              <div style={{ fontSize: 32, fontWeight: 700, color: "#3b82f6" }}>{data.stats.performanceBreakdown.medium}</div>
-              <div style={{ fontSize: 14, color: "#9ca3af" }}>({pct(data.stats.performanceBreakdown.medium)}%)</div>
-            </div>
-          </div>
+              <div style={{ background: "#171717", border: "1px solid #262626", borderRadius: 12, padding: 20 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
+                  <div style={{ background: "rgba(16, 185, 129, 0.1)", padding: 8, borderRadius: 8, color: "#10b981" }}><Server size={18} /></div>
+                  <h3 style={{ fontSize: 14, fontWeight: 600, margin: 0, color: "#d1d5db" }}>High Performance</h3>
+                </div>
+                <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+                  <div style={{ fontSize: 32, fontWeight: 700, color: "#10b981" }}>{data.stats.performanceBreakdown.high}</div>
+                  <div style={{ fontSize: 14, color: "#9ca3af" }}>({pct(data.stats.performanceBreakdown.high)}%)</div>
+                </div>
+              </div>
 
-          <div style={{ background: "#171717", border: "1px solid #262626", borderRadius: 12, padding: 20 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
-              <div style={{ background: "rgba(239, 68, 68, 0.1)", padding: 8, borderRadius: 8, color: "#ef4444" }}><Activity size={18} /></div>
-              <h3 style={{ fontSize: 14, fontWeight: 600, margin: 0, color: "#d1d5db" }}>Low Performance</h3>
-            </div>
-            <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-              <div style={{ fontSize: 32, fontWeight: 700, color: "#ef4444" }}>{data.stats.performanceBreakdown.low}</div>
-              <div style={{ fontSize: 14, color: "#9ca3af" }}>({pct(data.stats.performanceBreakdown.low)}%)</div>
-            </div>
-          </div>
+              <div style={{ background: "#171717", border: "1px solid #262626", borderRadius: 12, padding: 20 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
+                  <div style={{ background: "rgba(59, 130, 246, 0.1)", padding: 8, borderRadius: 8, color: "#3b82f6" }}><Smartphone size={18} /></div>
+                  <h3 style={{ fontSize: 14, fontWeight: 600, margin: 0, color: "#d1d5db" }}>Medium Performance</h3>
+                </div>
+                <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+                  <div style={{ fontSize: 32, fontWeight: 700, color: "#3b82f6" }}>{data.stats.performanceBreakdown.medium}</div>
+                  <div style={{ fontSize: 14, color: "#9ca3af" }}>({pct(data.stats.performanceBreakdown.medium)}%)</div>
+                </div>
+              </div>
 
-        </div>
+              <div style={{ background: "#171717", border: "1px solid #262626", borderRadius: 12, padding: 20 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
+                  <div style={{ background: "rgba(239, 68, 68, 0.1)", padding: 8, borderRadius: 8, color: "#ef4444" }}><Activity size={18} /></div>
+                  <h3 style={{ fontSize: 14, fontWeight: 600, margin: 0, color: "#d1d5db" }}>Low Performance</h3>
+                </div>
+                <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+                  <div style={{ fontSize: 32, fontWeight: 700, color: "#ef4444" }}>{data.stats.performanceBreakdown.low}</div>
+                  <div style={{ fontSize: 14, color: "#9ca3af" }}>({pct(data.stats.performanceBreakdown.low)}%)</div>
+                </div>
+              </div>
 
-        {/* User Data Table */}
-        <div style={{ background: "#171717", border: "1px solid #262626", borderRadius: 12, overflow: "hidden" }}>
-          <div style={{ padding: "16px 24px", borderBottom: "1px solid #262626" }}>
-            <h2 style={{ fontSize: 15, fontWeight: 600, margin: 0, color: "#f3f4f6" }}>Raw User Telemetry</h2>
-          </div>
-          <div style={{ overflowX: "auto" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: 13 }}>
-              <thead>
-                <tr style={{ background: "#121212", color: "#9ca3af", textTransform: "uppercase", letterSpacing: 0.5 }}>
-                  <th style={{ padding: "12px 24px", fontWeight: 600 }}>Telegram ID</th>
-                  <th style={{ padding: "12px 24px", fontWeight: 600 }}>Name</th>
-                  <th style={{ padding: "12px 24px", fontWeight: 600 }}>Role</th>
-                  <th style={{ padding: "12px 24px", fontWeight: 600 }}>Performance Tier</th>
-                  <th style={{ padding: "12px 24px", fontWeight: 600 }}>Join Date</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.users.map((user: any) => {
-                  const perf = user.device_performance || "medium";
-                  const color = getPerfColor(perf);
-                  return (
-                    <tr key={user.id} style={{ borderBottom: "1px solid #262626" }}>
-                      <td style={{ padding: "16px 24px", color: "#d1d5db" }}>{user.telegram_id}</td>
-                      <td style={{ padding: "16px 24px", color: "#9ca3af" }}>{user.profiles?.full_name || "—"}</td>
-                      <td style={{ padding: "16px 24px", color: "#9ca3af", textTransform: "capitalize" }}>{user.role}</td>
-                      <td style={{ padding: "16px 24px" }}>
-                        <span style={{
-                          background: color.bg,
-                          color: color.text,
-                          border: `1px solid ${color.border}`,
-                          padding: "4px 10px",
-                          borderRadius: 100,
-                          fontSize: 11,
-                          fontWeight: 600,
-                          textTransform: "uppercase"
-                        }}>
-                          {perf}
-                        </span>
-                      </td>
-                      <td style={{ padding: "16px 24px", color: "#6b7280" }}>
-                        {new Date(user.created_at).toLocaleDateString()}
-                      </td>
+            </div>
+
+            {/* User Data Table */}
+            <div style={{ background: "#171717", border: "1px solid #262626", borderRadius: 12, overflow: "hidden" }}>
+              <div style={{ padding: "16px 24px", borderBottom: "1px solid #262626" }}>
+                <h2 style={{ fontSize: 15, fontWeight: 600, margin: 0, color: "#f3f4f6" }}>Raw User Telemetry</h2>
+              </div>
+              <div style={{ overflowX: "auto" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: 13 }}>
+                  <thead>
+                    <tr style={{ background: "#121212", color: "#9ca3af", textTransform: "uppercase", letterSpacing: 0.5 }}>
+                      <th style={{ padding: "12px 24px", fontWeight: 600 }}>Telegram ID</th>
+                      <th style={{ padding: "12px 24px", fontWeight: 600 }}>Name</th>
+                      <th style={{ padding: "12px 24px", fontWeight: 600 }}>Role</th>
+                      <th style={{ padding: "12px 24px", fontWeight: 600 }}>Performance Tier</th>
+                      <th style={{ padding: "12px 24px", fontWeight: 600 }}>Join Date</th>
                     </tr>
-                  );
-                })}
-                {data.users.length === 0 && (
-                  <tr>
-                    <td colSpan={5} style={{ padding: 40, textAlign: "center", color: "#6b7280" }}>No telemetry data available</td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
+                  </thead>
+                  <tbody>
+                    {data.users.map((user: any) => {
+                      const perf = user.device_performance || "medium";
+                      const color = getPerfColor(perf);
+                      return (
+                        <tr key={user.id} style={{ borderBottom: "1px solid #262626" }}>
+                          <td style={{ padding: "16px 24px", color: "#d1d5db" }}>{user.telegram_id}</td>
+                          <td style={{ padding: "16px 24px", color: "#9ca3af" }}>{user.profiles?.full_name || "—"}</td>
+                          <td style={{ padding: "16px 24px", color: "#9ca3af", textTransform: "capitalize" }}>{user.role}</td>
+                          <td style={{ padding: "16px 24px" }}>
+                            <span style={{
+                              background: color.bg,
+                              color: color.text,
+                              border: `1px solid ${color.border}`,
+                              padding: "4px 10px",
+                              borderRadius: 100,
+                              fontSize: 11,
+                              fontWeight: 600,
+                              textTransform: "uppercase"
+                            }}>
+                              {perf}
+                            </span>
+                          </td>
+                          <td style={{ padding: "16px 24px", color: "#6b7280" }}>
+                            {new Date(user.created_at).toLocaleDateString()}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                    {data.users.length === 0 && (
+                      <tr>
+                        <td colSpan={5} style={{ padding: 40, textAlign: "center", color: "#6b7280" }}>No telemetry data available</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </>
+        )}
       </main>
     </div>
   );
