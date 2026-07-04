@@ -269,7 +269,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
       )}
 
       {/* Sidebar */}
-      <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 transform transition-transform duration-200 ease-in-out md:translate-x-0 md:static md:shrink-0 flex flex-col ${mobileMenuOpen ? "translate-x-0" : "-translate-x-full"}`}>
+      <aside className={`fixed inset-y-0 left-0 z-50 w-72 bg-white border-r border-gray-200 transform transition-transform duration-200 ease-in-out md:translate-x-0 md:static md:shrink-0 flex flex-col ${mobileMenuOpen ? "translate-x-0" : "-translate-x-full"}`}>
         {/* Logo Area */}
         <div className="h-16 flex items-center px-6 border-b border-gray-100 shrink-0">
           <img src="/icon.png" alt="Addis Jobs" className="w-8 h-8 rounded-md mr-3 object-contain" />
@@ -293,15 +293,15 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                 {isBottomSection && <div className="h-px bg-gray-200 my-4 mx-2" />}
                 <button
                   onClick={() => { setActiveTab(item.id as Tab); setSelectedEmployerId(null); setMobileMenuOpen(false); }}
-                  className={`w-full flex items-center px-4 py-3 text-[15px] rounded-xl transition-all duration-200 ${
+                  className={`w-full flex items-center px-4 py-3 text-[14px] rounded-xl transition-all duration-200 ${
                     isActive 
                       ? "bg-[#0284c7] text-white shadow-md shadow-sky-500/20 font-semibold" 
                       : "text-slate-600 font-medium hover:bg-slate-100 hover:text-slate-900"
                   }`}
                   style={{ border: "none", cursor: "pointer", textAlign: "left" }}
                 >
-                  <Icon className={`mr-3.5 flex-shrink-0 h-[22px] w-[22px] ${isActive ? "text-white" : "text-slate-400"}`} />
-                  {item.label}
+                  <Icon className={`mr-3 flex-shrink-0 h-5 w-5 ${isActive ? "text-white" : "text-slate-400"}`} />
+                  <span className="whitespace-nowrap">{item.label}</span>
                 </button>
               </div>
             );
