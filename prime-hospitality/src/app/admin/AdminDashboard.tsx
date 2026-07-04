@@ -472,16 +472,18 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                   <h2 className="text-base font-bold text-gray-800 mb-5">Overall Stats</h2>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     {[
-                      { label: "Total Employers", value: employers.length, icon: "🏢", color: "#6366f1" },
-                      { label: "Active Job Seekers", value: users.length, icon: "👤", color: "#0284c7" },
-                      { label: "Pending Moderation", value: jobs.filter(j => j.status === "pending").length, icon: "⏳", color: "#f59e0b" },
-                      { label: "Total Job Posts", value: jobs.length, icon: "📋", color: "#10b981" },
+                      { label: "Total Employers", value: employers.length, icon: "/icons/building.svg", color: "#6366f1" },
+                      { label: "Active Job Seekers", value: users.length, icon: "/icons/users.svg", color: "#0284c7" },
+                      { label: "Pending Moderation", value: jobs.filter(j => j.status === "pending").length, icon: "/icons/pending.svg", color: "#f59e0b" },
+                      { label: "Total Job Posts", value: jobs.length, icon: "/icons/jobs.svg", color: "#10b981" },
                     ].map(stat => (
-                      <div key={stat.label} className="rounded-xl border border-gray-100 bg-gray-50 p-4 flex items-start gap-3">
-                        <div className="text-2xl leading-none mt-0.5">{stat.icon}</div>
+                      <div key={stat.label} className="rounded-xl border border-gray-100 bg-gray-50/80 p-4 flex items-center gap-4 transition-all hover:bg-white hover:shadow-md hover:-translate-y-0.5 cursor-default">
+                        <div className="flex items-center justify-center w-14 h-14 rounded-xl bg-white shadow-sm border border-gray-100 flex-shrink-0">
+                          <img src={stat.icon} alt={stat.label} className="w-8 h-8 object-contain drop-shadow-sm" />
+                        </div>
                         <div>
-                          <p className="text-xs text-gray-500 font-medium mb-1">{stat.label}</p>
-                          <p className="text-2xl font-bold" style={{ color: stat.color }}>{stat.value}</p>
+                          <p className="text-xs text-gray-500 font-bold tracking-wide uppercase mb-0.5">{stat.label}</p>
+                          <p className="text-2xl font-black tracking-tight" style={{ color: stat.color }}>{stat.value}</p>
                         </div>
                       </div>
                     ))}
