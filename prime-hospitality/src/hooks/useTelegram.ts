@@ -11,12 +11,23 @@ export interface TelegramUser {
   photoUrl?: string;
 }
 
+/** Device hardware info exposed by Telegram Mini App SDK (Android only for now) */
+export interface DeviceInfo {
+  os: string | null;
+  appVersion: string | null;
+  sdkVersion: string | null;
+  model: string | null;
+  /** Telegram-computed benchmark class for the device */
+  performanceClass: "high" | "medium" | "low" | null;
+}
+
 interface UseTelegramReturn {
   user: TelegramUser | null;
   initData: string | null; // Raw initData string for Edge Function auth header
   isReady: boolean;
   isEmployer: boolean;
   startParam: string | null;
+  deviceInfo: DeviceInfo;
 }
 
 // Mock user for dev/browser environment (not inside Telegram)
@@ -27,11 +38,21 @@ const MOCK_DEV_USER: TelegramUser = {
   username: "birukt",
 };
 
+/** Dev fallback — assume high-end device so full experience renders in browser */
+const MOCK_DEV_DEVICE_INFO: DeviceInfo = {
+  os: "web",
+  appVersion: null,
+  sdkVersion: null,
+  model: null,
+  performanceClass: "high",
+};
+
 export function useTelegram(): UseTelegramReturn {
   const [user, setUser] = useState<TelegramUser | null>(null);
   const [initData, setInitData] = useState<string | null>(null);
   const [startParam, setStartParam] = useState<string | null>(null);
   const [isReady, setIsReady] = useState(false);
+  const [deviceInfo, setDeviceInfo] = useState<DeviceInfo>(MOCK_DEV_DEVICE_INFO);
 
   useEffect(() => {
     const init = async () => {
@@ -96,6 +117,27 @@ export function useTelegram(): UseTelegramReturn {
           // Capture the raw initData string for use in Edge Function auth headers
           setInitData(tgWebApp.initData || null);
           setStartParam(tgWebApp.initDataUnsafe.start_param || null);
+          // ── Hardware device info (Telegram SDK, Android) ──
+          // deviceInfo is undefined on older SDK versions — use optional chaining throughout
+          const di = tgWebApp.deviceInfo;
+          if (di) {
+            setDeviceInfo({
+              os: di.platform ?? tgWebApp.platform ?? null,
+              appVersion: di.app_version ?? tgWebApp.version ?? null,
+              sdkVersion: di.sdk_version ?? null,
+              model: di.model ?? null,
+              performanceClass: di.performance_class ?? null,
+            });
+          } else {
+            // Older SDK: read what we can from the top-level WebApp object
+            setDeviceInfo({
+              os: tgWebApp.platform ?? null,
+              appVersion: tgWebApp.version ?? null,
+              sdkVersion: null,
+              model: null,
+              performanceClass: null, // unknown — treated as medium by usePerformance
+            });
+          }
         } else {
           // Fallback for dev/browser environment — no real initData available
           setUser(MOCK_DEV_USER);
@@ -106,6 +148,7 @@ export function useTelegram(): UseTelegramReturn {
         setUser(MOCK_DEV_USER);
         setInitData(null);
         setStartParam(null);
+        setDeviceInfo(MOCK_DEV_DEVICE_INFO);
       } finally {
         setIsReady(true);
       }
@@ -120,5 +163,6 @@ export function useTelegram(): UseTelegramReturn {
     isReady,
     isEmployer: user ? isEmployer(user.id) : false,
     startParam,
+    deviceInfo,
   };
 }

@@ -6,6 +6,7 @@ import { Loader2, CheckCircle, AlertCircle } from "lucide-react";
 import { Job } from "@/data/jobs";
 import { JobSeekerProfile } from "@/data/profile";
 import { useTelegram } from "@/hooks/useTelegram";
+import { usePerformance } from "@/hooks/usePerformance";
 import { useCvUpload } from "@/hooks/useCvUpload";
 import { fetchProfile, getUnreadCount } from "@/lib/api";
 import { supabase } from "@/lib/supabase";
@@ -44,7 +45,8 @@ function clearUserLocalData() {
 }
 
 export default function App() {
-  const { user, isEmployer: telegramIsEmployer, isReady: isTelegramReady, initData, startParam } = useTelegram();
+  const { user, isEmployer: telegramIsEmployer, isReady: isTelegramReady, initData, startParam, deviceInfo } = useTelegram();
+  const { enableAnimations, pageSize, performanceClass } = usePerformance(deviceInfo);
   const [isEmployer, setIsEmployer] = useState<boolean>(telegramIsEmployer);
   const [deepLinkHandled, setDeepLinkHandled] = useState(false);
 
@@ -58,6 +60,15 @@ export default function App() {
     }
   }, [telegramIsEmployer]);
   const { isUploadingCv, cvUploadError } = useCvUpload();
+
+  // Apply performance class as a data attribute on <html> so CSS rules take effect globally
+  useEffect(() => {
+    document.documentElement.setAttribute("data-perf", performanceClass);
+    return () => {
+      document.documentElement.removeAttribute("data-perf");
+    };
+  }, [performanceClass]);
+
   const [cvJustDone, setCvJustDone] = useState(false);
   const [cvFailed, setCvFailed] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
@@ -422,10 +433,12 @@ export default function App() {
             onJobSelect={handleJobSelect}
             onSearchPress={() => setActiveTab("search")}
             profileName={userProfile?.full_name}
+            pageSize={pageSize}
+            enableAnimations={enableAnimations}
           />
         );
       case "search":
-        return <SearchScreen key="search" onJobSelect={handleJobSelect} />;
+        return <SearchScreen key="search" onJobSelect={handleJobSelect} pageSize={pageSize} enableAnimations={enableAnimations} />;
       case "applications":
         return <ApplicationsScreen key="applications" />;
       case "notifications":
@@ -441,6 +454,8 @@ export default function App() {
             onJobSelect={handleJobSelect}
             onSearchPress={() => setActiveTab("search")}
             profileName={userProfile?.full_name}
+            pageSize={pageSize}
+            enableAnimations={enableAnimations}
           />
         );
     }

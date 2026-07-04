@@ -108,8 +108,8 @@ export function mapSupabaseJobToJob(sj: SupabaseJob): Job {
 // ---------------------------------------------------------------------------
 let jobsCache: Record<string, Job[]> = {};
 
-export function useJobs(category?: string | null): UseJobsReturn {
-  const categoryKey = category || "all";
+export function useJobs(category?: string | null, limit?: number): UseJobsReturn {
+  const categoryKey = `${category || "all"}-${limit || "all"}`;
   const [jobs, setJobs] = useState<Job[]>(jobsCache[categoryKey] ?? []);
   const [isLoading, setIsLoading] = useState(!jobsCache[categoryKey]);
   const [error, setError] = useState<string | null>(null);
@@ -157,6 +157,10 @@ export function useJobs(category?: string | null): UseJobsReturn {
 
       if (category) {
         query = query.eq("category", category);
+      }
+
+      if (limit) {
+        query = query.limit(limit);
       }
 
       const { data, error: fetchError } = await query;

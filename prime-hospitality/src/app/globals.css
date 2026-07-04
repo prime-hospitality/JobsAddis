@@ -261,3 +261,33 @@ body {
   z-index: 2;
   pointer-events: none;
 }
+
+/* ── Hardware-specific performance optimizations ── */
+/* Applied via data-perf attribute set by useTelegram + page.tsx on init */
+
+/* Medium tier: disable the heavy mesh background gradient only */
+[data-perf="medium"] body,
+[data-perf="low"] body {
+  background-image: none !important;
+}
+
+/* Low tier: strip all CSS animations and transitions app-wide */
+[data-perf="low"] *,
+[data-perf="low"] *::before,
+[data-perf="low"] *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+
+/* Low tier: disable shimmer skeleton loading */
+[data-perf="low"] .shimmer {
+  animation: none !important;
+  background: var(--card) !important;
+}
+
+/* Low tier: disable card will-change to reduce GPU layer overhead */
+[data-perf="low"] .card {
+  will-change: auto !important;
+}

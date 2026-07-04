@@ -2,13 +2,15 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence, LazyMotion, domAnimation } from "framer-motion";
-import { Search, X, SlidersHorizontal, MapPin, Clock, ChevronDown, CheckCircle, ChevronLeft, ChevronRight, Users } from "lucide-react";
+import { Search, X, SlidersHorizontal, MapPin, Clock, ChevronDown, CheckCircle, ChevronLeft, ChevronRight, Users, Briefcase } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { Job, JobCategory, JobType, ExperienceLevel, JOB_CATEGORIES } from "@/data/jobs";
 import { SupabaseJob, mapSupabaseJobToJob } from "@/hooks/useJobs";
 
 interface SearchScreenProps {
   onJobSelect: (job: Job) => void;
+  pageSize?: number;
+  enableAnimations?: boolean;
 }
 
 const CATEGORY_EMOJIS: Record<string, string> = {
@@ -412,7 +414,7 @@ function DateModal({
   );
 }
 
-export default function SearchScreen({ onJobSelect }: SearchScreenProps) {
+export default function SearchScreen({ onJobSelect, pageSize, enableAnimations = true }: SearchScreenProps) {
   const [query, setQuery] = useState("");
   const [selectedCategories, setSelectedCategories] = useState<JobCategory[]>([]);
   const [selectedExperience, setSelectedExperience] = useState<string[]>([]);
@@ -494,6 +496,10 @@ export default function SearchScreen({ onJobSelect }: SearchScreenProps) {
         q = q.or(`title.ilike.%${trimmed}%,description.ilike.%${trimmed}%,neighborhood.ilike.%${trimmed}%`);
       }
 
+      if (pageSize) {
+        q = q.limit(pageSize);
+      }
+
       const { data, error: fetchError } = await q;
       if (fetchError) throw fetchError;
 
@@ -516,7 +522,7 @@ export default function SearchScreen({ onJobSelect }: SearchScreenProps) {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [pageSize]);
 
   useEffect(() => {
     doSearch(debouncedQuery, selectedCategories, selectedExperience, postedWithin);
@@ -802,81 +808,137 @@ export default function SearchScreen({ onJobSelect }: SearchScreenProps) {
               </p>
 
               <AnimatePresence>
-                {results.map((job, i) => (
-                  <motion.div
-                    key={job.id}
-                    initial={{ opacity: 0, y: 12 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.22, delay: Math.min(i * 0.05, 0.3) }}
-                    whileTap={{ scale: 0.985 }}
-                    onClick={() => onJobSelect(job)}
-                    style={{
-                      background: "var(--card)",
-                      border: "1px solid var(--border)",
-                      borderRadius: 16,
-                      padding: 16,
-                      cursor: "pointer",
-                      willChange: "transform",
-                    }}
-                  >
-                    <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
-                      {/* Logo */}
+                {results.map((job, i) => {
+                  if (!enableAnimations) {
+                    return (
                       <div
+                        key={job.id}
+                        onClick={() => onJobSelect(job)}
                         style={{
-                          width: 46, height: 46, borderRadius: 13,
-                          background: "var(--brand-subtle)",
+                          background: "var(--card)",
                           border: "1px solid var(--border)",
-                          display: "flex", alignItems: "center", justifyContent: "center",
-                          fontSize: 22, flexShrink: 0,
+                          borderRadius: 16,
+                          padding: 16,
+                          cursor: "pointer",
+                          marginBottom: 12,
                         }}
                       >
-                        {job.logoUrl ? (
-                          <img 
-                            src={job.logoUrl} 
-                            alt={`${job.businessName} logo`} 
-                            style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: 13 }} 
-                          />
-                        ) : (
-                          job.businessLogo
-                        )}
-                      </div>
-
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <p style={{ fontSize: 15, fontWeight: 700, color: "var(--text-primary)", marginBottom: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                          {job.title}
-                        </p>
-                        <p style={{ fontSize: 13, color: "var(--brand)", marginBottom: 8, fontWeight: 600 }}>
-                          {job.businessName}
-                        </p>
-
-                        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-                          {/* Salary */}
-                          <span
+                        <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
+                          {/* Logo */}
+                          <div
                             style={{
-                              fontSize: 12, fontWeight: 700,
-                              color: "var(--success)",
-                              background: "rgba(74,222,128,0.08)",
-                              border: "1px solid rgba(74,222,128,0.2)",
-                              borderRadius: 100, padding: "3px 9px",
+                              width: 46, height: 46, borderRadius: 13,
+                              background: "var(--brand-subtle)",
+                              border: "1px solid var(--border)",
+                              display: "flex", alignItems: "center", justifyContent: "center",
+                              fontSize: 22, flexShrink: 0,
                             }}
                           >
-                            {formatSalary(job.salaryMin, job.salaryMax, job.currency)}
-                          </span>
+                            {job.logoUrl ? (
+                              <img 
+                                src={job.logoUrl} 
+                                alt={`${job.businessName} logo`} 
+                                style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: 13 }} 
+                              />
+                            ) : (
+                              job.businessLogo
+                            )}
+                          </div>
 
-                          {/* Location */}
-                          <span style={{ fontSize: 12, color: "var(--text-muted)", display: "flex", alignItems: "center", gap: 3 }}>
-                            <MapPin size={10} /> {job.neighborhood}
-                          </span>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <p style={{ fontSize: 15, fontWeight: 700, color: "var(--text-primary)", marginBottom: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                              {job.title}
+                            </p>
+                            <p style={{ fontSize: 13, color: "var(--brand)", marginBottom: 8, fontWeight: 600 }}>
+                              {job.businessName}
+                            </p>
 
-                          {/* Job type */}
-                          <span style={{ fontSize: 12, color: "var(--text-muted)", display: "flex", alignItems: "center", gap: 3 }}>
-                            <Clock size={10} /> {job.jobType}
-                          </span>
+                            <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", marginTop: 4 }}>
+                              <span className="badge badge-navy"><Briefcase size={10} /> {job.jobType}</span>
+                              <span className="badge badge-navy"><MapPin size={10} /> {job.neighborhood}</span>
+                            </div>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </motion.div>
-                ))}
+                    );
+                  }
+
+                  return (
+                    <motion.div
+                      key={job.id}
+                      initial={{ opacity: 0, y: 12 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.22, delay: Math.min(i * 0.05, 0.3) }}
+                      whileTap={{ scale: 0.985 }}
+                      onClick={() => onJobSelect(job)}
+                      style={{
+                        background: "var(--card)",
+                        border: "1px solid var(--border)",
+                        borderRadius: 16,
+                        padding: 16,
+                        cursor: "pointer",
+                        willChange: "transform",
+                      }}
+                    >
+                      <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
+                        {/* Logo */}
+                        <div
+                          style={{
+                            width: 46, height: 46, borderRadius: 13,
+                            background: "var(--brand-subtle)",
+                            border: "1px solid var(--border)",
+                            display: "flex", alignItems: "center", justifyContent: "center",
+                            fontSize: 22, flexShrink: 0,
+                          }}
+                        >
+                          {job.logoUrl ? (
+                            <img 
+                              src={job.logoUrl} 
+                              alt={`${job.businessName} logo`} 
+                              style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: 13 }} 
+                            />
+                          ) : (
+                            job.businessLogo
+                          )}
+                        </div>
+
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <p style={{ fontSize: 15, fontWeight: 700, color: "var(--text-primary)", marginBottom: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                            {job.title}
+                          </p>
+                          <p style={{ fontSize: 13, color: "var(--brand)", marginBottom: 8, fontWeight: 600 }}>
+                            {job.businessName}
+                          </p>
+
+                          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+                            {/* Salary */}
+                            <span
+                              style={{
+                                fontSize: 12, fontWeight: 700,
+                                color: "var(--success)",
+                                background: "rgba(74,222,128,0.08)",
+                                border: "1px solid rgba(74,222,128,0.2)",
+                                borderRadius: 100, padding: "3px 9px",
+                              }}
+                            >
+                              {formatSalary(job.salaryMin, job.salaryMax, job.currency)}
+                            </span>
+
+                            {/* Location */}
+                            <span style={{ fontSize: 12, color: "var(--text-muted)", display: "flex", alignItems: "center", gap: 3 }}>
+                              <MapPin size={10} /> {job.neighborhood}
+                            </span>
+
+                            {/* Job type */}
+                            <span style={{ fontSize: 12, color: "var(--text-muted)", display: "flex", alignItems: "center", gap: 3 }}>
+                              <Clock size={10} /> {job.jobType}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </motion.div>
+                  );
+                })}
               </AnimatePresence>
             </div>
           )}

@@ -15,11 +15,13 @@ interface HomeScreenProps {
   onJobSelect: (job: Job) => void;
   onSearchPress?: () => void;
   profileName?: string;
+  pageSize?: number;
+  enableAnimations?: boolean;
 }
 
 let businessAnimationHasRun = false;
 
-export default function HomeScreen({ onJobSelect, onSearchPress, profileName }: HomeScreenProps) {
+export default function HomeScreen({ onJobSelect, onSearchPress, profileName, pageSize, enableAnimations }: HomeScreenProps) {
 
   const shouldReduceMotion = useReducedMotion();
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -100,7 +102,7 @@ export default function HomeScreen({ onJobSelect, onSearchPress, profileName }: 
   }, [shouldReduceMotion]);
 
   // Load real active jobs from Supabase
-  const { jobs, isLoading, error, refetch } = useJobs(null);
+  const { jobs, isLoading, error, refetch } = useJobs(null, pageSize);
 
   // Track dark mode to handle hero illustration visibility
   const [isDark, setIsDark] = useState<boolean>(() => {
@@ -671,6 +673,7 @@ export default function HomeScreen({ onJobSelect, onSearchPress, profileName }: 
                       job={job}
                       onClick={onJobSelect}
                       index={virtualItem.index}
+                      enableAnimations={enableAnimations}
                     />
                   </div>
                 );
