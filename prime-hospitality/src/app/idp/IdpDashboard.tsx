@@ -42,7 +42,7 @@ export default function IdpDashboard({ initialData, error }: { initialData: any,
         </button>
       </header>
 
-      <main style={{ padding: 32, maxWidth: 1200, margin: "0 auto" }}>
+      <main style={{ padding: "clamp(12px, 3vw, 32px)", maxWidth: 1200, margin: "0 auto", overflow: "hidden", boxSizing: "border-box" }}>
         {error && (
           <div style={{ background: "rgba(239, 68, 68, 0.1)", color: "#fca5a5", padding: "20px", borderRadius: 12, marginBottom: 32, border: "1px solid rgba(239, 68, 68, 0.2)", display: "flex", flexDirection: "column", gap: 8 }}>
             <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>Telemetry Load Failure</h3>
@@ -56,46 +56,46 @@ export default function IdpDashboard({ initialData, error }: { initialData: any,
         {!error && data && (
           <>
             {/* Telemetry Stats - 4 Columns side-by-side on all screens */}
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 32 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: "clamp(4px, 1.5vw, 12px)", marginBottom: 32, boxSizing: "border-box" }}>
               
-              <div style={{ background: "#171717", border: "1px solid #262626", borderRadius: 12, padding: "12px 16px" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-                  <div style={{ background: "rgba(168, 85, 247, 0.1)", padding: 6, borderRadius: 6, color: "#a855f7", display: "flex" }}><Users size={16} /></div>
-                  <h3 style={{ fontSize: "clamp(10px, 1.8vw, 13px)", fontWeight: 600, margin: 0, color: "#d1d5db", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>Total Users</h3>
+              <div style={{ background: "#171717", border: "1px solid #262626", borderRadius: "clamp(6px, 1vw, 12px)", padding: "clamp(6px, 1.5vw, 16px)", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 8 }}>
+                  <div style={{ background: "rgba(168, 85, 247, 0.1)", padding: 4, borderRadius: 4, color: "#a855f7", display: "flex" }}><Users size={12} /></div>
+                  <h3 style={{ fontSize: "clamp(8px, 1.8vw, 13px)", fontWeight: 600, margin: 0, color: "#d1d5db", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>Users</h3>
                 </div>
-                <div style={{ fontSize: "clamp(18px, 3vw, 28px)", fontWeight: 700, color: "#fff" }}>{data.stats.totalUsers}</div>
+                <div style={{ fontSize: "clamp(14px, 3vw, 28px)", fontWeight: 700, color: "#fff", lineHeight: 1 }}>{data.stats.totalUsers}</div>
               </div>
 
-              <div style={{ background: "#171717", border: "1px solid #262626", borderRadius: 12, padding: "12px 16px" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-                  <div style={{ background: "rgba(16, 185, 129, 0.1)", padding: 6, borderRadius: 6, color: "#10b981", display: "flex" }}><Server size={16} /></div>
-                  <h3 style={{ fontSize: "clamp(10px, 1.8vw, 13px)", fontWeight: 600, margin: 0, color: "#d1d5db", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>High Perf</h3>
+              <div style={{ background: "#171717", border: "1px solid #262626", borderRadius: "clamp(6px, 1vw, 12px)", padding: "clamp(6px, 1.5vw, 16px)", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 8 }}>
+                  <div style={{ background: "rgba(16, 185, 129, 0.1)", padding: 4, borderRadius: 4, color: "#10b981", display: "flex" }}><Server size={12} /></div>
+                  <h3 style={{ fontSize: "clamp(8px, 1.8vw, 13px)", fontWeight: 600, margin: 0, color: "#d1d5db", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>High</h3>
                 </div>
-                <div style={{ display: "flex", alignItems: "baseline", gap: 4, flexWrap: "wrap" }}>
-                  <div style={{ fontSize: "clamp(18px, 3vw, 28px)", fontWeight: 700, color: "#10b981" }}>{data.stats.performanceBreakdown.high}</div>
-                  <div style={{ fontSize: "clamp(10px, 1.5vw, 12px)", color: "#9ca3af" }}>({pct(data.stats.performanceBreakdown.high)}%)</div>
-                </div>
-              </div>
-
-              <div style={{ background: "#171717", border: "1px solid #262626", borderRadius: 12, padding: "12px 16px" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-                  <div style={{ background: "rgba(59, 130, 246, 0.1)", padding: 6, borderRadius: 6, color: "#3b82f6", display: "flex" }}><Smartphone size={16} /></div>
-                  <h3 style={{ fontSize: "clamp(10px, 1.8vw, 13px)", fontWeight: 600, margin: 0, color: "#d1d5db", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>Mid Perf</h3>
-                </div>
-                <div style={{ display: "flex", alignItems: "baseline", gap: 4, flexWrap: "wrap" }}>
-                  <div style={{ fontSize: "clamp(18px, 3vw, 28px)", fontWeight: 700, color: "#3b82f6" }}>{data.stats.performanceBreakdown.medium}</div>
-                  <div style={{ fontSize: "clamp(10px, 1.5vw, 12px)", color: "#9ca3af" }}>({pct(data.stats.performanceBreakdown.medium)}%)</div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                  <div style={{ fontSize: "clamp(14px, 3vw, 28px)", fontWeight: 700, color: "#10b981", lineHeight: 1 }}>{data.stats.performanceBreakdown.high}</div>
+                  <div style={{ fontSize: "clamp(8px, 1.5vw, 12px)", color: "#9ca3af", lineHeight: 1 }}>{pct(data.stats.performanceBreakdown.high)}%</div>
                 </div>
               </div>
 
-              <div style={{ background: "#171717", border: "1px solid #262626", borderRadius: 12, padding: "12px 16px" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-                  <div style={{ background: "rgba(239, 68, 68, 0.1)", padding: 6, borderRadius: 6, color: "#ef4444", display: "flex" }}><Activity size={16} /></div>
-                  <h3 style={{ fontSize: "clamp(10px, 1.8vw, 13px)", fontWeight: 600, margin: 0, color: "#d1d5db", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>Low Perf</h3>
+              <div style={{ background: "#171717", border: "1px solid #262626", borderRadius: "clamp(6px, 1vw, 12px)", padding: "clamp(6px, 1.5vw, 16px)", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 8 }}>
+                  <div style={{ background: "rgba(59, 130, 246, 0.1)", padding: 4, borderRadius: 4, color: "#3b82f6", display: "flex" }}><Smartphone size={12} /></div>
+                  <h3 style={{ fontSize: "clamp(8px, 1.8vw, 13px)", fontWeight: 600, margin: 0, color: "#d1d5db", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>Mid</h3>
                 </div>
-                <div style={{ display: "flex", alignItems: "baseline", gap: 4, flexWrap: "wrap" }}>
-                  <div style={{ fontSize: "clamp(18px, 3vw, 28px)", fontWeight: 700, color: "#ef4444" }}>{data.stats.performanceBreakdown.low}</div>
-                  <div style={{ fontSize: "clamp(10px, 1.5vw, 12px)", color: "#9ca3af" }}>({pct(data.stats.performanceBreakdown.low)}%)</div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                  <div style={{ fontSize: "clamp(14px, 3vw, 28px)", fontWeight: 700, color: "#3b82f6", lineHeight: 1 }}>{data.stats.performanceBreakdown.medium}</div>
+                  <div style={{ fontSize: "clamp(8px, 1.5vw, 12px)", color: "#9ca3af", lineHeight: 1 }}>{pct(data.stats.performanceBreakdown.medium)}%</div>
+                </div>
+              </div>
+
+              <div style={{ background: "#171717", border: "1px solid #262626", borderRadius: "clamp(6px, 1vw, 12px)", padding: "clamp(6px, 1.5vw, 16px)", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 8 }}>
+                  <div style={{ background: "rgba(239, 68, 68, 0.1)", padding: 4, borderRadius: 4, color: "#ef4444", display: "flex" }}><Activity size={12} /></div>
+                  <h3 style={{ fontSize: "clamp(8px, 1.8vw, 13px)", fontWeight: 600, margin: 0, color: "#d1d5db", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>Low</h3>
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                  <div style={{ fontSize: "clamp(14px, 3vw, 28px)", fontWeight: 700, color: "#ef4444", lineHeight: 1 }}>{data.stats.performanceBreakdown.low}</div>
+                  <div style={{ fontSize: "clamp(8px, 1.5vw, 12px)", color: "#9ca3af", lineHeight: 1 }}>{pct(data.stats.performanceBreakdown.low)}%</div>
                 </div>
               </div>
 
