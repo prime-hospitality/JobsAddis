@@ -490,15 +490,15 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
 
                 {/* ---- ROW 2: Employer Performance ---- */}
                 <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-6">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
                       <h2 className="text-base font-bold text-gray-800">Employer Performance</h2>
-                      <div className="flex items-center gap-2 w-full sm:w-auto">
+                      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
                         <CustomSelect
                           value={overviewEmployerId}
                           onChange={(v) => setOverviewEmployerId(v)}
                           placeholder="Select Employer"
                           options={employers.map(emp => ({ value: emp.id, label: emp.business_name }))}
-                          className="flex-1 sm:w-48"
+                          className="w-full sm:w-48"
                         />
                         <CustomSelect
                           value={overviewDuration}
@@ -509,7 +509,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                             { value: "30", label: "Last 30 days" },
                             { value: "90", label: "Last 90 days" }
                           ]}
-                          className="w-28 sm:w-40"
+                          className="w-full sm:w-40"
                         />
                       </div>
                     </div>
