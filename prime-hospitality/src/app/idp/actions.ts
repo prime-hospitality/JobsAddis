@@ -139,7 +139,10 @@ export async function getManagedUsers() {
     .order("created_at", { ascending: false });
 
   if (error) throw new Error("Failed to fetch users");
-  return users ?? [];
+  return (users ?? []).map((u: any) => ({
+    ...u,
+    profiles: Array.isArray(u.profiles) ? (u.profiles[0] || null) : (u.profiles || null)
+  }));
 }
 
 /** Reset/set a user's password override (stored in app_config as user:<id>:password) */

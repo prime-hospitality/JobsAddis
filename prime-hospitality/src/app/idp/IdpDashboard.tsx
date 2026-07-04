@@ -142,7 +142,7 @@ function UserPasswordPanel() {
 
   useEffect(() => {
     Promise.all([getManagedUsers(), getUserPasswordOverrides()])
-      .then(([u, o]) => { setUsers(u as ManagedUser[]); setOverrides(o); })
+      .then(([u, o]) => { setUsers(u as unknown as ManagedUser[]); setOverrides(o); })
       .catch(() => {})
       .finally(() => setFetching(false));
   }, []);
