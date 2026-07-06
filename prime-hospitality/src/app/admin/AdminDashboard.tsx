@@ -596,9 +596,11 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                   <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                     <label style={{ fontSize: 12, fontWeight: 500, color: "#4b5563" }}>Telegram ID</label>
                     <input 
-                      type="number" 
+                      type="text" 
+                      inputMode="numeric"
+                      pattern="[0-9]*"
                       value={newTelegramId} 
-                      onChange={e => setNewTelegramId(e.target.value)} 
+                      onChange={e => setNewTelegramId(e.target.value.replace(/[^0-9]/g, ''))} 
                       required 
                       placeholder="e.g. 123456789"
                       style={{ padding: "8px 12px", borderRadius: 6, border: "1px solid #d1d5db", fontSize: 13, width: 160 }}
