@@ -126,6 +126,13 @@ export async function deleteUser(userId: string, passwordAttempt: string) {
     .eq("user_id", userId)
     .single();
 
+  // 1b. Fetch employer to get the logo URL if this user is an employer
+  const { data: employer } = await supabase
+    .from("employers")
+    .select("logo_url")
+    .eq("user_id", userId)
+    .maybeSingle();
+
   // 2. Delete the user (this cascades to profiles, applications, employers, jobs)
   const { error } = await supabase.from("users").delete().eq("id", userId);
   if (error) return { success: false, error: "Failed to delete user" };
@@ -137,6 +144,15 @@ export async function deleteUser(userId: string, passwordAttempt: string) {
       const path = parts[1];
       // Fire and forget deletion, or await it
       await supabase.storage.from("resumes").remove([path]);
+    }
+  }
+
+  // 4. Delete logo from storage if it exists
+  if (employer?.logo_url) {
+    const parts = employer.logo_url.split("/logos/");
+    if (parts.length === 2) {
+      const path = parts[1];
+      await supabase.storage.from("logos").remove([path]);
     }
   }
 
@@ -256,8 +272,27 @@ export async function deleteEmployer(employerId: string, passwordAttempt: string
     return { success: false, error: "Incorrect admin password" };
   }
 
-  const { error } = await getSupabase().from("employers").delete().eq("id", employerId);
+  const supabase = getSupabase();
+
+  // 1. Fetch employer to get the logo URL before deletion
+  const { data: employer } = await supabase
+    .from("employers")
+    .select("logo_url")
+    .eq("id", employerId)
+    .single();
+
+  // 2. Delete the employer
+  const { error } = await supabase.from("employers").delete().eq("id", employerId);
   if (error) return { success: false, error: "Database error: Failed to delete" };
   
+  // 3. Delete logo from storage if it exists
+  if (employer?.logo_url) {
+    const parts = employer.logo_url.split("/logos/");
+    if (parts.length === 2) {
+      const path = parts[1];
+      await supabase.storage.from("logos").remove([path]);
+    }
+  }
+
   return { success: true };
 }

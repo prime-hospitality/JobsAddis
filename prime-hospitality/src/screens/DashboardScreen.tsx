@@ -88,6 +88,7 @@ export default function DashboardScreen({ onJobSelect }: { onJobSelect?: (jobId:
   const [stats, setStats] = useState<DashboardStats | null>(dashboardCache?.stats ?? null);
   const [isLoading, setIsLoading] = useState(!dashboardCache);
   const [error, setError] = useState<string | null>(null);
+  const [isDeleted, setIsDeleted] = useState(false);
   const [employerName, setEmployerName] = useState<string | null>(dashboardCache?.employerName ?? null);
   const [isApproved, setIsApproved] = useState<boolean | null>(dashboardCache?.isApproved ?? null);
   const [employerId, setEmployerId] = useState<string | null>(dashboardCache?.employerId ?? null);
@@ -223,9 +224,19 @@ export default function DashboardScreen({ onJobSelect }: { onJobSelect?: (jobId:
       setTodayPostCount(updatedCache.todayPostCount);
       // Only set logo from server if employer hasn't already uploaded a new one this session
       setLogoUrl((prev) => prev ?? updatedCache.logoUrl);
-    } catch (err) {
+    } catch (err: any) {
       console.error("Dashboard fetch failed:", err);
-      setError("Could not load your dashboard. Please try again.");
+      // 404 means the employer record was deleted by an admin
+      const is404 =
+        err?.statusCode === 404 ||
+        (typeof err?.message === "string" &&
+          (err.message.toLowerCase().includes("not found") ||
+            err.message.toLowerCase().includes("employer not found")));
+      if (is404) {
+        setIsDeleted(true);
+      } else {
+        setError("Could not load your dashboard. Please try again.");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -505,8 +516,74 @@ export default function DashboardScreen({ onJobSelect }: { onJobSelect?: (jobId:
             </div>
           )}
 
-          {/* Error */}
-          {!isLoading && error && (
+          {/* Account deleted — contact AddisJobs */}
+          {!isLoading && isDeleted && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              style={{
+                background: "var(--card)",
+                border: "1px solid var(--border)",
+                borderRadius: 18,
+                padding: 28,
+                textAlign: "center",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: 12,
+              }}
+            >
+              <div
+                style={{
+                  width: 64, height: 64, borderRadius: "50%",
+                  background: "linear-gradient(135deg, rgba(5,150,105,0.15) 0%, rgba(4,120,87,0.08) 100%)",
+                  border: "1px solid rgba(5,150,105,0.25)",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  marginBottom: 4,
+                }}
+              >
+                <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.9 13.5a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.8 2.7h3a2 2 0 0 1 2 1.72c.127.96.362 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 10a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z" />
+                </svg>
+              </div>
+              <div>
+                <p
+                  style={{
+                    fontSize: 17, fontWeight: 800,
+                    color: "var(--text-primary)",
+                    marginBottom: 8, letterSpacing: "-0.01em",
+                  }}
+                >
+                  Account No Longer Active
+                </p>
+                <p
+                  style={{
+                    fontSize: 14, color: "var(--text-secondary)",
+                    lineHeight: 1.6, marginBottom: 0,
+                  }}
+                >
+                  Your employer account is not active on AddisJobs.
+                  Please reach out to our team and we'll be happy to help.
+                </p>
+              </div>
+              <div
+                style={{
+                  marginTop: 4,
+                  padding: "12px 20px",
+                  borderRadius: 12,
+                  background: "var(--brand-subtle, rgba(5,150,105,0.08))",
+                  border: "1px solid rgba(5,150,105,0.2)",
+                  width: "100%",
+                }}
+              >
+                <p style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 4 }}>Contact us on Telegram</p>
+                <p style={{ fontSize: 15, fontWeight: 700, color: "var(--brand, #059669)" }}>@AddisJobs</p>
+              </div>
+            </motion.div>
+          )}
+
+          {/* Generic Error */}
+          {!isLoading && !isDeleted && error && (
             <motion.div
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
