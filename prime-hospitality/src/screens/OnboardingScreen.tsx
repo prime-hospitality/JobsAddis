@@ -25,13 +25,15 @@ export default function OnboardingScreen({ onComplete }: { onComplete: () => voi
   const [config, setConfig] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    supabase.from("onboarding_config").select("*").then(({ data }) => {
+    const loadConfig = async () => {
+      const { data } = await supabase.from("onboarding_config").select("*");
       if (data) {
         const c: Record<string, string> = {};
         data.forEach((d: any) => c[d.key] = d.value);
         setConfig(c);
       }
-    });
+    };
+    loadConfig();
   }, []);
 
   const goNext = (targetStep: OnboardingStep) => {

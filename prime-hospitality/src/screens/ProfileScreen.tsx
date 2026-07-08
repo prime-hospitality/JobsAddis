@@ -92,13 +92,18 @@ export default function ProfileScreen() {
 
   useEffect(() => {
     if (settingsView === "faq") {
-      setFaqLoading(true);
-      supabase.from("faqs").select("question, answer").eq("is_active", true).order("display_order", { ascending: true })
-        .then(({ data }) => {
+      const loadFaqs = async () => {
+        setFaqLoading(true);
+        try {
+          const { data } = await supabase.from("faqs").select("question, answer").eq("is_active", true).order("display_order", { ascending: true });
           if (data) setFaqData(data);
+        } catch {
+          // silently fail
+        } finally {
           setFaqLoading(false);
-        })
-        .catch(() => setFaqLoading(false));
+        }
+      };
+      loadFaqs();
     }
   }, [settingsView]);
 

@@ -101,8 +101,11 @@ export default function DashboardScreen({ onJobSelect }: { onJobSelect?: (jobId:
   const [templates, setTemplates] = useState<any[]>([]);
 
   useEffect(() => {
-    supabase.from("vacancy_templates").select("*").eq("is_active", true)
-      .then(({ data }) => { if (data) setTemplates(data); });
+    const loadTemplates = async () => {
+      const { data } = await supabase.from("vacancy_templates").select("*").eq("is_active", true);
+      if (data) setTemplates(data);
+    };
+    loadTemplates();
   }, []);
   const [postForm, setPostForm] = useState(POST_FORM_DEFAULT);
   const [postLoading, setPostLoading] = useState(false);
