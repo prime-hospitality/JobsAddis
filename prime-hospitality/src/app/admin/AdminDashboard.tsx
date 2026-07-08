@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { approveEmployer, rejectEmployer, toggleUserBan, toggleJobStatus, logoutAdmin, addEmployer, deleteEmployer, updateEmployer, adminUpdateEmployerLogo, deleteUser, approveSpecialRequest } from "./actions";
 import { Trash2, Pencil, Image as ImageIcon, Menu, X, LayoutDashboard, Briefcase, FileText, Users, LogOut, Settings, CreditCard, CheckCircle, BookOpen } from "lucide-react";
 import { supabase } from "@/lib/supabase";
@@ -63,7 +63,16 @@ type Tab = "overview" | "employers" | "jobs" | "users" | "content" | "monetizati
 
 export default function AdminDashboard({ initialData }: { initialData: any }) {
   const [data, setData] = useState(initialData);
-  const [activeTab, setActiveTab] = useState<Tab>("overview");
+  const VALID_TABS: Tab[] = ["overview", "employers", "jobs", "users", "content", "monetization", "settings"];
+  const getInitialTab = (): Tab => {
+    if (typeof window !== "undefined") {
+      const hash = window.location.hash.replace("#", "") as Tab;
+      if (VALID_TABS.includes(hash)) return hash;
+    }
+    return "overview";
+  };
+
+  const [activeTab, setActiveTab] = useState<Tab>(getInitialTab);
   const [selectedEmployerId, setSelectedEmployerId] = useState<string | null>(null);
   const [loading, setLoading] = useState<string | null>(null);
 
@@ -96,6 +105,11 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [overviewEmployerId, setOverviewEmployerId] = useState<string>("");
   const [overviewDuration, setOverviewDuration] = useState<"7" | "30" | "90">("30");
+
+  // Sync active tab to URL hash so refresh restores the same tab
+  useEffect(() => {
+    window.location.hash = activeTab;
+  }, [activeTab]);
 
   const navItems = [
     { id: "overview", label: "Admin Overview", icon: LayoutDashboard },
