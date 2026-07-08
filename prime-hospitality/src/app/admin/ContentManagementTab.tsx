@@ -238,41 +238,17 @@ export default function ContentManagementTab() {
                       <div className="space-y-2 mb-4 max-h-80 overflow-y-auto pr-2">
                         {parsedArray.map((item, idx) => (
                           <div key={idx} className="flex gap-2 items-center bg-gray-50 p-2 rounded-lg border border-gray-100">
-                            {isCategories ? (
-                              <>
-                                <input 
-                                  value={item.emoji} 
-                                  onChange={(e) => {
-                                    const newArr = [...parsedArray];
-                                    newArr[idx].emoji = e.target.value;
-                                    setConfigState(prev => ({ ...prev, [cfg.key]: JSON.stringify(newArr) }));
-                                  }}
-                                  className="w-12 px-2 py-1.5 bg-white border border-gray-200 rounded text-center" 
-                                  placeholder="Emoji"
-                                />
-                                <input 
-                                  value={item.label} 
-                                  onChange={(e) => {
-                                    const newArr = [...parsedArray];
-                                    newArr[idx].label = e.target.value;
-                                    setConfigState(prev => ({ ...prev, [cfg.key]: JSON.stringify(newArr) }));
-                                  }}
-                                  className="flex-1 px-3 py-1.5 bg-white border border-gray-200 rounded text-sm" 
-                                  placeholder="Category Label"
-                                />
-                              </>
-                            ) : (
                               <input 
-                                value={item} 
+                                value={isCategories ? item.label : item} 
                                 onChange={(e) => {
                                   const newArr = [...parsedArray];
-                                  newArr[idx] = e.target.value;
+                                  if (isCategories) { newArr[idx] = { ...newArr[idx], label: e.target.value }; }
+                                  else { newArr[idx] = e.target.value; }
                                   setConfigState(prev => ({ ...prev, [cfg.key]: JSON.stringify(newArr) }));
                                 }}
                                 className="flex-1 px-3 py-1.5 bg-white border border-gray-200 rounded text-sm" 
-                                placeholder="Experience Level"
+                                placeholder={isCategories ? "Category Label" : "Experience Level"}
                               />
-                            )}
                             <button 
                               onClick={() => {
                                 const newArr = parsedArray.filter((_, i) => i !== idx);
