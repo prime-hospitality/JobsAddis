@@ -87,6 +87,21 @@ export default function ProfileScreen() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [settingsView, setSettingsView] = useState<null | 'roles_overview' | 'experience' | 'location' | 'faq'>(null);
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
+  const [faqData, setFaqData] = useState<any[]>([]);
+  const [faqLoading, setFaqLoading] = useState(false);
+
+  useEffect(() => {
+    if (settingsView === "faq") {
+      setFaqLoading(true);
+      supabase.from("faqs").select("question, answer").eq("is_active", true).order("display_order", { ascending: true })
+        .then(({ data }) => {
+          if (data) setFaqData(data);
+          setFaqLoading(false);
+        })
+        .catch(() => setFaqLoading(false));
+    }
+  }, [settingsView]);
+
   // Editable copies while settings panel is open
   const [editRoles, setEditRoles] = useState<string[]>([]);
   const [editExperience, setEditExperience] = useState<Record<string, string>>({});
@@ -1605,16 +1620,15 @@ export default function ProfileScreen() {
                 {settingsView === "faq" && (
                   <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
                     <div style={{ flex: 1, overflowY: "auto", paddingBottom: "env(safe-area-inset-bottom, 20px)" }}>
-                      {[
-                        { q: "What is Jobs Addis?", a: "Jobs Addis by Prime Hospitality is a specialized job platform connecting hospitality professionals with leading hotels, restaurants, and service businesses across Addis Ababa." },
-                        { q: "How do I apply for a job?", a: "Browse available jobs on the Home or Search tab. Tap any job card to view the full details, then press the Apply button. Your Telegram profile will be shared with the employer." },
-                        { q: "Is my personal information safe?", a: "Yes. We only share information you explicitly provide during onboarding with the employers you apply to. We do not sell your data to any third parties." },
-                        { q: "How long does it take to hear back from an employer?", a: "Response times vary by employer. Most active listings receive candidate reviews within 2–5 business days. You will be notified directly through this app if there is an update on your application." },
-                        { q: "Can I apply to more than one job at a time?", a: "Absolutely. There is no limit on the number of jobs you can apply for. We encourage you to apply to any role that matches your experience and interests." },
-                        { q: "How do I update my profile?", a: "Tap the Profile tab at the bottom of the screen. Then tap the Settings gear icon. From there you can edit your roles, experience level, and location." },
-                        { q: "What if a job listing looks suspicious or fraudulent?", a: "Please report it immediately using the flag icon on the job detail page, or contact us directly via the support channels below. We take job quality very seriously and review all reports within 24 hours." },
-                        { q: "I'm an employer. How do I post a job?", a: "Employer accounts are managed through our Admin Dashboard. Please reach out to us via Telegram or email to get your business registered on the platform." },
-                      ].map((item, i) => {
+                      {faqLoading ? (
+                        <div style={{ padding: 20, textAlign: "center", color: "var(--text-muted)" }}>
+                          Loading FAQs...
+                        </div>
+                      ) : faqData.length === 0 ? (
+                        <div style={{ padding: 20, textAlign: "center", color: "var(--text-muted)" }}>
+                          No FAQs available right now.
+                        </div>
+                      ) : faqData.map((item, i) => {
                         const isOpen = openFaqIndex === i;
                         return (
                           <div key={i} style={{ background: "var(--surface-elevated)", border: "1px solid var(--border)", borderRadius: 14, marginBottom: 10, overflow: "hidden" }}>
@@ -1622,7 +1636,7 @@ export default function ProfileScreen() {
                               onClick={() => setOpenFaqIndex(isOpen ? null : i)}
                               style={{ width: "100%", padding: "16px", display: "flex", alignItems: "center", justifyContent: "space-between", background: "transparent", border: "none", cursor: "pointer", gap: 12 }}
                             >
-                              <span style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)", textAlign: "left", lineHeight: 1.4 }}>{item.q}</span>
+                              <span style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)", textAlign: "left", lineHeight: 1.4 }}>{item.question}</span>
                               <motion.div animate={{ rotate: isOpen ? 180 : 0 }} transition={{ duration: 0.2 }} style={{ flexShrink: 0 }}>
                                 <ChevronDown size={16} color="var(--text-muted)" />
                               </motion.div>
@@ -1630,7 +1644,7 @@ export default function ProfileScreen() {
                             <AnimatePresence initial={false}>
                               {isOpen && (
                                 <motion.div key="answer" initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.22 }} style={{ overflow: "hidden" }}>
-                                  <p style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.7, padding: "0 16px 16px", margin: 0 }}>{item.a}</p>
+                                  <p style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.7, padding: "0 16px 16px", margin: 0 }}>{item.answer}</p>
                                 </motion.div>
                               )}
                             </AnimatePresence>

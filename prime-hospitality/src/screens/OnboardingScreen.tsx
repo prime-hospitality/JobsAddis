@@ -7,12 +7,14 @@ import { useOnboarding, OnboardingStep } from "@/hooks/useOnboarding";
 import { JobCategory } from "@/data/jobs";
 import { LOCATIONS } from "@/data/locations";
 import { useTelegram } from "@/hooks/useTelegram";
+import { supabase } from "@/lib/supabase";
 
 // --- Types ---
 interface StepProps {
   state: ReturnType<typeof useOnboarding>["state"];
   updateState: ReturnType<typeof useOnboarding>["updateState"];
   onNext: () => void;
+  config?: Record<string, string>;
 }
 
 // --- Main Component ---
@@ -20,6 +22,17 @@ export default function OnboardingScreen({ onComplete }: { onComplete: () => voi
   const { state, updateState, setStep, submitProfile } = useOnboarding();
   const shouldReduceMotion = useReducedMotion();
   const [direction, setDirection] = useState(1); // 1 for forward, -1 for backward
+  const [config, setConfig] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    supabase.from("onboarding_config").select("*").then(({ data }) => {
+      if (data) {
+        const c: Record<string, string> = {};
+        data.forEach((d: any) => c[d.key] = d.value);
+        setConfig(c);
+      }
+    });
+  }, []);
 
   const goNext = (targetStep: OnboardingStep) => {
     setDirection(1);
@@ -97,12 +110,12 @@ export default function OnboardingScreen({ onComplete }: { onComplete: () => voi
               transition={{ x: { type: "spring", stiffness: 300, damping: 30 }, opacity: { duration: 0.2 } }}
               style={{ position: "absolute", inset: 0, width: "100%", height: "100%", display: "flex", flexDirection: "column", overflowY: "auto", paddingBottom: 40 }}
             >
-              {state.step === 1 && <Step1_JobField state={state} updateState={updateState} onNext={() => goNext(2)} />}
+              {state.step === 1 && <Step1_JobField state={state} updateState={updateState} onNext={() => goNext(2)} config={config} />}
               {state.step === 2 && <Step2_Contact state={state} updateState={updateState} onNext={() => goNext(3)} />}
               {state.step === 3 && <Step3_Experience state={state} updateState={updateState} onNext={() => goNext(4)} />}
               {state.step === 4 && <Step4_Personal state={state} updateState={updateState} onNext={() => goNext(5)} />}
               {state.step === 5 && <Step5_CV state={state} updateState={updateState} onNext={handleFinalSubmit} />}
-              {state.step === 6 && <Step6_Success state={state} onNext={onComplete} />}
+              {state.step === 6 && <Step6_Success state={state} onNext={onComplete} config={config} />}
             </motion.div>
           </AnimatePresence>
         </div>
@@ -144,7 +157,7 @@ const JOB_CATEGORIES_DATA = [
   { label: "Other", emoji: "✨" },
 ];
 
-function Step1_JobField({ state, updateState, onNext }: StepProps) {
+function Step1_JobField({ state, updateState, onNext, config }: StepProps) {
   const [shakeId, setShakeId] = React.useState<string | null>(null);
   const customCategory = state.selectedCategories.find(
     (c) => c === "Other" || !JOB_CATEGORIES_DATA.some((preset) => preset.label === c)
@@ -214,9 +227,9 @@ function Step1_JobField({ state, updateState, onNext }: StepProps) {
   return (
     <div style={{ padding: "90px 16px 20px", flex: 1, display: "flex", flexDirection: "column" }}>
       <h1 style={{ fontSize: 24, fontWeight: 800, color: "var(--text-primary)", marginBottom: 6, lineHeight: 1.2 }}>
-        What role are you looking for?
+        {config?.welcome_title || "What role are you looking for?"}
       </h1>
-      <p style={{ fontSize: 14, color: "var(--text-secondary)", marginBottom: 20 }}>Select up to 3 categories.</p>
+      <p style={{ fontSize: 14, color: "var(--text-secondary)", marginBottom: 20 }}>{config?.welcome_subtitle || "Select up to 3 categories."}</p>
 
       <div style={{ display: "flex", flexWrap: "wrap", gap: "4px 4px", alignContent: "flex-start" }}>
         {JOB_CATEGORIES_DATA.map((cat) => {
@@ -1055,7 +1068,7 @@ function Step5_CV({ state, updateState, onNext }: StepProps) {
 }
 
 // --- Step 6: Success Screen ---
-function Step6_Success({ state, onNext }: { state: ReturnType<typeof useOnboarding>["state"], onNext: () => void }) {
+function Step6_Success({ state, onNext, config }: { state: ReturnType<typeof useOnboarding>["state"], onNext: () => void, config?: Record<string, string> }) {
   return (
     <div style={{ padding: "40px 20px", flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center" }}>
       <motion.div
@@ -1066,11 +1079,11 @@ function Step6_Success({ state, onNext }: { state: ReturnType<typeof useOnboardi
       </motion.div>
       
       <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} style={{ fontSize: 32, fontWeight: 800, color: "var(--text-primary)", marginBottom: 12, lineHeight: 1.2 }}>
-        Welcome {state.fullName.split(" ")[0]}!
+        {config?.step6_headline ? config.step6_headline.replace("{name}", state.fullName.split(" ")[0]) : `Welcome ${state.fullName.split(" ")[0]}!`}
       </motion.h1>
       
       <motion.p initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} style={{ fontSize: 16, color: "var(--text-secondary)", lineHeight: 1.6, maxWidth: 300, marginBottom: 48 }}>
-        Welcome to Jobs Addis by Prime Hospitality. Your profile is ready. Let's find you the perfect job.
+        {config?.step6_body || "Welcome to Jobs Addis by Prime Hospitality. Your profile is ready. Let's find you the perfect job."}
       </motion.p>
 
       <motion.button initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="btn-primary" onClick={onNext} style={{ width: "100%" }}>

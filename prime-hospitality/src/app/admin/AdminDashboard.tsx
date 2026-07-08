@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import { approveEmployer, rejectEmployer, toggleUserBan, toggleJobStatus, logoutAdmin, addEmployer, deleteEmployer, updateEmployer, adminUpdateEmployerLogo, deleteUser, approveSpecialRequest } from "./actions";
-import { Trash2, Pencil, Image as ImageIcon, Menu, X, LayoutDashboard, Briefcase, FileText, Users, LogOut, Settings, CreditCard, CheckCircle } from "lucide-react";
+import { Trash2, Pencil, Image as ImageIcon, Menu, X, LayoutDashboard, Briefcase, FileText, Users, LogOut, Settings, CreditCard, CheckCircle, BookOpen } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import ContentManagementTab from "./ContentManagementTab";
 
 
 function CustomInput(props: any) {
@@ -58,7 +59,7 @@ function CustomSelect({ value, onChange, options, placeholder, className = "" }:
   );
 }
 
-type Tab = "overview" | "employers" | "jobs" | "users" | "monetization" | "settings";
+type Tab = "overview" | "employers" | "jobs" | "users" | "content" | "monetization" | "settings";
 
 export default function AdminDashboard({ initialData }: { initialData: any }) {
   const [data, setData] = useState(initialData);
@@ -101,6 +102,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
     { id: "employers", label: "Employers & Companies", icon: Briefcase },
     { id: "users", label: "Job Seeker Profiles", icon: Users },
     { id: "jobs", label: "Job Posting Moderation", icon: FileText },
+    { id: "content", label: "Content Management", icon: BookOpen },
     { id: "monetization", label: "Monetization & Plans", icon: CreditCard },
     { id: "settings", label: "System Settings", icon: Settings },
   ] as const;
@@ -370,7 +372,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
               marginRight: 10,
             }}
           >
-            <img src="/pbg_logo_light.png" alt="Prime Hospitality Logo" style={{ width: "100%", height: "100%", objectFit: "contain", padding: "4px" }} />
+            <img src="/addis_jobs_logo_mark_only.svg" alt="Addis Jobs Logo" style={{ width: "100%", height: "100%", objectFit: "contain", padding: "4px" }} />
           </div>
           <span className="text-xl font-bold text-gray-900">Addis Jobs</span>
           <button onClick={() => setMobileMenuOpen(false)} className="ml-auto md:hidden text-gray-500 hover:text-gray-700">
@@ -1010,6 +1012,10 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
               <div style={{ padding: 40, textAlign: "center", color: "#6b7280" }}>
                 No {activeTab} found.
               </div>
+            )}
+
+            {activeTab === "content" && (
+              <ContentManagementTab />
             )}
             
             {["monetization", "settings"].includes(activeTab) && (

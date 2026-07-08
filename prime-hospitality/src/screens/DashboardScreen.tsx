@@ -98,6 +98,12 @@ export default function DashboardScreen({ onJobSelect }: { onJobSelect?: (jobId:
 
   // ── Post-job modal state ──
   const [showPostModal, setShowPostModal] = useState(false);
+  const [templates, setTemplates] = useState<any[]>([]);
+
+  useEffect(() => {
+    supabase.from("vacancy_templates").select("*").eq("is_active", true)
+      .then(({ data }) => { if (data) setTemplates(data); });
+  }, []);
   const [postForm, setPostForm] = useState(POST_FORM_DEFAULT);
   const [postLoading, setPostLoading] = useState(false);
   const [postError, setPostError] = useState<string | null>(null);
@@ -1019,6 +1025,36 @@ export default function DashboardScreen({ onJobSelect }: { onJobSelect?: (jobId:
                 </motion.div>
               ) : (
                 <div style={{ padding: "20px 20px 8px", display: "flex", flexDirection: "column", gap: 16 }}>
+
+                  {/* Load Template */}
+                  {templates.length > 0 && (
+                    <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px", background: "var(--brand-subtle)", borderRadius: 12, border: "1px dashed var(--brand)" }}>
+                      <FileText size={20} color="var(--brand)" />
+                      <div style={{ flex: 1 }}>
+                        <p style={{ fontSize: 13, fontWeight: 700, color: "var(--brand)", marginBottom: 2 }}>Load a Template</p>
+                        <select
+                          className="input-base"
+                          style={{ padding: "6px 10px", fontSize: 13, background: "#fff", borderColor: "rgba(0,0,0,0.1)" }}
+                          onChange={(e) => {
+                            const t = templates.find(tpl => tpl.id === e.target.value);
+                            if (t) {
+                              setPostForm(prev => ({
+                                ...prev,
+                                title: t.title,
+                                category: t.job_category,
+                                description: t.description_template + (t.requirements_template ? "\n\nRequirements:\n" + t.requirements_template : "")
+                              }));
+                            }
+                          }}
+                        >
+                          <option value="">Select a template...</option>
+                          {templates.map(t => (
+                            <option key={t.id} value={t.id}>{t.title} ({t.job_category})</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                  )}
 
                   {/* Job Title */}
                   <PostField label="Job Title *">

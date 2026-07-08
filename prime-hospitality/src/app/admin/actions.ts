@@ -393,3 +393,90 @@ export async function approveSpecialRequest(userId: string, passwordAttempt: str
 
   return { success: true };
 }
+
+// ── Content Management ────────────────────────────────────────────────────────
+
+export async function getContentData() {
+  const auth = (await cookies()).get("admin_session");
+  if (!auth?.value) throw new Error("Unauthorized");
+
+  const supabase = getSupabase();
+  const [faqs, templates, config] = await Promise.all([
+    supabase.from("faqs").select("*").order("display_order", { ascending: true }),
+    supabase.from("vacancy_templates").select("*").order("created_at", { ascending: false }),
+    supabase.from("onboarding_config").select("*")
+  ]);
+
+  return {
+    faqs: faqs.data || [],
+    templates: templates.data || [],
+    onboardingConfig: config.data || []
+  };
+}
+
+export async function upsertFaq(id: string | null, question: string, answer: string, display_order: number) {
+  const auth = (await cookies()).get("admin_session");
+  if (!auth?.value) throw new Error("Unauthorized");
+
+  const { error } = await getSupabase().from("faqs").upsert({
+    ...(id ? { id } : {}),
+    question,
+    answer,
+    display_order,
+    updated_at: new Date().toISOString()
+  });
+
+  if (error) throw error;
+  return { success: true };
+}
+
+export async function deleteFaq(id: string) {
+  const auth = (await cookies()).get("admin_session");
+  if (!auth?.value) throw new Error("Unauthorized");
+
+  const { error } = await getSupabase().from("faqs").delete().eq("id", id);
+  if (error) throw error;
+  return { success: true };
+}
+
+export async function upsertVacancyTemplate(id: string | null, title: string, job_category: string, description_template: string, requirements_template: string) {
+  const auth = (await cookies()).get("admin_session");
+  if (!auth?.value) throw new Error("Unauthorized");
+
+  const { error } = await getSupabase().from("vacancy_templates").upsert({
+    ...(id ? { id } : {}),
+    title,
+    job_category,
+    description_template,
+    requirements_template,
+    updated_at: new Date().toISOString()
+  });
+
+  if (error) throw error;
+  return { success: true };
+}
+
+export async function deleteVacancyTemplate(id: string) {
+  const auth = (await cookies()).get("admin_session");
+  if (!auth?.value) throw new Error("Unauthorized");
+
+  const { error } = await getSupabase().from("vacancy_templates").delete().eq("id", id);
+  if (error) throw error;
+  return { success: true };
+}
+
+export async function updateOnboardingConfig(key: string, label: string, value: string) {
+  const auth = (await cookies()).get("admin_session");
+  if (!auth?.value) throw new Error("Unauthorized");
+
+  const { error } = await getSupabase().from("onboarding_config").upsert({
+    key,
+    label,
+    value,
+    updated_at: new Date().toISOString()
+  });
+
+  if (error) throw error;
+  return { success: true };
+}
+
