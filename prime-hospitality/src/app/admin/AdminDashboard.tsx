@@ -507,7 +507,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                   <h2 className="text-base font-bold text-gray-800 mb-5">Overall Stats</h2>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     {[
-                      { label: "Total Employers", value: employers.length, icon: "/icons/building.svg", color: "#6366f1" },
+                      { label: "Total Employers", value: employers.length, icon: "/icons/building.png", color: "#6366f1" },
                       { label: "Active Job Seekers", value: users.length, icon: "/icons/users.svg", color: "#0284c7" },
                       { label: "Pending Moderation", value: jobs.filter(j => j.status === "pending").length, icon: "/icons/pending.svg", color: "#f59e0b" },
                       { label: "Total Job Posts", value: jobs.length, icon: "/icons/jobs.svg", color: "#10b981" },
