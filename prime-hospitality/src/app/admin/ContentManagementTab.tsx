@@ -231,7 +231,7 @@ export default function ContentManagementTab() {
                       <div className="flex justify-between items-center mb-4">
                         <label className="block text-sm font-bold text-gray-900">{cfg.label}</label>
                         <button onClick={() => handleSaveConfig(cfg.key, cfg.label)} className="bg-gray-900 text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-gray-800 transition-colors flex items-center gap-2">
-                          <Save size={16} /> Save Options
+                          Save Options
                         </button>
                       </div>
                       
@@ -278,9 +278,9 @@ export default function ContentManagementTab() {
                                 const newArr = parsedArray.filter((_, i) => i !== idx);
                                 setConfigState(prev => ({ ...prev, [cfg.key]: JSON.stringify(newArr) }));
                               }}
-                              className="p-1.5 text-gray-400 hover:text-red-600 rounded bg-white border border-gray-200"
+                              className="p-1.5 px-3 text-sm font-medium text-red-600 hover:bg-red-50 rounded bg-white border border-gray-200"
                             >
-                              <Trash2 size={14} />
+                              Remove
                             </button>
                           </div>
                         ))}
@@ -292,9 +292,9 @@ export default function ContentManagementTab() {
                           const newArr = [...parsedArray, newItem];
                           setConfigState(prev => ({ ...prev, [cfg.key]: JSON.stringify(newArr) }));
                         }}
-                        className="w-full py-2 bg-gray-50 border border-dashed border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-100 flex items-center justify-center gap-1"
+                        className="w-full py-2 bg-gray-50 border border-dashed border-gray-300 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 flex items-center justify-center gap-1"
                       >
-                        <Plus size={16} /> Add Option
+                        Add Option
                       </button>
                     </div>
                   );
@@ -313,7 +313,7 @@ export default function ContentManagementTab() {
                         onClick={() => handleSaveConfig(cfg.key, cfg.label)}
                         className="shrink-0 bg-gray-900 text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-gray-800 self-end flex items-center gap-2 h-10"
                       >
-                        <Save size={16} /> Save
+                        Save
                       </button>
                     </div>
                   </div>
