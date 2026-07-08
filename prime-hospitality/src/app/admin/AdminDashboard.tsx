@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { approveEmployer, rejectEmployer, toggleUserBan, toggleJobStatus, logoutAdmin, addEmployer, deleteEmployer, updateEmployer, adminUpdateEmployerLogo, deleteUser } from "./actions";
-import { Trash2, Pencil, Image as ImageIcon, Menu, X, LayoutDashboard, Briefcase, FileText, Users, LogOut, Settings, CreditCard } from "lucide-react";
+import { approveEmployer, rejectEmployer, toggleUserBan, toggleJobStatus, logoutAdmin, addEmployer, deleteEmployer, updateEmployer, adminUpdateEmployerLogo, deleteUser, approveSpecialRequest } from "./actions";
+import { Trash2, Pencil, Image as ImageIcon, Menu, X, LayoutDashboard, Briefcase, FileText, Users, LogOut, Settings, CreditCard, CheckCircle } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
 
@@ -79,6 +79,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
 
   const [deleteUserModal, setDeleteUserModal] = useState<{ id: string; name: string } | null>(null);
   const [banUserModal, setBanUserModal] = useState<{ id: string; name: string; is_banned: boolean } | null>(null);
+  const [approveReqModal, setApproveReqModal] = useState<string | null>(null);
   const [userActionPassword, setUserActionPassword] = useState("");
   const [userActionLoading, setUserActionLoading] = useState(false);
   const [userActionError, setUserActionError] = useState("");
@@ -276,23 +277,55 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
   const handleDeleteUser = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!deleteUserModal) return;
+
     setUserActionLoading(true);
     setUserActionError("");
+
     try {
       const res = await deleteUser(deleteUserModal.id, userActionPassword);
-      if (!res.success) {
+      if (res.success) {
+        setData((prev: any) => ({
+          ...prev,
+          users: prev.users.filter((u: any) => u.id !== deleteUserModal.id)
+        }));
+        setDeleteUserModal(null);
+        setUserActionPassword("");
+      } else {
         setUserActionError(res.error || "Failed to delete user");
-        return;
       }
-      setData((prev: any) => ({
-        ...prev,
-        users: prev.users.filter((u: any) => u.id !== deleteUserModal.id),
-        employers: prev.employers.filter((e: any) => e.user_id !== deleteUserModal.id),
-      }));
-      setDeleteUserModal(null);
-      setUserActionPassword("");
     } catch (err: any) {
-      setUserActionError(err.message || "Failed to delete user");
+      setUserActionError(err.message || "An unexpected error occurred");
+    } finally {
+      setUserActionLoading(false);
+    }
+  };
+
+  const handleApproveSpecialRequest = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!approveReqModal) return;
+
+    setUserActionLoading(true);
+    setUserActionError("");
+
+    try {
+      const res = await approveSpecialRequest(approveReqModal, userActionPassword);
+      if (res.success) {
+        setData((prev: any) => {
+          const updatedRequests = prev.specialRequests?.filter((r: any) => r.userId !== approveReqModal) || [];
+          const updatedUsers = prev.users.map((u: any) => u.id === approveReqModal ? { ...u, role: "job_seeker" } : u);
+          return {
+            ...prev,
+            specialRequests: updatedRequests,
+            users: updatedUsers
+          };
+        });
+        setApproveReqModal(null);
+        setUserActionPassword("");
+      } else {
+        setUserActionError(res.error || "Failed to approve request");
+      }
+    } catch (err: any) {
+      setUserActionError(err.message || "An unexpected error occurred");
     } finally {
       setUserActionLoading(false);
     }
@@ -648,6 +681,38 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                   </button>
                 </form>
                 {formError && <p style={{ color: "#dc2626", margin: "8px 0 0 0", fontSize: 12 }}>{formError}</p>}
+              </div>
+            )}
+            {activeTab === "users" && data.specialRequests && data.specialRequests.length > 0 && (
+              <div style={{ padding: "16px 24px", background: "#fffbeb", borderBottom: "1px solid #fde68a" }}>
+                <h3 style={{ margin: "0 0 12px 0", fontSize: 15, fontWeight: 700, color: "#92400e", display: "flex", alignItems: "center", gap: 8 }}>
+                  <Users size={18} />
+                  Special Requests ({data.specialRequests.length})
+                </h3>
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  {data.specialRequests.map((req: any) => {
+                    // Try to find the user in data.users to get their name
+                    const userObj = data.users.find((u: any) => u.id === req.userId);
+                    const name = userObj?.profiles?.full_name || "Unknown Name";
+                    return (
+                      <div key={req.userId} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "#fff", padding: "12px 16px", borderRadius: 8, border: "1px solid #fde68a" }}>
+                        <div>
+                          <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: "#374151" }}>{name} (Telegram: {req.telegramId})</p>
+                          <p style={{ margin: "4px 0 0 0", fontSize: 12, color: "#b45309" }}>Ex-employer wants now to become a job seeker.</p>
+                        </div>
+                        <button
+                          onClick={() => setApproveReqModal(req.userId)}
+                          style={{
+                            background: "#059669", color: "#fff", border: "none", padding: "6px 12px", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 4
+                          }}
+                        >
+                          <CheckCircle size={14} />
+                          Approve
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             )}
             {/* Desktop Table View */}
@@ -1014,6 +1079,35 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                 >
                   <Trash2 size={16} />
                   {deleteLoading ? "Deleting..." : "Permanently Delete"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* APPROVE SPECIAL REQUEST MODAL */}
+      {approveReqModal && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+          <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.5)" }} onClick={() => { setApproveReqModal(null); setUserActionError(""); setUserActionPassword(""); }} />
+          <div style={{ position: "relative", width: "100%", maxWidth: 400, background: "#fff", borderRadius: 16, padding: 24, boxShadow: "0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04)" }}>
+            <h3 style={{ margin: "0 0 8px 0", fontSize: 18, fontWeight: 700, color: "#111827" }}>Approve Request</h3>
+            <p style={{ margin: "0 0 20px 0", fontSize: 14, color: "#4b5563" }}>
+              Convert this ex-employer to a Job Seeker? Please enter the admin password to confirm.
+            </p>
+
+            <form onSubmit={handleApproveSpecialRequest} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              <div>
+                <label style={{ display: "block", marginBottom: 6, fontSize: 13, fontWeight: 500, color: "#374151" }}>Admin Password</label>
+                <input type="password" required value={userActionPassword} onChange={(e: any) => setUserActionPassword(e.target.value)} placeholder="••••••••" style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid #d1d5db", fontSize: 14, boxSizing: "border-box" }} />
+              </div>
+              {userActionError && <p style={{ margin: 0, fontSize: 13, color: "#ef4444" }}>{userActionError}</p>}
+              <div style={{ display: "flex", gap: 12, marginTop: 4 }}>
+                <button type="button" onClick={() => { setApproveReqModal(null); setUserActionError(""); setUserActionPassword(""); }} style={{ flex: 1, padding: "10px", background: "#f3f4f6", border: "none", borderRadius: 10, color: "#374151", fontSize: 14, fontWeight: 600, cursor: "pointer" }}>
+                  Cancel
+                </button>
+                <button type="submit" disabled={userActionLoading} style={{ flex: 1, padding: "10px", background: "#059669", border: "none", borderRadius: 10, color: "#fff", fontSize: 14, fontWeight: 600, cursor: userActionLoading ? "wait" : "pointer", opacity: userActionLoading ? 0.7 : 1 }}>
+                  {userActionLoading ? "Approving..." : "Approve"}
                 </button>
               </div>
             </form>

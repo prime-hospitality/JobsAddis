@@ -59,11 +59,19 @@ export async function getAdminData() {
   const { data: uCfg } = await supabase.from("app_config").select("value").eq("key", "admin_username").single();
   const adminUsername = uCfg?.value?.trim() || "admin";
 
+  // Fetch special requests from app_config
+  const { data: srCfg } = await supabase.from("app_config").select("value").eq("key", "special_requests").maybeSingle();
+  let specialRequests = [];
+  try {
+    if (srCfg?.value) specialRequests = JSON.parse(srCfg.value);
+  } catch (e) {}
+
   return {
     employers: employers ?? [],
     jobs: jobs ?? [],
     users: users ?? [],
-    adminUsername
+    adminUsername,
+    specialRequests
   };
 }
 
@@ -293,6 +301,77 @@ export async function deleteEmployer(employerId: string, passwordAttempt: string
       await supabase.storage.from("logos").remove([path]);
     }
   }
+
+  return { success: true };
+}
+
+// ── Special Requests ────────────────────────────────────────────────────────
+
+export async function submitSpecialRequest(telegramId: number) {
+  const supabase = getSupabase();
+  
+  // Verify user exists
+  const { data: user } = await supabase.from("users").select("id, role").eq("telegram_id", telegramId).single();
+  if (!user) return { success: false, error: "User not found" };
+
+  // Fetch current requests
+  const { data: srCfg } = await supabase.from("app_config").select("value").eq("key", "special_requests").maybeSingle();
+  let specialRequests: any[] = [];
+  try {
+    if (srCfg?.value) specialRequests = JSON.parse(srCfg.value);
+  } catch (e) {}
+
+  // Check if already requested
+  if (specialRequests.some((r) => r.telegramId === telegramId)) {
+    return { success: true }; // Already requested, idempotent
+  }
+
+  // Append new request
+  specialRequests.push({
+    userId: user.id,
+    telegramId,
+    type: "ex_employer_to_job_seeker",
+    requestedAt: new Date().toISOString()
+  });
+
+  await supabase.from("app_config").upsert({
+    key: "special_requests",
+    value: JSON.stringify(specialRequests),
+    updated_at: new Date().toISOString()
+  });
+
+  return { success: true };
+}
+
+export async function approveSpecialRequest(userId: string, passwordAttempt: string) {
+  const auth = (await cookies()).get("admin_session");
+  if (!auth?.value) return { success: false, error: "Unauthorized" };
+
+  const adminPassword = process.env.ADMIN_PASSWORD || "admin123";
+  if (passwordAttempt !== adminPassword) {
+    return { success: false, error: "Incorrect admin password" };
+  }
+
+  const supabase = getSupabase();
+
+  // 1. Change user role to job_seeker
+  const { error } = await supabase.from("users").update({ role: "job_seeker" }).eq("id", userId);
+  if (error) return { success: false, error: "Failed to update user role" };
+
+  // 2. Remove from special_requests array
+  const { data: srCfg } = await supabase.from("app_config").select("value").eq("key", "special_requests").maybeSingle();
+  let specialRequests: any[] = [];
+  try {
+    if (srCfg?.value) specialRequests = JSON.parse(srCfg.value);
+  } catch (e) {}
+
+  const updatedRequests = specialRequests.filter((r) => r.userId !== userId);
+
+  await supabase.from("app_config").upsert({
+    key: "special_requests",
+    value: JSON.stringify(updatedRequests),
+    updated_at: new Date().toISOString()
+  });
 
   return { success: true };
 }

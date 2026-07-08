@@ -5,6 +5,7 @@ import { motion, AnimatePresence, LazyMotion, domAnimation } from "framer-motion
 import { Briefcase, Users, Clock, CheckCircle, AlertCircle, RefreshCw, PlusCircle, TrendingUp, X, Pencil, Trash2, Sun, Moon } from "lucide-react";
 import { useTelegram } from "@/hooks/useTelegram";
 import { fetchEmployerDashboard, postJob, editJob, deleteJob, updateEmployerLogo } from "@/lib/api";
+import { submitSpecialRequest } from "@/app/admin/actions";
 import { supabase } from "@/lib/supabase";
 import { searchLocations } from "@/data/locations";
 import { detectCategoryFromTitle, searchJobCategories } from "@/data/job-categories";
@@ -89,6 +90,8 @@ export default function DashboardScreen({ onJobSelect }: { onJobSelect?: (jobId:
   const [isLoading, setIsLoading] = useState(!dashboardCache);
   const [error, setError] = useState<string | null>(null);
   const [isDeleted, setIsDeleted] = useState(false);
+  const [isRequesting, setIsRequesting] = useState(false);
+  const [requestSent, setRequestSent] = useState(false);
   const [employerName, setEmployerName] = useState<string | null>(dashboardCache?.employerName ?? null);
   const [isApproved, setIsApproved] = useState<boolean | null>(dashboardCache?.isApproved ?? null);
   const [employerId, setEmployerId] = useState<string | null>(dashboardCache?.employerId ?? null);
@@ -241,6 +244,20 @@ export default function DashboardScreen({ onJobSelect }: { onJobSelect?: (jobId:
       setIsLoading(false);
     }
   }, [initData]);
+
+  const handleRequestJobSeeker = async () => {
+    if (!user?.id) return;
+    setIsRequesting(true);
+    try {
+      await submitSpecialRequest(user.id);
+      setRequestSent(true);
+    } catch (err) {
+      console.error("Failed to request job seeker account:", err);
+      alert("Failed to submit request. Please try again or contact us directly.");
+    } finally {
+      setIsRequesting(false);
+    }
+  };
 
   useEffect(() => {
     fetchDashboard(false);
@@ -578,6 +595,46 @@ export default function DashboardScreen({ onJobSelect }: { onJobSelect?: (jobId:
               >
                 <p style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 4 }}>Contact us on Telegram</p>
                 <p style={{ fontSize: 15, fontWeight: 700, color: "var(--brand, #059669)" }}>@AddisJobs</p>
+              </div>
+
+              {/* Request Job seeker account button */}
+              <div style={{ width: "100%", marginTop: 8 }}>
+                {requestSent ? (
+                  <div
+                    style={{
+                      background: "rgba(74,222,128,0.1)",
+                      border: "1px solid rgba(74,222,128,0.2)",
+                      borderRadius: 12, padding: "12px 16px",
+                      display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+                    }}
+                  >
+                    <CheckCircle size={18} color="#4ADE80" />
+                    <span style={{ fontSize: 14, fontWeight: 600, color: "#4ADE80" }}>Request sent successfully</span>
+                  </div>
+                ) : (
+                  <button
+                    onClick={handleRequestJobSeeker}
+                    disabled={isRequesting}
+                    style={{
+                      width: "100%", padding: "12px 16px",
+                      borderRadius: 12,
+                      background: "transparent",
+                      border: "1px solid var(--border)",
+                      color: "var(--text-primary)",
+                      fontSize: 14, fontWeight: 600,
+                      cursor: isRequesting ? "wait" : "pointer",
+                      display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+                      opacity: isRequesting ? 0.7 : 1,
+                    }}
+                  >
+                    {isRequesting ? (
+                      <span className="shimmer" style={{ width: 16, height: 16, borderRadius: "50%", display: "inline-block" }} />
+                    ) : (
+                      <Users size={16} />
+                    )}
+                    Request Job seeker account instead
+                  </button>
+                )}
               </div>
             </motion.div>
           )}
