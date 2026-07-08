@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { getContentData, upsertFaq, deleteFaq, upsertVacancyTemplate, deleteVacancyTemplate, updateOnboardingConfig } from "./actions";
 import { Plus, Save, Trash2, Pencil } from "lucide-react";
+import { searchLocations } from "@/data/locations";
 
 export default function ContentManagementTab() {
   const [activeSubTab, setActiveSubTab] = useState<"faqs" | "templates" | "onboarding">("faqs");
@@ -64,11 +65,46 @@ export default function ContentManagementTab() {
   };
 
   // Template State
-  const [templateModal, setTemplateModal] = useState<{ id?: string; title: string; job_category: string; description_template: string; requirements_template: string } | null>(null);
+  const [templateModal, setTemplateModal] = useState<{
+    id?: string;
+    title: string;
+    job_category: string;
+    description_template: string;
+    requirements_template: string;
+    location: string;
+    employment_type: string;
+    salary_type: string;
+    salary_min: number | null;
+    salary_max: number | null;
+    salary_currency: string;
+    salary_period: string;
+    experience_required: string;
+    responsibilities_template: string;
+    benefits_template: string;
+    deadline_days: number;
+  } | null>(null);
+  const [locationSuggestionsOpen, setLocationSuggestionsOpen] = useState(false);
 
   const handleSaveTemplate = async () => {
     if (!templateModal) return;
-    await upsertVacancyTemplate(templateModal.id || null, templateModal.title, templateModal.job_category, templateModal.description_template, templateModal.requirements_template);
+    await upsertVacancyTemplate(
+      templateModal.id || null,
+      templateModal.title,
+      templateModal.job_category,
+      templateModal.description_template,
+      templateModal.requirements_template,
+      templateModal.location,
+      templateModal.employment_type,
+      templateModal.salary_type,
+      templateModal.salary_min,
+      templateModal.salary_max,
+      templateModal.salary_currency,
+      templateModal.salary_period,
+      templateModal.experience_required,
+      templateModal.responsibilities_template,
+      templateModal.benefits_template,
+      templateModal.deadline_days
+    );
     setTemplateModal(null);
     loadData();
   };
@@ -170,7 +206,23 @@ export default function ContentManagementTab() {
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-lg font-bold text-gray-900">Vacancy Templates</h3>
               <button
-                onClick={() => setTemplateModal({ title: "", job_category: "Other", description_template: "", requirements_template: "" })}
+                onClick={() => setTemplateModal({
+                  title: "",
+                  job_category: "Other",
+                  description_template: "",
+                  requirements_template: "",
+                  location: "",
+                  employment_type: "Full Time",
+                  salary_type: "fixed",
+                  salary_min: null,
+                  salary_max: null,
+                  salary_currency: "ETB",
+                  salary_period: "Monthly",
+                  experience_required: "",
+                  responsibilities_template: "",
+                  benefits_template: "",
+                  deadline_days: 30
+                })}
                 className="bg-[#0284c7] text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-[#0369a1] transition-colors flex items-center gap-2"
               >
                 <Plus size={16} /> Add Template
@@ -185,7 +237,24 @@ export default function ContentManagementTab() {
                       <span className="inline-block px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-md mt-1">{tpl.job_category}</span>
                     </div>
                     <div className="flex gap-1">
-                      <button onClick={() => setTemplateModal(tpl)} className="p-1.5 text-gray-400 hover:text-[#0284c7] rounded-md transition-colors">
+                      <button onClick={() => setTemplateModal({
+                        id: tpl.id,
+                        title: tpl.title || "",
+                        job_category: tpl.job_category || "Other",
+                        description_template: tpl.description_template || "",
+                        requirements_template: tpl.requirements_template || "",
+                        location: tpl.location || "",
+                        employment_type: tpl.employment_type || "Full Time",
+                        salary_type: tpl.salary_type || "fixed",
+                        salary_min: tpl.salary_min,
+                        salary_max: tpl.salary_max,
+                        salary_currency: tpl.salary_currency || "ETB",
+                        salary_period: tpl.salary_period || "Monthly",
+                        experience_required: tpl.experience_required || "",
+                        responsibilities_template: tpl.responsibilities_template || "",
+                        benefits_template: tpl.benefits_template || "",
+                        deadline_days: tpl.deadline_days || 30
+                      })} className="p-1.5 text-gray-400 hover:text-[#0284c7] rounded-md transition-colors">
                         <Pencil size={16} />
                       </button>
                       <button onClick={() => handleDeleteTemplate(tpl.id)} className="p-1.5 text-gray-400 hover:text-red-600 rounded-md transition-colors">
@@ -369,12 +438,14 @@ export default function ContentManagementTab() {
 
       {templateModal && (
         <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl w-full max-w-2xl p-6 shadow-xl">
-            <h3 className="text-xl font-bold text-gray-900 mb-4">{templateModal.id ? "Edit Template" : "Add Template"}</h3>
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+          <div className="bg-white rounded-2xl w-full max-w-4xl p-6 shadow-xl max-h-[90vh] overflow-y-auto">
+            <h3 className="text-xl font-bold text-gray-900 mb-6">{templateModal.id ? "Edit Template" : "Add Template"}</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              
+              {/* Left Column */}
+              <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Job Title</label>
                   <input
                     type="text"
                     value={templateModal.title}
@@ -383,36 +454,182 @@ export default function ContentManagementTab() {
                     placeholder="e.g. Senior Bartender"
                   />
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                    <input
+                      type="text"
+                      value={templateModal.job_category}
+                      onChange={(e) => setTemplateModal({ ...templateModal, job_category: e.target.value })}
+                      className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-[#0284c7] outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Employment Type</label>
+                    <select
+                      value={templateModal.employment_type}
+                      onChange={(e) => setTemplateModal({ ...templateModal, employment_type: e.target.value })}
+                      className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-[#0284c7] outline-none"
+                    >
+                      <option value="Full Time">Full Time</option>
+                      <option value="Part Time">Part Time</option>
+                      <option value="Contract">Contract</option>
+                      <option value="Internship">Internship</option>
+                      <option value="Freelance">Freelance</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="relative">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
                   <input
                     type="text"
-                    value={templateModal.job_category}
-                    onChange={(e) => setTemplateModal({ ...templateModal, job_category: e.target.value })}
+                    value={templateModal.location}
+                    onChange={(e) => {
+                      setTemplateModal({ ...templateModal, location: e.target.value });
+                      setLocationSuggestionsOpen(true);
+                    }}
+                    onFocus={() => setLocationSuggestionsOpen(true)}
+                    onBlur={() => setTimeout(() => setLocationSuggestionsOpen(false), 200)}
                     className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-[#0284c7] outline-none"
+                    placeholder="e.g. Bole, Kazanchis..."
+                    autoComplete="off"
+                  />
+                  {locationSuggestionsOpen && (() => {
+                    const results = searchLocations(templateModal.location).slice(0, 8);
+                    return results.length > 0 ? (
+                      <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-50 max-h-48 overflow-y-auto">
+                        {results.map(loc => (
+                          <button
+                            key={loc.id}
+                            type="button"
+                            onMouseDown={(e) => {
+                              e.preventDefault();
+                              setTemplateModal({ ...templateModal, location: loc.name });
+                              setLocationSuggestionsOpen(false);
+                            }}
+                            className="w-full text-left px-4 py-2 hover:bg-gray-50 text-sm border-b border-gray-100 last:border-0"
+                          >
+                            <div className="font-medium text-gray-900">{loc.name}</div>
+                            <div className="text-xs text-gray-500">{loc.subCity} • {loc.type.charAt(0).toUpperCase() + loc.type.slice(1)}</div>
+                          </button>
+                        ))}
+                      </div>
+                    ) : null;
+                  })()}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Salary Mode</label>
+                  <div className="flex gap-2">
+                    {[
+                      { value: "fixed", label: "Fixed Amount" },
+                      { value: "company_scale", label: "Per Company Scale" },
+                      { value: "negotiable", label: "Negotiable" },
+                    ].map(opt => (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => setTemplateModal({ ...templateModal, salary_type: opt.value })}
+                        className={`flex-1 px-3 py-2 text-xs font-medium rounded-xl border transition-colors ${templateModal.salary_type === opt.value ? "bg-[#f0f9ff] border-[#0284c7] text-[#0284c7]" : "bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100"}`}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {templateModal.salary_type === "fixed" && (
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Min Salary</label>
+                      <input
+                        type="number"
+                        value={templateModal.salary_min || ""}
+                        onChange={(e) => setTemplateModal({ ...templateModal, salary_min: e.target.value ? Number(e.target.value) : null })}
+                        className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-[#0284c7] outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Max Salary</label>
+                      <input
+                        type="number"
+                        value={templateModal.salary_max || ""}
+                        onChange={(e) => setTemplateModal({ ...templateModal, salary_max: e.target.value ? Number(e.target.value) : null })}
+                        className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-[#0284c7] outline-none"
+                      />
+                    </div>
+                  </div>
+                )}
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Experience Required</label>
+                    <input
+                      type="text"
+                      value={templateModal.experience_required}
+                      onChange={(e) => setTemplateModal({ ...templateModal, experience_required: e.target.value })}
+                      className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-[#0284c7] outline-none"
+                      placeholder="e.g. 2+ Years"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Deadline (Days)</label>
+                    <input
+                      type="number"
+                      value={templateModal.deadline_days}
+                      onChange={(e) => setTemplateModal({ ...templateModal, deadline_days: parseInt(e.target.value) || 30 })}
+                      className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-[#0284c7] outline-none"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Right Column */}
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Description Template</label>
+                  <textarea
+                    value={templateModal.description_template}
+                    onChange={(e) => setTemplateModal({ ...templateModal, description_template: e.target.value })}
+                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm h-28 resize-none focus:ring-2 focus:ring-[#0284c7] outline-none"
+                    placeholder="Brief overview of the role..."
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Responsibilities Template</label>
+                  <textarea
+                    value={templateModal.responsibilities_template}
+                    onChange={(e) => setTemplateModal({ ...templateModal, responsibilities_template: e.target.value })}
+                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm h-28 resize-none focus:ring-2 focus:ring-[#0284c7] outline-none"
+                    placeholder="- Key responsibility 1..."
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Requirements Template</label>
+                  <textarea
+                    value={templateModal.requirements_template}
+                    onChange={(e) => setTemplateModal({ ...templateModal, requirements_template: e.target.value })}
+                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm h-28 resize-none focus:ring-2 focus:ring-[#0284c7] outline-none"
+                    placeholder="- Required skill 1..."
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Benefits Template</label>
+                  <textarea
+                    value={templateModal.benefits_template}
+                    onChange={(e) => setTemplateModal({ ...templateModal, benefits_template: e.target.value })}
+                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm h-24 resize-none focus:ring-2 focus:ring-[#0284c7] outline-none"
+                    placeholder="- Health insurance..."
                   />
                 </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Description Template</label>
-                <textarea
-                  value={templateModal.description_template}
-                  onChange={(e) => setTemplateModal({ ...templateModal, description_template: e.target.value })}
-                  className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm h-24 resize-none focus:ring-2 focus:ring-[#0284c7] outline-none"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Requirements Template</label>
-                <textarea
-                  value={templateModal.requirements_template}
-                  onChange={(e) => setTemplateModal({ ...templateModal, requirements_template: e.target.value })}
-                  className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm h-24 resize-none focus:ring-2 focus:ring-[#0284c7] outline-none"
-                />
-              </div>
             </div>
-            <div className="flex justify-end gap-3 mt-6">
-              <button onClick={() => setTemplateModal(null)} className="px-5 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-xl transition-colors">Cancel</button>
-              <button onClick={handleSaveTemplate} className="px-5 py-2.5 text-sm font-medium text-white bg-[#0284c7] hover:bg-[#0369a1] rounded-xl transition-colors">Save Template</button>
+
+            <div className="flex justify-end gap-3 mt-8 pt-4 border-t border-gray-100">
+              <button onClick={() => setTemplateModal(null)} className="px-6 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-xl transition-colors">Cancel</button>
+              <button onClick={handleSaveTemplate} className="px-6 py-2.5 text-sm font-medium text-white bg-[#0284c7] hover:bg-[#0369a1] rounded-xl transition-colors">Save Template</button>
             </div>
           </div>
         </div>

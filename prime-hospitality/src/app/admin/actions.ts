@@ -439,7 +439,24 @@ export async function deleteFaq(id: string) {
   return { success: true };
 }
 
-export async function upsertVacancyTemplate(id: string | null, title: string, job_category: string, description_template: string, requirements_template: string) {
+export async function upsertVacancyTemplate(
+  id: string | null,
+  title: string,
+  job_category: string,
+  description_template: string,
+  requirements_template: string,
+  location: string,
+  employment_type: string,
+  salary_type: string,
+  salary_min: number | null,
+  salary_max: number | null,
+  salary_currency: string,
+  salary_period: string,
+  experience_required: string,
+  responsibilities_template: string,
+  benefits_template: string,
+  deadline_days: number,
+) {
   const auth = (await cookies()).get("admin_session");
   if (!auth?.value) throw new Error("Unauthorized");
 
@@ -449,6 +466,17 @@ export async function upsertVacancyTemplate(id: string | null, title: string, jo
     job_category,
     description_template,
     requirements_template,
+    location,
+    employment_type,
+    salary_type,
+    salary_min,
+    salary_max,
+    salary_currency,
+    salary_period,
+    experience_required,
+    responsibilities_template,
+    benefits_template,
+    deadline_days,
     updated_at: new Date().toISOString()
   });
 
