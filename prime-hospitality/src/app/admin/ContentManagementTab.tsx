@@ -25,7 +25,11 @@ export default function ContentManagementTab() {
   };
 
   // Delete Confirm State
-  const [deleteConfirmModal, setDeleteConfirmModal] = useState<{ id: string; type: "faq" | "template" } | null>(null);
+  const [deleteConfirmModal, setDeleteConfirmModal] = useState<
+    | { type: "faq" | "template"; id: string }
+    | { type: "arrayRemove"; configKey: string; itemIndex: number; itemLabel: string }
+    | null
+  >(null);
 
   const executeDelete = async () => {
     if (!deleteConfirmModal) return;
@@ -33,9 +37,16 @@ export default function ContentManagementTab() {
       await deleteFaq(deleteConfirmModal.id);
     } else if (deleteConfirmModal.type === "template") {
       await deleteVacancyTemplate(deleteConfirmModal.id);
+    } else if (deleteConfirmModal.type === "arrayRemove") {
+      const { configKey, itemIndex } = deleteConfirmModal;
+      let parsedArray: any[] = [];
+      try { parsedArray = JSON.parse(configState[configKey] || "[]"); } catch (e) {}
+      const newArr = parsedArray.filter((_, i) => i !== itemIndex);
+      setConfigState(prev => ({ ...prev, [configKey]: JSON.stringify(newArr) }));
+      setDirtyKeys(prev => new Set(prev).add(configKey));
     }
     setDeleteConfirmModal(null);
-    loadData();
+    if (deleteConfirmModal.type !== "arrayRemove") loadData();
   };
 
   // FAQ State
@@ -69,6 +80,7 @@ export default function ContentManagementTab() {
   // Onboarding Config State
   const [configState, setConfigState] = useState<Record<string, string>>({});
   const [activeOnboardingStep, setActiveOnboardingStep] = useState<number>(1);
+  const [dirtyKeys, setDirtyKeys] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (data.onboardingConfig.length > 0) {
@@ -82,7 +94,7 @@ export default function ContentManagementTab() {
 
   const handleSaveConfig = async (key: string, label: string) => {
     await updateOnboardingConfig(key, label, configState[key] || "");
-    alert("Saved!");
+    setDirtyKeys(prev => { const next = new Set(prev); next.delete(key); return next; });
     loadData();
   };
 
@@ -245,14 +257,15 @@ export default function ContentManagementTab() {
                                   if (isCategories) { newArr[idx] = { ...newArr[idx], label: e.target.value }; }
                                   else { newArr[idx] = e.target.value; }
                                   setConfigState(prev => ({ ...prev, [cfg.key]: JSON.stringify(newArr) }));
+                                  setDirtyKeys(prev => new Set(prev).add(cfg.key));
                                 }}
                                 className="flex-1 px-3 py-1.5 bg-white border border-gray-200 rounded text-sm" 
                                 placeholder={isCategories ? "Category Label" : "Experience Level"}
                               />
                             <button 
                               onClick={() => {
-                                const newArr = parsedArray.filter((_, i) => i !== idx);
-                                setConfigState(prev => ({ ...prev, [cfg.key]: JSON.stringify(newArr) }));
+                                const label = isCategories ? item.label : item;
+                                setDeleteConfirmModal({ type: "arrayRemove", configKey: cfg.key, itemIndex: idx, itemLabel: label });
                               }}
                               className="p-1.5 px-3 text-sm font-medium text-red-600 hover:bg-red-50 rounded bg-white border border-gray-200"
                             >
@@ -262,11 +275,18 @@ export default function ContentManagementTab() {
                         ))}
                       </div>
                       
+                      {dirtyKeys.has(cfg.key) && (
+                        <div className="mb-3 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-700 font-medium">
+                          ⚠️ You have unsaved changes — click <strong>Save Options</strong> to apply them.
+                        </div>
+                      )}
+
                       <button 
                         onClick={() => {
                           const newItem = isCategories ? { label: "New Option", emoji: "✨" } : "New Option";
                           const newArr = [...parsedArray, newItem];
                           setConfigState(prev => ({ ...prev, [cfg.key]: JSON.stringify(newArr) }));
+                          setDirtyKeys(prev => new Set(prev).add(cfg.key));
                         }}
                         className="w-full py-2 bg-gray-50 border border-dashed border-gray-300 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 flex items-center justify-center gap-1"
                       >
@@ -405,10 +425,13 @@ export default function ContentManagementTab() {
               <Trash2 size={24} />
             </div>
             <h3 className="text-xl font-bold text-gray-900 mb-2">
-              Delete {deleteConfirmModal.type === "faq" ? "FAQ" : "Template"}
+              {deleteConfirmModal.type === "faq" ? "Delete FAQ" : deleteConfirmModal.type === "template" ? "Delete Template" : "Remove Option"}
             </h3>
             <p className="text-gray-500 mb-6 text-sm">
-              Are you sure you want to delete this {deleteConfirmModal.type === "faq" ? "FAQ" : "template"}? This action cannot be undone.
+              {deleteConfirmModal.type === "arrayRemove"
+                ? <>Are you sure you want to remove <strong>&ldquo;{deleteConfirmModal.itemLabel}&rdquo;</strong>? You still need to click <strong>Save Options</strong> for it to take effect.</>
+                : <>Are you sure you want to delete this {deleteConfirmModal.type === "faq" ? "FAQ" : "template"}? This action cannot be undone.</>
+              }
             </p>
             <div className="flex justify-center gap-3">
               <button
