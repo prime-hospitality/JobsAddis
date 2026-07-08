@@ -81,7 +81,7 @@ export default function ContentManagementTab() {
     experience_required: string;
     responsibilities_template: string;
     benefits_template: string;
-    deadline_days: number;
+    deadline: string;
   } | null>(null);
   const [locationSuggestionsOpen, setLocationSuggestionsOpen] = useState(false);
 
@@ -103,7 +103,7 @@ export default function ContentManagementTab() {
       templateModal.experience_required,
       templateModal.responsibilities_template,
       templateModal.benefits_template,
-      templateModal.deadline_days
+      templateModal.deadline
     );
     setTemplateModal(null);
     loadData();
@@ -218,10 +218,10 @@ export default function ContentManagementTab() {
                   salary_max: null,
                   salary_currency: "ETB",
                   salary_period: "Monthly",
-                  experience_required: "",
+                  experience_required: "Entry level",
                   responsibilities_template: "",
                   benefits_template: "",
-                  deadline_days: 30
+                  deadline: ""
                 })}
                 className="bg-[#0284c7] text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-[#0369a1] transition-colors flex items-center gap-2"
               >
@@ -250,10 +250,10 @@ export default function ContentManagementTab() {
                         salary_max: tpl.salary_max,
                         salary_currency: tpl.salary_currency || "ETB",
                         salary_period: tpl.salary_period || "Monthly",
-                        experience_required: tpl.experience_required || "",
+                        experience_required: tpl.experience_required || "Entry level",
                         responsibilities_template: tpl.responsibilities_template || "",
                         benefits_template: tpl.benefits_template || "",
-                        deadline_days: tpl.deadline_days || 30
+                        deadline: tpl.deadline || ""
                       })} className="p-1.5 text-gray-400 hover:text-[#0284c7] rounded-md transition-colors">
                         <Pencil size={16} />
                       </button>
@@ -566,20 +566,24 @@ export default function ContentManagementTab() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Experience Required</label>
-                    <input
-                      type="text"
+                    <select
                       value={templateModal.experience_required}
                       onChange={(e) => setTemplateModal({ ...templateModal, experience_required: e.target.value })}
                       className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-[#0284c7] outline-none"
-                      placeholder="e.g. 2+ Years"
-                    />
+                    >
+                      <option value="Entry level">Entry level</option>
+                      <option value="Junior">Junior</option>
+                      <option value="Intermediate">Intermediate</option>
+                      <option value="Senior">Senior</option>
+                      <option value="Expert">Expert</option>
+                    </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Deadline (Days)</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Deadline Date</label>
                     <input
-                      type="number"
-                      value={templateModal.deadline_days}
-                      onChange={(e) => setTemplateModal({ ...templateModal, deadline_days: parseInt(e.target.value) || 30 })}
+                      type="date"
+                      value={templateModal.deadline}
+                      onChange={(e) => setTemplateModal({ ...templateModal, deadline: e.target.value })}
                       className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-[#0284c7] outline-none"
                     />
                   </div>

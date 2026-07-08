@@ -455,7 +455,7 @@ export async function upsertVacancyTemplate(
   experience_required: string,
   responsibilities_template: string,
   benefits_template: string,
-  deadline_days: number,
+  deadline: string,
 ) {
   const auth = (await cookies()).get("admin_session");
   if (!auth?.value) throw new Error("Unauthorized");
@@ -476,7 +476,7 @@ export async function upsertVacancyTemplate(
     experience_required,
     responsibilities_template,
     benefits_template,
-    deadline_days,
+    deadline,
     updated_at: new Date().toISOString()
   });
 
