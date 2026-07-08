@@ -298,7 +298,7 @@ export default function ContentManagementTab() {
 
                 return (
                   <div key={cfg.key} className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
-                    <label className="block text-sm font-bold text-gray-900 mb-1">{cfg.label} <span className="text-gray-400 font-normal text-xs ml-2">({cfg.key})</span></label>
+                    <label className="block text-sm font-bold text-gray-900 mb-1">{cfg.label}</label>
                     <div className="flex gap-3">
                       <textarea
                         value={configState[cfg.key] ?? ""}
