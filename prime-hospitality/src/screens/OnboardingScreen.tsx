@@ -113,10 +113,10 @@ export default function OnboardingScreen({ onComplete }: { onComplete: () => voi
               style={{ position: "absolute", inset: 0, width: "100%", height: "100%", display: "flex", flexDirection: "column", overflowY: "auto", paddingBottom: 40 }}
             >
               {state.step === 1 && <Step1_JobField state={state} updateState={updateState} onNext={() => goNext(2)} config={config} />}
-              {state.step === 2 && <Step2_Contact state={state} updateState={updateState} onNext={() => goNext(3)} />}
-              {state.step === 3 && <Step3_Experience state={state} updateState={updateState} onNext={() => goNext(4)} />}
-              {state.step === 4 && <Step4_Personal state={state} updateState={updateState} onNext={() => goNext(5)} />}
-              {state.step === 5 && <Step5_CV state={state} updateState={updateState} onNext={handleFinalSubmit} />}
+              {state.step === 2 && <Step2_Contact state={state} updateState={updateState} onNext={() => goNext(3)} config={config} />}
+              {state.step === 3 && <Step3_Experience state={state} updateState={updateState} onNext={() => goNext(4)} config={config} />}
+              {state.step === 4 && <Step4_Personal state={state} updateState={updateState} onNext={() => goNext(5)} config={config} />}
+              {state.step === 5 && <Step5_CV state={state} updateState={updateState} onNext={handleFinalSubmit} config={config} />}
               {state.step === 6 && <Step6_Success state={state} onNext={onComplete} config={config} />}
             </motion.div>
           </AnimatePresence>
@@ -160,9 +160,16 @@ const JOB_CATEGORIES_DATA = [
 ];
 
 function Step1_JobField({ state, updateState, onNext, config }: StepProps) {
+  let JOB_CATEGORIES = [...JOB_CATEGORIES_DATA];
+  try {
+    if (config?.step1_categories) {
+      JOB_CATEGORIES = JSON.parse(config.step1_categories);
+    }
+  } catch (e) {}
+
   const [shakeId, setShakeId] = React.useState<string | null>(null);
   const customCategory = state.selectedCategories.find(
-    (c) => c === "Other" || !JOB_CATEGORIES_DATA.some((preset) => preset.label === c)
+    (c) => c === "Other" || !JOB_CATEGORIES.some((preset) => preset.label === c)
   );
   const [otherValue, setOtherValue] = React.useState(
     customCategory && customCategory !== "Other" ? customCategory : ""
@@ -229,12 +236,12 @@ function Step1_JobField({ state, updateState, onNext, config }: StepProps) {
   return (
     <div style={{ padding: "90px 16px 20px", flex: 1, display: "flex", flexDirection: "column" }}>
       <h1 style={{ fontSize: 24, fontWeight: 800, color: "var(--text-primary)", marginBottom: 6, lineHeight: 1.2 }}>
-        {config?.welcome_title || "What role are you looking for?"}
+        {config?.step1_title || config?.welcome_title || "What role are you looking for?"}
       </h1>
-      <p style={{ fontSize: 14, color: "var(--text-secondary)", marginBottom: 20 }}>{config?.welcome_subtitle || "Select up to 3 categories."}</p>
+      <p style={{ fontSize: 14, color: "var(--text-secondary)", marginBottom: 20 }}>{config?.step1_subtitle || config?.welcome_subtitle || "Select up to 3 categories."}</p>
 
       <div style={{ display: "flex", flexWrap: "wrap", gap: "4px 4px", alignContent: "flex-start" }}>
-        {JOB_CATEGORIES_DATA.map((cat) => {
+        {JOB_CATEGORIES.map((cat) => {
           const selectedIndex = cat.label === "Other"
             ? state.selectedCategories.findIndex((c) => c === "Other" || !JOB_CATEGORIES_DATA.some((p) => p.label === c))
             : state.selectedCategories.indexOf(cat.label);
@@ -435,8 +442,8 @@ function Step1_JobField({ state, updateState, onNext, config }: StepProps) {
   );
 }
 
-// --- Step 2: Share Contact ---
-function Step2_Contact({ state, updateState, onNext }: StepProps) {
+// --- Step 2: Contact Sharing ---
+function Step2_Contact({ state, updateState, onNext, config }: StepProps) {
   const { isReady } = useTelegram();
 
   const handleYes = () => {
@@ -478,10 +485,10 @@ function Step2_Contact({ state, updateState, onNext }: StepProps) {
         <Smartphone size={36} color="var(--brand)" />
       </div>
       <h1 style={{ fontSize: 26, fontWeight: 800, color: "var(--text-primary)", marginBottom: 12, lineHeight: 1.2 }}>
-        Can we share your contact with employers?
+        {config?.step2_title || "Can we share your contact with employers?"}
       </h1>
       <p style={{ fontSize: 15, color: "var(--text-secondary)", marginBottom: 40, maxWidth: 300 }}>
-        This helps employers reach you faster when they want to hire you.
+        {config?.step2_subtitle || "This helps employers reach you faster when they want to hire you."}
       </p>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 16, width: "100%" }}>
@@ -785,7 +792,14 @@ function SearchableLocationDropdown({ value, onSelect }: { value: string; onSele
   );
 }
 
-function Step3_Experience({ state, updateState, onNext }: StepProps) {
+function Step3_Experience({ state, updateState, onNext, config }: StepProps) {
+  let EXPERIENCES = [...EXPERIENCE_OPTIONS];
+  try {
+    if (config?.step3_experience_levels) {
+      EXPERIENCES = JSON.parse(config.step3_experience_levels);
+    }
+  } catch (e) {}
+
   const handleSelect = (category: string, level: string) => {
     updateState({
       experienceLevels: { ...state.experienceLevels, [category]: level }
@@ -797,9 +811,11 @@ function Step3_Experience({ state, updateState, onNext }: StepProps) {
   return (
     <div style={{ padding: "130px 20px 40px", flex: 1, display: "flex", flexDirection: "column" }}>
       <h1 style={{ fontSize: 24, fontWeight: 800, color: "var(--text-primary)", marginBottom: 6, lineHeight: 1.2 }}>
-        What is your experience level?
+        {config?.step3_title || "What is your experience level?"}
       </h1>
-      <p style={{ fontSize: 14, color: "var(--text-secondary)", marginBottom: 28 }}>Select for each of your chosen roles.</p>
+      <p style={{ fontSize: 14, color: "var(--text-secondary)", marginBottom: 28 }}>
+        {config?.step3_subtitle || "Select for each of your chosen roles."}
+      </p>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 16, marginBottom: "auto" }}>
         {state.selectedCategories.map(cat => (
@@ -807,7 +823,7 @@ function Step3_Experience({ state, updateState, onNext }: StepProps) {
             key={cat}
             label={cat}
             value={state.experienceLevels[cat] || ""}
-            options={EXPERIENCE_OPTIONS}
+            options={EXPERIENCES}
             onSelect={(val) => handleSelect(cat, val)}
           />
         ))}
@@ -823,7 +839,7 @@ function Step3_Experience({ state, updateState, onNext }: StepProps) {
 }
 
 // --- Step 4: Personal Details ---
-function Step4_Personal({ state, updateState, onNext }: StepProps) {
+function Step4_Personal({ state, updateState, onNext, config }: StepProps) {
   const [ageError, setAgeError] = useState("");
   const [nameError, setNameError] = useState("");
 
@@ -871,7 +887,7 @@ function Step4_Personal({ state, updateState, onNext }: StepProps) {
   return (
     <div style={{ padding: "130px 20px 40px", flex: 1, display: "flex", flexDirection: "column" }}>
       <h1 style={{ fontSize: 26, fontWeight: 800, color: "var(--text-primary)", marginBottom: 32, lineHeight: 1.2 }}>
-        Tell us a bit about yourself
+        {config?.step4_title || "Tell us a bit about yourself"}
       </h1>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 20, marginBottom: "auto" }}>
@@ -995,7 +1011,7 @@ function Step4_Personal({ state, updateState, onNext }: StepProps) {
 
 
 // --- Step 5: CV Upload ---
-function Step5_CV({ state, updateState, onNext }: StepProps) {
+function Step5_CV({ state, updateState, onNext, config }: StepProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1017,9 +1033,11 @@ function Step5_CV({ state, updateState, onNext }: StepProps) {
   return (
     <div style={{ padding: "130px 20px 40px", flex: 1, display: "flex", flexDirection: "column" }}>
       <h1 style={{ fontSize: 26, fontWeight: 800, color: "var(--text-primary)", marginBottom: 8, lineHeight: 1.2 }}>
-        Upload your CV
+        {config?.step5_title || "Upload your CV"}
       </h1>
-      <p style={{ fontSize: 15, color: "var(--text-secondary)", marginBottom: 32 }}>PDF or Word document. Max 5MB.</p>
+      <p style={{ fontSize: 15, color: "var(--text-secondary)", marginBottom: 32 }}>
+        {config?.step5_subtitle || "PDF or Word document. Max 5MB."}
+      </p>
 
       <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center" }}>
         <input type="file" ref={fileInputRef} style={{ display: "none" }} accept=".pdf,.doc,.docx" onChange={handleFileChange} />

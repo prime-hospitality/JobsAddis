@@ -24,6 +24,20 @@ export default function ContentManagementTab() {
     setLoading(false);
   };
 
+  // Delete Confirm State
+  const [deleteConfirmModal, setDeleteConfirmModal] = useState<{ id: string; type: "faq" | "template" } | null>(null);
+
+  const executeDelete = async () => {
+    if (!deleteConfirmModal) return;
+    if (deleteConfirmModal.type === "faq") {
+      await deleteFaq(deleteConfirmModal.id);
+    } else if (deleteConfirmModal.type === "template") {
+      await deleteVacancyTemplate(deleteConfirmModal.id);
+    }
+    setDeleteConfirmModal(null);
+    loadData();
+  };
+
   // FAQ State
   const [faqModal, setFaqModal] = useState<{ id?: string; question: string; answer: string; display_order: number } | null>(null);
 
@@ -34,11 +48,8 @@ export default function ContentManagementTab() {
     loadData();
   };
 
-  const handleDeleteFaq = async (id: string) => {
-    if (confirm("Are you sure you want to delete this FAQ?")) {
-      await deleteFaq(id);
-      loadData();
-    }
+  const handleDeleteFaq = (id: string) => {
+    setDeleteConfirmModal({ id, type: "faq" });
   };
 
   // Template State
@@ -51,15 +62,13 @@ export default function ContentManagementTab() {
     loadData();
   };
 
-  const handleDeleteTemplate = async (id: string) => {
-    if (confirm("Are you sure you want to delete this template?")) {
-      await deleteVacancyTemplate(id);
-      loadData();
-    }
+  const handleDeleteTemplate = (id: string) => {
+    setDeleteConfirmModal({ id, type: "template" });
   };
 
   // Onboarding Config State
   const [configState, setConfigState] = useState<Record<string, string>>({});
+  const [activeOnboardingStep, setActiveOnboardingStep] = useState<number>(1);
 
   useEffect(() => {
     if (data.onboardingConfig.length > 0) {
@@ -191,28 +200,131 @@ export default function ContentManagementTab() {
         {activeSubTab === "onboarding" && (
           <div>
             <div className="mb-6">
-              <h3 className="text-lg font-bold text-gray-900">Onboarding Texts</h3>
-              <p className="text-sm text-gray-500">Update the welcome screens and instructional text.</p>
+              <h3 className="text-lg font-bold text-gray-900">Onboarding Texts & Options</h3>
+              <p className="text-sm text-gray-500">Configure text and selectable options for each onboarding step.</p>
             </div>
-            <div className="space-y-6 max-w-2xl">
-              {data.onboardingConfig.map((cfg) => (
-                <div key={cfg.key} className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
-                  <label className="block text-sm font-bold text-gray-900 mb-1">{cfg.label} <span className="text-gray-400 font-normal text-xs ml-2">({cfg.key})</span></label>
-                  <div className="flex gap-3">
-                    <textarea
-                      value={configState[cfg.key] ?? ""}
-                      onChange={(e) => setConfigState(prev => ({ ...prev, [cfg.key]: e.target.value }))}
-                      className="flex-1 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-[#0284c7] focus:border-[#0284c7] outline-none transition-all resize-none h-20"
-                    />
-                    <button
-                      onClick={() => handleSaveConfig(cfg.key, cfg.label)}
-                      className="shrink-0 bg-gray-900 text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-gray-800 transition-colors self-end flex items-center gap-2 h-10"
-                    >
-                      <Save size={16} /> Save
-                    </button>
-                  </div>
-                </div>
+            
+            <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
+              {[1, 2, 3, 4, 5, 6].map(step => (
+                <button
+                  key={step}
+                  onClick={() => setActiveOnboardingStep(step)}
+                  className={`px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-colors ${activeOnboardingStep === step ? "bg-[#0284c7] text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}
+                >
+                  Step {step}
+                </button>
               ))}
+            </div>
+
+            <div className="space-y-6 max-w-3xl">
+              {data.onboardingConfig.filter(cfg => cfg.key.startsWith(`step${activeOnboardingStep}_`)).map((cfg) => {
+                const isJson = cfg.key.includes("categories") || cfg.key.includes("experience_levels");
+                
+                if (isJson) {
+                  let parsedArray: any[] = [];
+                  try { parsedArray = JSON.parse(configState[cfg.key] || "[]"); } catch (e) {}
+                  
+                  const isCategories = cfg.key.includes("categories");
+                  
+                  return (
+                    <div key={cfg.key} className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+                      <div className="flex justify-between items-center mb-4">
+                        <label className="block text-sm font-bold text-gray-900">{cfg.label}</label>
+                        <button onClick={() => handleSaveConfig(cfg.key, cfg.label)} className="bg-gray-900 text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-gray-800 transition-colors flex items-center gap-2">
+                          <Save size={16} /> Save Options
+                        </button>
+                      </div>
+                      
+                      <div className="space-y-2 mb-4 max-h-80 overflow-y-auto pr-2">
+                        {parsedArray.map((item, idx) => (
+                          <div key={idx} className="flex gap-2 items-center bg-gray-50 p-2 rounded-lg border border-gray-100">
+                            {isCategories ? (
+                              <>
+                                <input 
+                                  value={item.emoji} 
+                                  onChange={(e) => {
+                                    const newArr = [...parsedArray];
+                                    newArr[idx].emoji = e.target.value;
+                                    setConfigState(prev => ({ ...prev, [cfg.key]: JSON.stringify(newArr) }));
+                                  }}
+                                  className="w-12 px-2 py-1.5 bg-white border border-gray-200 rounded text-center" 
+                                  placeholder="Emoji"
+                                />
+                                <input 
+                                  value={item.label} 
+                                  onChange={(e) => {
+                                    const newArr = [...parsedArray];
+                                    newArr[idx].label = e.target.value;
+                                    setConfigState(prev => ({ ...prev, [cfg.key]: JSON.stringify(newArr) }));
+                                  }}
+                                  className="flex-1 px-3 py-1.5 bg-white border border-gray-200 rounded text-sm" 
+                                  placeholder="Category Label"
+                                />
+                              </>
+                            ) : (
+                              <input 
+                                value={item} 
+                                onChange={(e) => {
+                                  const newArr = [...parsedArray];
+                                  newArr[idx] = e.target.value;
+                                  setConfigState(prev => ({ ...prev, [cfg.key]: JSON.stringify(newArr) }));
+                                }}
+                                className="flex-1 px-3 py-1.5 bg-white border border-gray-200 rounded text-sm" 
+                                placeholder="Experience Level"
+                              />
+                            )}
+                            <button 
+                              onClick={() => {
+                                const newArr = parsedArray.filter((_, i) => i !== idx);
+                                setConfigState(prev => ({ ...prev, [cfg.key]: JSON.stringify(newArr) }));
+                              }}
+                              className="p-1.5 text-gray-400 hover:text-red-600 rounded bg-white border border-gray-200"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                      
+                      <button 
+                        onClick={() => {
+                          const newItem = isCategories ? { label: "New Option", emoji: "✨" } : "New Option";
+                          const newArr = [...parsedArray, newItem];
+                          setConfigState(prev => ({ ...prev, [cfg.key]: JSON.stringify(newArr) }));
+                        }}
+                        className="w-full py-2 bg-gray-50 border border-dashed border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-100 flex items-center justify-center gap-1"
+                      >
+                        <Plus size={16} /> Add Option
+                      </button>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div key={cfg.key} className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+                    <label className="block text-sm font-bold text-gray-900 mb-1">{cfg.label} <span className="text-gray-400 font-normal text-xs ml-2">({cfg.key})</span></label>
+                    <div className="flex gap-3">
+                      <textarea
+                        value={configState[cfg.key] ?? ""}
+                        onChange={(e) => setConfigState(prev => ({ ...prev, [cfg.key]: e.target.value }))}
+                        className="flex-1 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-[#0284c7] outline-none resize-none h-20"
+                      />
+                      <button
+                        onClick={() => handleSaveConfig(cfg.key, cfg.label)}
+                        className="shrink-0 bg-gray-900 text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-gray-800 self-end flex items-center gap-2 h-10"
+                      >
+                        <Save size={16} /> Save
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+              
+              {data.onboardingConfig.filter(cfg => cfg.key.startsWith(`step${activeOnboardingStep}_`)).length === 0 && (
+                <div className="text-center py-10 text-gray-500 bg-gray-50 rounded-xl border border-dashed border-gray-200">
+                  No configuration fields mapped for Step {activeOnboardingStep} yet.
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -305,6 +417,36 @@ export default function ContentManagementTab() {
             <div className="flex justify-end gap-3 mt-6">
               <button onClick={() => setTemplateModal(null)} className="px-5 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-xl transition-colors">Cancel</button>
               <button onClick={handleSaveTemplate} className="px-5 py-2.5 text-sm font-medium text-white bg-[#0284c7] hover:bg-[#0369a1] rounded-xl transition-colors">Save Template</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {deleteConfirmModal && (
+        <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-sm p-6 shadow-xl text-center">
+            <div className="w-12 h-12 rounded-full bg-red-100 text-red-600 flex items-center justify-center mx-auto mb-4">
+              <Trash2 size={24} />
+            </div>
+            <h3 className="text-xl font-bold text-gray-900 mb-2">
+              Delete {deleteConfirmModal.type === "faq" ? "FAQ" : "Template"}
+            </h3>
+            <p className="text-gray-500 mb-6 text-sm">
+              Are you sure you want to delete this {deleteConfirmModal.type === "faq" ? "FAQ" : "template"}? This action cannot be undone.
+            </p>
+            <div className="flex justify-center gap-3">
+              <button
+                onClick={() => setDeleteConfirmModal(null)}
+                className="flex-1 px-4 py-2.5 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors"
+              >
+                No, cancel
+              </button>
+              <button
+                onClick={executeDelete}
+                className="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-xl transition-colors"
+              >
+                Yes, delete
+              </button>
             </div>
           </div>
         </div>
