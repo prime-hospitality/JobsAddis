@@ -354,11 +354,29 @@ export async function approveSpecialRequest(userId: string, passwordAttempt: str
 
   const supabase = getSupabase();
 
-  // 1. Change user role to job_seeker
+  // 1. Fetch old job seeker profile (if any) to get the stale CV URL
+  const { data: oldProfile } = await supabase
+    .from("profiles")
+    .select("cv_url")
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  // 2. Delete the old CV from storage if it exists — free up space
+  if (oldProfile?.cv_url) {
+    const parts = oldProfile.cv_url.split("/resumes/");
+    if (parts.length === 2) {
+      await supabase.storage.from("resumes").remove([parts[1]]);
+    }
+  }
+
+  // 3. Delete the old profile row entirely — forces fresh onboarding
+  await supabase.from("profiles").delete().eq("user_id", userId);
+
+  // 4. Change user role to job_seeker
   const { error } = await supabase.from("users").update({ role: "job_seeker" }).eq("id", userId);
   if (error) return { success: false, error: "Failed to update user role" };
 
-  // 2. Remove from special_requests array
+  // 5. Remove from special_requests array
   const { data: srCfg } = await supabase.from("app_config").select("value").eq("key", "special_requests").maybeSingle();
   let specialRequests: any[] = [];
   try {
