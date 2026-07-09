@@ -1041,12 +1041,27 @@ export default function DashboardScreen({ onJobSelect }: { onJobSelect?: (jobId:
                           onChange={(e) => {
                             const t = templates.find(tpl => tpl.id === e.target.value);
                             if (t) {
-                              setPostForm(prev => ({
-                                ...prev,
-                                title: t.title,
-                                category: t.job_category,
-                                description: t.description_template + (t.requirements_template ? "\n\nRequirements:\n" + t.requirements_template : "")
-                              }));
+                              setPostForm(prev => {
+                                let desc = t.description_template || "";
+                                if (t.responsibilities_template) desc += "\n\nResponsibilities:\n" + t.responsibilities_template;
+                                if (t.requirements_template) desc += "\n\nRequirements:\n" + t.requirements_template;
+                                if (t.benefits_template) desc += "\n\nBenefits:\n" + t.benefits_template;
+
+                                return {
+                                  ...prev,
+                                  title: t.title || "",
+                                  category: t.job_category || "",
+                                  jobType: t.employment_type || "Full Time",
+                                  neighborhood: t.location || "Bole",
+                                  experience: t.experience_required || "Entry level",
+                                  deadline: t.deadline || "",
+                                  salaryMin: t.salary_min ? t.salary_min.toString() : "",
+                                  description: desc
+                                };
+                              });
+                              if (t.salary_type) {
+                                setSalaryMode(t.salary_type === "fixed" ? "amount" : t.salary_type === "company_scale" ? "company" : "negotiable");
+                              }
                             }
                           }}
                         >
