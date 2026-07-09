@@ -264,6 +264,7 @@ export default function ContentManagementTab() {
                         },
                         deadline: tpl.deadline || new Date().toISOString(),
                         qualificationsMet: true,
+                        locationMismatch: false,
                       });
                     }}
                     style={{ background: "var(--card, #1e293b)", borderRadius: 16, padding: 16, marginBottom: 0, border: "1px solid var(--border, rgba(255,255,255,0.08))", boxShadow: "0 2px 12px rgba(0,0,0,0.18)", cursor: "pointer" }}
