@@ -294,11 +294,11 @@ export default function DashboardScreen({ onJobSelect }: { onJobSelect?: (jobId:
     let finalSalaryMax = "";
 
     if (salaryMode === "company") {
-      finalSalaryMin = "-1";
-      finalSalaryMax = "-1";
-    } else if (salaryMode === "negotiable") {
       finalSalaryMin = "-2";
       finalSalaryMax = "-2";
+    } else if (salaryMode === "negotiable") {
+      finalSalaryMin = "-1";
+      finalSalaryMax = "-1";
     } else {
       if (!salaryMin.trim() || isNaN(Number(salaryMin)) || Number(salaryMin) <= 0) {
         setPostError("Please enter a valid salary amount.");
@@ -376,7 +376,7 @@ export default function DashboardScreen({ onJobSelect }: { onJobSelect?: (jobId:
 
   const handleOpenEditModal = (job: DashboardJob) => {
     setEditingJobId(job.id);
-    const mode = job.salary_min === -1 ? "company" : job.salary_min === -2 ? "negotiable" : "amount";
+    const mode = job.salary_min === -2 ? "company" : job.salary_min === -1 ? "negotiable" : "amount";
     setSalaryMode(mode);
     setPostForm({
       title: job.title,
