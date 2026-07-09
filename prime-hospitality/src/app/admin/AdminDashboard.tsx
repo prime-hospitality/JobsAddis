@@ -378,13 +378,16 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
         <div className="h-16 flex items-center px-6 border-b border-gray-100 shrink-0">
           <div
             style={{
-              width: 36, height: 36, borderRadius: 10, flexShrink: 0,
+              width: 48, height: 48, borderRadius: 12, flexShrink: 0,
               display: "flex", alignItems: "center", justifyContent: "center",
               overflow: "hidden",
               marginRight: 10,
+              background: "#fff",
+              border: "1.5px solid #e2e8f0",
+              boxShadow: "0 1px 4px 0 rgba(27,58,92,0.10)",
             }}
           >
-            <img src="/addis_jobs_logo_mark_only.svg" alt="Addis Jobs Logo" style={{ width: "100%", height: "100%", objectFit: "contain", padding: "4px" }} />
+            <img src="/addis_jobs_logo_mark_only.svg" alt="Addis Jobs Logo" style={{ width: "80%", height: "80%", objectFit: "contain" }} />
           </div>
           <span className="text-xl font-bold text-gray-900">Addis Jobs</span>
           <button onClick={() => setMobileMenuOpen(false)} className="ml-auto md:hidden text-gray-500 hover:text-gray-700">
