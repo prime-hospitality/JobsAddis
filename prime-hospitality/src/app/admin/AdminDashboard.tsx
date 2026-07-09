@@ -66,8 +66,8 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
   const VALID_TABS: Tab[] = ["overview", "employers", "jobs", "users", "content", "monetization", "settings"];
   const getInitialTab = (): Tab => {
     if (typeof window !== "undefined") {
-      const hash = window.location.hash.replace("#", "") as Tab;
-      if (VALID_TABS.includes(hash)) return hash;
+      const stored = sessionStorage.getItem("adminActiveTab") as Tab;
+      if (stored && VALID_TABS.includes(stored)) return stored;
     }
     return "overview";
   };
@@ -106,9 +106,12 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
   const [overviewEmployerId, setOverviewEmployerId] = useState<string>("");
   const [overviewDuration, setOverviewDuration] = useState<"7" | "30" | "90">("30");
 
-  // Sync active tab to URL hash so refresh restores the same tab
+  // Sync active tab to sessionStorage so refresh restores the same tab
   useEffect(() => {
-    window.location.hash = activeTab;
+    sessionStorage.setItem("adminActiveTab", activeTab);
+    if (window.location.hash) {
+      window.history.replaceState(null, "", window.location.pathname);
+    }
   }, [activeTab]);
 
   const navItems = [
@@ -361,6 +364,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
   };
 
   const handleLogout = async () => {
+    sessionStorage.removeItem("adminActiveTab");
     await logoutAdmin();
     window.location.reload();
   };
