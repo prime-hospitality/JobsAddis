@@ -86,8 +86,10 @@ export default function JobDetailScreen({ job, isEmployer, onBack, onApply }: Jo
     infoItems.push({ icon: Clock, label: "Working Hours", value: job.requirements.workingHours });
   }
 
-  const openingsCount = job.quantity ?? 1;
+  const openingsCount = (job as any).quantity ?? 1;
   infoItems.push({ icon: Users, label: "Openings", value: `${openingsCount} position${openingsCount !== 1 ? "s" : ""}` });
+
+  const validInfoItems = infoItems.filter(item => item.value && String(item.value).trim() !== "");
 
   return (
     <LazyMotion features={domAnimation}>
@@ -224,12 +226,16 @@ export default function JobDetailScreen({ job, isEmployer, onBack, onApply }: Jo
               >
                 {job.title}
               </h2>
-              <p style={{ fontSize: 14, color: "var(--brand)", fontWeight: 600 }}>
-                {job.businessName}
-              </p>
-              <p style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>
-                {job.businessType}
-              </p>
+              {job.businessName && (
+                <p style={{ fontSize: 14, color: "var(--brand)", fontWeight: 600 }}>
+                  {job.businessName}
+                </p>
+              )}
+              {job.businessType && (
+                <p style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>
+                  {job.businessType}
+                </p>
+              )}
             </div>
           </motion.div>
 
@@ -245,7 +251,7 @@ export default function JobDetailScreen({ job, isEmployer, onBack, onApply }: Jo
               marginBottom: 20,
             }}
           >
-            {infoItems.map(({ icon: Icon, label, value }) => (
+            {validInfoItems.map(({ icon: Icon, label, value }) => (
               <div
                 key={label}
                 style={{
@@ -298,104 +304,114 @@ export default function JobDetailScreen({ job, isEmployer, onBack, onApply }: Jo
           )}
 
           {/* About section */}
-          <motion.section
-            initial={shouldReduceMotion ? false : { opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.28, delay: 0.15 }}
-            style={{ marginBottom: 20 }}
-          >
-            <h3
-              style={{
-                fontSize: 14,
-                fontWeight: 700,
-                color: "var(--text-primary)",
-                marginBottom: 10,
-                textTransform: "uppercase",
-                letterSpacing: "0.04em",
-              }}
+          {job.fullDescription && job.fullDescription.trim() !== "" && (
+            <motion.section
+              initial={shouldReduceMotion ? false : { opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.28, delay: 0.15 }}
+              style={{ marginBottom: 20 }}
             >
-              About this Job
-            </h3>
-            <p
-              style={{
-                fontSize: 14,
-                color: "var(--text-secondary)",
-                lineHeight: 1.7,
-                background: "var(--surface-elevated)",
-                border: "1px solid var(--border)",
-                borderRadius: 12,
-                padding: 14,
-                whiteSpace: "pre-wrap",
-                wordBreak: "break-word",
-              }}
-            >
-              {renderWithLinks(job.fullDescription)}
-            </p>
-          </motion.section>
+              <h3
+                style={{
+                  fontSize: 14,
+                  fontWeight: 700,
+                  color: "var(--text-primary)",
+                  marginBottom: 10,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.04em",
+                }}
+              >
+                About this Job
+              </h3>
+              <p
+                style={{
+                  fontSize: 14,
+                  color: "var(--text-secondary)",
+                  lineHeight: 1.7,
+                  background: "var(--surface-elevated)",
+                  border: "1px solid var(--border)",
+                  borderRadius: 12,
+                  padding: 14,
+                  whiteSpace: "pre-wrap",
+                  wordBreak: "break-word",
+                }}
+              >
+                {renderWithLinks(job.fullDescription)}
+              </p>
+            </motion.section>
+          )}
 
           {/* Requirements section */}
-          <motion.section
-            initial={shouldReduceMotion ? false : { opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.28, delay: 0.2 }}
-            style={{ marginBottom: 20 }}
-          >
-            <h3
-              style={{
-                fontSize: 14,
-                fontWeight: 700,
-                color: "var(--text-primary)",
-                marginBottom: 10,
-                textTransform: "uppercase",
-                letterSpacing: "0.04em",
-              }}
-            >
-              Requirements
-            </h3>
-            <div
-              style={{
-                background: "var(--surface-elevated)",
-                border: "1px solid var(--border)",
-                borderRadius: 12,
-                overflow: "hidden",
-              }}
-            >
-              {[
-                { label: "Experience", value: job.requirements.experience },
-                { label: "Education", value: job.requirements.education },
-                { label: "Languages", value: job.requirements.languages.join(", ") },
-                ...(job.requirements.locationPreference
-                  ? [{ label: "Location", value: job.requirements.locationPreference }]
-                  : []),
-              ].map(({ label, value }, i, arr) => (
-                <div
-                  key={label}
+          {(() => {
+            const reqItems = [
+              { label: "Experience", value: job.requirements?.experience },
+              { label: "Education", value: job.requirements?.education },
+              { label: "Languages", value: job.requirements?.languages?.length ? job.requirements.languages.join(", ") : null },
+              ...(job.requirements?.locationPreference
+                ? [{ label: "Location", value: job.requirements.locationPreference }]
+                : []),
+            ].filter(item => item.value && String(item.value).trim() !== "");
+
+            if (reqItems.length === 0) return null;
+
+            return (
+              <motion.section
+                initial={shouldReduceMotion ? false : { opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.28, delay: 0.2 }}
+                style={{ marginBottom: 20 }}
+              >
+                <h3
                   style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "flex-start",
-                    padding: "12px 14px",
-                    borderBottom: i < arr.length - 1 ? "1px solid var(--border)" : "none",
-                    gap: 12,
+                    fontSize: 14,
+                    fontWeight: 700,
+                    color: "var(--text-primary)",
+                    marginBottom: 10,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.04em",
                   }}
                 >
-                  <span style={{ fontSize: 13, color: "var(--text-muted)", fontWeight: 500, flexShrink: 0 }}>
-                    {label}
-                  </span>
-                  <span
-                    style={{
-                      fontSize: 13,
-                      color: "var(--text-primary)",
-                      fontWeight: 600,
-                      textAlign: "right",
-                    }}
-                  >
-                    {value}
-                  </span>
+                  Requirements
+                </h3>
+                <div
+                  style={{
+                    background: "var(--surface-elevated)",
+                    border: "1px solid var(--border)",
+                    borderRadius: 12,
+                    overflow: "hidden",
+                  }}
+                >
+                  {reqItems.map(({ label, value }, i, arr) => (
+                    <div
+                      key={label}
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "flex-start",
+                        padding: "12px 14px",
+                        borderBottom: i < arr.length - 1 ? "1px solid var(--border)" : "none",
+                        gap: 12,
+                      }}
+                    >
+                      <span style={{ fontSize: 13, color: "var(--text-muted)", fontWeight: 500, flexShrink: 0 }}>
+                        {label}
+                      </span>
+                      <span
+                        style={{
+                          fontSize: 13,
+                          color: "var(--text-primary)",
+                          fontWeight: 600,
+                          textAlign: "right",
+                        }}
+                      >
+                        {value}
+                      </span>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          </motion.section>
+              </motion.section>
+            );
+          })()}
 
           {/* Posted info */}
           <div
