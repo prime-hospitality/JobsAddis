@@ -4,6 +4,8 @@ import React, { useState, useEffect } from "react";
 import { getContentData, upsertFaq, deleteFaq, upsertVacancyTemplate, deleteVacancyTemplate, updateOnboardingConfig } from "./actions";
 import { Plus, Save, Trash2, Pencil, X, Briefcase, MapPin, CreditCard, Calendar, FileText, CheckCircle2, Clock, Users } from "lucide-react";
 import { searchLocations } from "@/data/locations";
+import JobDetailScreen from "@/screens/JobDetailScreen";
+import { Job } from "@/data/jobs";
 
 export default function ContentManagementTab() {
   const [activeSubTab, setActiveSubTab] = useState<"faqs" | "templates" | "onboarding">("faqs");
@@ -86,6 +88,7 @@ export default function ContentManagementTab() {
     quantity: number;
     education_requirements: string;
   } | null>(null);
+  const [viewingTemplateJob, setViewingTemplateJob] = useState<Job | null>(null);
   const [locationSuggestionsOpen, setLocationSuggestionsOpen] = useState(false);
   const [templateSaving, setTemplateSaving] = useState(false);
 
@@ -235,7 +238,35 @@ export default function ContentManagementTab() {
                 return (
                   <div
                     key={tpl.id}
-                    style={{ background: "var(--card, #1e293b)", borderRadius: 16, padding: 16, marginBottom: 0, border: "1px solid var(--border, rgba(255,255,255,0.08))", boxShadow: "0 2px 12px rgba(0,0,0,0.18)" }}
+                    onClick={() => {
+                      setViewingTemplateJob({
+                        id: tpl.id,
+                        businessName: "Addis Jobs",
+                        businessLogo: "🏢",
+                        logoUrl: "/addis_jobs_logo_mark_only.svg",
+                        businessType: "Platform",
+                        title: tpl.title || "Untitled",
+                        category: tpl.job_category || "Other",
+                        location: tpl.location || "Addis Ababa",
+                        neighborhood: tpl.location || "Addis Ababa",
+                        jobType: (tpl.employment_type as any) || "Full Time",
+                        salaryMin: tpl.salary_min || -1,
+                        salaryMax: tpl.salary_max || -1,
+                        currency: tpl.salary_currency || "ETB",
+                        postedAt: new Date().toISOString(),
+                        description: tpl.description_template || "",
+                        fullDescription: tpl.description_template || "",
+                        requirements: {
+                          experience: (tpl.experience_required as any) || "Entry Level",
+                          education: tpl.education_requirements || "",
+                          languages: [],
+                          locationPreference: null,
+                        },
+                        deadline: tpl.deadline || new Date().toISOString(),
+                        qualificationsMet: true,
+                      });
+                    }}
+                    style={{ background: "var(--card, #1e293b)", borderRadius: 16, padding: 16, marginBottom: 0, border: "1px solid var(--border, rgba(255,255,255,0.08))", boxShadow: "0 2px 12px rgba(0,0,0,0.18)", cursor: "pointer" }}
                   >
                     {/* Header row */}
                     <div style={{ display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 12 }}>
@@ -259,13 +290,13 @@ export default function ContentManagementTab() {
                       {/* Action buttons */}
                       <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
                         <button
-                          onClick={() => { setRequirementsTab("skill"); setTemplateModal({ id: tpl.id, title: tpl.title || "", job_category: tpl.job_category || "Other", description_template: tpl.description_template || "", requirements_template: tpl.requirements_template || "", location: tpl.location || "", employment_type: tpl.employment_type || "Full Time", salary_type: tpl.salary_type || "fixed", salary_min: tpl.salary_min, salary_max: tpl.salary_max, salary_currency: tpl.salary_currency || "ETB", salary_period: tpl.salary_period || "Monthly", experience_required: tpl.experience_required || "Entry level", responsibilities_template: tpl.responsibilities_template || "", benefits_template: tpl.benefits_template || "", deadline: tpl.deadline || "", quantity: tpl.quantity || 1, education_requirements: tpl.education_requirements || "" }); }}
+                          onClick={(e) => { e.stopPropagation(); setRequirementsTab("skill"); setTemplateModal({ id: tpl.id, title: tpl.title || "", job_category: tpl.job_category || "Other", description_template: tpl.description_template || "", requirements_template: tpl.requirements_template || "", location: tpl.location || "", employment_type: tpl.employment_type || "Full Time", salary_type: tpl.salary_type || "fixed", salary_min: tpl.salary_min, salary_max: tpl.salary_max, salary_currency: tpl.salary_currency || "ETB", salary_period: tpl.salary_period || "Monthly", experience_required: tpl.experience_required || "Entry level", responsibilities_template: tpl.responsibilities_template || "", benefits_template: tpl.benefits_template || "", deadline: tpl.deadline || "", quantity: tpl.quantity || 1, education_requirements: tpl.education_requirements || "" }); }}
                           style={{ padding: "6px", borderRadius: 8, background: "rgba(14,165,233,0.12)", border: "1px solid rgba(14,165,233,0.2)", color: "#38bdf8", cursor: "pointer", display: "flex", alignItems: "center" }}
                         >
                           <Pencil size={14} />
                         </button>
                         <button
-                          onClick={() => handleDeleteTemplate(tpl.id)}
+                          onClick={(e) => { e.stopPropagation(); handleDeleteTemplate(tpl.id); }}
                           style={{ padding: "6px", borderRadius: 8, background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.2)", color: "#f87171", cursor: "pointer", display: "flex", alignItems: "center" }}
                         >
                           <Trash2 size={14} />
@@ -849,6 +880,21 @@ export default function ContentManagementTab() {
               >
                 Yes, delete
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {viewingTemplateJob && (
+        <div className="fixed inset-0 bg-black/60 z-[200] overflow-y-auto">
+          <div className="min-h-screen p-4 sm:p-6 lg:p-8">
+            <div className="mx-auto max-w-[1200px] bg-white rounded-[24px] shadow-2xl overflow-hidden relative border border-gray-100">
+              <JobDetailScreen
+                job={viewingTemplateJob}
+                isEmployer={true}
+                onBack={() => setViewingTemplateJob(null)}
+                onApply={() => {}}
+              />
             </div>
           </div>
         </div>
