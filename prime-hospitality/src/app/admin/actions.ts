@@ -439,46 +439,58 @@ export async function deleteFaq(id: string) {
   return { success: true };
 }
 
-export async function upsertVacancyTemplate(
-  id: string | null,
-  title: string,
-  job_category: string,
-  description_template: string,
-  requirements_template: string,
-  location: string,
-  employment_type: string,
-  salary_type: string,
-  salary_min: number | null,
-  salary_max: number | null,
-  salary_currency: string,
-  salary_period: string,
-  experience_required: string,
-  responsibilities_template: string,
-  benefits_template: string,
-  deadline: string,
-) {
+
+export interface VacancyTemplatePayload {
+  id?: string | null;
+  title: string;
+  job_category: string;
+  description_template: string;
+  requirements_template: string;
+  location: string;
+  employment_type: string;
+  salary_type: string;
+  salary_min: number | null;
+  salary_max?: number | null;
+  salary_currency?: string;
+  salary_period?: string;
+  experience_required?: string;
+  responsibilities_template?: string;
+  benefits_template?: string;
+  deadline?: string;
+  quantity?: number;
+  education_requirements?: string;
+}
+
+export async function upsertVacancyTemplate(payload: VacancyTemplatePayload) {
   const auth = (await cookies()).get("admin_session");
   if (!auth?.value) throw new Error("Unauthorized");
 
-  const { error } = await getSupabase().from("vacancy_templates").upsert({
+  const supabase = getSupabase();
+  const { id, ...data } = payload;
+  
+  const dbPayload = {
     ...(id ? { id } : {}),
-    title,
-    job_category,
-    description_template,
-    requirements_template,
-    location,
-    employment_type,
-    salary_type,
-    salary_min,
-    salary_max,
-    salary_currency,
-    salary_period,
-    experience_required,
-    responsibilities_template,
-    benefits_template,
-    deadline,
+    title: data.title,
+    job_category: data.job_category,
+    description_template: data.description_template,
+    requirements_template: data.requirements_template,
+    location: data.location,
+    employment_type: data.employment_type,
+    salary_type: data.salary_type,
+    salary_min: data.salary_min,
+    salary_max: data.salary_max,
+    salary_currency: data.salary_currency,
+    salary_period: data.salary_period,
+    experience_required: data.experience_required,
+    responsibilities_template: data.responsibilities_template,
+    benefits_template: data.benefits_template,
+    deadline: data.deadline || null,
+    quantity: data.quantity || 1,
+    education_requirements: data.education_requirements || null,
     updated_at: new Date().toISOString()
-  });
+  };
+
+  const { error } = await supabase.from("vacancy_templates").upsert(dbPayload);
 
   if (error) throw error;
   return { success: true };

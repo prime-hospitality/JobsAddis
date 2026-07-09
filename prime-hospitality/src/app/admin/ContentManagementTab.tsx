@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { getContentData, upsertFaq, deleteFaq, upsertVacancyTemplate, deleteVacancyTemplate, updateOnboardingConfig } from "./actions";
-import { Plus, Save, Trash2, Pencil, X, Briefcase, MapPin, CreditCard, Calendar, FileText, CheckCircle2 } from "lucide-react";
+import { Plus, Save, Trash2, Pencil, X, Briefcase, MapPin, CreditCard, Calendar, FileText, CheckCircle2, Clock, Users } from "lucide-react";
 import { searchLocations } from "@/data/locations";
 
 export default function ContentManagementTab() {
@@ -65,6 +65,7 @@ export default function ContentManagementTab() {
   };
 
   // Template State
+  const [requirementsTab, setRequirementsTab] = useState<"skill" | "education">("skill");
   const [templateModal, setTemplateModal] = useState<{
     id?: string;
     title: string;
@@ -82,29 +83,14 @@ export default function ContentManagementTab() {
     responsibilities_template: string;
     benefits_template: string;
     deadline: string;
+    quantity: number;
+    education_requirements: string;
   } | null>(null);
   const [locationSuggestionsOpen, setLocationSuggestionsOpen] = useState(false);
 
   const handleSaveTemplate = async () => {
     if (!templateModal) return;
-    await upsertVacancyTemplate(
-      templateModal.id || null,
-      templateModal.title,
-      templateModal.job_category,
-      templateModal.description_template,
-      templateModal.requirements_template,
-      templateModal.location,
-      templateModal.employment_type,
-      templateModal.salary_type,
-      templateModal.salary_min,
-      templateModal.salary_max,
-      templateModal.salary_currency,
-      templateModal.salary_period,
-      templateModal.experience_required,
-      templateModal.responsibilities_template,
-      templateModal.benefits_template,
-      templateModal.deadline
-    );
+    await upsertVacancyTemplate(templateModal);
     setTemplateModal(null);
     loadData();
   };
@@ -221,7 +207,9 @@ export default function ContentManagementTab() {
                   experience_required: "Entry level",
                   responsibilities_template: "",
                   benefits_template: "",
-                  deadline: ""
+                  deadline: "",
+                  quantity: 1,
+                  education_requirements: ""
                 })}
                 className="bg-[#0284c7] text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-[#0369a1] transition-colors flex items-center gap-2"
               >
@@ -229,49 +217,81 @@ export default function ContentManagementTab() {
               </button>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {data.templates.map((tpl) => (
-                <div key={tpl.id} className="border border-gray-200 rounded-xl p-5 bg-white shadow-sm hover:shadow-md transition-shadow">
-                  <div className="flex justify-between items-start mb-3">
-                    <div>
-                      <h4 className="font-bold text-gray-900 text-lg">{tpl.title}</h4>
-                      <span className="inline-block px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-md mt-1">{tpl.job_category}</span>
+              {data.templates.map((tpl) => {
+                const salaryMin = tpl.salary_min ?? 0;
+                const salaryMax = tpl.salary_max ?? 0;
+                const salaryLabel =
+                  tpl.salary_type === "company_scale" ? "Per Company Scale" :
+                  tpl.salary_type === "negotiable" ? "Negotiable" :
+                  salaryMin > 0
+                    ? `ETB ${salaryMin >= 1000 ? (salaryMin/1000).toFixed(0)+"k" : salaryMin}${salaryMax && salaryMax !== salaryMin ? "–"+(salaryMax >= 1000 ? (salaryMax/1000).toFixed(0)+"k" : salaryMax) : ""}/mo`
+                    : "Salary TBD";
+                return (
+                  <div
+                    key={tpl.id}
+                    style={{ background: "var(--card, #1e293b)", borderRadius: 16, padding: 16, marginBottom: 0, border: "1px solid var(--border, rgba(255,255,255,0.08))", boxShadow: "0 2px 12px rgba(0,0,0,0.18)" }}
+                  >
+                    {/* Header row */}
+                    <div style={{ display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 12 }}>
+                      {/* Logo */}
+                      <div style={{ width: 48, height: 48, borderRadius: 12, background: "var(--brand-subtle, rgba(14,165,233,0.12))", border: "1px solid var(--border, rgba(255,255,255,0.08))", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                        <img src="/addis_jobs_logo_mark_only.svg" alt="Addis Jobs Logo" style={{ width: "100%", height: "100%", objectFit: "contain", padding: 6 }} />
+                      </div>
+                      {/* Title + category */}
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <p style={{ fontSize: 12, color: "var(--text-secondary, #94a3b8)", marginBottom: 2, fontWeight: 500, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                          {tpl.job_category || "Template"}
+                        </p>
+                        <h3 style={{ fontSize: 16, fontWeight: 700, color: "var(--text-primary, #f1f5f9)", lineHeight: 1.2, marginBottom: 4 }}>
+                          {tpl.title}
+                        </h3>
+                        <span style={{ fontSize: 11, color: "var(--text-muted, #64748b)", display: "flex", alignItems: "center", gap: 3 }}>
+                          <Clock size={10} />
+                          Template
+                        </span>
+                      </div>
+                      {/* Action buttons */}
+                      <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
+                        <button
+                          onClick={() => { setRequirementsTab("skill"); setTemplateModal({ id: tpl.id, title: tpl.title || "", job_category: tpl.job_category || "Other", description_template: tpl.description_template || "", requirements_template: tpl.requirements_template || "", location: tpl.location || "", employment_type: tpl.employment_type || "Full Time", salary_type: tpl.salary_type || "fixed", salary_min: tpl.salary_min, salary_max: tpl.salary_max, salary_currency: tpl.salary_currency || "ETB", salary_period: tpl.salary_period || "Monthly", experience_required: tpl.experience_required || "Entry level", responsibilities_template: tpl.responsibilities_template || "", benefits_template: tpl.benefits_template || "", deadline: tpl.deadline || "", quantity: tpl.quantity || 1, education_requirements: tpl.education_requirements || "" }); }}
+                          style={{ padding: "6px", borderRadius: 8, background: "rgba(14,165,233,0.12)", border: "1px solid rgba(14,165,233,0.2)", color: "#38bdf8", cursor: "pointer", display: "flex", alignItems: "center" }}
+                        >
+                          <Pencil size={14} />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteTemplate(tpl.id)}
+                          style={{ padding: "6px", borderRadius: 8, background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.2)", color: "#f87171", cursor: "pointer", display: "flex", alignItems: "center" }}
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
                     </div>
-                    <div className="flex gap-1">
-                      <button onClick={() => setTemplateModal({
-                        id: tpl.id,
-                        title: tpl.title || "",
-                        job_category: tpl.job_category || "Other",
-                        description_template: tpl.description_template || "",
-                        requirements_template: tpl.requirements_template || "",
-                        location: tpl.location || "",
-                        employment_type: tpl.employment_type || "Full Time",
-                        salary_type: tpl.salary_type || "fixed",
-                        salary_min: tpl.salary_min,
-                        salary_max: tpl.salary_max,
-                        salary_currency: tpl.salary_currency || "ETB",
-                        salary_period: tpl.salary_period || "Monthly",
-                        experience_required: tpl.experience_required || "Entry level",
-                        responsibilities_template: tpl.responsibilities_template || "",
-                        benefits_template: tpl.benefits_template || "",
-                        deadline: tpl.deadline || ""
-                      })} className="p-1.5 text-gray-400 hover:text-[#0284c7] rounded-md transition-colors">
-                        <Pencil size={16} />
-                      </button>
-                      <button onClick={() => handleDeleteTemplate(tpl.id)} className="p-1.5 text-gray-400 hover:text-red-600 rounded-md transition-colors">
-                        <Trash2 size={16} />
-                      </button>
+
+                    {/* Description */}
+                    <p style={{ fontSize: 13, color: "var(--text-secondary, #94a3b8)", lineHeight: 1.5, marginBottom: 12, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                      {tpl.description_template || "No description provided."}
+                    </p>
+
+                    {/* Badges */}
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                      <span className="badge badge-brand">{salaryLabel}</span>
+                      <span className="badge badge-navy" style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                        <Briefcase size={9} />{tpl.employment_type || "Full Time"}
+                      </span>
+                      {tpl.location && (
+                        <span className="badge badge-navy" style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                          <MapPin size={9} />{tpl.location}
+                        </span>
+                      )}
+                      {tpl.quantity > 1 && (
+                        <span className="badge badge-navy" style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                          <Users size={9} />{tpl.quantity} openings
+                        </span>
+                      )}
                     </div>
                   </div>
-                  <div className="mb-2">
-                    <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Description</p>
-                    <p className="text-sm text-gray-700 line-clamp-2">{tpl.description_template}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Requirements</p>
-                    <p className="text-sm text-gray-700 line-clamp-2">{tpl.requirements_template}</p>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
               {data.templates.length === 0 && <p className="text-center text-gray-500 py-8 col-span-full">No templates found.</p>}
             </div>
           </div>
@@ -486,7 +506,7 @@ export default function ContentManagementTab() {
                     
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-1.5">Category</label>
+                        <label className="block text-sm font-semibold text-gray-700 mb-1.5">Department</label>
                         <input
                           type="text"
                           value={templateModal.job_category}
@@ -511,8 +531,22 @@ export default function ContentManagementTab() {
                       </div>
                     </div>
 
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-1.5">Number of Required</label>
+                        <input
+                          type="number"
+                          min={1}
+                          value={templateModal.quantity}
+                          onChange={(e) => setTemplateModal({ ...templateModal, quantity: Math.max(1, Number(e.target.value)) })}
+                          className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:ring-4 focus:ring-[#0284c7]/10 focus:border-[#0284c7] transition-all outline-none shadow-sm placeholder:text-gray-400"
+                          placeholder="1"
+                        />
+                      </div>
+                    </div>
+
                     <div className="relative">
-                      <label className="block text-sm font-semibold text-gray-700 mb-1.5">Location</label>
+                      <label className="block text-sm font-semibold text-gray-700 mb-1.5">Place of Work</label>
                       <div className="relative">
                         <MapPin size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
                         <input
@@ -664,7 +698,7 @@ export default function ContentManagementTab() {
                   <div className="flex-1 flex flex-col gap-5">
                     <div className="group">
                       <label className="block text-sm font-semibold text-gray-700 mb-1.5 flex justify-between">
-                        Description
+                        Job Description
                         <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider bg-gray-100 px-2 py-0.5 rounded-full group-focus-within:bg-[#0284c7] group-focus-within:text-white transition-colors">Main overview</span>
                       </label>
                       <textarea
@@ -688,25 +722,60 @@ export default function ContentManagementTab() {
                       />
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                      <div className="group">
-                        <label className="block text-sm font-semibold text-gray-700 mb-1.5">Requirements</label>
+                    <div className="group">
+                      {/* Toggle between Requirement skill & Education Requirements */}
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="flex p-0.5 bg-gray-100 rounded-lg border border-gray-200/60">
+                          <button
+                            type="button"
+                            onClick={() => setRequirementsTab("skill")}
+                            className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all duration-200 ${
+                              requirementsTab === "skill"
+                                ? "bg-white text-gray-900 shadow-sm ring-1 ring-gray-200"
+                                : "text-gray-500 hover:text-gray-700"
+                            }`}
+                          >
+                            Requirement Skill
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setRequirementsTab("education")}
+                            className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all duration-200 ${
+                              requirementsTab === "education"
+                                ? "bg-white text-gray-900 shadow-sm ring-1 ring-gray-200"
+                                : "text-gray-500 hover:text-gray-700"
+                            }`}
+                          >
+                            Education Requirements
+                          </button>
+                        </div>
+                      </div>
+
+                      {requirementsTab === "skill" ? (
                         <textarea
                           value={templateModal.requirements_template}
                           onChange={(e) => setTemplateModal({ ...templateModal, requirements_template: e.target.value })}
                           className="w-full px-4 py-3 bg-gray-50/50 hover:bg-white border border-gray-200 rounded-xl text-sm h-28 resize-none focus:ring-4 focus:ring-[#0284c7]/10 focus:border-[#0284c7] transition-all outline-none leading-relaxed shadow-inner placeholder:text-gray-300"
-                          placeholder="- Required skill one&#10;- Certification..."
+                          placeholder="- Required skill one&#10;- Certification...&#10;- Years of experience..."
                         />
-                      </div>
-                      <div className="group">
-                        <label className="block text-sm font-semibold text-gray-700 mb-1.5">Benefits</label>
+                      ) : (
                         <textarea
-                          value={templateModal.benefits_template}
-                          onChange={(e) => setTemplateModal({ ...templateModal, benefits_template: e.target.value })}
-                          className="w-full px-4 py-3 bg-gray-50/50 hover:bg-white border border-gray-200 rounded-xl text-sm h-28 resize-none focus:ring-4 focus:ring-[#0284c7]/10 focus:border-[#0284c7] transition-all outline-none leading-relaxed shadow-inner placeholder:text-gray-300"
-                          placeholder="- Paid time off&#10;- Health insurance..."
+                          value={templateModal.education_requirements}
+                          onChange={(e) => setTemplateModal({ ...templateModal, education_requirements: e.target.value })}
+                          className="w-full px-4 py-3 bg-gray-50/50 hover:bg-white border border-gray-200 rounded-xl text-sm h-28 resize-none focus:ring-4 focus:ring-[#7c3aed]/10 focus:border-[#7c3aed] transition-all outline-none leading-relaxed shadow-inner placeholder:text-gray-300"
+                          placeholder="- Bachelor's Degree in Hospitality Management&#10;- Vocational certificate in...&#10;- Minimum education level..."
                         />
-                      </div>
+                      )}
+                    </div>
+
+                    <div className="group">
+                      <label className="block text-sm font-semibold text-gray-700 mb-1.5">Benefits</label>
+                      <textarea
+                        value={templateModal.benefits_template}
+                        onChange={(e) => setTemplateModal({ ...templateModal, benefits_template: e.target.value })}
+                        className="w-full px-4 py-3 bg-gray-50/50 hover:bg-white border border-gray-200 rounded-xl text-sm h-28 resize-none focus:ring-4 focus:ring-[#0284c7]/10 focus:border-[#0284c7] transition-all outline-none leading-relaxed shadow-inner placeholder:text-gray-300"
+                        placeholder="- Paid time off&#10;- Health insurance..."
+                      />
                     </div>
                   </div>
                 </div>

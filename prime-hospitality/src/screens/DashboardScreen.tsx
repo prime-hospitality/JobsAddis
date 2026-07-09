@@ -1056,6 +1056,8 @@ export default function DashboardScreen({ onJobSelect }: { onJobSelect?: (jobId:
                                   experience: t.experience_required || "Entry level",
                                   deadline: t.deadline || "",
                                   salaryMin: t.salary_min ? t.salary_min.toString() : "",
+                                  quantity: t.quantity ? t.quantity.toString() : "1",
+                                  education: t.education_requirements || "",
                                   description: desc
                                 };
                               });
