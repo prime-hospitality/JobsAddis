@@ -239,6 +239,11 @@ export default function ContentManagementTab() {
                   <div
                     key={tpl.id}
                     onClick={() => {
+                      let desc = tpl.description_template || "";
+                      if (tpl.responsibilities_template) desc += "\n\nResponsibilities:\n" + tpl.responsibilities_template;
+                      if (tpl.requirements_template) desc += "\n\nRequirements:\n" + tpl.requirements_template;
+                      if (tpl.benefits_template) desc += "\n\nBenefits:\n" + tpl.benefits_template;
+
                       setViewingTemplateJob({
                         id: tpl.id,
                         businessName: "Addis Jobs",
@@ -254,8 +259,8 @@ export default function ContentManagementTab() {
                         salaryMax: tpl.salary_type === "company_scale" ? -2 : tpl.salary_type === "negotiable" ? -1 : (tpl.salary_max ?? -1),
                         currency: tpl.salary_currency || "ETB",
                         postedAt: new Date().toISOString(),
-                        description: tpl.description_template || "",
-                        fullDescription: tpl.description_template || "",
+                        description: desc,
+                        fullDescription: desc,
                         requirements: {
                           experience: (tpl.experience_required as any) || "Entry Level",
                           education: tpl.education_requirements || "",
