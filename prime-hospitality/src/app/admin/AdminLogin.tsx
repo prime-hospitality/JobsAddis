@@ -59,6 +59,27 @@ export default function AdminLogin() {
         }} />
 
         <div style={{ zIndex: 1, display: "flex", flexDirection: "column", alignItems: "center" }}>
+
+          {/* Addis Jobs Logo */}
+          <div style={{
+            width: 96,
+            height: 96,
+            borderRadius: "50%",
+            background: "rgba(255,255,255,0.12)",
+            border: "1.5px solid rgba(255,255,255,0.3)",
+            backdropFilter: "blur(8px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            marginBottom: 20,
+            boxShadow: "0 4px 24px 0 rgba(0,0,0,0.18)",
+          }}>
+            <img
+              src="/addis_jobs_logo_mark_only.svg"
+              alt="Addis Jobs Logo"
+              style={{ width: "70%", height: "70%", objectFit: "contain", filter: "brightness(0) invert(1)" }}
+            />
+          </div>
           
           <h1 style={{ 
             fontFamily: "'Playfair Display', 'Times New Roman', serif", 
