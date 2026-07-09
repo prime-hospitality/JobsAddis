@@ -61,7 +61,9 @@ export default function AdminLogin() {
         <div style={{ zIndex: 1, display: "flex", flexDirection: "column", alignItems: "center" }}>
 
           {/* Addis Jobs Logo */}
-          <div style={{
+          <div 
+            className="animate-pulse"
+            style={{
             width: 96,
             height: 96,
             borderRadius: "50%",
