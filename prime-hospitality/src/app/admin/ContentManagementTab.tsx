@@ -897,17 +897,64 @@ export default function ContentManagementTab() {
       )}
 
       {viewingTemplateJob && (
-        <div className="fixed inset-0 bg-black/60 z-[200] overflow-y-auto">
-          <div className="min-h-screen p-4 sm:p-6 lg:p-8">
-            <div className="mx-auto max-w-[1200px] bg-white rounded-[24px] shadow-2xl overflow-hidden relative border border-gray-100">
-              <JobDetailScreen
-                job={viewingTemplateJob}
-                isEmployer={true}
-                onBack={() => setViewingTemplateJob(null)}
-                onApply={() => {}}
-              />
+        <div
+          className="fixed inset-0 z-[200] flex items-center justify-center p-4"
+          style={{ background: "rgba(0,0,0,0.75)", backdropFilter: "blur(6px)" }}
+          onClick={() => setViewingTemplateJob(null)}
+        >
+          {/* Phone frame */}
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: 390,
+              height: 780,
+              borderRadius: 48,
+              background: "#111",
+              boxShadow: "0 0 0 2px #333, 0 0 0 6px #111, 0 32px 80px rgba(0,0,0,0.6)",
+              display: "flex",
+              flexDirection: "column",
+              overflow: "hidden",
+              position: "relative",
+              flexShrink: 0,
+            }}
+          >
+            {/* Dynamic island */}
+            <div style={{ position: "absolute", top: 12, left: "50%", transform: "translateX(-50%)", width: 120, height: 34, background: "#111", borderRadius: 20, zIndex: 10, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+              <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#222" }} />
+              <div style={{ width: 72, height: 10, borderRadius: 10, background: "#1a1a1a" }} />
             </div>
+            {/* Screen */}
+            <div style={{ flex: 1, background: "var(--bg, #0f172a)", borderRadius: 46, overflow: "hidden", margin: 4 }}>
+              {/* Status bar */}
+              <div style={{ height: 50, display: "flex", alignItems: "flex-end", justifyContent: "space-between", padding: "0 24px 6px", background: "var(--bg, #0f172a)" }}>
+                <span style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8" }}>9:41</span>
+                <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+                  <div style={{ display: "flex", gap: 1.5, alignItems: "flex-end" }}>
+                    {[3, 5, 7, 9].map(h => <div key={h} style={{ width: 3, height: h, background: "#94a3b8", borderRadius: 1 }} />)}
+                  </div>
+                  <svg width="14" height="10" viewBox="0 0 14 10" fill="none"><path d="M7 2.5C8.7 2.5 10.2 3.2 11.3 4.3L12.7 2.9C11.2 1.5 9.2 0.5 7 0.5C4.8 0.5 2.8 1.5 1.3 2.9L2.7 4.3C3.8 3.2 5.3 2.5 7 2.5Z" fill="#94a3b8"/><path d="M7 5.5C8 5.5 8.9 5.9 9.6 6.6L11 5.2C9.9 4.2 8.5 3.5 7 3.5C5.5 3.5 4.1 4.2 3 5.2L4.4 6.6C5.1 5.9 6 5.5 7 5.5Z" fill="#94a3b8"/><circle cx="7" cy="9" r="1.5" fill="#94a3b8"/></svg>
+                  <div style={{ width: 22, height: 11, border: "1.5px solid #94a3b8", borderRadius: 3, position: "relative" }}>
+                    <div style={{ position: "absolute", right: -3, top: "50%", transform: "translateY(-50%)", width: 2.5, height: 5, background: "#94a3b8", borderRadius: 1 }} />
+                    <div style={{ margin: 2, height: "calc(100% - 4px)", width: "70%", background: "#94a3b8", borderRadius: 1.5 }} />
+                  </div>
+                </div>
+              </div>
+              {/* Job detail */}
+              <div style={{ height: "calc(100% - 50px)", overflow: "hidden" }}>
+                <JobDetailScreen
+                  job={viewingTemplateJob}
+                  isEmployer={false}
+                  onBack={() => setViewingTemplateJob(null)}
+                  onApply={() => {}}
+                />
+              </div>
+            </div>
+            {/* Home indicator */}
+            <div style={{ position: "absolute", bottom: 14, left: "50%", transform: "translateX(-50%)", width: 120, height: 5, background: "#444", borderRadius: 3 }} />
           </div>
+          <p style={{ position: "absolute", bottom: 24, left: "50%", transform: "translateX(-50%)", color: "rgba(255,255,255,0.4)", fontSize: 12, whiteSpace: "nowrap" }}>
+            Click outside to close
+          </p>
         </div>
       )}
     </div>
