@@ -94,6 +94,10 @@ export default function ContentManagementTab() {
 
   const handleSaveTemplate = async () => {
     if (!templateModal) return;
+    if (!templateModal.description_template.trim()) {
+      alert("Job Description is required.");
+      return;
+    }
     setTemplateSaving(true);
     try {
       await upsertVacancyTemplate(templateModal);
@@ -742,7 +746,7 @@ export default function ContentManagementTab() {
                   <div className="flex-1 flex flex-col gap-5">
                     <div className="group">
                       <label className="block text-sm font-semibold text-gray-700 mb-1.5 flex justify-between">
-                        Job Description
+                        Job Description <span style={{ color: "#ef4444" }}>*</span>
                         <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider bg-gray-100 px-2 py-0.5 rounded-full group-focus-within:bg-[#0284c7] group-focus-within:text-white transition-colors">Main overview</span>
                       </label>
                       <textarea
