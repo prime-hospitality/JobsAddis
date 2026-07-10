@@ -1042,10 +1042,11 @@ export default function DashboardScreen({ onJobSelect }: { onJobSelect?: (jobId:
                             const t = templates.find(tpl => tpl.id === e.target.value);
                             if (t) {
                               setPostForm(prev => {
+                                const formatList = (txt: string) => txt.split('\n').filter(l=>l.trim()).map(l => l.trim().match(/^[-•*]/) ? l : `• ${l.trim()}`).join('\n');
                                 let desc = t.description_template || "";
-                                if (t.responsibilities_template) desc += "\n\nResponsibilities:\n" + t.responsibilities_template;
-                                if (t.requirements_template) desc += "\n\nRequirements:\n" + t.requirements_template;
-                                if (t.benefits_template) desc += "\n\nBenefits:\n" + t.benefits_template;
+                                if (t.responsibilities_template) desc += "\n\nResponsibilities:\n" + formatList(t.responsibilities_template);
+                                if (t.requirements_template) desc += "\n\nRequirements:\n" + formatList(t.requirements_template);
+                                if (t.benefits_template) desc += "\n\nBenefits:\n" + formatList(t.benefits_template);
 
                                 return {
                                   ...prev,

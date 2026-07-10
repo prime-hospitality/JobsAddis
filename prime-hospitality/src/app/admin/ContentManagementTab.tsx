@@ -239,10 +239,11 @@ export default function ContentManagementTab() {
                   <div
                     key={tpl.id}
                     onClick={() => {
+                      const formatList = (txt: string) => txt.split('\n').filter(l=>l.trim()).map(l => l.trim().match(/^[-•*]/) ? l : `• ${l.trim()}`).join('\n');
                       let desc = tpl.description_template || "";
-                      if (tpl.responsibilities_template) desc += "\n\nResponsibilities:\n" + tpl.responsibilities_template;
-                      if (tpl.requirements_template) desc += "\n\nRequirements:\n" + tpl.requirements_template;
-                      if (tpl.benefits_template) desc += "\n\nBenefits:\n" + tpl.benefits_template;
+                      if (tpl.responsibilities_template) desc += "\n\nResponsibilities:\n" + formatList(tpl.responsibilities_template);
+                      if (tpl.requirements_template) desc += "\n\nRequirements:\n" + formatList(tpl.requirements_template);
+                      if (tpl.benefits_template) desc += "\n\nBenefits:\n" + formatList(tpl.benefits_template);
 
                       setViewingTemplateJob({
                         id: tpl.id,
