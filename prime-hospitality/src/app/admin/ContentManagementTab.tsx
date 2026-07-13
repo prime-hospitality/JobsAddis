@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { getContentData, upsertFaq, deleteFaq, upsertVacancyTemplate, deleteVacancyTemplate, updateOnboardingConfig } from "./actions";
-import { Plus, Save, Trash2, Pencil, X, Briefcase, MapPin, CreditCard, Calendar, FileText, CheckCircle2, Clock, Users } from "lucide-react";
+import { getContentData, upsertFaq, deleteFaq, upsertVacancyTemplate, deleteVacancyTemplate, updateOnboardingConfig, postJobFromTemplate } from "./actions";
+import { Plus, Save, Trash2, Pencil, X, Briefcase, MapPin, CreditCard, Calendar, FileText, CheckCircle2, Clock, Users, Send, Loader2 } from "lucide-react";
 import { searchLocations } from "@/data/locations";
 import JobDetailScreen from "@/screens/JobDetailScreen";
 import { Job } from "@/data/jobs";
@@ -89,6 +89,8 @@ export default function ContentManagementTab() {
     education_requirements: string;
   } | null>(null);
   const [viewingTemplateJob, setViewingTemplateJob] = useState<Job | null>(null);
+  const [postingTemplateId, setPostingTemplateId] = useState<string | null>(null);
+  const [postedTemplateId, setPostedTemplateId] = useState<string | null>(null);
   const [locationSuggestionsOpen, setLocationSuggestionsOpen] = useState(false);
   const [templateSaving, setTemplateSaving] = useState(false);
 
@@ -337,6 +339,50 @@ export default function ContentManagementTab() {
                         </span>
                       )}
                     </div>
+
+                    {/* Post button */}
+                    <button
+                      onClick={async (e) => {
+                        e.stopPropagation();
+                        if (postingTemplateId) return;
+                        setPostingTemplateId(tpl.id);
+                        try {
+                          await postJobFromTemplate(tpl.id);
+                          setPostedTemplateId(tpl.id);
+                          setTimeout(() => setPostedTemplateId(null), 3000);
+                        } catch (err) {
+                          alert("Failed to post job: " + (err instanceof Error ? err.message : "Unknown error"));
+                        } finally {
+                          setPostingTemplateId(null);
+                        }
+                      }}
+                      style={{
+                        marginTop: 12,
+                        width: "100%",
+                        padding: "9px 16px",
+                        borderRadius: 10,
+                        border: postedTemplateId === tpl.id ? "1px solid rgba(34,197,94,0.4)" : "1px solid rgba(34,197,94,0.25)",
+                        background: postedTemplateId === tpl.id ? "rgba(34,197,94,0.15)" : "rgba(34,197,94,0.08)",
+                        color: postedTemplateId === tpl.id ? "#16a34a" : "#22c55e",
+                        fontWeight: 600,
+                        fontSize: 13,
+                        cursor: postingTemplateId === tpl.id ? "not-allowed" : "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: 6,
+                        transition: "all 0.2s",
+                        opacity: postingTemplateId && postingTemplateId !== tpl.id ? 0.5 : 1,
+                      }}
+                    >
+                      {postingTemplateId === tpl.id ? (
+                        <><Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} /> Posting...</>
+                      ) : postedTemplateId === tpl.id ? (
+                        <><CheckCircle2 size={14} /> Posted Successfully!</>
+                      ) : (
+                        <><Send size={14} /> Post to Main App</>
+                      )}
+                    </button>
                   </div>
                 );
               })}

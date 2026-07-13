@@ -176,6 +176,80 @@ export async function toggleJobStatus(jobId: string, status: "active" | "closed"
   return { success: true };
 }
 
+export async function postJobFromTemplate(templateId: string) {
+  const auth = (await cookies()).get("admin_session");
+  if (!auth?.value) throw new Error("Unauthorized");
+
+  const supabase = getSupabase();
+
+  // Fetch the template
+  const { data: tpl, error: tplErr } = await supabase
+    .from("vacancy_templates")
+    .select("*")
+    .eq("id", templateId)
+    .single();
+  if (tplErr || !tpl) throw new Error("Template not found");
+
+  // Build the full description
+  const formatList = (txt: string) =>
+    txt.split("\n").filter((l: string) => l.trim()).map((l: string) => l.trim().match(/^[-•*]/) ? l : `• ${l.trim()}`).join("\n");
+
+  let description = tpl.description_template || "";
+  if (tpl.responsibilities_template) description += "\n\nResponsibilities:\n" + formatList(tpl.responsibilities_template);
+  if (tpl.requirements_template) description += "\n\nRequirements:\n" + formatList(tpl.requirements_template);
+  if (tpl.benefits_template) description += "\n\nBenefits:\n" + formatList(tpl.benefits_template);
+
+  // Resolve salary fields
+  let salaryMin: number;
+  let salaryMax: number;
+  if (tpl.salary_type === "negotiable") {
+    salaryMin = -1; salaryMax = -1;
+  } else if (tpl.salary_type === "company_scale") {
+    salaryMin = -2; salaryMax = -2;
+  } else {
+    salaryMin = tpl.salary_min ?? 0;
+    salaryMax = tpl.salary_max ?? tpl.salary_min ?? 0;
+  }
+
+  // Look up (or create) the "Addis Jobs" platform employer
+  let { data: platformEmployer } = await supabase
+    .from("employers")
+    .select("id")
+    .eq("business_name", "Addis Jobs")
+    .maybeSingle();
+
+  if (!platformEmployer) {
+    const { data: newEmp, error: empErr } = await supabase
+      .from("employers")
+      .insert({ business_name: "Addis Jobs", business_type: "Platform", status: "approved" })
+      .select("id")
+      .single();
+    if (empErr) throw empErr;
+    platformEmployer = newEmp;
+  }
+
+  // Insert the job
+  const { error: jobErr } = await supabase.from("jobs").insert({
+    employer_id: platformEmployer!.id,
+    title: tpl.title,
+    category: tpl.job_category,
+    job_type: tpl.employment_type || "Full Time",
+    salary_min: salaryMin,
+    salary_max: salaryMax,
+    neighborhood: tpl.location || "Addis Ababa",
+    description: description,
+    deadline: tpl.deadline || null,
+    experience: tpl.experience_required || "Entry Level",
+    education: tpl.education_requirements || "",
+    working_hours: null,
+    quantity: tpl.quantity || 1,
+    status: "active",
+  });
+
+  if (jobErr) throw jobErr;
+  return { success: true };
+}
+
 export async function addEmployer(telegramId: number, businessName: string, businessType: string) {
   const auth = (await cookies()).get("admin_session");
   if (!auth?.value) throw new Error("Unauthorized");
