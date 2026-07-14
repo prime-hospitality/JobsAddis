@@ -243,7 +243,8 @@ export async function postJobFromTemplate(templateId: string) {
         user_id: systemUser.id,
         business_name: "Addis Jobs", 
         business_type: "Platform", 
-        status: "approved" 
+        status: "approved",
+        logo_url: "/addis_jobs_logo_mark_only.svg"
       })
       .select("id")
       .single();
