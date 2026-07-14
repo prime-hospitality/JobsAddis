@@ -107,18 +107,19 @@ export default function ContentManagementTab() {
       setPostedTemplateId(templateId);
       setTimeout(() => setPostedTemplateId(null), 3000);
     } catch (err) {
-      alert("Failed to post job: " + (err instanceof Error ? err.message : "Unknown error"));
+      setErrorModal("Failed to post job: " + (err instanceof Error ? err.message : "Unknown error"));
     } finally {
       setPostingTemplateId(null);
     }
   };
   const [locationSuggestionsOpen, setLocationSuggestionsOpen] = useState(false);
   const [templateSaving, setTemplateSaving] = useState(false);
+  const [errorModal, setErrorModal] = useState<string | null>(null);
 
   const handleSaveTemplate = async () => {
     if (!templateModal) return;
     if (!templateModal.description_template.trim()) {
-      alert("Job Description is required.");
+      setErrorModal("Job Description is required.");
       return;
     }
     setTemplateSaving(true);
@@ -375,7 +376,7 @@ export default function ContentManagementTab() {
                             lastPosted: status?.lastPosted
                           });
                         } catch (err) {
-                          alert("Failed to check status: " + (err instanceof Error ? err.message : "Unknown error"));
+                          setErrorModal("Failed to check status: " + (err instanceof Error ? err.message : "Unknown error"));
                         } finally {
                           setPostingTemplateId(null);
                         }
@@ -1076,6 +1077,33 @@ export default function ContentManagementTab() {
                 {confirmPostData.status === "same" ? "Yes, Post Again" :
                  confirmPostData.status === "changed" ? "Post Update" :
                  "Confirm Post"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Error Modal */}
+      {errorModal && (
+        <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm" onClick={() => setErrorModal(null)}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden animate-in fade-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+            <div className="p-6">
+              <div className="flex gap-4 items-start">
+                <div className="p-3 rounded-full flex-shrink-0 h-12 w-12 flex items-center justify-center bg-red-100 text-red-600">
+                  <AlertTriangle size={24} />
+                </div>
+                <div className="pt-1">
+                  <h3 className="text-lg font-bold text-gray-900 mb-1">Attention Needed</h3>
+                  <p className="text-sm text-gray-500 leading-relaxed">{errorModal}</p>
+                </div>
+              </div>
+            </div>
+            <div className="bg-gray-50 px-6 py-4 flex justify-end border-t border-gray-100">
+              <button
+                onClick={() => setErrorModal(null)}
+                className="px-5 py-2 text-sm font-semibold text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors shadow-sm"
+              >
+                Got it
               </button>
             </div>
           </div>
