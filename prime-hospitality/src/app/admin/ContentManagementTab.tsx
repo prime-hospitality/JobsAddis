@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { getContentData, upsertFaq, deleteFaq, upsertVacancyTemplate, deleteVacancyTemplate, updateOnboardingConfig, postJobFromTemplate } from "./actions";
+import { getContentData, upsertFaq, deleteFaq, upsertVacancyTemplate, deleteVacancyTemplate, updateOnboardingConfig, postJobFromTemplate, checkTemplateStatus } from "./actions";
 import { Plus, Save, Trash2, Pencil, X, Briefcase, MapPin, CreditCard, Calendar, FileText, CheckCircle2, Clock, Users, Send, Loader2 } from "lucide-react";
 import { searchLocations } from "@/data/locations";
 import JobDetailScreen from "@/screens/JobDetailScreen";
@@ -347,6 +347,24 @@ export default function ContentManagementTab() {
                         if (postingTemplateId) return;
                         setPostingTemplateId(tpl.id);
                         try {
+                          const status = await checkTemplateStatus(tpl.id);
+                          if (status?.status === "same") {
+                            if (!window.confirm("Post again? Everything is the same as the last time you posted this. Are you sure?")) {
+                              setPostingTemplateId(null);
+                              return;
+                            }
+                          } else if (status?.status === "changed") {
+                            if (!window.confirm(`This template has been modified since it was last posted (on ${new Date(status.lastPosted).toLocaleDateString()}). Post the new version?`)) {
+                              setPostingTemplateId(null);
+                              return;
+                            }
+                          } else {
+                            if (!window.confirm("Are you sure you want to post this template to the main app?")) {
+                              setPostingTemplateId(null);
+                              return;
+                            }
+                          }
+
                           await postJobFromTemplate(tpl.id);
                           setPostedTemplateId(tpl.id);
                           setTimeout(() => setPostedTemplateId(null), 3000);
@@ -380,7 +398,7 @@ export default function ContentManagementTab() {
                       ) : postedTemplateId === tpl.id ? (
                         <><CheckCircle2 size={14} /> Posted Successfully!</>
                       ) : (
-                        <><Send size={14} /> Post to Main App</>
+                        <><Send size={14} /> Post</>
                       )}
                     </button>
                   </div>

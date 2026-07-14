@@ -36,11 +36,12 @@ export async function getAdminData() {
   const auth = (await cookies()).get("admin_session");
   if (!auth?.value) throw new Error("Unauthorized");
 
-  // Fetch all employers
-  const { data: employers } = await getSupabase()
+  // Fetch all employers (exclude system/admin employers)
+  const { data: rawEmployers } = await getSupabase()
     .from("employers")
-    .select("*, users(telegram_id)")
+    .select("*, users(telegram_id, role)")
     .order("created_at", { ascending: false });
+  const employers = (rawEmployers || []).filter((e: any) => e.users?.role !== "admin");
 
   // Fetch all jobs
   const { data: jobs } = await getSupabase()
@@ -48,11 +49,11 @@ export async function getAdminData() {
     .select("*, employers(business_name)")
     .order("created_at", { ascending: false });
 
-  // Fetch all users (excluding employers)
+  // Fetch all job seekers (excluding employers and admins)
   const { data: users } = await getSupabase()
     .from("users")
     .select("*, profiles(full_name)")
-    .neq("role", "employer")
+    .eq("role", "job_seeker")
     .order("created_at", { ascending: false });
 
   const supabase = getSupabase();
@@ -174,6 +175,38 @@ export async function toggleJobStatus(jobId: string, status: "active" | "closed"
   const { error } = await getSupabase().from("jobs").update({ status }).eq("id", jobId);
   if (error) throw error;
   return { success: true };
+}
+
+export async function checkTemplateStatus(templateId: string) {
+  const auth = (await cookies()).get("admin_session");
+  if (!auth?.value) throw new Error("Unauthorized");
+
+  const supabase = getSupabase();
+  const { data: tpl } = await supabase.from("vacancy_templates").select("title, updated_at").eq("id", templateId).single();
+  if (!tpl) return null;
+
+  const { data: employer } = await supabase.from("employers").select("id").eq("business_name", "Addis Jobs").maybeSingle();
+  if (!employer) return { status: "new" };
+
+  const { data: job } = await supabase
+    .from("jobs")
+    .select("created_at")
+    .eq("employer_id", employer.id)
+    .eq("title", tpl.title)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (!job) return { status: "new" };
+
+  const tplUpdated = new Date(tpl.updated_at || Date.now()).getTime();
+  const jobCreated = new Date(job.created_at).getTime();
+
+  if (jobCreated > tplUpdated) {
+    return { status: "same", lastPosted: job.created_at };
+  } else {
+    return { status: "changed", lastPosted: job.created_at };
+  }
 }
 
 export async function postJobFromTemplate(templateId: string) {
