@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { getContentData, upsertFaq, deleteFaq, upsertVacancyTemplate, deleteVacancyTemplate, updateOnboardingConfig, postJobFromTemplate, checkTemplateStatus } from "./actions";
-import { Plus, Save, Trash2, Pencil, X, Briefcase, MapPin, CreditCard, Calendar, FileText, CheckCircle2, Clock, Users, Send, Loader2 } from "lucide-react";
+import { Plus, Save, Trash2, Pencil, X, Briefcase, MapPin, CreditCard, Calendar, FileText, CheckCircle2, Clock, Users, Send, Loader2, AlertTriangle, RefreshCw } from "lucide-react";
 import { searchLocations } from "@/data/locations";
 import JobDetailScreen from "@/screens/JobDetailScreen";
 import { Job } from "@/data/jobs";
@@ -91,6 +91,27 @@ export default function ContentManagementTab() {
   const [viewingTemplateJob, setViewingTemplateJob] = useState<Job | null>(null);
   const [postingTemplateId, setPostingTemplateId] = useState<string | null>(null);
   const [postedTemplateId, setPostedTemplateId] = useState<string | null>(null);
+  const [confirmPostData, setConfirmPostData] = useState<{
+    templateId: string;
+    status: "same" | "changed" | "new" | null;
+    lastPosted?: string;
+  } | null>(null);
+
+  const handleConfirmPost = async () => {
+    if (!confirmPostData) return;
+    const templateId = confirmPostData.templateId;
+    setConfirmPostData(null);
+    setPostingTemplateId(templateId);
+    try {
+      await postJobFromTemplate(templateId);
+      setPostedTemplateId(templateId);
+      setTimeout(() => setPostedTemplateId(null), 3000);
+    } catch (err) {
+      alert("Failed to post job: " + (err instanceof Error ? err.message : "Unknown error"));
+    } finally {
+      setPostingTemplateId(null);
+    }
+  };
   const [locationSuggestionsOpen, setLocationSuggestionsOpen] = useState(false);
   const [templateSaving, setTemplateSaving] = useState(false);
 
@@ -348,28 +369,13 @@ export default function ContentManagementTab() {
                         setPostingTemplateId(tpl.id);
                         try {
                           const status = await checkTemplateStatus(tpl.id);
-                          if (status?.status === "same") {
-                            if (!window.confirm("Post again? Everything is the same as the last time you posted this. Are you sure?")) {
-                              setPostingTemplateId(null);
-                              return;
-                            }
-                          } else if (status?.status === "changed") {
-                            if (!window.confirm(`This template has been modified since it was last posted (on ${new Date(status.lastPosted).toLocaleDateString()}). Post the new version?`)) {
-                              setPostingTemplateId(null);
-                              return;
-                            }
-                          } else {
-                            if (!window.confirm("Are you sure you want to post this template to the main app?")) {
-                              setPostingTemplateId(null);
-                              return;
-                            }
-                          }
-
-                          await postJobFromTemplate(tpl.id);
-                          setPostedTemplateId(tpl.id);
-                          setTimeout(() => setPostedTemplateId(null), 3000);
+                          setConfirmPostData({
+                            templateId: tpl.id,
+                            status: status?.status || "new",
+                            lastPosted: status?.lastPosted
+                          });
                         } catch (err) {
-                          alert("Failed to post job: " + (err instanceof Error ? err.message : "Unknown error"));
+                          alert("Failed to check status: " + (err instanceof Error ? err.message : "Unknown error"));
                         } finally {
                           setPostingTemplateId(null);
                         }
@@ -1019,6 +1025,60 @@ export default function ContentManagementTab() {
           <p style={{ position: "absolute", bottom: 24, left: "50%", transform: "translateX(-50%)", color: "rgba(255,255,255,0.4)", fontSize: 12, whiteSpace: "nowrap" }}>
             Click outside to close
           </p>
+        </div>
+      )}
+
+      {/* Confirm Post Modal */}
+      {confirmPostData && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm" onClick={() => setConfirmPostData(null)}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+            <div className="p-6">
+              <div className="flex gap-4 mb-2">
+                <div className={`p-3 rounded-full flex-shrink-0 h-12 w-12 flex items-center justify-center ${
+                  confirmPostData.status === "same" ? "bg-amber-100 text-amber-600" :
+                  confirmPostData.status === "changed" ? "bg-blue-100 text-blue-600" :
+                  "bg-green-100 text-green-600"
+                }`}>
+                  {confirmPostData.status === "same" ? <AlertTriangle size={24} /> :
+                   confirmPostData.status === "changed" ? <RefreshCw size={24} /> :
+                   <Send size={24} />}
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900 mb-1">
+                    {confirmPostData.status === "same" ? "Post Again?" :
+                     confirmPostData.status === "changed" ? "Post Updated Version?" :
+                     "Confirm Post"}
+                  </h3>
+                  <p className="text-sm text-gray-500 leading-relaxed">
+                    {confirmPostData.status === "same" ? "Everything is the same as the last time you posted this. Are you sure you want to create a duplicate job post?" :
+                     confirmPostData.status === "changed" ? `This template has been modified since it was last posted (on ${confirmPostData.lastPosted ? new Date(confirmPostData.lastPosted).toLocaleDateString() : 'a while ago'}). Post the new version?` :
+                     "Are you sure you want to post this template to the main app?"}
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="bg-gray-50 px-6 py-4 flex justify-end gap-3 border-t border-gray-100">
+              <button
+                onClick={() => setConfirmPostData(null)}
+                className="px-4 py-2 text-sm font-semibold text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmPost}
+                className={`px-4 py-2 text-sm font-semibold text-white rounded-lg transition-colors shadow-sm flex items-center gap-2 ${
+                  confirmPostData.status === "same" ? "bg-amber-500 hover:bg-amber-600" :
+                  confirmPostData.status === "changed" ? "bg-blue-600 hover:bg-blue-700" :
+                  "bg-green-600 hover:bg-green-700"
+                }`}
+              >
+                <Send size={16} />
+                {confirmPostData.status === "same" ? "Yes, Post Again" :
+                 confirmPostData.status === "changed" ? "Post Update" :
+                 "Confirm Post"}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
