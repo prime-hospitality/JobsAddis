@@ -372,7 +372,7 @@ export default function ContentManagementTab() {
                           const status = await checkTemplateStatus(tpl.id);
                           setConfirmPostData({
                             templateId: tpl.id,
-                            status: status?.status || "new",
+                            status: (status?.status as "same" | "changed" | "new") || "new",
                             lastPosted: status?.lastPosted
                           });
                         } catch (err) {
