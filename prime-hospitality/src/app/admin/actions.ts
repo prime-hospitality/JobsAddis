@@ -219,34 +219,64 @@ export async function postJobFromTemplate(templateId: string) {
     .maybeSingle();
 
   if (!platformEmployer) {
+    // We need a user to associate with the employer. Let's create a system user.
+    const systemTelegramId = 999999999;
+    let { data: systemUser } = await supabase
+      .from("users")
+      .select("id")
+      .eq("telegram_id", systemTelegramId)
+      .maybeSingle();
+      
+    if (!systemUser) {
+      const { data: newUser, error: uErr } = await supabase
+        .from("users")
+        .insert({ telegram_id: systemTelegramId, role: "admin", is_banned: false })
+        .select("id")
+        .single();
+      if (uErr) throw new Error(uErr.message || "Failed to create system user");
+      systemUser = newUser;
+    }
+
     const { data: newEmp, error: empErr } = await supabase
       .from("employers")
-      .insert({ business_name: "Addis Jobs", business_type: "Platform", status: "approved" })
+      .insert({ 
+        user_id: systemUser.id,
+        business_name: "Addis Jobs", 
+        business_type: "Platform", 
+        status: "approved" 
+      })
       .select("id")
       .single();
-    if (empErr) throw empErr;
+    if (empErr) throw new Error(empErr.message || "Failed to create platform employer");
     platformEmployer = newEmp;
   }
 
-  // Insert the job
+  // Insert the job using the real jobs table schema
   const { error: jobErr } = await supabase.from("jobs").insert({
     employer_id: platformEmployer!.id,
     title: tpl.title,
     category: tpl.job_category,
+    location: tpl.location || "Addis Ababa",
+    neighborhood: tpl.location || "Addis Ababa",
     job_type: tpl.employment_type || "Full Time",
     salary_min: salaryMin,
     salary_max: salaryMax,
-    neighborhood: tpl.location || "Addis Ababa",
+    currency: tpl.salary_currency || "ETB",
     description: description,
-    deadline: tpl.deadline || null,
-    experience: tpl.experience_required || "Entry Level",
-    education: tpl.education_requirements || "",
-    working_hours: null,
+    full_description: description,
+    requirements: {
+      experience: tpl.experience_required || "Entry Level",
+      education: tpl.education_requirements || "",
+      languages: [],
+      locationPreference: null,
+      workingHours: null,
+    },
+    deadline: tpl.deadline || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
     quantity: tpl.quantity || 1,
     status: "active",
   });
 
-  if (jobErr) throw jobErr;
+  if (jobErr) throw new Error(jobErr.message || "Failed to insert job");
   return { success: true };
 }
 
