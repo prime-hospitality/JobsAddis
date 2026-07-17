@@ -61,6 +61,7 @@ function CustomSelect({ value, onChange, options, placeholder, className = "" }:
 
 type Tab = "overview" | "employers" | "jobs" | "configuration" | "monetization" | "settings";
 type ConfigSubTab = "users" | "content";
+type SeekerSubTab = "user-config" | "tab2" | "tab3" | "tab4";
 
 export default function AdminDashboard({ initialData }: { initialData: any }) {
   const [data, setData] = useState(initialData);
@@ -111,6 +112,9 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [seekerSubTab, setSeekerSubTab] = useState<SeekerSubTab>("user-config");
+  const [userSearchName, setUserSearchName] = useState("");
+  const [userSearchPhone, setUserSearchPhone] = useState("");
 
   // Sync active tab to sessionStorage so refresh restores the same tab
   useEffect(() => {
@@ -910,35 +914,234 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
               </div>
             )}
 
-            {activeTab === "configuration" && configSubTab === "users" && data.specialRequests && data.specialRequests.length > 0 && (
-              <div style={{ padding: "16px 24px", background: "#fffbeb", borderBottom: "1px solid #fde68a" }}>
-                <h3 style={{ margin: "0 0 12px 0", fontSize: 15, fontWeight: 700, color: "#92400e", display: "flex", alignItems: "center", gap: 8 }}>
-                  <Users size={18} />
-                  Special Requests ({data.specialRequests.length})
-                </h3>
-                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                  {data.specialRequests.map((req: any) => {
-                    // Try to find the user in data.users to get their name
-                    const userObj = data.users.find((u: any) => u.id === req.userId);
-                    const name = userObj?.profiles?.full_name || "Unknown Name";
+            {activeTab === "configuration" && configSubTab === "users" && (
+              <div className="flex border-t border-gray-200" style={{ minHeight: 500 }}>
+                {/* ===== 4-TAB SIDE NAV ===== */}
+                <aside className="w-52 shrink-0 border-r border-gray-200 bg-gray-50/50 py-4 flex flex-col gap-1 px-3">
+                  {([
+                    { id: "user-config", label: "User Configuration", icon: Users },
+                    { id: "tab2", label: "Tab 2", icon: Settings },
+                    { id: "tab3", label: "Tab 3", icon: BookOpen },
+                    { id: "tab4", label: "Tab 4", icon: CreditCard },
+                  ] as { id: SeekerSubTab; label: string; icon: any }[]).map(({ id, label, icon: Icon }) => (
+                    <button
+                      key={id}
+                      onClick={() => setSeekerSubTab(id)}
+                      className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-semibold transition-all text-left ${
+                        seekerSubTab === id
+                          ? "bg-[#0284c7] text-white shadow-sm"
+                          : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                      }`}
+                      style={{ border: "none", cursor: "pointer" }}
+                    >
+                      <Icon size={15} className="shrink-0" />
+                      <span className="truncate">{label}</span>
+                    </button>
+                  ))}
+                </aside>
+
+                {/* ===== PANEL CONTENT ===== */}
+                <div className="flex-1 min-w-0 overflow-hidden">
+
+                  {/* ---- USER CONFIGURATION TAB ---- */}
+                  {seekerSubTab === "user-config" && (() => {
+                    const filteredUsers = data.users.filter((u: any) => {
+                      const nameMatch = !userSearchName || (u.profiles?.full_name || "").toLowerCase().includes(userSearchName.toLowerCase());
+                      const phoneMatch = !userSearchPhone || (u.profiles?.phone_number || "").toLowerCase().includes(userSearchPhone.toLowerCase());
+                      return nameMatch && phoneMatch;
+                    });
+
                     return (
-                      <div key={req.userId} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "#fff", padding: "12px 16px", borderRadius: 8, border: "1px solid #fde68a" }}>
-                        <div>
-                          <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: "#374151" }}>{name} (Telegram: {req.telegramId})</p>
-                          <p style={{ margin: "4px 0 0 0", fontSize: 12, color: "#b45309" }}>Ex-employer wants now to become a job seeker.</p>
+                      <div>
+                        {/* Special Requests Banner */}
+                        {data.specialRequests && data.specialRequests.length > 0 && (
+                          <div style={{ padding: "14px 20px", background: "#fffbeb", borderBottom: "1px solid #fde68a" }}>
+                            <h3 style={{ margin: "0 0 10px 0", fontSize: 14, fontWeight: 700, color: "#92400e", display: "flex", alignItems: "center", gap: 7 }}>
+                              <Users size={16} />
+                              Special Requests ({data.specialRequests.length})
+                            </h3>
+                            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                              {data.specialRequests.map((req: any) => {
+                                const userObj = data.users.find((u: any) => u.id === req.userId);
+                                const name = userObj?.profiles?.full_name || "Unknown Name";
+                                return (
+                                  <div key={req.userId} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "#fff", padding: "10px 14px", borderRadius: 8, border: "1px solid #fde68a" }}>
+                                    <div>
+                                      <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "#374151" }}>{name} (Telegram: {req.telegramId})</p>
+                                      <p style={{ margin: "3px 0 0 0", fontSize: 12, color: "#b45309" }}>Ex-employer wants now to become a job seeker.</p>
+                                    </div>
+                                    <button
+                                      onClick={() => setApproveReqModal(req.userId)}
+                                      style={{ background: "#059669", color: "#fff", border: "none", padding: "6px 12px", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}
+                                    >
+                                      <CheckCircle size={13} />
+                                      Approve
+                                    </button>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Search Bar */}
+                        <div className="flex flex-col sm:flex-row gap-3 p-4 border-b border-gray-100 bg-white">
+                          <div className="flex-1 relative">
+                            <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                            <input
+                              type="text"
+                              placeholder="Search by name..."
+                              value={userSearchName}
+                              onChange={e => setUserSearchName(e.target.value)}
+                              className="w-full pl-9 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#0284c7]/20 focus:border-[#0284c7] transition-all placeholder-gray-400 font-medium"
+                            />
+                          </div>
+                          <div className="flex-1 relative">
+                            <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13.1a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.62 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 9.91a16 16 0 0 0 6.16 6.16l.97-.97a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                            <input
+                              type="text"
+                              placeholder="Search by phone number..."
+                              value={userSearchPhone}
+                              onChange={e => setUserSearchPhone(e.target.value)}
+                              className="w-full pl-9 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#0284c7]/20 focus:border-[#0284c7] transition-all placeholder-gray-400 font-medium"
+                            />
+                          </div>
+                          {(userSearchName || userSearchPhone) && (
+                            <button
+                              onClick={() => { setUserSearchName(""); setUserSearchPhone(""); }}
+                              className="px-3 py-2 text-xs font-semibold text-gray-500 hover:text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors whitespace-nowrap"
+                            >
+                              Clear
+                            </button>
+                          )}
                         </div>
-                        <button
-                          onClick={() => setApproveReqModal(req.userId)}
-                          style={{
-                            background: "#059669", color: "#fff", border: "none", padding: "6px 12px", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 4
-                          }}
-                        >
-                          <CheckCircle size={14} />
-                          Approve
-                        </button>
+
+                        {/* Result count */}
+                        <div className="px-5 py-2 bg-gray-50 border-b border-gray-100">
+                          <p className="text-xs text-gray-500 font-medium">
+                            {filteredUsers.length === data.users.length
+                              ? `${data.users.length} total job seekers`
+                              : `${filteredUsers.length} of ${data.users.length} job seekers`}
+                          </p>
+                        </div>
+
+                        {/* Desktop Table */}
+                        <div className="hidden md:block w-full overflow-x-auto">
+                          <table className="w-full text-left border-collapse">
+                            <thead>
+                              <tr className="bg-gray-50 border-b border-gray-200">
+                                <th style={{ padding: "12px 20px", color: "#6b7280", fontSize: 12, textTransform: "uppercase" }}>Name</th>
+                                <th style={{ padding: "12px 20px", color: "#6b7280", fontSize: 12, textTransform: "uppercase" }}>Phone Number</th>
+                                <th style={{ padding: "12px 20px", color: "#6b7280", fontSize: 12, textTransform: "uppercase" }}>Telegram ID</th>
+                                <th style={{ padding: "12px 20px", color: "#6b7280", fontSize: 12, textTransform: "uppercase" }}>Role</th>
+                                <th style={{ padding: "12px 20px", color: "#6b7280", fontSize: 12, textTransform: "uppercase", textAlign: "right" }}>Actions</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {filteredUsers.map((item: any) => (
+                                <tr key={item.id} style={{ borderBottom: "1px solid #f3f4f6" }} className="hover:bg-gray-50 transition-colors">
+                                  <td style={{ padding: "14px 20px", fontWeight: 500 }}>
+                                    {item.profiles?.full_name || "Unonboarded"}
+                                    {item.is_banned && <span style={{ color: "red", marginLeft: 6, fontSize: 12 }}>(Banned)</span>}
+                                  </td>
+                                  <td style={{ padding: "14px 20px", color: "#6b7280" }}>
+                                    {item.profiles?.phone_number || <span className="text-gray-300">—</span>}
+                                  </td>
+                                  <td style={{ padding: "14px 20px", color: "#6b7280" }}>{item.telegram_id}</td>
+                                  <td style={{ padding: "14px 20px", textTransform: "capitalize", color: "#6b7280" }}>{item.role}</td>
+                                  <td style={{ padding: "14px 20px", textAlign: "right" }}>
+                                    <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+                                      <button
+                                        disabled={!!loading}
+                                        onClick={() => { setBanUserModal({ id: item.id, name: item.profiles?.full_name || "Unonboarded", is_banned: item.is_banned }); setUserActionPassword(""); setUserActionError(""); }}
+                                        style={{ background: item.is_banned ? "#10b981" : "#ef4444", color: "#fff", border: "none", padding: "6px 12px", borderRadius: 6, cursor: "pointer", fontSize: 12 }}
+                                      >
+                                        {item.is_banned ? "Unban" : "Ban"}
+                                      </button>
+                                      <button
+                                        disabled={!!loading}
+                                        onClick={() => { setDeleteUserModal({ id: item.id, name: item.profiles?.full_name || "Unonboarded" }); setUserActionPassword(""); setUserActionError(""); }}
+                                        style={{ background: "transparent", color: "#ef4444", border: "none", padding: "6px", borderRadius: 6, cursor: "pointer", display: "flex", alignItems: "center" }}
+                                        title="Delete User"
+                                      >
+                                        <Trash2 size={16} />
+                                      </button>
+                                    </div>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                          {filteredUsers.length === 0 && (
+                            <div style={{ padding: 40, textAlign: "center", color: "#6b7280" }}>No users match your search.</div>
+                          )}
+                        </div>
+
+                        {/* Mobile Cards */}
+                        <div className="md:hidden flex flex-col p-4 bg-gray-50/50 gap-3">
+                          {filteredUsers.map((item: any) => (
+                            <div key={item.id} className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex flex-col gap-3">
+                              <div className="flex justify-between items-start">
+                                <div>
+                                  <h4 className="font-semibold text-gray-800 m-0">
+                                    {item.profiles?.full_name || "Unonboarded"}
+                                    {item.is_banned && <span className="text-red-500 text-xs ml-2">(Banned)</span>}
+                                  </h4>
+                                  <p className="text-xs text-gray-500 m-0 mt-1">{item.profiles?.phone_number || "No phone"}</p>
+                                  <p className="text-xs text-gray-400 m-0 mt-0.5 font-mono">TG: {item.telegram_id}</p>
+                                </div>
+                                <span className="text-xs font-medium text-gray-600 bg-gray-100 border border-gray-200 px-2 py-1 rounded-md capitalize">{item.role}</span>
+                              </div>
+                              <div className="flex justify-end gap-2 pt-3 border-t border-gray-100">
+                                <button
+                                  disabled={!!loading}
+                                  onClick={() => { setBanUserModal({ id: item.id, name: item.profiles?.full_name || "Unonboarded", is_banned: item.is_banned }); setUserActionPassword(""); setUserActionError(""); }}
+                                  style={{ background: item.is_banned ? "#10b981" : "#ef4444" }}
+                                  className="text-white border-none px-3 py-1.5 rounded-lg text-xs font-medium"
+                                >
+                                  {item.is_banned ? "Unban" : "Ban"}
+                                </button>
+                                <button
+                                  disabled={!!loading}
+                                  onClick={() => { setDeleteUserModal({ id: item.id, name: item.profiles?.full_name || "Unonboarded" }); setUserActionPassword(""); setUserActionError(""); }}
+                                  className="bg-transparent text-red-500 p-1.5 cursor-pointer flex items-center"
+                                >
+                                  <Trash2 size={16} />
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                          {filteredUsers.length === 0 && (
+                            <div className="text-center py-10 text-gray-400 text-sm">No users match your search.</div>
+                          )}
+                        </div>
                       </div>
                     );
-                  })}
+                  })()}
+
+                  {/* ---- PLACEHOLDER TABS ---- */}
+                  {seekerSubTab === "tab2" && (
+                    <div className="flex flex-col items-center justify-center py-20 text-gray-400">
+                      <Settings size={40} className="mb-3 text-gray-300" />
+                      <p className="text-base font-semibold">Tab 2</p>
+                      <p className="text-sm mt-1">Coming soon</p>
+                    </div>
+                  )}
+                  {seekerSubTab === "tab3" && (
+                    <div className="flex flex-col items-center justify-center py-20 text-gray-400">
+                      <BookOpen size={40} className="mb-3 text-gray-300" />
+                      <p className="text-base font-semibold">Tab 3</p>
+                      <p className="text-sm mt-1">Coming soon</p>
+                    </div>
+                  )}
+                  {seekerSubTab === "tab4" && (
+                    <div className="flex flex-col items-center justify-center py-20 text-gray-400">
+                      <CreditCard size={40} className="mb-3 text-gray-300" />
+                      <p className="text-base font-semibold">Tab 4</p>
+                      <p className="text-sm mt-1">Coming soon</p>
+                    </div>
+                  )}
+
                 </div>
               </div>
             )}
@@ -970,14 +1173,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                         <th style={{ padding: "12px 24px", color: "#6b7280", fontSize: 12, textTransform: "uppercase", textAlign: "right" }}>Actions</th>
                       </>
                     )}
-                    {activeTab === "configuration" && configSubTab === "users" && (
-                      <>
-                        <th style={{ padding: "12px 24px", color: "#6b7280", fontSize: 12, textTransform: "uppercase" }}>Name</th>
-                        <th style={{ padding: "12px 24px", color: "#6b7280", fontSize: 12, textTransform: "uppercase" }}>Telegram ID</th>
-                        <th style={{ padding: "12px 24px", color: "#6b7280", fontSize: 12, textTransform: "uppercase" }}>Role</th>
-                        <th style={{ padding: "12px 24px", color: "#6b7280", fontSize: 12, textTransform: "uppercase", textAlign: "right" }}>Actions</th>
-                      </>
-                    )}
+
                   </tr>
                 </thead>
                 <tbody>
@@ -1074,32 +1270,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                     </tr>
                   ))}
 
-                  {activeTab === "configuration" && configSubTab === "users" && data.users.map((item: any) => (
-                    <tr key={item.id} style={{ borderBottom: "1px solid #f3f4f6" }}>
-                      <td style={{ padding: "16px 24px", fontWeight: 500 }}>{item.profiles?.full_name || "Unonboarded"} {item.is_banned && <span style={{ color: "red" }}>(Banned)</span>}</td>
-                      <td style={{ padding: "16px 24px", color: "#6b7280" }}>{item.telegram_id}</td>
-                      <td style={{ padding: "16px 24px", textTransform: "capitalize", color: "#6b7280" }}>{item.role}</td>
-                      <td style={{ padding: "16px 24px", textAlign: "right" }}>
-                        <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
-                          <button
-                            disabled={!!loading}
-                            onClick={() => { setBanUserModal({ id: item.id, name: item.profiles?.full_name || "Unonboarded", is_banned: item.is_banned }); setUserActionPassword(""); setUserActionError(""); }}
-                            style={{ background: item.is_banned ? "#10b981" : "#ef4444", color: "#fff", border: "none", padding: "6px 12px", borderRadius: 6, cursor: "pointer", fontSize: 12 }}
-                          >
-                            {item.is_banned ? "Unban" : "Ban"}
-                          </button>
-                          <button
-                            disabled={!!loading}
-                            onClick={() => { setDeleteUserModal({ id: item.id, name: item.profiles?.full_name || "Unonboarded" }); setUserActionPassword(""); setUserActionError(""); }}
-                            style={{ background: "transparent", color: "#ef4444", border: "none", padding: "6px", borderRadius: 6, cursor: "pointer", display: "flex", alignItems: "center" }}
-                            title="Delete User"
-                          >
-                            <Trash2 size={16} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+
                 </tbody>
               </table>
             </div>
@@ -1200,37 +1371,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                 </div>
               ))}
 
-              {activeTab === "configuration" && configSubTab === "users" && data.users.map((item: any) => (
-                <div key={item.id} className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex flex-col gap-3 mb-3">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h4 className="font-semibold text-gray-800 m-0">
-                        {item.profiles?.full_name || "Unonboarded"}
-                        {item.is_banned && <span className="text-red-500 text-xs ml-2">(Banned)</span>}
-                      </h4>
-                      <p className="text-xs text-gray-500 m-0 mt-1 font-mono">ID: {item.telegram_id}</p>
-                    </div>
-                    <span className="text-xs font-medium text-gray-600 bg-gray-100 border border-gray-200 px-2 py-1 rounded-md capitalize">{item.role}</span>
-                  </div>
-                  <div className="flex justify-end mt-2 pt-3 border-t border-gray-100 gap-2">
-                    <button
-                      disabled={!!loading}
-                      onClick={() => { setBanUserModal({ id: item.id, name: item.profiles?.full_name || "Unonboarded", is_banned: item.is_banned }); setUserActionPassword(""); setUserActionError(""); }}
-                      style={{ background: item.is_banned ? "#10b981" : "#ef4444" }}
-                      className="text-white border-none px-3 py-1.5 rounded-lg text-xs font-medium"
-                    >
-                      {item.is_banned ? "Unban" : "Ban"}
-                    </button>
-                    <button
-                      disabled={!!loading}
-                      onClick={() => { setDeleteUserModal({ id: item.id, name: item.profiles?.full_name || "Unonboarded" }); setUserActionPassword(""); setUserActionError(""); }}
-                      className="bg-transparent text-red-500 p-1.5 cursor-pointer flex items-center"
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  </div>
-                </div>
-              ))}
+
             </div>
             
             {activeTab === "employers" && data.employers.length === 0 && (
@@ -1238,11 +1379,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                 No employers found.
               </div>
             )}
-            {activeTab === "configuration" && configSubTab === "users" && data.users.length === 0 && (
-              <div style={{ padding: 40, textAlign: "center", color: "#6b7280" }}>
-                No users found.
-              </div>
-            )}
+
 
             {activeTab === "configuration" && configSubTab === "content" && (
               <ContentManagementTab />

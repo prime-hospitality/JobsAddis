@@ -52,7 +52,7 @@ export async function getAdminData() {
   // Fetch all job seekers (excluding employers and admins)
   const { data: users } = await getSupabase()
     .from("users")
-    .select("*, profiles(full_name)")
+    .select("*, profiles(full_name, phone_number)")
     .eq("role", "job_seeker")
     .order("created_at", { ascending: false });
 
