@@ -109,6 +109,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
   const [overviewDuration, setOverviewDuration] = useState<"7" | "30" | "90">("30");
   const [employerSearch, setEmployerSearch] = useState("");
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
 
   // Sync active tab to sessionStorage so refresh restores the same tab
@@ -618,7 +619,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                   <div className="fixed inset-0 z-40" onClick={() => setProfileMenuOpen(false)} />
                   <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-xl shadow-lg z-50 py-1 overflow-hidden">
                     <button 
-                      onClick={() => setProfileMenuOpen(false)}
+                      onClick={() => { setProfileMenuOpen(false); setSettingsOpen(true); }}
                       className="w-full text-left px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 hover:text-green-600 transition-colors flex items-center gap-2"
                     >
                       <Settings className="w-4 h-4" /> Settings
@@ -1645,6 +1646,25 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
               >
                 Close Details
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Settings "New Window" Modal */}
+      {settingsOpen && (
+        <div className="fixed inset-0 z-[60] bg-gray-50 flex flex-col">
+          <header className="bg-white border-b border-gray-200 h-[72px] px-8 flex items-center justify-between shrink-0">
+            <h2 className="text-xl font-bold text-gray-900 tracking-tight">Admin Settings</h2>
+            <button onClick={() => setSettingsOpen(false)} className="text-gray-500 hover:text-gray-900 bg-gray-100 hover:bg-gray-200 rounded-full p-2 transition-colors focus:outline-none">
+              <X className="w-5 h-5" />
+            </button>
+          </header>
+          <div className="flex-1 overflow-y-auto p-4 md:p-8">
+            <div className="max-w-3xl mx-auto bg-white rounded-2xl border border-gray-200 p-8 shadow-sm text-center">
+              <Settings className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+              <h3 className="text-lg font-bold text-gray-900 mb-2">Settings Overview</h3>
+              <p className="text-sm text-gray-500">System settings will be available here soon.</p>
             </div>
           </div>
         </div>
