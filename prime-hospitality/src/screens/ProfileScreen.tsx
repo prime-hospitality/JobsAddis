@@ -107,6 +107,7 @@ export default function ProfileScreen() {
     }
   }, [settingsView]);
 
+
   // Editable copies while settings panel is open
   const [editRoles, setEditRoles] = useState<string[]>([]);
   const [editExperience, setEditExperience] = useState<Record<string, string>>({});
@@ -117,6 +118,38 @@ export default function ProfileScreen() {
   const [isSavingSettings, setIsSavingSettings] = useState(false);
   const [pendingRole, setPendingRole] = useState<string | null>(null);
   const [toast, setToast] = useState<{ type: "success" | "error"; message: string } | null>(null);
+
+  // ── Telegram BackButton for settings panel ──
+  // When settings is open, wire the native Telegram back button to navigate back
+  // through settings sub-views (or close the panel if already at the root settings list).
+  useEffect(() => {
+    const tgWebApp = (window as any).Telegram?.WebApp;
+    if (!tgWebApp || !settingsOpen) return;
+
+    const handleBack = () => {
+      if (settingsView === "experience") {
+        setSettingsView("roles_overview");
+      } else if (settingsView !== null) {
+        setSettingsView(null);
+        setRoleTeamView(null);
+        setRoleSearch("");
+        setPendingRole(null);
+      } else {
+        // At root settings list — close the panel
+        setSettingsOpen(false);
+        setSettingsView(null);
+      }
+    };
+
+    tgWebApp.BackButton?.show();
+    tgWebApp.BackButton?.onClick(handleBack);
+
+    return () => {
+      tgWebApp.BackButton?.offClick(handleBack);
+      tgWebApp.BackButton?.hide();
+    };
+  }, [settingsOpen, settingsView]);
+
   
   // Primary Phone States
   const [phoneModalOpen, setPhoneModalOpen] = useState(false);

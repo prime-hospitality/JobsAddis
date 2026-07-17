@@ -321,6 +321,44 @@ export default function App() {
     }
   };
 
+  // ── Telegram BackButton integration ──
+  // Show the native Telegram back button whenever we're not on the home screen.
+  // This replaces the default close button behaviour in those sub-screens.
+  useEffect(() => {
+    const tgWebApp = (window as any).Telegram?.WebApp;
+    if (!tgWebApp) return;
+
+    const isSubScreen = view.screen !== "home";
+
+    if (isSubScreen) {
+      // Build the appropriate back handler for the current screen
+      const handleBack = () => {
+        if (view.screen === "jobDetail") {
+          goBackToList();
+        } else if (view.screen === "profileCheck") {
+          setView({ screen: "jobDetail", job: view.job });
+        } else if (view.screen === "application") {
+          setView({ screen: "profileCheck", job: view.job });
+        } else if (view.screen === "applicantManagement") {
+          setView({ screen: "home" });
+        } else if (view.screen === "confirmation") {
+          goHome();
+        }
+      };
+
+      tgWebApp.BackButton?.show();
+      tgWebApp.BackButton?.onClick(handleBack);
+
+      return () => {
+        tgWebApp.BackButton?.offClick(handleBack);
+        tgWebApp.BackButton?.hide();
+      };
+    } else {
+      tgWebApp.BackButton?.hide();
+    }
+  }, [view]);
+
+
   // Loading state
   const isReady = isTelegramReady && isOnboarded !== null;
   if (!isReady) {
