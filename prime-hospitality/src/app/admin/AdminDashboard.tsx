@@ -1,11 +1,123 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { approveEmployer, rejectEmployer, toggleUserBan, toggleJobStatus, logoutAdmin, addEmployer, deleteEmployer, updateEmployer, adminUpdateEmployerLogo, deleteUser, approveSpecialRequest } from "./actions";
 import { Trash2, Pencil, Image as ImageIcon, Menu, X, LayoutDashboard, Briefcase, FileText, Users, LogOut, Settings, CreditCard, CheckCircle, BookOpen, User } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import ContentManagementTab from "./ContentManagementTab";
 
+// ── Draggable Floating Window ──────────────────────────────────────────────
+function FloatingWindow({
+  title,
+  onClose,
+  children,
+}: {
+  title: string;
+  onClose: () => void;
+  children: React.ReactNode;
+}) {
+  const [pos, setPos] = useState({ x: 0, y: 0 });
+  const [size, setSize] = useState({ w: 640, h: 480 });
+  const [isMaximized, setIsMaximized] = useState(false);
+  const [isMinimized, setIsMinimized] = useState(false);
+  const dragging = useRef(false);
+  const dragStart = useRef({ mx: 0, my: 0, px: 0, py: 0 });
+  const windowRef = useRef<HTMLDivElement>(null);
+
+  // Center on first render
+  useEffect(() => {
+    setPos({
+      x: Math.max(0, (window.innerWidth - size.w) / 2),
+      y: Math.max(0, (window.innerHeight - size.h) / 2),
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const onMouseDown = useCallback((e: React.MouseEvent) => {
+    if (isMaximized) return;
+    dragging.current = true;
+    dragStart.current = { mx: e.clientX, my: e.clientY, px: pos.x, py: pos.y };
+    e.preventDefault();
+  }, [isMaximized, pos]);
+
+  useEffect(() => {
+    const onMove = (e: MouseEvent) => {
+      if (!dragging.current) return;
+      const dx = e.clientX - dragStart.current.mx;
+      const dy = e.clientY - dragStart.current.my;
+      setPos({ x: dragStart.current.px + dx, y: dragStart.current.py + dy });
+    };
+    const onUp = () => { dragging.current = false; };
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+    return () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+    };
+  }, []);
+
+  const style: React.CSSProperties = isMaximized
+    ? { position: "fixed", top: 0, left: 0, width: "100vw", height: "100vh" }
+    : isMinimized
+    ? { position: "fixed", bottom: 16, left: "50%", transform: "translateX(-50%)", width: size.w, height: 44 }
+    : { position: "fixed", top: pos.y, left: pos.x, width: size.w, height: size.h };
+
+  return (
+    <div
+      ref={windowRef}
+      style={{ ...style, zIndex: 9999, display: "flex", flexDirection: "column", overflow: "hidden", borderRadius: isMaximized ? 0 : 10, boxShadow: "0 25px 60px rgba(0,0,0,0.35), 0 0 0 1px rgba(0,0,0,0.08)" }}
+    >
+      {/* Title bar */}
+      <div
+        onMouseDown={onMouseDown}
+        style={{
+          height: 44,
+          background: "linear-gradient(180deg, #f0f0f0 0%, #e2e2e2 100%)",
+          borderBottom: "1px solid #c0c0c0",
+          display: "flex",
+          alignItems: "center",
+          paddingLeft: 12,
+          paddingRight: 12,
+          userSelect: "none",
+          cursor: isMaximized ? "default" : "move",
+          flexShrink: 0,
+          gap: 8,
+        }}
+      >
+        {/* Traffic-light buttons */}
+        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          {/* Close — red */}
+          <button
+            onClick={onClose}
+            title="Close"
+            style={{ width: 13, height: 13, borderRadius: "50%", background: "#FF5F57", border: "1px solid #E0443E", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
+          />
+          {/* Minimize — yellow */}
+          <button
+            onClick={() => setIsMinimized(v => !v)}
+            title="Minimize"
+            style={{ width: 13, height: 13, borderRadius: "50%", background: "#FEBC2E", border: "1px solid #D4A017", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
+          />
+          {/* Maximize — green */}
+          <button
+            onClick={() => { setIsMaximized(v => !v); setIsMinimized(false); }}
+            title="Maximize"
+            style={{ width: 13, height: 13, borderRadius: "50%", background: "#28C840", border: "1px solid #1AAB29", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
+          />
+        </div>
+        {/* Title */}
+        <span style={{ flex: 1, textAlign: "center", fontSize: 13, fontWeight: 600, color: "#333", letterSpacing: "-0.01em", marginRight: 45 }}>{title}</span>
+      </div>
+
+      {/* Content */}
+      {!isMinimized && (
+        <div style={{ flex: 1, overflow: "auto", background: "#f9fafb" }}>
+          {children}
+        </div>
+      )}
+    </div>
+  );
+}
 
 function CustomInput(props: any) {
   return (
@@ -1788,31 +1900,15 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
         </div>
       )}
 
-      {/* Settings Half-Screen Panel */}
+      {/* Settings Floating Window */}
       {settingsOpen && (
-        <>
-          {/* Backdrop */}
-          <div
-            className="fixed inset-0 z-[60] bg-black/30"
-            onClick={() => setSettingsOpen(false)}
-          />
-          {/* Panel */}
-          <div className="fixed top-0 right-0 h-full w-1/2 min-w-[400px] z-[61] bg-gray-50 flex flex-col shadow-2xl border-l border-gray-200">
-            <header className="bg-white border-b border-gray-200 h-[72px] px-8 flex items-center justify-between shrink-0">
-              <h2 className="text-xl font-bold text-gray-900 tracking-tight">Admin Settings</h2>
-              <button onClick={() => setSettingsOpen(false)} className="text-gray-500 hover:text-gray-900 bg-gray-100 hover:bg-gray-200 rounded-full p-2 transition-colors focus:outline-none">
-                <X className="w-5 h-5" />
-              </button>
-            </header>
-            <div className="flex-1 overflow-y-auto p-6">
-              <div className="bg-white rounded-2xl border border-gray-200 p-8 shadow-sm text-center">
-                <Settings className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                <h3 className="text-lg font-bold text-gray-900 mb-2">Settings Overview</h3>
-                <p className="text-sm text-gray-500">System settings will be available here soon.</p>
-              </div>
-            </div>
+        <FloatingWindow title="Admin Settings" onClose={() => setSettingsOpen(false)}>
+          <div style={{ padding: 32, textAlign: "center" }}>
+            <Settings style={{ width: 48, height: 48, color: "#d1d5db", margin: "0 auto 16px" }} />
+            <h3 style={{ fontSize: 18, fontWeight: 700, color: "#111827", marginBottom: 8 }}>Settings Overview</h3>
+            <p style={{ fontSize: 14, color: "#6b7280" }}>System settings will be available here soon.</p>
           </div>
-        </>
+        </FloatingWindow>
       )}
     </div>
   );
