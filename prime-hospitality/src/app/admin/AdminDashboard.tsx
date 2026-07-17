@@ -79,7 +79,7 @@ function FloatingWindow({
           paddingLeft: 12,
           paddingRight: 12,
           userSelect: "none",
-          cursor: isMaximized ? "default" : "move",
+          cursor: "default",
           flexShrink: 0,
           gap: 8,
         }}
