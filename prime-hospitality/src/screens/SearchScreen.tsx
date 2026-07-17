@@ -555,7 +555,8 @@ export default function SearchScreen({ onJobSelect, pageSize, enableAnimations =
           flexDirection: "column",
           height: "100dvh",
           background: "transparent",
-          overflow: "hidden",
+          overflowY: "auto",
+          overflowX: "hidden",
         }}
       >
         {/* ── HEADER ── */}
@@ -577,7 +578,10 @@ export default function SearchScreen({ onJobSelect, pageSize, enableAnimations =
               Search across all active hospitality jobs
             </p>
           </div>
+        </div>
 
+        {/* STICKY SEARCH & FILTERS */}
+        <div style={{ position: "sticky", top: 0, zIndex: 50, background: "var(--app-bg)", padding: "0 20px 12px" }}>
           {/* Search input */}
           <div
             style={{
@@ -708,7 +712,6 @@ export default function SearchScreen({ onJobSelect, pageSize, enableAnimations =
         <div
           style={{
             flex: 1,
-            overflowY: "auto",
             padding: "8px 20px 96px",
             overscrollBehavior: "contain",
             WebkitOverflowScrolling: "touch",

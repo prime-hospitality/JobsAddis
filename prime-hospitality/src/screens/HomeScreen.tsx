@@ -128,12 +128,14 @@ export default function HomeScreen({ onJobSelect, onSearchPress, onBellPress, un
   return (
     <LazyMotion features={domAnimation}>
       <div
+        ref={scrollRef}
         style={{
           display: "flex",
           flexDirection: "column",
           height: "100dvh",
           background: "transparent",
-          overflow: "hidden",
+          overflowY: "auto",
+          overflowX: "hidden",
         }}
       >
         {/* ── HEADER ── */}
@@ -484,9 +486,10 @@ export default function HomeScreen({ onJobSelect, onSearchPress, onBellPress, un
               animation-play-state: paused;
             }
           `}} />
+        </motion.div>
 
-
-          {/* Search bar — tapping navigates to Search tab */}
+        {/* STICKY SEARCH BAR */}
+        <div style={{ position: "sticky", top: 0, zIndex: 50, background: "var(--app-bg)", padding: "12px 20px 4px" }}>
           <motion.div
             whileTap={{ scale: 0.98 }}
             onClick={onSearchPress}
@@ -499,7 +502,7 @@ export default function HomeScreen({ onJobSelect, onSearchPress, onBellPress, un
               boxShadow: "var(--card-shadow)",
               borderRadius: 14,
               padding: "12px 16px",
-              marginBottom: 16,
+              marginBottom: 8,
               cursor: onSearchPress ? "pointer" : "default",
             }}
           >
@@ -508,8 +511,22 @@ export default function HomeScreen({ onJobSelect, onSearchPress, onBellPress, un
               Search jobs in Addis Ababa…
             </span>
           </motion.div>
+        </div>
 
-          {/* Stats bar */}
+        {/* Stats bar */}
+        <motion.div
+          initial={shouldReduceMotion ? false : { opacity: 0, y: -12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+          style={{
+            paddingLeft: 20,
+            paddingRight: 20,
+            paddingBottom: 8,
+            background: "var(--app-bg)",
+            position: "relative",
+            flexShrink: 0,
+          }}
+        >
           <div
             style={{
               display: "flex",
@@ -606,16 +623,11 @@ export default function HomeScreen({ onJobSelect, onSearchPress, onBellPress, un
 
         {/* ── JOB LIST OR STATES ── */}
         <div
-          ref={scrollRef}
           style={{
             flex: 1,
-            overflowY: "auto",
             paddingLeft: 20,
             paddingRight: 20,
             paddingBottom: 80, // space for bottom nav
-            scrollBehavior: "smooth",
-            overscrollBehavior: "contain",
-            WebkitOverflowScrolling: "touch",
           } as React.CSSProperties}
         >
           {isLoading && (
