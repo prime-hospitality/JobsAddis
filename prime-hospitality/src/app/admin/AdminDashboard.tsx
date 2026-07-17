@@ -59,11 +59,12 @@ function CustomSelect({ value, onChange, options, placeholder, className = "" }:
   );
 }
 
-type Tab = "overview" | "employers" | "jobs" | "users" | "content" | "monetization" | "settings";
+type Tab = "overview" | "employers" | "jobs" | "configuration" | "monetization" | "settings";
+type ConfigSubTab = "users" | "content";
 
 export default function AdminDashboard({ initialData }: { initialData: any }) {
   const [data, setData] = useState(initialData);
-  const VALID_TABS: Tab[] = ["overview", "employers", "jobs", "users", "content", "monetization", "settings"];
+  const VALID_TABS: Tab[] = ["overview", "employers", "jobs", "configuration", "monetization", "settings"];
   const getInitialTab = (): Tab => {
     if (typeof window !== "undefined") {
       const stored = sessionStorage.getItem("adminActiveTab") as Tab;
@@ -73,6 +74,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
   };
 
   const [activeTab, setActiveTab] = useState<Tab>(getInitialTab);
+  const [configSubTab, setConfigSubTab] = useState<ConfigSubTab>("users");
   const [selectedEmployerId, setSelectedEmployerId] = useState<string | null>(null);
   const [loading, setLoading] = useState<string | null>(null);
 
@@ -117,11 +119,9 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
   const navItems = [
     { id: "overview", label: "Admin Overview", icon: LayoutDashboard },
     { id: "employers", label: "Employers & Companies", icon: Briefcase },
-    { id: "users", label: "Job Seeker Profiles", icon: Users },
     { id: "jobs", label: "Job Posting Moderation", icon: FileText },
-    { id: "content", label: "Content Management", icon: BookOpen },
+    { id: "configuration", label: "Configuration", icon: Settings },
     { id: "monetization", label: "Monetization & Plans", icon: CreditCard },
-    { id: "settings", label: "System Settings", icon: Settings },
   ] as const;
 
   const POST_LIMIT_OPTIONS = [
@@ -406,7 +406,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
             const isActive = activeTab === item.id;
             
             // Add a visual separator before the Monetization tab for better grouping
-            const isBottomSection = item.id === "monetization";
+            const isBottomSection = item.id === "monetization" || item.id === "configuration";
             
             return (
               <div key={item.id}>
@@ -630,7 +630,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
           <div className="max-w-6xl mx-auto bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
           <div className="p-4 md:p-6 border-b border-gray-200 flex justify-between items-center">
             <h2 className="m-0 text-lg md:text-xl font-semibold capitalize text-gray-800">
-              {activeTab === "jobs" && selectedEmployerId ? "Jobs by Employer" : navItems.find(n => n.id === activeTab)?.label || activeTab}
+              {activeTab === "jobs" && selectedEmployerId ? "Jobs by Employer" : activeTab === "configuration" ? "Configuration" : navItems.find(n => n.id === activeTab)?.label || activeTab}
             </h2>
             {activeTab === "jobs" && selectedEmployerId && (
               <button 
@@ -704,7 +704,38 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                 {formError && <p style={{ color: "#dc2626", margin: "8px 0 0 0", fontSize: 12 }}>{formError}</p>}
               </div>
             )}
-            {activeTab === "users" && data.specialRequests && data.specialRequests.length > 0 && (
+            {/* ========== CONFIGURATION SUB-TABS ========== */}
+            {activeTab === "configuration" && (
+              <div>
+                {/* Sub-tab switcher */}
+                <div className="flex border-b border-gray-200 bg-gray-50/60 px-6 pt-4 gap-1">
+                  <button
+                    onClick={() => setConfigSubTab("users")}
+                    className={`px-5 py-2.5 text-sm font-semibold rounded-t-lg border border-b-0 transition-all ${
+                      configSubTab === "users"
+                        ? "bg-white border-gray-200 text-[#0284c7] shadow-sm -mb-px"
+                        : "bg-transparent border-transparent text-gray-500 hover:text-gray-800"
+                    }`}
+                    style={{ cursor: "pointer" }}
+                  >
+                    <span className="flex items-center gap-2"><Users size={15} /> Job Seeker Profiles</span>
+                  </button>
+                  <button
+                    onClick={() => setConfigSubTab("content")}
+                    className={`px-5 py-2.5 text-sm font-semibold rounded-t-lg border border-b-0 transition-all ${
+                      configSubTab === "content"
+                        ? "bg-white border-gray-200 text-[#0284c7] shadow-sm -mb-px"
+                        : "bg-transparent border-transparent text-gray-500 hover:text-gray-800"
+                    }`}
+                    style={{ cursor: "pointer" }}
+                  >
+                    <span className="flex items-center gap-2"><BookOpen size={15} /> Content Management</span>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {activeTab === "configuration" && configSubTab === "users" && data.specialRequests && data.specialRequests.length > 0 && (
               <div style={{ padding: "16px 24px", background: "#fffbeb", borderBottom: "1px solid #fde68a" }}>
                 <h3 style={{ margin: "0 0 12px 0", fontSize: 15, fontWeight: 700, color: "#92400e", display: "flex", alignItems: "center", gap: 8 }}>
                   <Users size={18} />
@@ -764,7 +795,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                         <th style={{ padding: "12px 24px", color: "#6b7280", fontSize: 12, textTransform: "uppercase", textAlign: "right" }}>Actions</th>
                       </>
                     )}
-                    {activeTab === "users" && (
+                    {activeTab === "configuration" && configSubTab === "users" && (
                       <>
                         <th style={{ padding: "12px 24px", color: "#6b7280", fontSize: 12, textTransform: "uppercase" }}>Name</th>
                         <th style={{ padding: "12px 24px", color: "#6b7280", fontSize: 12, textTransform: "uppercase" }}>Telegram ID</th>
@@ -868,7 +899,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                     </tr>
                   ))}
 
-                  {activeTab === "users" && data.users.map((item: any) => (
+                  {activeTab === "configuration" && configSubTab === "users" && data.users.map((item: any) => (
                     <tr key={item.id} style={{ borderBottom: "1px solid #f3f4f6" }}>
                       <td style={{ padding: "16px 24px", fontWeight: 500 }}>{item.profiles?.full_name || "Unonboarded"} {item.is_banned && <span style={{ color: "red" }}>(Banned)</span>}</td>
                       <td style={{ padding: "16px 24px", color: "#6b7280" }}>{item.telegram_id}</td>
@@ -994,7 +1025,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                 </div>
               ))}
 
-              {activeTab === "users" && data.users.map((item: any) => (
+              {activeTab === "configuration" && configSubTab === "users" && data.users.map((item: any) => (
                 <div key={item.id} className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex flex-col gap-3 mb-3">
                   <div className="flex justify-between items-start">
                     <div>
@@ -1027,25 +1058,27 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
               ))}
             </div>
             
-            {["employers", "users"].includes(activeTab) && data[activeTab as "employers" | "users"].length === 0 && (
+            {activeTab === "employers" && data.employers.length === 0 && (
               <div style={{ padding: 40, textAlign: "center", color: "#6b7280" }}>
-                No {activeTab} found.
+                No employers found.
+              </div>
+            )}
+            {activeTab === "configuration" && configSubTab === "users" && data.users.length === 0 && (
+              <div style={{ padding: 40, textAlign: "center", color: "#6b7280" }}>
+                No users found.
               </div>
             )}
 
-            {activeTab === "content" && (
+            {activeTab === "configuration" && configSubTab === "content" && (
               <ContentManagementTab />
             )}
             
-            {["monetization", "settings"].includes(activeTab) && (
+            {activeTab === "monetization" && (
               <div className="flex flex-col items-center justify-center py-20 px-4 text-center">
                 <div className="bg-gray-50 rounded-full p-4 mb-4">
-                  {activeTab === "monetization" && <CreditCard className="w-8 h-8 text-gray-400" />}
-                  {activeTab === "settings" && <Settings className="w-8 h-8 text-gray-400" />}
+                  <CreditCard className="w-8 h-8 text-gray-400" />
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-1">
-                  {activeTab === "monetization" ? "Monetization & Plans" : "System Settings"}
-                </h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-1">Monetization &amp; Plans</h3>
                 <p className="text-sm text-gray-500 max-w-sm">
                   This section is currently under construction and will be available in a future update.
                 </p>
