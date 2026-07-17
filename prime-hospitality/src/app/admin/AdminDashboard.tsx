@@ -108,6 +108,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
   const [overviewEmployerId, setOverviewEmployerId] = useState<string>("");
   const [overviewDuration, setOverviewDuration] = useState<"7" | "30" | "90">("30");
   const [employerSearch, setEmployerSearch] = useState("");
+  const [showNotifications, setShowNotifications] = useState(false);
 
   // Sync active tab to sessionStorage so refresh restores the same tab
   useEffect(() => {
@@ -449,19 +450,155 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
           <div className="flex items-center">
             <span className="text-lg font-bold text-gray-900 tracking-tight">Admin Dashboard</span>
           </div>
-          <button onClick={() => setMobileMenuOpen(true)} className="text-gray-500 hover:text-gray-700 focus:outline-none">
-            <Menu className="w-6 h-6" />
-          </button>
+          <div className="flex items-center gap-4">
+            <div className="relative">
+              <button 
+                onClick={() => setShowNotifications(!showNotifications)}
+                className="text-gray-500 hover:text-gray-700 relative transition-colors cursor-pointer border-none bg-transparent flex items-center justify-center"
+              >
+                {data.specialRequests && data.specialRequests.length > 0 && (
+                  <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full border border-white"></span>
+                )}
+                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+              </button>
+
+              {showNotifications && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setShowNotifications(false)} />
+                  <div className="absolute right-0 mt-2 w-80 bg-white border border-gray-200 rounded-xl shadow-lg z-50 overflow-hidden">
+                    <div className="p-3 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
+                      <h3 className="font-bold text-gray-900 text-sm">Notifications</h3>
+                      {data.specialRequests && data.specialRequests.length > 0 && (
+                        <span className="bg-[#0284c7] text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                          {data.specialRequests.length}
+                        </span>
+                      )}
+                    </div>
+                    <div className="max-h-80 overflow-y-auto">
+                      {data.specialRequests && data.specialRequests.length > 0 ? (
+                        data.specialRequests.map((req: any) => {
+                          const userObj = data.users?.find((u: any) => u.id === req.userId);
+                          const name = userObj?.profiles?.full_name || "Unknown Name";
+                          return (
+                            <div key={req.userId} className="p-4 border-b border-gray-50 hover:bg-gray-50 transition-colors last:border-b-0">
+                              <div className="flex items-start gap-3">
+                                <div className="mt-0.5 bg-amber-100 p-1.5 rounded-full text-amber-600 shrink-0">
+                                  <Users size={14} />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm font-semibold text-gray-900 leading-tight">
+                                    Special Request
+                                  </p>
+                                  <p className="text-xs text-gray-600 mt-1 truncate">
+                                    <span className="font-medium text-gray-800">{name}</span> (Telegram: {req.telegramId})
+                                  </p>
+                                  <p className="text-xs text-amber-700 mt-1.5 leading-relaxed">
+                                    Ex-employer wants now to become a job seeker.
+                                  </p>
+                                  <button
+                                    onClick={() => {
+                                      setShowNotifications(false);
+                                      setActiveTab("configuration");
+                                      setConfigSubTab("users");
+                                    }}
+                                    className="mt-2.5 text-xs font-semibold text-[#0284c7] hover:text-[#0369a1] bg-sky-50 hover:bg-sky-100 px-3 py-1.5 rounded-md transition-colors w-full text-center"
+                                  >
+                                    View or Fix
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })
+                      ) : (
+                        <div className="p-6 text-center text-gray-500 text-sm">
+                          No new notifications
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+            <button onClick={() => setMobileMenuOpen(true)} className="text-gray-500 hover:text-gray-700 focus:outline-none">
+              <Menu className="w-6 h-6" />
+            </button>
+          </div>
         </header>
 
         {/* Desktop Header */}
         <header className="hidden md:flex bg-white h-[72px] items-center justify-between px-8 shrink-0 shadow-sm z-10 border-b border-gray-200">
           <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Admin Dashboard</h1>
           <div className="flex items-center gap-6">
-            <button className="text-gray-500 hover:text-gray-700 relative transition-colors cursor-pointer border-none bg-transparent">
-              <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full border border-white"></span>
-              <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
-            </button>
+            <div className="relative">
+              <button 
+                onClick={() => setShowNotifications(!showNotifications)}
+                className="text-gray-500 hover:text-gray-700 relative transition-colors cursor-pointer border-none bg-transparent flex items-center justify-center"
+              >
+                {data.specialRequests && data.specialRequests.length > 0 && (
+                  <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full border border-white"></span>
+                )}
+                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+              </button>
+
+              {showNotifications && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setShowNotifications(false)} />
+                  <div className="absolute right-0 mt-2 w-80 bg-white border border-gray-200 rounded-xl shadow-lg z-50 overflow-hidden">
+                    <div className="p-3 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
+                      <h3 className="font-bold text-gray-900 text-sm">Notifications</h3>
+                      {data.specialRequests && data.specialRequests.length > 0 && (
+                        <span className="bg-[#0284c7] text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                          {data.specialRequests.length}
+                        </span>
+                      )}
+                    </div>
+                    <div className="max-h-80 overflow-y-auto">
+                      {data.specialRequests && data.specialRequests.length > 0 ? (
+                        data.specialRequests.map((req: any) => {
+                          const userObj = data.users?.find((u: any) => u.id === req.userId);
+                          const name = userObj?.profiles?.full_name || "Unknown Name";
+                          return (
+                            <div key={req.userId} className="p-4 border-b border-gray-50 hover:bg-gray-50 transition-colors last:border-b-0">
+                              <div className="flex items-start gap-3">
+                                <div className="mt-0.5 bg-amber-100 p-1.5 rounded-full text-amber-600 shrink-0">
+                                  <Users size={14} />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm font-semibold text-gray-900 leading-tight">
+                                    Special Request
+                                  </p>
+                                  <p className="text-xs text-gray-600 mt-1 truncate">
+                                    <span className="font-medium text-gray-800">{name}</span> (Telegram: {req.telegramId})
+                                  </p>
+                                  <p className="text-xs text-amber-700 mt-1.5 leading-relaxed">
+                                    Ex-employer wants now to become a job seeker.
+                                  </p>
+                                  <button
+                                    onClick={() => {
+                                      setShowNotifications(false);
+                                      setActiveTab("configuration");
+                                      setConfigSubTab("users");
+                                    }}
+                                    className="mt-2.5 text-xs font-semibold text-[#0284c7] hover:text-[#0369a1] bg-sky-50 hover:bg-sky-100 px-3 py-1.5 rounded-md transition-colors w-full text-center"
+                                  >
+                                    View or Fix
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })
+                      ) : (
+                        <div className="p-6 text-center text-gray-500 text-sm">
+                          No new notifications
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
             <div className="flex items-center gap-3">
               <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(data.adminUsername || "Admin")}&background=random`} alt={data.adminUsername || "Admin"} className="w-10 h-10 rounded-full object-cover border border-gray-200" />
               <div className="flex flex-col">
