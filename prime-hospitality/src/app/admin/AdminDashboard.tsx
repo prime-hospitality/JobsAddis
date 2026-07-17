@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { approveEmployer, rejectEmployer, toggleUserBan, toggleJobStatus, logoutAdmin, addEmployer, deleteEmployer, updateEmployer, adminUpdateEmployerLogo, deleteUser, approveSpecialRequest } from "./actions";
-import { Trash2, Pencil, Image as ImageIcon, Menu, X, LayoutDashboard, Briefcase, FileText, Users, LogOut, Settings, CreditCard, CheckCircle, BookOpen } from "lucide-react";
+import { Trash2, Pencil, Image as ImageIcon, Menu, X, LayoutDashboard, Briefcase, FileText, Users, LogOut, Settings, CreditCard, CheckCircle, BookOpen, User } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import ContentManagementTab from "./ContentManagementTab";
 
@@ -108,6 +108,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
   const [overviewEmployerId, setOverviewEmployerId] = useState<string>("");
   const [overviewDuration, setOverviewDuration] = useState<"7" | "30" | "90">("30");
   const [employerSearch, setEmployerSearch] = useState("");
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
 
   // Sync active tab to sessionStorage so refresh restores the same tab
@@ -599,12 +600,38 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                 </>
               )}
             </div>
-            <div className="flex items-center gap-3">
-              <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(data.adminUsername || "Admin")}&background=random`} alt={data.adminUsername || "Admin"} className="w-10 h-10 rounded-full object-cover border border-gray-200" />
-              <div className="flex flex-col">
-                <span className="text-sm font-bold text-gray-900 leading-none mb-1">{data.adminUsername || "Admin"}</span>
-                <span className="text-xs text-gray-500 font-medium leading-none">Super Admin</span>
-              </div>
+            
+            <div className="relative">
+              <button 
+                onClick={() => setProfileMenuOpen(!profileMenuOpen)}
+                className="flex items-center gap-3 focus:outline-none hover:bg-gray-50 rounded-lg p-1.5 -m-1.5 transition-colors"
+              >
+                <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(data.adminUsername || "Admin")}&background=random`} alt={data.adminUsername || "Admin"} className="w-10 h-10 rounded-full object-cover border border-gray-200" />
+                <div className="flex flex-col text-left">
+                  <span className="text-sm font-bold text-gray-900 leading-none mb-1">{data.adminUsername || "Admin"}</span>
+                  <span className="text-xs text-gray-500 font-medium leading-none">Super Admin</span>
+                </div>
+              </button>
+
+              {profileMenuOpen && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setProfileMenuOpen(false)} />
+                  <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-xl shadow-lg z-50 py-1 overflow-hidden">
+                    <button 
+                      onClick={() => setProfileMenuOpen(false)}
+                      className="w-full text-left px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 hover:text-green-600 transition-colors flex items-center gap-2"
+                    >
+                      <Settings className="w-4 h-4" /> Settings
+                    </button>
+                    <button 
+                      onClick={() => setProfileMenuOpen(false)}
+                      className="w-full text-left px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 hover:text-green-600 transition-colors flex items-center gap-2"
+                    >
+                      <User className="w-4 h-4" /> Profile
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </header>
