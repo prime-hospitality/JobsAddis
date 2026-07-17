@@ -107,6 +107,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [overviewEmployerId, setOverviewEmployerId] = useState<string>("");
   const [overviewDuration, setOverviewDuration] = useState<"7" | "30" | "90">("30");
+  const [employerSearch, setEmployerSearch] = useState("");
 
   // Sync active tab to sessionStorage so refresh restores the same tab
   useEffect(() => {
@@ -640,6 +641,15 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                 ← Back to Employers
               </button>
             )}
+            {activeTab === "jobs" && !selectedEmployerId && (
+              <input
+                type="text"
+                placeholder="Search employers..."
+                value={employerSearch}
+                onChange={(e) => setEmployerSearch(e.target.value)}
+                className="ml-auto px-3 py-2 border border-gray-300 rounded-lg text-sm w-48 md:w-64 focus:outline-none focus:ring-2 focus:ring-[#0284c7] focus:border-transparent transition-all"
+              />
+            )}
           </div>
 
           <div className="overflow-x-auto">
@@ -857,7 +867,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                     </tr>
                   ))}
 
-                  {activeTab === "jobs" && !selectedEmployerId && data.employers.map((emp: any) => {
+                  {activeTab === "jobs" && !selectedEmployerId && data.employers.filter((emp: any) => (emp.business_name || "").toLowerCase().includes(employerSearch.toLowerCase())).map((emp: any) => {
                     const jobCount = data.jobs.filter((j: any) => j.employer_id === emp.id).length;
                     if (jobCount === 0) return null;
                     return (
@@ -981,7 +991,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                 </div>
               ))}
 
-              {activeTab === "jobs" && !selectedEmployerId && data.employers.map((emp: any) => {
+              {activeTab === "jobs" && !selectedEmployerId && data.employers.filter((emp: any) => (emp.business_name || "").toLowerCase().includes(employerSearch.toLowerCase())).map((emp: any) => {
                 const jobCount = data.jobs.filter((j: any) => j.employer_id === emp.id).length;
                 if (jobCount === 0) return null;
                 return (
