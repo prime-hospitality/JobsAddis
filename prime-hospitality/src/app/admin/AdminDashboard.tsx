@@ -1651,23 +1651,31 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
         </div>
       )}
 
-      {/* Settings "New Window" Modal */}
+      {/* Settings Half-Screen Panel */}
       {settingsOpen && (
-        <div className="fixed inset-0 z-[60] bg-gray-50 flex flex-col">
-          <header className="bg-white border-b border-gray-200 h-[72px] px-8 flex items-center justify-between shrink-0">
-            <h2 className="text-xl font-bold text-gray-900 tracking-tight">Admin Settings</h2>
-            <button onClick={() => setSettingsOpen(false)} className="text-gray-500 hover:text-gray-900 bg-gray-100 hover:bg-gray-200 rounded-full p-2 transition-colors focus:outline-none">
-              <X className="w-5 h-5" />
-            </button>
-          </header>
-          <div className="flex-1 overflow-y-auto p-4 md:p-8">
-            <div className="max-w-3xl mx-auto bg-white rounded-2xl border border-gray-200 p-8 shadow-sm text-center">
-              <Settings className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-lg font-bold text-gray-900 mb-2">Settings Overview</h3>
-              <p className="text-sm text-gray-500">System settings will be available here soon.</p>
+        <>
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 z-[60] bg-black/30"
+            onClick={() => setSettingsOpen(false)}
+          />
+          {/* Panel */}
+          <div className="fixed top-0 right-0 h-full w-1/2 min-w-[400px] z-[61] bg-gray-50 flex flex-col shadow-2xl border-l border-gray-200">
+            <header className="bg-white border-b border-gray-200 h-[72px] px-8 flex items-center justify-between shrink-0">
+              <h2 className="text-xl font-bold text-gray-900 tracking-tight">Admin Settings</h2>
+              <button onClick={() => setSettingsOpen(false)} className="text-gray-500 hover:text-gray-900 bg-gray-100 hover:bg-gray-200 rounded-full p-2 transition-colors focus:outline-none">
+                <X className="w-5 h-5" />
+              </button>
+            </header>
+            <div className="flex-1 overflow-y-auto p-6">
+              <div className="bg-white rounded-2xl border border-gray-200 p-8 shadow-sm text-center">
+                <Settings className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                <h3 className="text-lg font-bold text-gray-900 mb-2">Settings Overview</h3>
+                <p className="text-sm text-gray-500">System settings will be available here soon.</p>
+              </div>
             </div>
           </div>
-        </div>
+        </>
       )}
     </div>
   );
