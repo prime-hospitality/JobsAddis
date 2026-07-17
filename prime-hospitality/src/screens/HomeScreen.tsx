@@ -601,10 +601,7 @@ export default function HomeScreen({ onJobSelect, onSearchPress, onBellPress, un
               color: "var(--text-primary)",
             }}
           >
-            All Jobs{" "}
-            <span style={{ color: "var(--text-muted)", fontWeight: 500 }}>
-              ({jobs.length})
-            </span>
+            All Jobs
           </h2>
           <button
             onClick={refetch}
