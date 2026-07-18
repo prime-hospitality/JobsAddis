@@ -370,7 +370,21 @@ export async function addEmployer(telegramId: number, businessName: string, busi
     userId = newUser.id;
   }
 
-  // 2. Insert new employer record
+  // 2. Generate a unique 5-digit authorization number
+  const generateAuthNumber = () => String(Math.floor(10000 + Math.random() * 90000));
+  let authNumber = generateAuthNumber();
+  // Ensure uniqueness (retry up to 5 times)
+  for (let i = 0; i < 5; i++) {
+    const { data: existing } = await supabase
+      .from("employers")
+      .select("id")
+      .eq("authorization_number", authNumber)
+      .maybeSingle();
+    if (!existing) break;
+    authNumber = generateAuthNumber();
+  }
+
+  // 3. Insert new employer record with authorization number
   const { data: newEmp, error: insertEmpErr } = await supabase
     .from("employers")
     .insert({
@@ -378,13 +392,14 @@ export async function addEmployer(telegramId: number, businessName: string, busi
       business_name: businessName,
       business_type: businessType,
       status: "approved",
+      authorization_number: authNumber,
     })
     .select("*, users(telegram_id)")
     .single();
 
   if (insertEmpErr) throw insertEmpErr;
 
-  return { success: true, employer: newEmp };
+  return { success: true, employer: newEmp, authorizationNumber: authNumber };
 }
 
 export async function updateEmployer(employerId: string, businessName: string, businessType: string, dailyPostLimit: number) {

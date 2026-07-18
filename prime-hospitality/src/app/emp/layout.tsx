@@ -1,0 +1,10 @@
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Employer Portal | Addis Jobs",
+  description: "Manage your job postings, track applicants, and grow your team with Addis Jobs Employer Portal.",
+};
+
+export default function EmpLayout({ children }: { children: React.ReactNode }) {
+  return children;
+}

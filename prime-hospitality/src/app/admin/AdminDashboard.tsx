@@ -196,6 +196,8 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
   const [newBusinessType, setNewBusinessType] = useState("");
   const [formLoading, setFormLoading] = useState(false);
   const [formError, setFormError] = useState("");
+  const [addEmployerModalOpen, setAddEmployerModalOpen] = useState(false);
+  const [authNumberResult, setAuthNumberResult] = useState<{ name: string; number: string } | null>(null);
 
   const [deleteModal, setDeleteModal] = useState<{ id: string; name: string } | null>(null);
   const [adminPassword, setAdminPassword] = useState("");
@@ -352,6 +354,8 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
           employers: [res.employer, ...prev.employers],
           users: prev.users.filter((u: any) => u.telegram_id !== parsedTelegramId)
         }));
+        setAddEmployerModalOpen(false);
+        setAuthNumberResult({ name: newBusinessName, number: res.authorizationNumber });
         setNewTelegramId("");
         setNewBusinessName("");
         setNewBusinessType("");
@@ -935,64 +939,14 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
 
           <div className="overflow-x-auto">
             {activeTab === "employers" && (
-              <div style={{ padding: "16px 24px", background: "#f3f4f6", borderBottom: "1px solid #e5e7eb" }}>
-                <h3 style={{ margin: "0 0 12px 0", fontSize: 14, fontWeight: 600, color: "#374151" }}>Pre-approve / Add New Employer</h3>
-                <form onSubmit={handleAddEmployer} style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "flex-end" }}>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                    <label style={{ fontSize: 12, fontWeight: 500, color: "#4b5563" }}>Telegram ID</label>
-                    <input 
-                      type="text" 
-                      inputMode="numeric"
-                      pattern="[0-9]*"
-                      value={newTelegramId} 
-                      onChange={e => setNewTelegramId(e.target.value.replace(/[^0-9]/g, ''))} 
-                      required 
-                      placeholder="e.g. 123456789"
-                      style={{ padding: "8px 12px", borderRadius: 6, border: "1px solid #d1d5db", fontSize: 13, width: 160 }}
-                    />
-                  </div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                    <label style={{ fontSize: 12, fontWeight: 500, color: "#4b5563" }}>Business Name</label>
-                    <input 
-                      type="text" 
-                      value={newBusinessName} 
-                      onChange={e => setNewBusinessName(e.target.value)} 
-                      required 
-                      placeholder="e.g. Hilton Hotel"
-                      style={{ padding: "8px 12px", borderRadius: 6, border: "1px solid #d1d5db", fontSize: 13, width: 200 }}
-                    />
-                  </div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                    <label style={{ fontSize: 12, fontWeight: 500, color: "#4b5563" }}>Business Type</label>
-                    <input 
-                      type="text" 
-                      value={newBusinessType} 
-                      onChange={e => setNewBusinessType(e.target.value)} 
-                      required 
-                      placeholder="e.g. Hotel"
-                      style={{ padding: "8px 12px", borderRadius: 6, border: "1px solid #d1d5db", fontSize: 13, width: 160 }}
-                    />
-                  </div>
-                  <button 
-                    type="submit" 
-                    disabled={formLoading}
-                    style={{ 
-                      background: "#0284c7", 
-                      color: "#fff", 
-                      border: "none", 
-                      padding: "9px 16px", 
-                      borderRadius: 6, 
-                      cursor: "pointer", 
-                      fontSize: 13, 
-                      fontWeight: 600,
-                      display: "flex",
-                      alignItems: "center"
-                    }}
-                  >
-                    {formLoading ? "Adding..." : "Add Employer"}
-                  </button>
-                </form>
-                {formError && <p style={{ color: "#dc2626", margin: "8px 0 0 0", fontSize: 12 }}>{formError}</p>}
+              <div style={{ padding: "16px 24px", background: "#f8fafc", borderBottom: "1px solid #e5e7eb", display: "flex", alignItems: "center", justifyContent: "flex-end" }}>
+                <button
+                  onClick={() => { setAddEmployerModalOpen(true); setFormError(""); setNewTelegramId(""); setNewBusinessName(""); setNewBusinessType(""); }}
+                  style={{ background: "linear-gradient(135deg, #0284c7, #0369a1)", color: "#fff", border: "none", padding: "10px 20px", borderRadius: 10, cursor: "pointer", fontSize: 14, fontWeight: 700, display: "flex", alignItems: "center", gap: 8, boxShadow: "0 4px 12px rgba(2,132,199,0.3)", transition: "all 0.2s" }}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+                  Add Employer
+                </button>
               </div>
             )}
             {/* ========== CONFIGURATION SUB-TABS ========== */}
@@ -1894,6 +1848,122 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                 style={{ background: "#f3f4f6", color: "#374151", border: "none", padding: "8px 16px", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer" }}
               >
                 Close Details
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Employer Modal */}
+      {addEmployerModalOpen && (
+        <div style={{ position: "fixed", inset: 0, backdropFilter: "blur(8px)", background: "rgba(15,23,42,0.6)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 200, padding: "0 16px" }}>
+          <div style={{ background: "#fff", borderRadius: 20, padding: 32, width: "100%", maxWidth: 480, boxShadow: "0 25px 60px rgba(0,0,0,0.25)", border: "1px solid rgba(255,255,255,0.2)" }}>
+            {/* Header */}
+            <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 28 }}>
+              <div style={{ width: 48, height: 48, borderRadius: 14, background: "linear-gradient(135deg, #0284c7, #0369a1)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 16px rgba(2,132,199,0.3)" }}>
+                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>
+              </div>
+              <div>
+                <h3 style={{ margin: 0, fontSize: 20, fontWeight: 800, color: "#0f172a", letterSpacing: "-0.02em" }}>Add New Employer</h3>
+                <p style={{ margin: "3px 0 0 0", fontSize: 13, color: "#64748b" }}>Register a company on the platform</p>
+              </div>
+              <button onClick={() => setAddEmployerModalOpen(false)} style={{ marginLeft: "auto", background: "#f1f5f9", border: "none", width: 32, height: 32, borderRadius: "50%", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#64748b", fontSize: 16 }}>✕</button>
+            </div>
+
+            <form onSubmit={handleAddEmployer} style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+              <div>
+                <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#374151", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.05em" }}>Telegram ID</label>
+                <div style={{ position: "relative" }}>
+                  <span style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", fontSize: 15 }}>📱</span>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    value={newTelegramId}
+                    onChange={e => setNewTelegramId(e.target.value.replace(/[^0-9]/g, ""))}
+                    required
+                    placeholder="e.g. 123456789"
+                    style={{ width: "100%", paddingLeft: 40, paddingRight: 14, paddingTop: 12, paddingBottom: 12, borderRadius: 10, border: "1.5px solid #e2e8f0", fontSize: 14, fontWeight: 500, color: "#0f172a", background: "#f8fafc", boxSizing: "border-box", outline: "none", transition: "border-color 0.2s" }}
+                  />
+                </div>
+                <p style={{ margin: "5px 0 0 0", fontSize: 11, color: "#94a3b8" }}>Must be 5–12 digits, no leading zero.</p>
+              </div>
+
+              <div>
+                <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#374151", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.05em" }}>Business Name</label>
+                <input
+                  type="text"
+                  value={newBusinessName}
+                  onChange={e => setNewBusinessName(e.target.value)}
+                  required
+                  placeholder="e.g. Hilton Addis Ababa"
+                  style={{ width: "100%", padding: "12px 14px", borderRadius: 10, border: "1.5px solid #e2e8f0", fontSize: 14, fontWeight: 500, color: "#0f172a", background: "#f8fafc", boxSizing: "border-box", outline: "none" }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#374151", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.05em" }}>Business Type</label>
+                <input
+                  type="text"
+                  value={newBusinessType}
+                  onChange={e => setNewBusinessType(e.target.value)}
+                  required
+                  placeholder="e.g. Hotel, Restaurant, NGO"
+                  style={{ width: "100%", padding: "12px 14px", borderRadius: 10, border: "1.5px solid #e2e8f0", fontSize: 14, fontWeight: 500, color: "#0f172a", background: "#f8fafc", boxSizing: "border-box", outline: "none" }}
+                />
+              </div>
+
+              {/* Info note */}
+              <div style={{ background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 10, padding: "12px 14px", display: "flex", gap: 10, alignItems: "flex-start" }}>
+                <span style={{ fontSize: 16, flexShrink: 0 }}>🔐</span>
+                <p style={{ margin: 0, fontSize: 12, color: "#1e40af", lineHeight: 1.5 }}>A unique <strong>5-digit authorization code</strong> will be generated automatically. Share it with the employer so they can access the employer portal.</p>
+              </div>
+
+              {formError && <p style={{ margin: 0, fontSize: 13, color: "#dc2626", background: "#fef2f2", padding: "10px 14px", borderRadius: 8, border: "1px solid #fecaca" }}>{formError}</p>}
+
+              <div style={{ display: "flex", gap: 10, marginTop: 4 }}>
+                <button type="button" onClick={() => setAddEmployerModalOpen(false)} disabled={formLoading} style={{ flex: 1, padding: "12px", borderRadius: 10, border: "1.5px solid #e2e8f0", background: "#f8fafc", color: "#64748b", fontSize: 14, fontWeight: 600, cursor: "pointer" }}>Cancel</button>
+                <button type="submit" disabled={formLoading || !newTelegramId || !newBusinessName || !newBusinessType} style={{ flex: 2, padding: "12px", borderRadius: 10, border: "none", background: formLoading ? "#93c5fd" : "linear-gradient(135deg, #0284c7, #0369a1)", color: "#fff", fontSize: 14, fontWeight: 700, cursor: formLoading ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, boxShadow: "0 4px 12px rgba(2,132,199,0.3)" }}>
+                  {formLoading ? (<><svg style={{ animation: "spin 1s linear infinite" }} xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Registering...</>) : (<>Register Employer</>)}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Authorization Number Success Modal */}
+      {authNumberResult && (
+        <div style={{ position: "fixed", inset: 0, backdropFilter: "blur(8px)", background: "rgba(15,23,42,0.6)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 300, padding: "0 16px" }}>
+          <div style={{ background: "#fff", borderRadius: 24, padding: 36, width: "100%", maxWidth: 420, boxShadow: "0 25px 60px rgba(0,0,0,0.25)", textAlign: "center" }}>
+            <div style={{ width: 64, height: 64, borderRadius: "50%", background: "linear-gradient(135deg, #059669, #047857)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px", boxShadow: "0 8px 24px rgba(5,150,105,0.3)" }}>
+              <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+            </div>
+            <h3 style={{ margin: "0 0 6px 0", fontSize: 22, fontWeight: 800, color: "#0f172a" }}>Employer Registered! 🎉</h3>
+            <p style={{ margin: "0 0 24px 0", fontSize: 14, color: "#64748b" }}><strong>{authNumberResult.name}</strong> has been successfully added to the platform.</p>
+            
+            <div style={{ background: "linear-gradient(135deg, #0f172a, #1e293b)", borderRadius: 16, padding: "20px 24px", marginBottom: 20 }}>
+              <p style={{ margin: "0 0 8px 0", fontSize: 11, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.1em", fontWeight: 600 }}>Authorization Code</p>
+              <div style={{ fontSize: 42, fontWeight: 900, color: "#38bdf8", letterSpacing: "0.3em", fontFamily: "monospace" }}>{authNumberResult.number}</div>
+              <p style={{ margin: "8px 0 0 0", fontSize: 11, color: "#64748b" }}>Share this code with the employer</p>
+            </div>
+
+            <div style={{ background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 10, padding: "10px 14px", marginBottom: 24, textAlign: "left" }}>
+              <p style={{ margin: 0, fontSize: 12, color: "#92400e" }}>⚠️ This code will not be shown again. Please save or send it to the employer immediately.</p>
+            </div>
+
+            <div style={{ display: "flex", gap: 10 }}>
+              <button
+                onClick={() => { navigator.clipboard.writeText(authNumberResult.number); }}
+                style={{ flex: 1, padding: "12px", borderRadius: 10, border: "1.5px solid #e2e8f0", background: "#f8fafc", color: "#0284c7", fontSize: 14, fontWeight: 700, cursor: "pointer" }}
+              >
+                📋 Copy Code
+              </button>
+              <button
+                onClick={() => setAuthNumberResult(null)}
+                style={{ flex: 1, padding: "12px", borderRadius: 10, border: "none", background: "linear-gradient(135deg, #0284c7, #0369a1)", color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer" }}
+              >
+                Done
               </button>
             </div>
           </div>
