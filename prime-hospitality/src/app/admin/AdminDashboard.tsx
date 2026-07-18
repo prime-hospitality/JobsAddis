@@ -123,7 +123,7 @@ function CustomInput(props: any) {
   return (
     <input
       {...props}
-      className={`w-full px-4 py-3 bg-gray-50/50 hover:bg-white border border-gray-200 rounded-xl text-sm text-gray-900 focus:outline-none focus:ring-4 focus:ring-[#0f172a]/10 focus:border-[#0f172a] transition-all placeholder-gray-400 font-medium ${props.className || ""}`}
+      className={`w-full px-4 py-3 bg-gray-50/50 hover:bg-white border border-gray-200 rounded-xl text-sm text-gray-900 focus:outline-none focus:ring-4 focus:ring-[#1c1c1e]/10 focus:border-[#1c1c1e] transition-all placeholder-gray-400 font-medium ${props.className || ""}`}
       style={undefined}
     />
   );
@@ -138,7 +138,7 @@ function CustomSelect({ value, onChange, options, placeholder, className = "" }:
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full px-3 py-2 sm:px-4 sm:py-2.5 bg-gray-50/50 hover:bg-white border border-gray-200 rounded-xl text-xs sm:text-sm text-gray-900 focus:outline-none focus:ring-4 focus:ring-[#0f172a]/10 focus:border-[#0f172a] transition-all flex items-center justify-between text-left font-medium"
+        className="w-full px-3 py-2 sm:px-4 sm:py-2.5 bg-gray-50/50 hover:bg-white border border-gray-200 rounded-xl text-xs sm:text-sm text-gray-900 focus:outline-none focus:ring-4 focus:ring-[#1c1c1e]/10 focus:border-[#1c1c1e] transition-all flex items-center justify-between text-left font-medium"
       >
         <span className={`${selected ? "text-gray-900" : "text-gray-400"} truncate mr-1.5`}>{selected ? selected.label : placeholder}</span>
         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`text-gray-400 flex-shrink-0 transition-transform ${isOpen ? "rotate-180" : ""}`}><path d="m6 9 6 6 6-6"/></svg>
@@ -152,7 +152,7 @@ function CustomSelect({ value, onChange, options, placeholder, className = "" }:
               <button
                 key={opt.value}
                 type="button"
-                className={`w-full text-left px-3 py-2 sm:px-4 sm:py-2.5 text-xs sm:text-sm hover:bg-gray-50 transition-colors flex items-center justify-between ${String(value) === String(opt.value) ? "text-[#0f172a] bg-[#f1f5f9]" : "text-gray-700"}`}
+                className={`w-full text-left px-3 py-2 sm:px-4 sm:py-2.5 text-xs sm:text-sm hover:bg-gray-50 transition-colors flex items-center justify-between ${String(value) === String(opt.value) ? "text-[#1c1c1e] bg-[#f1f5f9]" : "text-gray-700"}`}
                 onClick={() => {
                   onChange(String(opt.value));
                   setIsOpen(false);
@@ -160,7 +160,7 @@ function CustomSelect({ value, onChange, options, placeholder, className = "" }:
               >
                 <span className={`${String(value) === String(opt.value) ? "font-bold" : "font-medium"} truncate mr-2`}>{opt.label}</span>
                 {String(value) === String(opt.value) && (
-                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#0f172a] flex-shrink-0"><path d="M20 6 9 17l-5-5"/></svg>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#1c1c1e] flex-shrink-0"><path d="M20 6 9 17l-5-5"/></svg>
                 )}
               </button>
             ))}
@@ -501,7 +501,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
       )}
 
       {/* Sidebar */}
-      <aside className={`fixed inset-y-0 left-0 z-50 w-72 bg-white border-r border-gray-200 transform transition-transform duration-200 ease-in-out md:translate-x-0 md:static md:shrink-0 flex flex-col ${mobileMenuOpen ? "translate-x-0" : "-translate-x-full"}`}>
+      <aside className={`fixed inset-y-0 left-0 z-50 w-72 bg-white border-r border-gray-200 transform transition-transform duration-200 ease-in-out md:trangray-x-0 md:static md:shrink-0 flex flex-col ${mobileMenuOpen ? "trangray-x-0" : "-trangray-x-full"}`}>
         {/* Logo Area */}
         <div className="h-16 flex items-center px-6 border-b border-gray-100 shrink-0">
           <div
@@ -539,12 +539,12 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                   onClick={() => { setActiveTab(item.id as Tab); setSelectedEmployerId(null); setMobileMenuOpen(false); }}
                   className={`w-full flex items-center px-4 py-3 text-[14px] rounded-xl transition-all duration-200 ${
                     isActive 
-                      ? "bg-[#0f172a] text-white shadow-md shadow-slate-500/20 font-semibold" 
-                      : "text-slate-600 font-medium hover:bg-slate-100 hover:text-slate-900"
+                      ? "bg-[#1c1c1e] text-white shadow-md shadow-gray-500/20 font-semibold" 
+                      : "text-gray-600 font-medium hover:bg-gray-100 hover:text-gray-900"
                   }`}
                   style={{ border: "none", cursor: "pointer", textAlign: "left" }}
                 >
-                  <Icon className={`mr-3 flex-shrink-0 h-5 w-5 ${isActive ? "text-white" : "text-slate-400"}`} />
+                  <Icon className={`mr-3 flex-shrink-0 h-5 w-5 ${isActive ? "text-white" : "text-gray-400"}`} />
                   <span className="whitespace-nowrap">{item.label}</span>
                 </button>
               </div>
@@ -591,7 +591,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                     <div className="p-3 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
                       <h3 className="font-bold text-gray-900 text-sm">Notifications</h3>
                       {data.specialRequests && data.specialRequests.length > 0 && (
-                        <span className="bg-[#0f172a] text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                        <span className="bg-[#1c1c1e] text-white text-xs font-bold px-2 py-0.5 rounded-full">
                           {data.specialRequests.length}
                         </span>
                       )}
@@ -623,7 +623,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                                       setActiveTab("configuration");
                                       setConfigSubTab("users");
                                     }}
-                                    className="mt-2.5 text-xs font-semibold text-[#0f172a] hover:text-[#1e293b] bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-md transition-colors w-full text-center"
+                                    className="mt-2.5 text-xs font-semibold text-[#1c1c1e] hover:text-[#2c2c2e] bg-gray-100 hover:bg-gray-200 px-3 py-1.5 rounded-md transition-colors w-full text-center"
                                   >
                                     View or Fix
                                   </button>
@@ -670,7 +670,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                     <div className="p-3 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
                       <h3 className="font-bold text-gray-900 text-sm">Notifications</h3>
                       {data.specialRequests && data.specialRequests.length > 0 && (
-                        <span className="bg-[#0f172a] text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                        <span className="bg-[#1c1c1e] text-white text-xs font-bold px-2 py-0.5 rounded-full">
                           {data.specialRequests.length}
                         </span>
                       )}
@@ -702,7 +702,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                                       setActiveTab("configuration");
                                       setConfigSubTab("users");
                                     }}
-                                    className="mt-2.5 text-xs font-semibold text-[#0f172a] hover:text-[#1e293b] bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-md transition-colors w-full text-center"
+                                    className="mt-2.5 text-xs font-semibold text-[#1c1c1e] hover:text-[#2c2c2e] bg-gray-100 hover:bg-gray-200 px-3 py-1.5 rounded-md transition-colors w-full text-center"
                                   >
                                     View or Fix
                                   </button>
@@ -813,11 +813,11 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     {[
                       { label: "Total Employers", value: employers.length, icon: "/icons/building.png", color: "#6366f1" },
-                      { label: "Active Job Seekers", value: users.length, icon: "/icons/users.svg", color: "#0f172a" },
+                      { label: "Active Job Seekers", value: users.length, icon: "/icons/users.svg", color: "#1c1c1e" },
                       { label: "Pending Moderation", value: jobs.filter(j => j.status === "pending").length, icon: "/icons/pending.svg", color: "#f59e0b" },
                       { label: "Total Job Posts", value: jobs.length, icon: "/icons/jobs.svg", color: "#10b981" },
                     ].map(stat => (
-                      <div key={stat.label} className="rounded-xl border border-gray-100 bg-gray-50/80 p-3 sm:p-4 flex flex-col lg:flex-row items-start lg:items-center gap-2 lg:gap-4 transition-all hover:bg-white hover:shadow-md hover:-translate-y-0.5 cursor-pointer">
+                      <div key={stat.label} className="rounded-xl border border-gray-100 bg-gray-50/80 p-3 sm:p-4 flex flex-col lg:flex-row items-start lg:items-center gap-2 lg:gap-4 transition-all hover:bg-white hover:shadow-md hover:-trangray-y-0.5 cursor-pointer">
                         <div className="flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 lg:w-14 lg:h-14 rounded-xl bg-white shadow-sm border border-gray-100 flex-shrink-0">
                           <img src={stat.icon} alt={stat.label} className="w-6 h-6 sm:w-7 sm:h-7 lg:w-8 lg:h-8 object-contain drop-shadow-sm" />
                         </div>
@@ -932,7 +932,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                 placeholder="Search employers..."
                 value={employerSearch}
                 onChange={(e) => setEmployerSearch(e.target.value)}
-                className="ml-auto px-3 py-2 border border-gray-300 rounded-lg text-sm w-48 md:w-64 focus:outline-none focus:ring-2 focus:ring-[#0f172a] focus:border-transparent transition-all"
+                className="ml-auto px-3 py-2 border border-gray-300 rounded-lg text-sm w-48 md:w-64 focus:outline-none focus:ring-2 focus:ring-[#1c1c1e] focus:border-transparent transition-all"
               />
             )}
           </div>
@@ -942,7 +942,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
               <div style={{ padding: "16px 24px", background: "#f8fafc", borderBottom: "1px solid #e5e7eb", display: "flex", alignItems: "center", justifyContent: "flex-end" }}>
                 <button
                   onClick={() => { setAddEmployerModalOpen(true); setFormError(""); setNewTelegramId(""); setNewBusinessName(""); setNewBusinessType(""); }}
-                  style={{ background: "linear-gradient(135deg, #0f172a, #1e293b)", color: "#fff", border: "none", padding: "10px 20px", borderRadius: 10, cursor: "pointer", fontSize: 14, fontWeight: 700, display: "flex", alignItems: "center", gap: 8, boxShadow: "0 4px 12px rgba(2,132,199,0.3)", transition: "all 0.2s" }}
+                  style={{ background: "linear-gradient(135deg, #1c1c1e, #2c2c2e)", color: "#fff", border: "none", padding: "10px 20px", borderRadius: 10, cursor: "pointer", fontSize: 14, fontWeight: 700, display: "flex", alignItems: "center", gap: 8, boxShadow: "0 4px 12px rgba(2,132,199,0.3)", transition: "all 0.2s" }}
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14"/></svg>
                   Add Employer
@@ -958,7 +958,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                     onClick={() => setConfigSubTab("users")}
                     className={`px-5 py-2.5 text-sm font-semibold rounded-t-lg border border-b-0 transition-all ${
                       configSubTab === "users"
-                        ? "bg-white border-gray-200 text-[#0f172a] shadow-sm -mb-px"
+                        ? "bg-white border-gray-200 text-[#1c1c1e] shadow-sm -mb-px"
                         : "bg-transparent border-transparent text-gray-500 hover:text-gray-800"
                     }`}
                     style={{ cursor: "pointer" }}
@@ -969,7 +969,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                     onClick={() => setConfigSubTab("content")}
                     className={`px-5 py-2.5 text-sm font-semibold rounded-t-lg border border-b-0 transition-all ${
                       configSubTab === "content"
-                        ? "bg-white border-gray-200 text-[#0f172a] shadow-sm -mb-px"
+                        ? "bg-white border-gray-200 text-[#1c1c1e] shadow-sm -mb-px"
                         : "bg-transparent border-transparent text-gray-500 hover:text-gray-800"
                     }`}
                     style={{ cursor: "pointer" }}
@@ -995,7 +995,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                       onClick={() => setSeekerSubTab(id)}
                       className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-semibold transition-all text-left ${
                         seekerSubTab === id
-                          ? "bg-[#0f172a] text-white shadow-sm"
+                          ? "bg-[#1c1c1e] text-white shadow-sm"
                           : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
                       }`}
                       style={{ border: "none", cursor: "pointer" }}
@@ -1053,23 +1053,23 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                         {/* Search Bar */}
                         <div className="flex flex-col sm:flex-row gap-3 p-4 border-b border-gray-100 bg-white">
                           <div className="flex-1 relative">
-                            <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                            <svg className="absolute left-3 top-1/2 -trangray-y-1/2 text-gray-400" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
                             <input
                               type="text"
                               placeholder="Search by name..."
                               value={userSearchName}
                               onChange={e => setUserSearchName(e.target.value)}
-                              className="w-full pl-9 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#0f172a]/20 focus:border-[#0f172a] transition-all placeholder-gray-400 font-medium"
+                              className="w-full pl-9 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#1c1c1e]/20 focus:border-[#1c1c1e] transition-all placeholder-gray-400 font-medium"
                             />
                           </div>
                           <div className="flex-1 relative">
-                            <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13.1a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.62 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 9.91a16 16 0 0 0 6.16 6.16l.97-.97a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                            <svg className="absolute left-3 top-1/2 -trangray-y-1/2 text-gray-400" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13.1a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.62 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 9.91a16 16 0 0 0 6.16 6.16l.97-.97a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
                             <input
                               type="text"
                               placeholder="Search by phone number..."
                               value={userSearchPhone}
                               onChange={e => setUserSearchPhone(e.target.value)}
-                              className="w-full pl-9 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#0f172a]/20 focus:border-[#0f172a] transition-all placeholder-gray-400 font-medium"
+                              className="w-full pl-9 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#1c1c1e]/20 focus:border-[#1c1c1e] transition-all placeholder-gray-400 font-medium"
                             />
                           </div>
                           {(userSearchName || userSearchPhone) && (
@@ -1262,7 +1262,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                         <span style={{
                           padding: "2px 8px", borderRadius: 100, fontSize: 12, fontWeight: 600,
                           background: (item.daily_post_limit ?? 3) === -1 ? "#ede9fe" : "#f1f5f9",
-                          color: (item.daily_post_limit ?? 3) === -1 ? "#7c3aed" : "#0f172a",
+                          color: (item.daily_post_limit ?? 3) === -1 ? "#7c3aed" : "#1c1c1e",
                           border: `1px solid ${(item.daily_post_limit ?? 3) === -1 ? "#ddd6fe" : "#bfdbfe"}`,
                         }}>
                           {getPostLimitLabel(item.daily_post_limit ?? 3)}
@@ -1368,7 +1368,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                       <span style={{
                         padding: "2px 8px", borderRadius: 100, fontSize: 11, fontWeight: 600,
                         background: (item.daily_post_limit ?? 3) === -1 ? "#ede9fe" : "#f1f5f9",
-                        color: (item.daily_post_limit ?? 3) === -1 ? "#7c3aed" : "#0f172a",
+                        color: (item.daily_post_limit ?? 3) === -1 ? "#7c3aed" : "#1c1c1e",
                         border: `1px solid ${(item.daily_post_limit ?? 3) === -1 ? "#ddd6fe" : "#bfdbfe"}`,
                       }}>
                         {getPostLimitLabel(item.daily_post_limit ?? 3)}
@@ -1604,15 +1604,15 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                         flex: 1,
                         padding: "10px 6px",
                         borderRadius: 8,
-                        border: editPostLimit === opt.value ? "2px solid #0f172a" : "1px solid #d1d5db",
+                        border: editPostLimit === opt.value ? "2px solid #1c1c1e" : "1px solid #d1d5db",
                         background: editPostLimit === opt.value ? "#f1f5f9" : "#f9fafb",
                         cursor: "pointer",
                         textAlign: "center",
                         transition: "all 0.15s",
                       }}
                     >
-                      <div style={{ fontSize: 15, fontWeight: 700, color: editPostLimit === opt.value ? "#0f172a" : "#374151" }}>{opt.label}</div>
-                      <div style={{ fontSize: 11, color: editPostLimit === opt.value ? "#0f172a" : "#9ca3af", marginTop: 2 }}>{opt.description}</div>
+                      <div style={{ fontSize: 15, fontWeight: 700, color: editPostLimit === opt.value ? "#1c1c1e" : "#374151" }}>{opt.label}</div>
+                      <div style={{ fontSize: 11, color: editPostLimit === opt.value ? "#1c1c1e" : "#9ca3af", marginTop: 2 }}>{opt.description}</div>
                     </button>
                   ))}
                 </div>
@@ -1630,7 +1630,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                 <button
                   type="submit"
                   disabled={editLoading || !editName.trim()}
-                  style={{ background: "#0f172a", color: "#fff", border: "none", padding: "8px 16px", borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 8 }}
+                  style={{ background: "#1c1c1e", color: "#fff", border: "none", padding: "8px 16px", borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 8 }}
                 >
                   <Pencil size={14} />
                   {editLoading ? "Saving..." : "Save Changes"}
@@ -1744,7 +1744,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                   {viewingJob.status === "active" ? "Live (Active)" : viewingJob.status === "closed" ? "Closed" : "Under Review (Paused)"}
                 </span>
                 <h3 style={{ margin: "8px 0 2px 0", fontSize: 20, fontWeight: 800, color: "#111827" }}>{viewingJob.title}</h3>
-                <p style={{ margin: 0, fontSize: 13, color: "#0f172a", fontWeight: 600 }}>
+                <p style={{ margin: 0, fontSize: 13, color: "#1c1c1e", fontWeight: 600 }}>
                   {Array.isArray(viewingJob.employers) ? viewingJob.employers[0]?.business_name : viewingJob.employers?.business_name || "Employer"}
                 </p>
               </div>
@@ -1860,12 +1860,11 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
           <div style={{ background: "#fff", borderRadius: 20, padding: 32, width: "100%", maxWidth: 480, boxShadow: "0 25px 60px rgba(0,0,0,0.25)", border: "1px solid rgba(255,255,255,0.2)" }}>
             {/* Header */}
             <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 28 }}>
-              <div style={{ width: 48, height: 48, borderRadius: 14, background: "linear-gradient(135deg, #0f172a, #1e293b)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 16px rgba(2,132,199,0.3)" }}>
+              <div style={{ width: 48, height: 48, borderRadius: 14, background: "linear-gradient(135deg, #1c1c1e, #2c2c2e)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 16px rgba(2,132,199,0.3)" }}>
                 <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>
               </div>
               <div>
-                <h3 style={{ margin: 0, fontSize: 20, fontWeight: 800, color: "#0f172a", letterSpacing: "-0.02em" }}>Add New Employer</h3>
-                <p style={{ margin: "3px 0 0 0", fontSize: 13, color: "#64748b" }}>Register a company on the platform</p>
+                <h3 style={{ margin: 0, fontSize: 20, fontWeight: 800, color: "#1c1c1e", letterSpacing: "-0.02em" }}>Add New Employer</h3>
               </div>
               <button onClick={() => setAddEmployerModalOpen(false)} style={{ marginLeft: "auto", background: "#f1f5f9", border: "none", width: 32, height: 32, borderRadius: "50%", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#64748b", fontSize: 16 }}>✕</button>
             </div>
@@ -1883,7 +1882,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                     onChange={e => setNewTelegramId(e.target.value.replace(/[^0-9]/g, ""))}
                     required
                     placeholder="e.g. 123456789"
-                    style={{ width: "100%", paddingLeft: 40, paddingRight: 14, paddingTop: 12, paddingBottom: 12, borderRadius: 10, border: "1.5px solid #e2e8f0", fontSize: 14, fontWeight: 500, color: "#0f172a", background: "#f8fafc", boxSizing: "border-box", outline: "none", transition: "border-color 0.2s" }}
+                    style={{ width: "100%", paddingLeft: 40, paddingRight: 14, paddingTop: 12, paddingBottom: 12, borderRadius: 10, border: "1.5px solid #e2e8f0", fontSize: 14, fontWeight: 500, color: "#1c1c1e", background: "#f8fafc", boxSizing: "border-box", outline: "none", transition: "border-color 0.2s" }}
                   />
                 </div>
                 <p style={{ margin: "5px 0 0 0", fontSize: 11, color: "#94a3b8" }}>Must be 5–12 digits, no leading zero.</p>
@@ -1897,7 +1896,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                   onChange={e => setNewBusinessName(e.target.value)}
                   required
                   placeholder="e.g. Hilton Addis Ababa"
-                  style={{ width: "100%", padding: "12px 14px", borderRadius: 10, border: "1.5px solid #e2e8f0", fontSize: 14, fontWeight: 500, color: "#0f172a", background: "#f8fafc", boxSizing: "border-box", outline: "none" }}
+                  style={{ width: "100%", padding: "12px 14px", borderRadius: 10, border: "1.5px solid #e2e8f0", fontSize: 14, fontWeight: 500, color: "#1c1c1e", background: "#f8fafc", boxSizing: "border-box", outline: "none" }}
                 />
               </div>
 
@@ -1909,7 +1908,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                   onChange={e => setNewBusinessType(e.target.value)}
                   required
                   placeholder="e.g. Hotel, Restaurant, NGO"
-                  style={{ width: "100%", padding: "12px 14px", borderRadius: 10, border: "1.5px solid #e2e8f0", fontSize: 14, fontWeight: 500, color: "#0f172a", background: "#f8fafc", boxSizing: "border-box", outline: "none" }}
+                  style={{ width: "100%", padding: "12px 14px", borderRadius: 10, border: "1.5px solid #e2e8f0", fontSize: 14, fontWeight: 500, color: "#1c1c1e", background: "#f8fafc", boxSizing: "border-box", outline: "none" }}
                 />
               </div>
 
@@ -1923,7 +1922,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
 
               <div style={{ display: "flex", gap: 10, marginTop: 4 }}>
                 <button type="button" onClick={() => setAddEmployerModalOpen(false)} disabled={formLoading} style={{ flex: 1, padding: "12px", borderRadius: 10, border: "1.5px solid #e2e8f0", background: "#f8fafc", color: "#64748b", fontSize: 14, fontWeight: 600, cursor: "pointer" }}>Cancel</button>
-                <button type="submit" disabled={formLoading || !newTelegramId || !newBusinessName || !newBusinessType} style={{ flex: 2, padding: "12px", borderRadius: 10, border: "none", background: formLoading ? "#93c5fd" : "linear-gradient(135deg, #0f172a, #1e293b)", color: "#fff", fontSize: 14, fontWeight: 700, cursor: formLoading ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, boxShadow: "0 4px 12px rgba(2,132,199,0.3)" }}>
+                <button type="submit" disabled={formLoading || !newTelegramId || !newBusinessName || !newBusinessType} style={{ flex: 2, padding: "12px", borderRadius: 10, border: "none", background: formLoading ? "#93c5fd" : "linear-gradient(135deg, #1c1c1e, #2c2c2e)", color: "#fff", fontSize: 14, fontWeight: 700, cursor: formLoading ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, boxShadow: "0 4px 12px rgba(2,132,199,0.3)" }}>
                   {formLoading ? (<><svg style={{ animation: "spin 1s linear infinite" }} xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Registering...</>) : (<>Register Employer</>)}
                 </button>
               </div>
@@ -1939,10 +1938,10 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
             <div style={{ width: 64, height: 64, borderRadius: "50%", background: "linear-gradient(135deg, #059669, #047857)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px", boxShadow: "0 8px 24px rgba(5,150,105,0.3)" }}>
               <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
             </div>
-            <h3 style={{ margin: "0 0 6px 0", fontSize: 22, fontWeight: 800, color: "#0f172a" }}>Employer Registered! 🎉</h3>
+            <h3 style={{ margin: "0 0 6px 0", fontSize: 22, fontWeight: 800, color: "#1c1c1e" }}>Employer Registered! 🎉</h3>
             <p style={{ margin: "0 0 24px 0", fontSize: 14, color: "#64748b" }}><strong>{authNumberResult.name}</strong> has been successfully added to the platform.</p>
             
-            <div style={{ background: "linear-gradient(135deg, #0f172a, #1e293b)", borderRadius: 16, padding: "20px 24px", marginBottom: 20 }}>
+            <div style={{ background: "linear-gradient(135deg, #1c1c1e, #2c2c2e)", borderRadius: 16, padding: "20px 24px", marginBottom: 20 }}>
               <p style={{ margin: "0 0 8px 0", fontSize: 11, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.1em", fontWeight: 600 }}>Authorization Code</p>
               <div style={{ fontSize: 42, fontWeight: 900, color: "#38bdf8", letterSpacing: "0.3em", fontFamily: "monospace" }}>{authNumberResult.number}</div>
               <p style={{ margin: "8px 0 0 0", fontSize: 11, color: "#64748b" }}>Share this code with the employer</p>
@@ -1955,13 +1954,13 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
             <div style={{ display: "flex", gap: 10 }}>
               <button
                 onClick={() => { navigator.clipboard.writeText(authNumberResult.number); }}
-                style={{ flex: 1, padding: "12px", borderRadius: 10, border: "1.5px solid #e2e8f0", background: "#f8fafc", color: "#0f172a", fontSize: 14, fontWeight: 700, cursor: "pointer" }}
+                style={{ flex: 1, padding: "12px", borderRadius: 10, border: "1.5px solid #e2e8f0", background: "#f8fafc", color: "#1c1c1e", fontSize: 14, fontWeight: 700, cursor: "pointer" }}
               >
                 📋 Copy Code
               </button>
               <button
                 onClick={() => setAuthNumberResult(null)}
-                style={{ flex: 1, padding: "12px", borderRadius: 10, border: "none", background: "linear-gradient(135deg, #0f172a, #1e293b)", color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer" }}
+                style={{ flex: 1, padding: "12px", borderRadius: 10, border: "none", background: "linear-gradient(135deg, #1c1c1e, #2c2c2e)", color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer" }}
               >
                 Done
               </button>

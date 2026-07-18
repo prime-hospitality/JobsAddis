@@ -301,7 +301,7 @@ export default function ContentManagementTab() {
                         locationMismatch: false,
                       });
                     }}
-                    style={{ background: "var(--card, #1e293b)", borderRadius: 16, padding: 16, marginBottom: 0, border: "1px solid var(--border, rgba(255,255,255,0.08))", boxShadow: "0 2px 12px rgba(0,0,0,0.18)", cursor: "pointer" }}
+                    style={{ background: "var(--card, #2c2c2e)", borderRadius: 16, padding: 16, marginBottom: 0, border: "1px solid var(--border, rgba(255,255,255,0.08))", boxShadow: "0 2px 12px rgba(0,0,0,0.18)", cursor: "pointer" }}
                   >
                     {/* Header row */}
                     <div style={{ display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 12 }}>
@@ -667,7 +667,7 @@ export default function ContentManagementTab() {
                     <div className="relative">
                       <label className="block text-sm font-semibold text-gray-700 mb-1.5">Place of Work</label>
                       <div className="relative">
-                        <MapPin size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                        <MapPin size={18} className="absolute left-3.5 top-1/2 -trangray-y-1/2 text-gray-400" />
                         <input
                           type="text"
                           value={templateModal.location}
@@ -746,7 +746,7 @@ export default function ContentManagementTab() {
                         <div>
                           <label className="block text-sm font-semibold text-gray-700 mb-1.5">Minimum</label>
                           <div className="relative">
-                            <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 font-medium text-sm">ETB</span>
+                            <span className="absolute left-3.5 top-1/2 -trangray-y-1/2 text-gray-400 font-medium text-sm">ETB</span>
                             <input
                               type="number"
                               value={templateModal.salary_min || ""}
@@ -759,7 +759,7 @@ export default function ContentManagementTab() {
                         <div>
                           <label className="block text-sm font-semibold text-gray-700 mb-1.5">Maximum</label>
                           <div className="relative">
-                            <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 font-medium text-sm">ETB</span>
+                            <span className="absolute left-3.5 top-1/2 -trangray-y-1/2 text-gray-400 font-medium text-sm">ETB</span>
                             <input
                               type="number"
                               value={templateModal.salary_max || ""}
