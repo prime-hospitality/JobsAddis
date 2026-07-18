@@ -271,6 +271,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [overviewEmployerId, setOverviewEmployerId] = useState<string>("");
   const [overviewDuration, setOverviewDuration] = useState<"7" | "30" | "90">("30");
+  const [activityDuration, setActivityDuration] = useState<"all" | "1" | "7" | "30">("all");
   const [employerSearch, setEmployerSearch] = useState("");
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -825,7 +826,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
               const empJobs = jobs.filter(j => j.employer_id === perfEmployer.id && inWindow(j.created_at));
               
               const duration = Number(overviewDuration);
-              const days = [];
+              const days: { dateStr: string; label: string; posts: number; active: number }[] = [];
               for (let i = duration - 1; i >= 0; i--) {
                 const d = new Date();
                 d.setDate(d.getDate() - i);
@@ -858,8 +859,9 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
             const maxBar = Math.max(...perfData.map(d => d.posts), 1);
 
             // Activity feed - all employer job events merged
+            const activityCutoff = activityDuration === "all" ? new Date(0) : daysAgo(Number(activityDuration));
             const activityFeed = jobs
-              .filter(j => employers.some(e => e.id === j.employer_id))
+              .filter(j => employers.some(e => e.id === j.employer_id) && new Date(j.created_at) >= activityCutoff)
               .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
               .slice(0, 20)
               .map(j => ({
@@ -962,8 +964,24 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
 
                 {/* ---- ROW 3: Employer Activity — full width ---- */}
                 <div className="bg-white rounded-xl border border-[#c6c6c8] shadow-sm p-6">
-                  <h2 className="text-base font-bold text-[#1c1c1e] mb-1">Employer Activity</h2>
-                  <p className="text-xs text-[#aeaeb2] mb-5">Latest actions taken by employers on the platform</p>
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-5">
+                    <div>
+                      <h2 className="text-base font-bold text-[#1c1c1e] mb-1">Employer Activity</h2>
+                      <p className="text-xs text-[#aeaeb2]">Latest actions taken by employers on the platform</p>
+                    </div>
+                    <CustomSelect
+                      value={activityDuration}
+                      onChange={(v) => setActivityDuration(v as "all" | "1" | "7" | "30")}
+                      placeholder="Filter by Date"
+                      options={[
+                        { value: "all", label: "All Time" },
+                        { value: "1", label: "Today" },
+                        { value: "7", label: "Last 7 Days" },
+                        { value: "30", label: "Last 30 Days" }
+                      ]}
+                      className="w-32 shrink-0 sm:w-40"
+                    />
+                  </div>
                   {activityFeed.length === 0 ? (
                     <div className="text-center py-10 text-[#aeaeb2] text-sm">No activity yet.</div>
                   ) : (
