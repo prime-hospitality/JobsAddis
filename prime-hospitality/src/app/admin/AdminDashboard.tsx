@@ -251,6 +251,22 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
   const [editLoading, setEditLoading] = useState(false);
   const [editLogoFile, setEditLogoFile] = useState<File | null>(null);
   const [editError, setEditError] = useState("");
+
+  const [pricingState, setPricingState] = useState({
+    threeDays: "1,983.75",
+    fiveDays: "2,645.00",
+    oneWeek: "3,306.25",
+    twoWeeks: "5,290.00",
+    oneMonth: "7,273.75",
+    threeMonths: "16,531.25",
+    sixMonths: "25,127.50",
+    oneYear: "46,287.50",
+    pinVacancy: "1,000",
+    companyName: "Prime Hospitality Business Group PLC",
+    bankName: "Awash Bank",
+    accountNo: "013041457659800"
+  });
+  const [isEditingPricing, setIsEditingPricing] = useState(false);
   const [viewingJob, setViewingJob] = useState<any | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [overviewEmployerId, setOverviewEmployerId] = useState<string>("");
@@ -1556,9 +1572,17 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                         <h3 className="text-xl font-bold tracking-tight mb-1">Employer Pricing Packages</h3>
                         <p className="text-[#94a3b8] text-sm">All prices are in Ethiopian Birr (ETB). No position limitations on any package.</p>
                       </div>
-                      <div className="flex items-center gap-2 bg-white/10 rounded-lg px-4 py-2 text-sm font-semibold text-white border border-white/20">
-                        <CreditCard className="w-4 h-4" />
-                        ETB — Ethiopian Birr
+                      <div className="flex items-center gap-4">
+                        <button
+                          onClick={() => setIsEditingPricing(!isEditingPricing)}
+                          className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${isEditingPricing ? 'bg-[#059669] text-white' : 'bg-white/10 text-white hover:bg-white/20'} border border-white/20`}
+                        >
+                          {isEditingPricing ? "Save Changes" : "Edit Pricing"}
+                        </button>
+                        <div className="flex items-center gap-2 bg-white/10 rounded-lg px-4 py-2 text-sm font-semibold text-white border border-white/20 hidden sm:flex">
+                          <CreditCard className="w-4 h-4" />
+                          ETB — Ethiopian Birr
+                        </div>
                       </div>
                     </div>
 
@@ -1573,12 +1597,12 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                       </div>
                       <div className="divide-y divide-[#f1f5f9]">
                         {[
-                          { label: "Three Days", price: "1,983.75", tag: null },
-                          { label: "Five Days", price: "2,645.00", tag: null },
-                          { label: "One Week", price: "3,306.25", tag: "Popular" },
-                          { label: "Two Weeks", price: "5,290.00", tag: null },
-                          { label: "One Month", price: "7,273.75", tag: null },
-                          { label: "Three Months", price: "16,531.25", tag: "Best Value" },
+                          { label: "Three Days", key: "threeDays", tag: null },
+                          { label: "Five Days", key: "fiveDays", tag: null },
+                          { label: "One Week", key: "oneWeek", tag: "Popular" },
+                          { label: "Two Weeks", key: "twoWeeks", tag: null },
+                          { label: "One Month", key: "oneMonth", tag: null },
+                          { label: "Three Months", key: "threeMonths", tag: "Best Value" },
                         ].map(pkg => (
                           <div key={pkg.label} className="flex items-center justify-between px-6 py-4 hover:bg-[#f8fafc] transition-colors">
                             <div className="flex items-center gap-3">
@@ -1588,8 +1612,20 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                                 <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#1c1c1e] text-white tracking-wide">{pkg.tag}</span>
                               )}
                             </div>
-                            <div className="text-right">
-                              <span className="text-base font-black text-[#1c1c1e]">ETB {pkg.price}</span>
+                            <div className="text-right flex items-center gap-2">
+                              {isEditingPricing ? (
+                                <div className="flex items-center">
+                                  <span className="text-sm text-[#8e8e93] mr-2">ETB</span>
+                                  <input 
+                                    type="text" 
+                                    value={pricingState[pkg.key as keyof typeof pricingState]} 
+                                    onChange={(e) => setPricingState({...pricingState, [pkg.key]: e.target.value})}
+                                    className="w-24 px-2 py-1 border border-[#c6c6c8] rounded text-sm text-[#1c1c1e] focus:outline-none focus:border-[#007aff]"
+                                  />
+                                </div>
+                              ) : (
+                                <span className="text-base font-black text-[#1c1c1e]">ETB {pricingState[pkg.key as keyof typeof pricingState]}</span>
+                              )}
                             </div>
                           </div>
                         ))}
@@ -1607,15 +1643,29 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                       </div>
                       <div className="divide-y divide-[#f1f5f9]">
                         {[
-                          { label: "Six Months Membership", price: "25,127.50" },
-                          { label: "One Year Membership", price: "46,287.50" },
+                          { label: "Six Months Membership", key: "sixMonths" },
+                          { label: "One Year Membership", key: "oneYear" },
                         ].map(pkg => (
                           <div key={pkg.label} className="flex items-center justify-between px-6 py-4 hover:bg-[#f8fafc] transition-colors">
                             <div className="flex items-center gap-3">
                               <div className="w-2 h-2 rounded-full bg-[#059669] flex-shrink-0" />
                               <span className="text-sm font-semibold text-[#1c1c1e]">{pkg.label}</span>
                             </div>
-                            <span className="text-base font-black text-[#059669]">ETB {pkg.price}</span>
+                            <div className="text-right flex items-center gap-2">
+                              {isEditingPricing ? (
+                                <div className="flex items-center">
+                                  <span className="text-sm text-[#8e8e93] mr-2">ETB</span>
+                                  <input 
+                                    type="text" 
+                                    value={pricingState[pkg.key as keyof typeof pricingState]} 
+                                    onChange={(e) => setPricingState({...pricingState, [pkg.key]: e.target.value})}
+                                    className="w-24 px-2 py-1 border border-[#c6c6c8] rounded text-sm text-[#059669] focus:outline-none focus:border-[#059669]"
+                                  />
+                                </div>
+                              ) : (
+                                <span className="text-base font-black text-[#059669]">ETB {pricingState[pkg.key as keyof typeof pricingState]}</span>
+                              )}
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -1633,7 +1683,22 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                             <p className="text-xs text-[#8e8e93] font-medium">Per day pinned promotion</p>
                           </div>
                         </div>
-                        <span className="text-base font-black text-[#f59e0b]">ETB 1,000 / day</span>
+                        <div className="text-right flex items-center gap-2">
+                          {isEditingPricing ? (
+                            <div className="flex items-center">
+                              <span className="text-sm text-[#8e8e93] mr-2">ETB</span>
+                              <input 
+                                type="text" 
+                                value={pricingState.pinVacancy} 
+                                onChange={(e) => setPricingState({...pricingState, pinVacancy: e.target.value})}
+                                className="w-20 px-2 py-1 border border-[#c6c6c8] rounded text-sm text-[#f59e0b] focus:outline-none focus:border-[#f59e0b]"
+                              />
+                              <span className="text-sm text-[#8e8e93] ml-2">/ day</span>
+                            </div>
+                          ) : (
+                            <span className="text-base font-black text-[#f59e0b]">ETB {pricingState.pinVacancy} / day</span>
+                          )}
+                        </div>
                       </div>
                     </div>
 
@@ -1667,13 +1732,22 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                       </div>
                       <div className="px-6 py-5 grid grid-cols-1 sm:grid-cols-3 gap-4">
                         {[
-                          { label: "Company Name", value: "Prime Hospitality Business Group PLC" },
-                          { label: "Bank", value: "Awash Bank" },
-                          { label: "Account No.", value: "013041457659800" },
+                          { label: "Company Name", key: "companyName" },
+                          { label: "Bank", key: "bankName" },
+                          { label: "Account No.", key: "accountNo" },
                         ].map(item => (
                           <div key={item.label}>
                             <p className="text-[10px] font-bold text-[#8e8e93] uppercase tracking-wider mb-1">{item.label}</p>
-                            <p className="text-sm font-bold text-[#1c1c1e]">{item.value}</p>
+                            {isEditingPricing ? (
+                              <input 
+                                type="text" 
+                                value={pricingState[item.key as keyof typeof pricingState]} 
+                                onChange={(e) => setPricingState({...pricingState, [item.key]: e.target.value})}
+                                className="w-full px-2 py-1.5 border border-[#c6c6c8] rounded text-sm text-[#1c1c1e] font-bold focus:outline-none focus:border-[#007aff]"
+                              />
+                            ) : (
+                              <p className="text-sm font-bold text-[#1c1c1e]">{pricingState[item.key as keyof typeof pricingState]}</p>
+                            )}
                           </div>
                         ))}
                       </div>
