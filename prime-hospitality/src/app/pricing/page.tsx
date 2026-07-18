@@ -73,10 +73,8 @@ export default async function PricingPage() {
     <div style={{ minHeight: "100vh", backgroundColor: "#F8FAFC", fontFamily: "'Inter', sans-serif" }}>
       {/* Navigation */}
       <nav style={{ padding: "24px 48px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #E2E8F0", backgroundColor: "#fff" }}>
-        <div style={{ fontSize: 20, fontWeight: 700, color: "#0F172A", display: "flex", alignItems: "center", gap: 8 }}>
-          <div style={{ backgroundColor: "#0284c7", borderRadius: 8, padding: 6, display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-          </div>
+        <div style={{ fontSize: 20, fontWeight: 700, color: "#0F172A", display: "flex", alignItems: "center", gap: 10 }}>
+          <img src="/logo.png" alt="Prime Hospitality Logo" style={{ width: 36, height: 36, objectFit: "contain" }} />
           <span style={{ letterSpacing: "-0.01em" }}>Prime Hospitality</span>
         </div>
         
