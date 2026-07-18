@@ -254,14 +254,11 @@ export async function deleteUser(userId: string, passwordAttempt: string) {
   if (!admin) return { success: false, error: "Unauthorized" };
   if (!admin.permissions.manageUsers) return { success: false, error: "Permission denied" };
 
-  if (admin.role === "super_admin") {
-    const supabase = getSupabase();
-    const { data: pCfg } = await supabase.from("app_config").select("value").eq("key", "admin_password").single();
-    const storedPassword = pCfg?.value?.trim() || process.env.ADMIN_PASSWORD || "admin123";
-    if (passwordAttempt !== storedPassword) return { success: false, error: "Incorrect admin password" };
-  }
-
   const supabase = getSupabase();
+  const { data: pCfg } = await supabase.from("app_config").select("value").eq("key", "admin_password").single();
+  const storedPassword = pCfg?.value?.trim() || process.env.ADMIN_PASSWORD || "admin123";
+  if (passwordAttempt !== storedPassword) return { success: false, error: "Incorrect admin password" };
+
 
   // 1. Fetch user's profile to get the CV URL before deletion
   const { data: profile } = await supabase
@@ -561,14 +558,11 @@ export async function deleteEmployer(employerId: string, passwordAttempt: string
   if (!admin) return { success: false, error: "Unauthorized" };
   if (!admin.permissions.manageEmployers) return { success: false, error: "Permission denied" };
 
-  if (admin.role === "super_admin") {
-    const supabase = getSupabase();
-    const { data: pCfg } = await supabase.from("app_config").select("value").eq("key", "admin_password").single();
-    const storedPassword = pCfg?.value?.trim() || process.env.ADMIN_PASSWORD || "admin123";
-    if (passwordAttempt !== storedPassword) return { success: false, error: "Incorrect admin password" };
-  }
-
   const supabase = getSupabase();
+  const { data: pCfg } = await supabase.from("app_config").select("value").eq("key", "admin_password").single();
+  const storedPassword = pCfg?.value?.trim() || process.env.ADMIN_PASSWORD || "admin123";
+  if (passwordAttempt !== storedPassword) return { success: false, error: "Incorrect admin password" };
+
 
   // 1. Fetch employer to get the logo URL before deletion
   const { data: employer } = await supabase
