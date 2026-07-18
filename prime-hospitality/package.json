@@ -10,6 +10,7 @@
     "deploy:funcs": "npx supabase functions deploy validate-telegram-auth --use-api --yes"
   },
   "dependencies": {
+    "@phosphor-icons/react": "^2.1.10",
     "@supabase/supabase-js": "^2.106.1",
     "@tanstack/react-virtual": "^3.13.25",
     "@telegram-apps/sdk": "^3.11.8",
