@@ -117,7 +117,7 @@ export default async function PricingPage() {
         gap: 32,
         alignItems: "stretch"
       }}>
-        {/* Standard Packages */}
+        {/* Premium Memberships Plan */}
         <div style={{ 
           backgroundColor: "#fff", 
           borderRadius: 24, 
@@ -127,19 +127,19 @@ export default async function PricingPage() {
           display: "flex",
           flexDirection: "column"
         }}>
-          <h3 style={{ fontSize: 20, fontWeight: 700, color: "#0F172A", marginBottom: 8 }}>Standard Packages</h3>
+          <h3 style={{ fontSize: 20, fontWeight: 700, color: "#0F172A", marginBottom: 8 }}>Long Term Memberships</h3>
           <p style={{ fontSize: 15, color: "#64748B", marginBottom: 28, minHeight: 44, lineHeight: 1.5 }}>
-            Posted <strong>(3) Times Per Day</strong>. Prices are in ETB.
+            Posted <strong>(5) Times Per Day</strong>. Best for frequent hiring.
           </p>
           <div style={{ marginBottom: 32, display: "flex", alignItems: "baseline", gap: 8 }}>
             <span style={{ fontSize: 36, fontWeight: 800, color: "#0F172A", letterSpacing: "-0.02em" }}>
-              From {config.standardPackages[0]?.price ?? "—"}
+              From {config.premiumPackages[0]?.price ?? "—"}
             </span>
             <span style={{ fontSize: 16, color: "#64748B", fontWeight: 500 }}>ETB</span>
           </div>
           
-          <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 16, flexGrow: 1 }}>
-            {config.standardPackages.map((pkg: { label: string; price: string }, i: number) => (
+          <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 16, flexGrow: 1, marginBottom: 24 }}>
+            {config.premiumPackages.map((pkg: { label: string; price: string }, i: number) => (
               <li key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 15, color: "#475569" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
                   <div style={{ backgroundColor: "#ECFDF5", borderRadius: "50%", padding: 4, display: "flex", minWidth: 22, minHeight: 22 }}>
@@ -147,13 +147,20 @@ export default async function PricingPage() {
                   </div>
                   <span>{pkg.label}</span>
                 </div>
-                <span style={{ fontWeight: 600, color: "#0F172A", textAlign: "right" }}>{pkg.price}</span>
+                <span style={{ fontWeight: 600, color: "#0F172A", textAlign: "right", whiteSpace: "nowrap" }}>{pkg.price}</span>
               </li>
             ))}
           </ul>
+          
+          <div style={{ backgroundColor: "#F8FAFC", padding: 16, borderRadius: 12, marginTop: "auto", border: "1px solid #E2E8F0" }}>
+            <p style={{ fontSize: 14, color: "#475569", lineHeight: 1.5, margin: 0 }}>
+              <span style={{ color: "#0284c7", fontWeight: 600, marginRight: 6 }}>📌 Note:</span>
+              Any of the Package Doesn&apos;t Have a Position limitation. It Means, You can Post Multiple Positions Under Any of the Package.
+            </p>
+          </div>
         </div>
 
-        {/* Premium Memberships Plan */}
+        {/* Standard Packages */}
         <div style={{ 
           backgroundColor: "#0F172A", 
           borderRadius: 24, 
@@ -179,21 +186,21 @@ export default async function PricingPage() {
             textTransform: "uppercase",
             boxShadow: "0 4px 6px -1px rgba(14, 165, 233, 0.4)"
           }}>
-            Memberships
+            Most Popular
           </div>
-          <h3 style={{ fontSize: 20, fontWeight: 700, color: "#fff", marginBottom: 8 }}>Long Term Memberships</h3>
+          <h3 style={{ fontSize: 20, fontWeight: 700, color: "#fff", marginBottom: 8 }}>Standard Packages</h3>
           <p style={{ fontSize: 15, color: "#94A3B8", marginBottom: 28, minHeight: 44, lineHeight: 1.5 }}>
-            Posted <strong>(5) Times Per Day</strong>. Best for frequent hiring.
+            Posted <strong>(3) Times Per Day</strong>. Prices are in ETB.
           </p>
           <div style={{ marginBottom: 32, display: "flex", alignItems: "baseline", gap: 8 }}>
             <span style={{ fontSize: 36, fontWeight: 800, color: "#fff", letterSpacing: "-0.02em" }}>
-              From {config.premiumPackages[0]?.price ?? "—"}
+              From {config.standardPackages[0]?.price ?? "—"}
             </span>
             <span style={{ fontSize: 16, color: "#94A3B8", fontWeight: 500 }}>ETB</span>
           </div>
           
-          <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 16, flexGrow: 1, marginBottom: 24 }}>
-            {config.premiumPackages.map((pkg: { label: string; price: string }, i: number) => (
+          <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 16, flexGrow: 1 }}>
+            {config.standardPackages.map((pkg: { label: string; price: string }, i: number) => (
               <li key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 15, color: "#E2E8F0" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
                   <div style={{ backgroundColor: "rgba(56, 189, 248, 0.2)", borderRadius: "50%", padding: 4, display: "flex", minWidth: 22, minHeight: 22 }}>
@@ -201,17 +208,10 @@ export default async function PricingPage() {
                   </div>
                   <span>{pkg.label}</span>
                 </div>
-                <span style={{ fontWeight: 600, color: "#fff", textAlign: "right", whiteSpace: "nowrap" }}>{pkg.price}</span>
+                <span style={{ fontWeight: 600, color: "#fff", textAlign: "right" }}>{pkg.price}</span>
               </li>
             ))}
           </ul>
-          
-          <div style={{ backgroundColor: "rgba(255,255,255,0.05)", padding: 16, borderRadius: 12, marginTop: "auto" }}>
-            <p style={{ fontSize: 14, color: "#E2E8F0", lineHeight: 1.5, margin: 0 }}>
-              <span style={{ color: "#38BDF8", fontWeight: 600, marginRight: 6 }}>📌 Note:</span>
-              Any of the Package Doesn&apos;t Have a Position limitation. It Means, You can Post Multiple Positions Under Any of the Package.
-            </p>
-          </div>
         </div>
 
         {/* Add-ons Plan */}

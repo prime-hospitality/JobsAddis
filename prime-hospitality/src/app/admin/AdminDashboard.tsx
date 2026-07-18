@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { approveEmployer, rejectEmployer, toggleUserBan, toggleJobStatus, logoutAdmin, addEmployer, deleteEmployer, updateEmployer, adminUpdateEmployerLogo, deleteUser, approveSpecialRequest } from "./actions";
+import { approveEmployer, rejectEmployer, toggleUserBan, toggleJobStatus, logoutAdmin, addEmployer, deleteEmployer, updateEmployer, adminUpdateEmployerLogo, deleteUser, approveSpecialRequest, getPricingConfig, updatePricingConfig } from "./actions";
 import { Trash2, Pencil, Image as ImageIcon, Menu, X, LayoutDashboard, Briefcase, FileText, Users, LogOut, Settings, CreditCard, CheckCircle, BookOpen, User, Building2, Hourglass } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import ContentManagementTab from "./ContentManagementTab";
@@ -267,6 +267,32 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
     accountNo: "013041457659800"
   });
   const [isEditingPricing, setIsEditingPricing] = useState(false);
+  const [pricingSaving, setPricingSaving] = useState(false);
+
+  // Load pricing config from DB on mount
+  useEffect(() => {
+    getPricingConfig().then((cfg) => {
+      if (cfg) setPricingState((prev) => ({ ...prev, ...cfg }));
+    }).catch(() => {});
+  }, []);
+
+  const handleSavePricing = async () => {
+    if (!isEditingPricing) {
+      // Enter edit mode
+      setIsEditingPricing(true);
+      return;
+    }
+    // Save mode
+    setPricingSaving(true);
+    try {
+      await updatePricingConfig(pricingState);
+    } catch (e) {
+      console.error("Failed to save pricing:", e);
+    } finally {
+      setPricingSaving(false);
+      setIsEditingPricing(false);
+    }
+  };
   const [viewingJob, setViewingJob] = useState<any | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [overviewEmployerId, setOverviewEmployerId] = useState<string>("");
@@ -1592,10 +1618,10 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                       </div>
                       <div className="flex items-center gap-4">
                         <button
-                          onClick={() => setIsEditingPricing(!isEditingPricing)}
+                          onClick={handleSavePricing}
                           className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${isEditingPricing ? 'bg-[#059669] text-white' : 'bg-white/10 text-white hover:bg-white/20'} border border-white/20`}
                         >
-                          {isEditingPricing ? "Save Changes" : "Edit Pricing"}
+                          {pricingSaving ? "Saving..." : isEditingPricing ? "Save Changes" : "Edit Pricing"}
                         </button>
                         <div className="flex items-center gap-2 bg-white/10 rounded-lg px-4 py-2 text-sm font-semibold text-white border border-white/20 hidden sm:flex">
                           <CreditCard className="w-4 h-4" />
