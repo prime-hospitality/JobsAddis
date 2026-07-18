@@ -280,6 +280,8 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
   const [subAdminError, setSubAdminError] = useState("");
   const [subAdminSuccess, setSubAdminSuccess] = useState("");
   const [showSubAdminForm, setShowSubAdminForm] = useState(false);
+  const [expandedSubAdmins, setExpandedSubAdmins] = useState<Record<string, boolean>>({});
+  const [deleteSubAdminModal, setDeleteSubAdminModal] = useState<{ id: string; username: string } | null>(null);
 
   const handleSavePricing = async () => {
     if (!isEditingPricing) {
@@ -2039,6 +2041,50 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
         </div>
       )}
 
+      {/* Delete Sub Admin Modal */}
+      {deleteSubAdminModal && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100 }}>
+          <div style={{ background: "#fff", borderRadius: 12, padding: 24, width: "100%", maxWidth: 400, maxHeight: "90vh", overflowY: "auto", boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1)" }}>
+            <h3 style={{ margin: "0 0 16px 0", fontSize: 18, fontWeight: 700, color: "#111827" }}>Delete Admin</h3>
+            <p style={{ margin: "0 0 20px 0", fontSize: 14, color: "#4b5563", lineHeight: 1.5 }}>
+              Are you sure you want to delete admin <strong>{deleteSubAdminModal.username}</strong>? This action cannot be undone.
+            </p>
+            <form onSubmit={handleDeleteSubAdmin} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              <div>
+                <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#1c1c1e", marginBottom: 6 }}>Admin Password Required</label>
+                <input 
+                  type="password" 
+                  value={userActionPassword}
+                  onChange={(e) => setUserActionPassword(e.target.value)}
+                  placeholder="Enter admin password"
+                  required
+                  style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid #d1d5db", fontSize: 14, boxSizing: "border-box" }}
+                />
+              </div>
+              {userActionError && <p style={{ color: "#dc2626", margin: 0, fontSize: 13 }}>{userActionError}</p>}
+              <div style={{ display: "flex", gap: 12, justifyContent: "flex-end", marginTop: 8 }}>
+                <button 
+                  type="button" 
+                  onClick={() => setDeleteSubAdminModal(null)}
+                  disabled={userActionLoading}
+                  style={{ background: "#f3f4f6", color: "#1c1c1e", border: "none", padding: "8px 16px", borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: "pointer" }}
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit"
+                  disabled={userActionLoading || !userActionPassword}
+                  style={{ background: "#dc2626", color: "#fff", border: "none", padding: "8px 16px", borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: (userActionLoading || !userActionPassword) ? "not-allowed" : "pointer", opacity: (userActionLoading || !userActionPassword) ? 0.5 : 1, display: "flex", alignItems: "center", gap: 8 }}
+                >
+                  <Trash2 size={16} />
+                  {userActionLoading ? "Deleting..." : "Permanently Delete"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* Ban User Modal */}
       {banUserModal && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100 }}>
@@ -2410,7 +2456,10 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                   return (
                     <div key={admin.id} style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 14, overflow: "hidden" }}>
                       {/* Admin card header */}
-                      <div style={{ padding: "14px 18px", display: "flex", alignItems: "center", gap: 12, borderBottom: "1px solid #f1f5f9" }}>
+                      <div
+                        onClick={() => setExpandedSubAdmins(prev => ({ ...prev, [admin.id]: !prev[admin.id] }))}
+                        style={{ padding: "14px 18px", display: "flex", alignItems: "center", gap: 12, borderBottom: expandedSubAdmins[admin.id] ? "1px solid #f1f5f9" : "none", cursor: "pointer" }}
+                      >
                         <div style={{ width: 36, height: 36, borderRadius: "50%", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                           <span style={{ fontSize: 14, fontWeight: 700, color: "#fff" }}>{admin.username[0].toUpperCase()}</span>
                         </div>
@@ -2420,10 +2469,11 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                         </div>
                         {isSuperAdmin && (
                           <button
-                            onClick={async () => {
-                              if (!confirm(`Delete admin "${admin.username}"?`)) return;
-                              const res = await deleteSubAdmin(admin.id);
-                              if (res.success) setSubAdmins((prev) => prev.filter((a) => a.id !== admin.id));
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setDeleteSubAdminModal({ id: admin.id, username: admin.username });
+                              setUserActionPassword("");
+                              setUserActionError("");
                             }}
                             style={{ marginLeft: "auto", padding: "6px 10px", borderRadius: 8, border: "1px solid #fecaca", background: "#fef2f2", color: "#dc2626", fontSize: 12, fontWeight: 600, cursor: "pointer" }}
                           >
@@ -2432,39 +2482,41 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                         )}
                       </div>
                       {/* Permissions toggles */}
-                      <div style={{ padding: "12px 18px", display: "flex", flexDirection: "column", gap: 0 }}>
-                        {PERMS.map((p, idx) => (
-                          <div key={p.key} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 0", borderBottom: idx < PERMS.length - 1 ? "1px solid #f8fafc" : "none" }}>
-                            <div>
-                              <p style={{ fontSize: 13, fontWeight: 600, color: "#374151", margin: 0 }}>{p.label}</p>
-                              <p style={{ fontSize: 11, color: "#9ca3af", margin: 0, marginTop: 2 }}>{p.desc}</p>
+                      {expandedSubAdmins[admin.id] && (
+                        <div style={{ padding: "12px 18px", display: "flex", flexDirection: "column", gap: 0 }}>
+                          {PERMS.map((p, idx) => (
+                            <div key={p.key} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 0", borderBottom: idx < PERMS.length - 1 ? "1px solid #f8fafc" : "none" }}>
+                              <div>
+                                <p style={{ fontSize: 13, fontWeight: 600, color: "#374151", margin: 0 }}>{p.label}</p>
+                                <p style={{ fontSize: 11, color: "#9ca3af", margin: 0, marginTop: 2 }}>{p.desc}</p>
+                              </div>
+                              {/* Toggle switch */}
+                              <button
+                                onClick={async () => {
+                                  if (!isSuperAdmin) return;
+                                  const updatedPerms = { ...admin.permissions, [p.key]: !admin.permissions[p.key] };
+                                  const res = await updateSubAdminPermissions(admin.id, updatedPerms);
+                                  if (res.success) {
+                                    setSubAdmins((prev) => prev.map((a) => a.id === admin.id ? { ...a, permissions: updatedPerms } : a));
+                                  }
+                                }}
+                                disabled={!isSuperAdmin}
+                                style={{
+                                  width: 44, height: 24, borderRadius: 12, border: "none", cursor: isSuperAdmin ? "pointer" : "default",
+                                  background: admin.permissions[p.key] ? "#22c55e" : "#d1d5db",
+                                  position: "relative", transition: "background 0.2s", flexShrink: 0
+                                }}
+                              >
+                                <span style={{
+                                  position: "absolute", top: 2, left: admin.permissions[p.key] ? 22 : 2,
+                                  width: 20, height: 20, borderRadius: "50%", background: "#fff",
+                                  transition: "left 0.2s", boxShadow: "0 1px 4px rgba(0,0,0,0.2)"
+                                }} />
+                              </button>
                             </div>
-                            {/* Toggle switch */}
-                            <button
-                              onClick={async () => {
-                                if (!isSuperAdmin) return;
-                                const updatedPerms = { ...admin.permissions, [p.key]: !admin.permissions[p.key] };
-                                const res = await updateSubAdminPermissions(admin.id, updatedPerms);
-                                if (res.success) {
-                                  setSubAdmins((prev) => prev.map((a) => a.id === admin.id ? { ...a, permissions: updatedPerms } : a));
-                                }
-                              }}
-                              disabled={!isSuperAdmin}
-                              style={{
-                                width: 44, height: 24, borderRadius: 12, border: "none", cursor: isSuperAdmin ? "pointer" : "default",
-                                background: admin.permissions[p.key] ? "#22c55e" : "#d1d5db",
-                                position: "relative", transition: "background 0.2s", flexShrink: 0
-                              }}
-                            >
-                              <span style={{
-                                position: "absolute", top: 2, left: admin.permissions[p.key] ? 22 : 2,
-                                width: 20, height: 20, borderRadius: "50%", background: "#fff",
-                                transition: "left 0.2s", boxShadow: "0 1px 4px rgba(0,0,0,0.2)"
-                              }} />
-                            </button>
-                          </div>
-                        ))}
-                      </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   );
                 })}

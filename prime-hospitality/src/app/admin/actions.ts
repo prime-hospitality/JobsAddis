@@ -122,9 +122,14 @@ export async function updateSubAdminPermissions(id: string, permissions: AdminPe
   return { success: true };
 }
 
-export async function deleteSubAdmin(id: string) {
+export async function deleteSubAdmin(id: string, passwordAttempt: string) {
   const session = await getSession();
   if (!session || session.role !== "super_admin") return { success: false, error: "Only the super admin can delete sub-admins" };
+
+  const supabase = getSupabase();
+  const { data: pCfg } = await supabase.from("app_config").select("value").eq("key", "admin_password").single();
+  const storedPassword = pCfg?.value?.trim() || process.env.ADMIN_PASSWORD || "admin123";
+  if (passwordAttempt !== storedPassword) return { success: false, error: "Incorrect admin password" };
 
   const subs = await getSubAdmins();
   await saveSubAdmins(subs.filter((s) => s.id !== id));
