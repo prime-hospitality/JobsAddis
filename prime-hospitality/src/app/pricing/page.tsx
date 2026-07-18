@@ -119,7 +119,7 @@ export default async function PricingPage() {
         gap: 32,
         alignItems: "stretch"
       }}>
-        {/* Standard Packages */}
+        {/* Long Term Memberships */}
         <div style={{ 
           backgroundColor: "#fff", 
           borderRadius: 24, 
@@ -129,33 +129,33 @@ export default async function PricingPage() {
           display: "flex",
           flexDirection: "column"
         }}>
-          <h3 style={{ fontSize: 20, fontWeight: 700, color: "#0F172A", marginBottom: 8 }}>Standard Packages</h3>
+          <h3 style={{ fontSize: 20, fontWeight: 700, color: "#0F172A", marginBottom: 8 }}>Long Term Memberships</h3>
           <p style={{ fontSize: 15, color: "#64748B", marginBottom: 28, minHeight: 44, lineHeight: 1.5 }}>
-            Posted <strong>(3) Times Per Day</strong>. Prices are in ETB.
+            Posted <strong>(5) Times Per Day</strong>. Best for frequent hiring.
           </p>
           <div style={{ marginBottom: 32, display: "flex", alignItems: "baseline", gap: 8 }}>
             <span style={{ fontSize: 36, fontWeight: 800, color: "#0F172A", letterSpacing: "-0.02em" }}>
-              From {config.threeDays}
+              From {config.sixMonths}
             </span>
             <span style={{ fontSize: 16, color: "#64748B", fontWeight: 500 }}>ETB</span>
           </div>
           
           <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 16, flexGrow: 1 }}>
-            {standardPackages.map((pkg, i) => (
+            {premiumPackages.map((pkg, i) => (
               <li key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 15, color: "#475569" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-                  <div style={{ backgroundColor: "#ECFDF5", borderRadius: "50%", padding: 4, display: "flex", minWidth: 22, minHeight: 22 }}>
-                    {checkIcon("#10B981")}
+                  <div style={{ backgroundColor: "#EFF6FF", borderRadius: "50%", padding: 4, display: "flex", minWidth: 22, minHeight: 22 }}>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
                   </div>
                   <span>{pkg.label}</span>
                 </div>
-                <span style={{ fontWeight: 600, color: "#0F172A", textAlign: "right" }}>{pkg.price}</span>
+                <span style={{ fontWeight: 600, color: "#0F172A", textAlign: "right", whiteSpace: "nowrap" }}>{pkg.price}</span>
               </li>
             ))}
           </ul>
         </div>
 
-        {/* Premium Memberships Plan */}
+        {/* Standard Packages (Middle, Dark, Popular) */}
         <div style={{ 
           backgroundColor: "#0F172A", 
           borderRadius: 24, 
@@ -181,29 +181,29 @@ export default async function PricingPage() {
             textTransform: "uppercase",
             boxShadow: "0 4px 6px -1px rgba(14, 165, 233, 0.4)"
           }}>
-            Memberships
+            Most Popular
           </div>
-          <h3 style={{ fontSize: 20, fontWeight: 700, color: "#fff", marginBottom: 8 }}>Long Term Memberships</h3>
+          <h3 style={{ fontSize: 20, fontWeight: 700, color: "#fff", marginBottom: 8 }}>Standard Packages</h3>
           <p style={{ fontSize: 15, color: "#94A3B8", marginBottom: 28, minHeight: 44, lineHeight: 1.5 }}>
-            Posted <strong>(5) Times Per Day</strong>. Best for frequent hiring.
+            Posted <strong>(3) Times Per Day</strong>. Prices are in ETB.
           </p>
           <div style={{ marginBottom: 32, display: "flex", alignItems: "baseline", gap: 8 }}>
             <span style={{ fontSize: 36, fontWeight: 800, color: "#fff", letterSpacing: "-0.02em" }}>
-              From {config.sixMonths}
+              From {config.threeDays}
             </span>
             <span style={{ fontSize: 16, color: "#94A3B8", fontWeight: 500 }}>ETB</span>
           </div>
           
           <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 16, flexGrow: 1, marginBottom: 24 }}>
-            {premiumPackages.map((pkg, i) => (
+            {standardPackages.map((pkg, i) => (
               <li key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 15, color: "#E2E8F0" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-                  <div style={{ backgroundColor: "rgba(56, 189, 248, 0.2)", borderRadius: "50%", padding: 4, display: "flex", minWidth: 22, minHeight: 22 }}>
-                    {checkIcon("#38BDF8")}
+                  <div style={{ backgroundColor: "rgba(16, 185, 129, 0.2)", borderRadius: "50%", padding: 4, display: "flex", minWidth: 22, minHeight: 22 }}>
+                    {checkIcon("#10B981")}
                   </div>
                   <span>{pkg.label}</span>
                 </div>
-                <span style={{ fontWeight: 600, color: "#fff", textAlign: "right", whiteSpace: "nowrap" }}>{pkg.price}</span>
+                <span style={{ fontWeight: 600, color: "#fff", textAlign: "right" }}>{pkg.price}</span>
               </li>
             ))}
           </ul>
