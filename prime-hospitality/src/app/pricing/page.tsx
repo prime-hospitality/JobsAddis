@@ -102,10 +102,10 @@ export default async function PricingPage() {
       {/* Hero */}
       <div style={{ padding: "80px 24px 60px", textAlign: "center" }}>
         <h1 style={{ fontSize: 42, fontWeight: 800, color: "#0F172A", marginBottom: 20, letterSpacing: "-0.03em" }}>
-          Welcome! We're so glad you're here.
+          Thank You for Choosing JobsAddis
         </h1>
         <p style={{ fontSize: 18, color: "#64748B", maxWidth: 600, margin: "0 auto", lineHeight: 1.6 }}>
-          Thank you for choosing JobsAddis to grow your team. Take a look at our flexible pricing packages below and find the perfect fit for your hiring needs.
+          Please Review Our Jobs Advertisement Packages Below &amp; Select The One That Fits Your Hiring Need.
         </p>
       </div>
 
