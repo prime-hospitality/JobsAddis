@@ -79,7 +79,7 @@ export async function loginEmployer(telegramId: string, authNumber: string) {
     .maybeSingle();
 
   if (!employer) {
-    return { success: false, error: "Employer profile not found" };
+    return { success: false, error: "not_found" };
   }
 
   if (employer.authorization_number !== trimmedCode) {
@@ -115,6 +115,24 @@ export async function getEmployerSession() {
   } catch {
     return null;
   }
+}
+
+/** Validate that the employer in the current session still exists in the DB.
+ *  Returns { valid: true } or { valid: false, reason: "deleted" | "rejected" } */
+export async function validateEmployerSession() {
+  const session = await getEmployerSession();
+  if (!session?.employerId) return { valid: false, reason: "deleted" as const };
+
+  const supabase = getSupabase();
+  const { data: employer } = await supabase
+    .from("employers")
+    .select("id, status")
+    .eq("id", session.employerId)
+    .maybeSingle();
+
+  if (!employer) return { valid: false, reason: "deleted" as const };
+  if (employer.status === "rejected") return { valid: false, reason: "rejected" as const };
+  return { valid: true };
 }
 
 /** Logout employer */
