@@ -201,7 +201,7 @@ export default function ContentManagementTab() {
             <div className="space-y-4">
               {data.faqs.map((faq) => (
                 <div key={faq.id} className="border border-[#c6c6c8] rounded-xl p-4 flex gap-4 bg-[#f2f2f7]/30">
-                  <div className="flex flex-col items-center justify-center text-gray-400 bg-white border border-[#c6c6c8] rounded-lg w-10 h-10 shrink-0 font-bold text-sm">
+                  <div className="flex flex-col items-center justify-center text-[#aeaeb2] bg-white border border-[#c6c6c8] rounded-lg w-10 h-10 shrink-0 font-bold text-sm">
                     {faq.display_order}
                   </div>
                   <div className="flex-1">
@@ -209,10 +209,10 @@ export default function ContentManagementTab() {
                     <p className="text-sm text-[#8e8e93] line-clamp-2">{faq.answer}</p>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
-                    <button onClick={() => setFaqModal(faq)} className="p-2 text-gray-400 hover:text-[#0284c7] hover:bg-blue-50 rounded-lg transition-colors">
+                    <button onClick={() => setFaqModal(faq)} className="p-2 text-[#aeaeb2] hover:text-[#0284c7] hover:bg-blue-50 rounded-lg transition-colors">
                       <Pencil size={18} />
                     </button>
-                    <button onClick={() => handleDeleteFaq(faq.id)} className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors">
+                    <button onClick={() => handleDeleteFaq(faq.id)} className="p-2 text-[#aeaeb2] hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors">
                       <Trash2 size={18} />
                     </button>
                   </div>
@@ -429,7 +429,7 @@ export default function ContentManagementTab() {
                 <button
                   key={step}
                   onClick={() => setActiveOnboardingStep(step)}
-                  className={`px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-colors ${activeOnboardingStep === step ? "bg-[#0284c7] text-white" : "bg-[#e5e5ea] text-[#8e8e93] hover:bg-gray-200"}`}
+                  className={`px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-colors ${activeOnboardingStep === step ? "bg-[#0284c7] text-white" : "bg-[#e5e5ea] text-[#8e8e93] hover:bg-[#e5e5ea]"}`}
                 >
                   Step {step}
                 </button>
@@ -496,7 +496,7 @@ export default function ContentManagementTab() {
                           setConfigState(prev => ({ ...prev, [cfg.key]: JSON.stringify(newArr) }));
                           setDirtyKeys(prev => new Set(prev).add(cfg.key));
                         }}
-                        className="w-full py-2 bg-[#f2f2f7] border border-dashed border-gray-300 rounded-lg text-sm font-medium text-[#8e8e93] hover:bg-[#e5e5ea] flex items-center justify-center gap-1"
+                        className="w-full py-2 bg-[#f2f2f7] border border-dashed border-[#c6c6c8] rounded-lg text-sm font-medium text-[#8e8e93] hover:bg-[#e5e5ea] flex items-center justify-center gap-1"
                       >
                         Add Option
                       </button>
@@ -594,7 +594,7 @@ export default function ContentManagementTab() {
               </div>
               <button 
                 onClick={() => setTemplateModal(null)} 
-                className="p-2 text-gray-400 hover:text-[#1c1c1e] hover:bg-[#e5e5ea] rounded-full transition-colors"
+                className="p-2 text-[#aeaeb2] hover:text-[#1c1c1e] hover:bg-[#e5e5ea] rounded-full transition-colors"
               >
                 <X size={24} />
               </button>
@@ -618,7 +618,7 @@ export default function ContentManagementTab() {
                         type="text"
                         value={templateModal.title}
                         onChange={(e) => setTemplateModal({ ...templateModal, title: e.target.value })}
-                        className="w-full px-4 py-3 bg-white border border-[#c6c6c8] rounded-xl text-sm focus:ring-4 focus:ring-[#0284c7]/10 focus:border-[#0284c7] transition-all outline-none shadow-sm placeholder:text-gray-400"
+                        className="w-full px-4 py-3 bg-white border border-[#c6c6c8] rounded-xl text-sm focus:ring-4 focus:ring-[#0284c7]/10 focus:border-[#0284c7] transition-all outline-none shadow-sm placeholder:text-[#aeaeb2]"
                         placeholder="e.g. Senior Bartender"
                       />
                     </div>
@@ -630,7 +630,7 @@ export default function ContentManagementTab() {
                           type="text"
                           value={templateModal.job_category}
                           onChange={(e) => setTemplateModal({ ...templateModal, job_category: e.target.value })}
-                          className="w-full px-4 py-3 bg-white border border-[#c6c6c8] rounded-xl text-sm focus:ring-4 focus:ring-[#0284c7]/10 focus:border-[#0284c7] transition-all outline-none shadow-sm placeholder:text-gray-400"
+                          className="w-full px-4 py-3 bg-white border border-[#c6c6c8] rounded-xl text-sm focus:ring-4 focus:ring-[#0284c7]/10 focus:border-[#0284c7] transition-all outline-none shadow-sm placeholder:text-[#aeaeb2]"
                           placeholder="e.g. Hospitality"
                         />
                       </div>
@@ -658,7 +658,7 @@ export default function ContentManagementTab() {
                           min={1}
                           value={templateModal.quantity}
                           onChange={(e) => setTemplateModal({ ...templateModal, quantity: Math.max(1, Number(e.target.value)) })}
-                          className="w-full px-4 py-3 bg-white border border-[#c6c6c8] rounded-xl text-sm focus:ring-4 focus:ring-[#0284c7]/10 focus:border-[#0284c7] transition-all outline-none shadow-sm placeholder:text-gray-400"
+                          className="w-full px-4 py-3 bg-white border border-[#c6c6c8] rounded-xl text-sm focus:ring-4 focus:ring-[#0284c7]/10 focus:border-[#0284c7] transition-all outline-none shadow-sm placeholder:text-[#aeaeb2]"
                           placeholder="1"
                         />
                       </div>
@@ -667,7 +667,7 @@ export default function ContentManagementTab() {
                     <div className="relative">
                       <label className="block text-sm font-semibold text-[#1c1c1e] mb-1.5">Place of Work</label>
                       <div className="relative">
-                        <MapPin size={18} className="absolute left-3.5 top-1/2 -trangray-y-1/2 text-gray-400" />
+                        <MapPin size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#aeaeb2]" />
                         <input
                           type="text"
                           value={templateModal.location}
@@ -677,7 +677,7 @@ export default function ContentManagementTab() {
                           }}
                           onFocus={() => setLocationSuggestionsOpen(true)}
                           onBlur={() => setTimeout(() => setLocationSuggestionsOpen(false), 200)}
-                          className="w-full pl-10 pr-4 py-3 bg-white border border-[#c6c6c8] rounded-xl text-sm focus:ring-4 focus:ring-[#0284c7]/10 focus:border-[#0284c7] transition-all outline-none shadow-sm placeholder:text-gray-400"
+                          className="w-full pl-10 pr-4 py-3 bg-white border border-[#c6c6c8] rounded-xl text-sm focus:ring-4 focus:ring-[#0284c7]/10 focus:border-[#0284c7] transition-all outline-none shadow-sm placeholder:text-[#aeaeb2]"
                           placeholder="Search neighborhood or sub-city..."
                           autoComplete="off"
                         />
@@ -697,8 +697,8 @@ export default function ContentManagementTab() {
                                 }}
                                 className="w-full text-left px-4 py-3 hover:bg-[#f0f9ff] text-sm border-b border-gray-50 last:border-0 transition-colors group flex items-center justify-between"
                               >
-                                <div className="font-semibold text-gray-800 group-hover:text-[#0284c7] transition-colors">{loc.name}</div>
-                                <div className="text-[11px] font-medium text-gray-400 bg-[#f2f2f7] group-hover:bg-white px-2 py-0.5 rounded-full border border-[#e5e5ea] transition-colors">
+                                <div className="font-semibold text-[#1c1c1e] group-hover:text-[#0284c7] transition-colors">{loc.name}</div>
+                                <div className="text-[11px] font-medium text-[#aeaeb2] bg-[#f2f2f7] group-hover:bg-white px-2 py-0.5 rounded-full border border-[#e5e5ea] transition-colors">
                                   {loc.subCity} • {loc.type.charAt(0).toUpperCase() + loc.type.slice(1)}
                                 </div>
                               </button>
@@ -746,7 +746,7 @@ export default function ContentManagementTab() {
                         <div>
                           <label className="block text-sm font-semibold text-[#1c1c1e] mb-1.5">Minimum</label>
                           <div className="relative">
-                            <span className="absolute left-3.5 top-1/2 -trangray-y-1/2 text-gray-400 font-medium text-sm">ETB</span>
+                            <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#aeaeb2] font-medium text-sm">ETB</span>
                             <input
                               type="number"
                               value={templateModal.salary_min || ""}
@@ -759,7 +759,7 @@ export default function ContentManagementTab() {
                         <div>
                           <label className="block text-sm font-semibold text-[#1c1c1e] mb-1.5">Maximum</label>
                           <div className="relative">
-                            <span className="absolute left-3.5 top-1/2 -trangray-y-1/2 text-gray-400 font-medium text-sm">ETB</span>
+                            <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#aeaeb2] font-medium text-sm">ETB</span>
                             <input
                               type="number"
                               value={templateModal.salary_max || ""}
@@ -810,7 +810,7 @@ export default function ContentManagementTab() {
 
                 {/* Right Column - Templates */}
                 <div className="lg:col-span-7 bg-white p-6 rounded-2xl border border-[#c6c6c8]/60 shadow-sm flex flex-col gap-5">
-                  <div className="flex items-center gap-2 text-gray-800 font-bold text-base border-b border-[#e5e5ea] pb-3 mb-2">
+                  <div className="flex items-center gap-2 text-[#1c1c1e] font-bold text-base border-b border-[#e5e5ea] pb-3 mb-2">
                     Content Templates
                   </div>
                   
@@ -818,12 +818,12 @@ export default function ContentManagementTab() {
                     <div className="group">
                       <label className="block text-sm font-semibold text-[#1c1c1e] mb-1.5 flex justify-between">
                         Job Description <span style={{ color: "#ef4444" }}>*</span>
-                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider bg-[#e5e5ea] px-2 py-0.5 rounded-full group-focus-within:bg-[#0284c7] group-focus-within:text-white transition-colors">Main overview</span>
+                        <span className="text-[10px] font-bold text-[#aeaeb2] uppercase tracking-wider bg-[#e5e5ea] px-2 py-0.5 rounded-full group-focus-within:bg-[#0284c7] group-focus-within:text-white transition-colors">Main overview</span>
                       </label>
                       <textarea
                         value={templateModal.description_template}
                         onChange={(e) => setTemplateModal({ ...templateModal, description_template: e.target.value })}
-                        className="w-full px-4 py-3 bg-[#f2f2f7]/50 hover:bg-white border border-[#c6c6c8] rounded-xl text-sm h-32 resize-none focus:ring-4 focus:ring-[#0284c7]/10 focus:border-[#0284c7] transition-all outline-none leading-relaxed shadow-inner placeholder:text-gray-300"
+                        className="w-full px-4 py-3 bg-[#f2f2f7]/50 hover:bg-white border border-[#c6c6c8] rounded-xl text-sm h-32 resize-none focus:ring-4 focus:ring-[#0284c7]/10 focus:border-[#0284c7] transition-all outline-none leading-relaxed shadow-inner placeholder:text-[#c6c6c8]"
                         placeholder="Provide a compelling overview of the role and what it entails..."
                       />
                     </div>
@@ -831,12 +831,12 @@ export default function ContentManagementTab() {
                     <div className="group">
                       <label className="block text-sm font-semibold text-[#1c1c1e] mb-1.5 flex justify-between">
                         Responsibilities
-                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider bg-[#e5e5ea] px-2 py-0.5 rounded-full group-focus-within:bg-[#0284c7] group-focus-within:text-white transition-colors">Bulleted list</span>
+                        <span className="text-[10px] font-bold text-[#aeaeb2] uppercase tracking-wider bg-[#e5e5ea] px-2 py-0.5 rounded-full group-focus-within:bg-[#0284c7] group-focus-within:text-white transition-colors">Bulleted list</span>
                       </label>
                       <textarea
                         value={templateModal.responsibilities_template}
                         onChange={(e) => setTemplateModal({ ...templateModal, responsibilities_template: e.target.value })}
-                        className="w-full px-4 py-3 bg-[#f2f2f7]/50 hover:bg-white border border-[#c6c6c8] rounded-xl text-sm h-28 resize-none focus:ring-4 focus:ring-[#0284c7]/10 focus:border-[#0284c7] transition-all outline-none leading-relaxed shadow-inner placeholder:text-gray-300"
+                        className="w-full px-4 py-3 bg-[#f2f2f7]/50 hover:bg-white border border-[#c6c6c8] rounded-xl text-sm h-28 resize-none focus:ring-4 focus:ring-[#0284c7]/10 focus:border-[#0284c7] transition-all outline-none leading-relaxed shadow-inner placeholder:text-[#c6c6c8]"
                         placeholder="- Daily task one&#10;- Daily task two&#10;- Key deliverable..."
                       />
                     </div>
@@ -874,14 +874,14 @@ export default function ContentManagementTab() {
                         <textarea
                           value={templateModal.requirements_template}
                           onChange={(e) => setTemplateModal({ ...templateModal, requirements_template: e.target.value })}
-                          className="w-full px-4 py-3 bg-[#f2f2f7]/50 hover:bg-white border border-[#c6c6c8] rounded-xl text-sm h-28 resize-none focus:ring-4 focus:ring-[#0284c7]/10 focus:border-[#0284c7] transition-all outline-none leading-relaxed shadow-inner placeholder:text-gray-300"
+                          className="w-full px-4 py-3 bg-[#f2f2f7]/50 hover:bg-white border border-[#c6c6c8] rounded-xl text-sm h-28 resize-none focus:ring-4 focus:ring-[#0284c7]/10 focus:border-[#0284c7] transition-all outline-none leading-relaxed shadow-inner placeholder:text-[#c6c6c8]"
                           placeholder="- Required skill one&#10;- Certification...&#10;- Years of experience..."
                         />
                       ) : (
                         <textarea
                           value={templateModal.education_requirements}
                           onChange={(e) => setTemplateModal({ ...templateModal, education_requirements: e.target.value })}
-                          className="w-full px-4 py-3 bg-[#f2f2f7]/50 hover:bg-white border border-[#c6c6c8] rounded-xl text-sm h-28 resize-none focus:ring-4 focus:ring-[#7c3aed]/10 focus:border-[#7c3aed] transition-all outline-none leading-relaxed shadow-inner placeholder:text-gray-300"
+                          className="w-full px-4 py-3 bg-[#f2f2f7]/50 hover:bg-white border border-[#c6c6c8] rounded-xl text-sm h-28 resize-none focus:ring-4 focus:ring-[#7c3aed]/10 focus:border-[#7c3aed] transition-all outline-none leading-relaxed shadow-inner placeholder:text-[#c6c6c8]"
                           placeholder="- Bachelor's Degree in Hospitality Management&#10;- Vocational certificate in...&#10;- Minimum education level..."
                         />
                       )}
@@ -892,7 +892,7 @@ export default function ContentManagementTab() {
                       <textarea
                         value={templateModal.benefits_template}
                         onChange={(e) => setTemplateModal({ ...templateModal, benefits_template: e.target.value })}
-                        className="w-full px-4 py-3 bg-[#f2f2f7]/50 hover:bg-white border border-[#c6c6c8] rounded-xl text-sm h-28 resize-none focus:ring-4 focus:ring-[#0284c7]/10 focus:border-[#0284c7] transition-all outline-none leading-relaxed shadow-inner placeholder:text-gray-300"
+                        className="w-full px-4 py-3 bg-[#f2f2f7]/50 hover:bg-white border border-[#c6c6c8] rounded-xl text-sm h-28 resize-none focus:ring-4 focus:ring-[#0284c7]/10 focus:border-[#0284c7] transition-all outline-none leading-relaxed shadow-inner placeholder:text-[#c6c6c8]"
                         placeholder="- Paid time off&#10;- Health insurance..."
                       />
                     </div>
@@ -952,7 +952,7 @@ export default function ContentManagementTab() {
             <div className="flex justify-center gap-3">
               <button
                 onClick={() => setDeleteConfirmModal(null)}
-                className="flex-1 px-4 py-2.5 text-sm font-medium text-[#1c1c1e] bg-[#e5e5ea] hover:bg-gray-200 rounded-xl transition-colors"
+                className="flex-1 px-4 py-2.5 text-sm font-medium text-[#1c1c1e] bg-[#e5e5ea] hover:bg-[#e5e5ea] rounded-xl transition-colors"
               >
                 No, cancel
               </button>
@@ -1061,7 +1061,7 @@ export default function ContentManagementTab() {
             <div className="bg-[#f2f2f7] px-6 py-4 flex justify-end gap-3 border-t border-[#e5e5ea]">
               <button
                 onClick={() => setConfirmPostData(null)}
-                className="px-4 py-2 text-sm font-semibold text-[#1c1c1e] bg-white border border-gray-300 rounded-lg hover:bg-[#f2f2f7] transition-colors"
+                className="px-4 py-2 text-sm font-semibold text-[#1c1c1e] bg-white border border-[#c6c6c8] rounded-lg hover:bg-[#f2f2f7] transition-colors"
               >
                 Cancel
               </button>

@@ -123,7 +123,7 @@ function CustomInput(props: any) {
   return (
     <input
       {...props}
-      className={`w-full px-4 py-3 bg-[#f2f2f7]/50 hover:bg-white border border-[#c6c6c8] rounded-xl text-sm text-black focus:outline-none focus:ring-4 focus:ring-[#1c1c1e]/10 focus:border-[#1c1c1e] transition-all placeholder-gray-400 font-medium ${props.className || ""}`}
+      className={`w-full px-4 py-3 bg-[#f2f2f7]/50 hover:bg-white border border-[#c6c6c8] rounded-xl text-sm text-black focus:outline-none focus:ring-4 focus:ring-[#007aff]/20 focus:border-[#007aff] transition-all placeholder-[#aeaeb2] font-medium ${props.className || ""}`}
       style={undefined}
     />
   );
@@ -138,10 +138,10 @@ function CustomSelect({ value, onChange, options, placeholder, className = "" }:
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full px-3 py-2 sm:px-4 sm:py-2.5 bg-[#f2f2f7]/50 hover:bg-white border border-[#c6c6c8] rounded-xl text-xs sm:text-sm text-black focus:outline-none focus:ring-4 focus:ring-[#1c1c1e]/10 focus:border-[#1c1c1e] transition-all flex items-center justify-between text-left font-medium"
+        className="w-full px-3 py-2 sm:px-4 sm:py-2.5 bg-[#f2f2f7]/50 hover:bg-white border border-[#c6c6c8] rounded-xl text-xs sm:text-sm text-black focus:outline-none focus:ring-4 focus:ring-[#007aff]/20 focus:border-[#007aff] transition-all flex items-center justify-between text-left font-medium"
       >
-        <span className={`${selected ? "text-black" : "text-gray-400"} truncate mr-1.5`}>{selected ? selected.label : placeholder}</span>
-        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`text-gray-400 flex-shrink-0 transition-transform ${isOpen ? "rotate-180" : ""}`}><path d="m6 9 6 6 6-6"/></svg>
+        <span className={`${selected ? "text-black" : "text-[#aeaeb2]"} truncate mr-1.5`}>{selected ? selected.label : placeholder}</span>
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`text-[#aeaeb2] flex-shrink-0 transition-transform ${isOpen ? "rotate-180" : ""}`}><path d="m6 9 6 6 6-6"/></svg>
       </button>
       
       {isOpen && (
@@ -494,14 +494,14 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
   };
 
   return (
-    <div className="flex h-screen bg-[#f2f2f7] font-sans overflow-hidden">
+    <div className="admin-shell flex h-screen overflow-hidden">
       {/* Mobile Sidebar Overlay */}
       {mobileMenuOpen && (
         <div className="fixed inset-0 z-40 bg-gray-900/50 md:hidden" onClick={() => setMobileMenuOpen(false)} />
       )}
 
       {/* Sidebar */}
-      <aside className={`fixed inset-y-0 left-0 z-50 w-72 bg-white border-r border-[#c6c6c8] transform transition-transform duration-200 ease-in-out md:trangray-x-0 md:static md:shrink-0 flex flex-col ${mobileMenuOpen ? "trangray-x-0" : "-trangray-x-full"}`}>
+      <aside className={`fixed inset-y-0 left-0 z-50 w-72 bg-white border-r border-[#c6c6c8] transform transition-transform duration-200 ease-in-out md:translate-x-0 md:static md:shrink-0 flex flex-col ${mobileMenuOpen ? "translate-x-0" : "-translate-x-full"}`}>
         {/* Logo Area */}
         <div className="h-16 flex items-center px-6 border-b border-[#e5e5ea] shrink-0">
           <div
@@ -534,17 +534,17 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
             
             return (
               <div key={item.id}>
-                {isBottomSection && <div className="h-px bg-gray-200 my-4 mx-2" />}
+                {isBottomSection && <div className="h-px bg-[#e5e5ea] my-4 mx-2" />}
                 <button
                   onClick={() => { setActiveTab(item.id as Tab); setSelectedEmployerId(null); setMobileMenuOpen(false); }}
                   className={`w-full flex items-center px-4 py-3 text-[14px] rounded-xl transition-all duration-200 ${
                     isActive 
                       ? "bg-[#1c1c1e] text-white shadow-md shadow-gray-500/20 font-semibold" 
-                      : "text-[#8e8e93] font-medium hover:bg-[#e5e5ea] hover:text-black"
+                      : "text-[#3a3a3c] font-medium hover:bg-[#e5e5ea] hover:text-[#1c1c1e]"
                   }`}
                   style={{ border: "none", cursor: "pointer", textAlign: "left" }}
                 >
-                  <Icon className={`mr-3 flex-shrink-0 h-5 w-5 ${isActive ? "text-white" : "text-gray-400"}`} />
+                  <Icon className={`mr-3 flex-shrink-0 h-5 w-5 ${isActive ? "text-white" : "text-[#aeaeb2]"}`} />
                   <span className="whitespace-nowrap">{item.label}</span>
                 </button>
               </div>
@@ -559,7 +559,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
             className="w-full flex items-center px-3 py-2.5 text-sm font-medium text-[#1c1c1e] rounded-lg hover:bg-[#e5e5ea] hover:text-black transition-colors"
             style={{ border: "none", cursor: "pointer", textAlign: "left" }}
           >
-            <LogOut className="mr-3 flex-shrink-0 h-5 w-5 text-gray-400 group-hover:text-[#8e8e93]" />
+            <LogOut className="mr-3 flex-shrink-0 h-5 w-5 text-[#aeaeb2] group-hover:text-[#8e8e93]" />
             Sign Out
           </button>
         </div>
@@ -612,7 +612,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                                     Special Request
                                   </p>
                                   <p className="text-xs text-[#8e8e93] mt-1 truncate">
-                                    <span className="font-medium text-gray-800">{name}</span> (Telegram: {req.telegramId})
+                                    <span className="font-medium text-[#1c1c1e]">{name}</span> (Telegram: {req.telegramId})
                                   </p>
                                   <p className="text-xs text-amber-700 mt-1.5 leading-relaxed">
                                     Ex-employer wants now to become a job seeker.
@@ -623,7 +623,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                                       setActiveTab("configuration");
                                       setConfigSubTab("users");
                                     }}
-                                    className="mt-2.5 text-xs font-semibold text-[#1c1c1e] hover:text-[#2c2c2e] bg-[#e5e5ea] hover:bg-gray-200 px-3 py-1.5 rounded-md transition-colors w-full text-center"
+                                    className="mt-2.5 text-xs font-semibold text-[#1c1c1e] hover:text-[#2c2c2e] bg-[#e5e5ea] hover:bg-[#e5e5ea] px-3 py-1.5 rounded-md transition-colors w-full text-center"
                                   >
                                     View or Fix
                                   </button>
@@ -691,7 +691,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                                     Special Request
                                   </p>
                                   <p className="text-xs text-[#8e8e93] mt-1 truncate">
-                                    <span className="font-medium text-gray-800">{name}</span> (Telegram: {req.telegramId})
+                                    <span className="font-medium text-[#1c1c1e]">{name}</span> (Telegram: {req.telegramId})
                                   </p>
                                   <p className="text-xs text-amber-700 mt-1.5 leading-relaxed">
                                     Ex-employer wants now to become a job seeker.
@@ -702,7 +702,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                                       setActiveTab("configuration");
                                       setConfigSubTab("users");
                                     }}
-                                    className="mt-2.5 text-xs font-semibold text-[#1c1c1e] hover:text-[#2c2c2e] bg-[#e5e5ea] hover:bg-gray-200 px-3 py-1.5 rounded-md transition-colors w-full text-center"
+                                    className="mt-2.5 text-xs font-semibold text-[#1c1c1e] hover:text-[#2c2c2e] bg-[#e5e5ea] hover:bg-[#e5e5ea] px-3 py-1.5 rounded-md transition-colors w-full text-center"
                                   >
                                     View or Fix
                                   </button>
@@ -809,7 +809,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
 
                 {/* ---- ROW 1: Overall Stats — full width ---- */}
                 <div className="bg-white rounded-xl border border-[#c6c6c8] shadow-sm p-6">
-                  <h2 className="text-base font-bold text-gray-800 mb-5">Overall Stats</h2>
+                  <h2 className="text-base font-bold text-[#1c1c1e] mb-5">Overall Stats</h2>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     {[
                       { label: "Total Employers", value: employers.length, icon: "/icons/building.png", color: "#6366f1" },
@@ -817,7 +817,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                       { label: "Pending Moderation", value: jobs.filter(j => j.status === "pending").length, icon: "/icons/pending.svg", color: "#f59e0b" },
                       { label: "Total Job Posts", value: jobs.length, icon: "/icons/jobs.svg", color: "#10b981" },
                     ].map(stat => (
-                      <div key={stat.label} className="rounded-xl border border-[#e5e5ea] bg-[#f2f2f7]/80 p-3 sm:p-4 flex flex-col lg:flex-row items-start lg:items-center gap-2 lg:gap-4 transition-all hover:bg-white hover:shadow-md hover:-trangray-y-0.5 cursor-pointer">
+                      <div key={stat.label} className="rounded-xl border border-[#e5e5ea] bg-[#f2f2f7]/80 p-3 sm:p-4 flex flex-col lg:flex-row items-start lg:items-center gap-2 lg:gap-4 transition-all hover:bg-white hover:shadow-md hover:-translate-y-0.5 cursor-pointer">
                         <div className="flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 lg:w-14 lg:h-14 rounded-xl bg-white shadow-sm border border-[#e5e5ea] flex-shrink-0">
                           <img src={stat.icon} alt={stat.label} className="w-6 h-6 sm:w-7 sm:h-7 lg:w-8 lg:h-8 object-contain drop-shadow-sm" />
                         </div>
@@ -833,7 +833,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                 {/* ---- ROW 2: Employer Performance ---- */}
                 <div className="bg-white rounded-xl border border-[#c6c6c8] shadow-sm p-6">
                   <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-6">
-                      <h2 className="text-base font-bold text-gray-800">Employer Performance</h2>
+                      <h2 className="text-base font-bold text-[#1c1c1e]">Employer Performance</h2>
                       <div className="flex flex-row items-center gap-2 w-full sm:w-auto">
                         <CustomSelect
                           value={overviewEmployerId}
@@ -857,9 +857,9 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                     </div>
 
                     {!overviewEmployerId ? (
-                      <div className="text-center py-12 text-gray-400 text-sm">Select an employer above to view their performance.</div>
+                      <div className="text-center py-12 text-[#aeaeb2] text-sm">Select an employer above to view their performance.</div>
                     ) : perfData.length === 0 || perfData[0].posts === 0 ? (
-                      <div className="text-center py-12 text-gray-400 text-sm">No job activity in this period for the selected employer.</div>
+                      <div className="text-center py-12 text-[#aeaeb2] text-sm">No job activity in this period for the selected employer.</div>
                     ) : (
                       <div className="overflow-x-auto">
                         <div className="flex items-end gap-4 min-w-max pb-2" style={{ minHeight: 180 }}>
@@ -883,10 +883,10 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
 
                 {/* ---- ROW 3: Employer Activity — full width ---- */}
                 <div className="bg-white rounded-xl border border-[#c6c6c8] shadow-sm p-6">
-                  <h2 className="text-base font-bold text-gray-800 mb-1">Employer Activity</h2>
-                  <p className="text-xs text-gray-400 mb-5">Latest actions taken by employers on the platform</p>
+                  <h2 className="text-base font-bold text-[#1c1c1e] mb-1">Employer Activity</h2>
+                  <p className="text-xs text-[#aeaeb2] mb-5">Latest actions taken by employers on the platform</p>
                   {activityFeed.length === 0 ? (
-                    <div className="text-center py-10 text-gray-400 text-sm">No activity yet.</div>
+                    <div className="text-center py-10 text-[#aeaeb2] text-sm">No activity yet.</div>
                   ) : (
                     <div className="divide-y divide-gray-100">
                       {activityFeed.map((item) => (
@@ -897,10 +897,10 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                             <div className="w-3 h-3 rounded-full" style={{ background: statusDot[item.status] || "#6b7280" }} />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-semibold text-gray-800">{item.employer}</p>
+                            <p className="text-sm font-semibold text-[#1c1c1e]">{item.employer}</p>
                             <p className="text-sm text-[#8e8e93]">{item.action} — <span className="font-medium text-[#1c1c1e]">{item.detail}</span></p>
                           </div>
-                          <span className="text-xs text-gray-400 whitespace-nowrap mt-1 flex-shrink-0">{fmtTime(item.time)}</span>
+                          <span className="text-xs text-[#aeaeb2] whitespace-nowrap mt-1 flex-shrink-0">{fmtTime(item.time)}</span>
                         </div>
                       ))}
                     </div>
@@ -915,13 +915,13 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
           {activeTab !== "overview" && (
           <div className="max-w-6xl mx-auto bg-white rounded-xl border border-[#c6c6c8] shadow-sm overflow-hidden">
           <div className="p-4 md:p-6 border-b border-[#c6c6c8] flex justify-between items-center">
-            <h2 className="m-0 text-lg md:text-xl font-semibold capitalize text-gray-800">
+            <h2 className="m-0 text-lg md:text-xl font-semibold capitalize text-[#1c1c1e]">
               {activeTab === "jobs" && selectedEmployerId ? "Jobs by Employer" : activeTab === "configuration" ? "Configuration" : navItems.find(n => n.id === activeTab)?.label || activeTab}
             </h2>
             {activeTab === "jobs" && selectedEmployerId && (
               <button 
                 onClick={() => setSelectedEmployerId(null)} 
-                className="bg-transparent border border-gray-300 px-3 py-1.5 rounded-lg cursor-pointer text-sm font-medium hover:bg-[#f2f2f7] transition-colors"
+                className="bg-transparent border border-[#c6c6c8] px-3 py-1.5 rounded-lg cursor-pointer text-sm font-medium hover:bg-[#f2f2f7] transition-colors"
               >
                 ← Back to Employers
               </button>
@@ -932,7 +932,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                 placeholder="Search employers..."
                 value={employerSearch}
                 onChange={(e) => setEmployerSearch(e.target.value)}
-                className="ml-auto px-3 py-2 border border-gray-300 rounded-lg text-sm w-48 md:w-64 focus:outline-none focus:ring-2 focus:ring-[#1c1c1e] focus:border-transparent transition-all"
+                className="ml-auto px-3 py-2 border border-[#c6c6c8] rounded-lg text-sm w-48 md:w-64 focus:outline-none focus:ring-2 focus:ring-[#1c1c1e] focus:border-transparent transition-all"
               />
             )}
           </div>
@@ -942,7 +942,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
               <div style={{ padding: "16px 24px", background: "#f8fafc", borderBottom: "1px solid #e5e7eb", display: "flex", alignItems: "center", justifyContent: "flex-end" }}>
                 <button
                   onClick={() => { setAddEmployerModalOpen(true); setFormError(""); setNewTelegramId(""); setNewBusinessName(""); setNewBusinessType(""); }}
-                  style={{ background: "linear-gradient(135deg, #1c1c1e, #2c2c2e)", color: "#fff", border: "none", padding: "10px 20px", borderRadius: 10, cursor: "pointer", fontSize: 14, fontWeight: 700, display: "flex", alignItems: "center", gap: 8, boxShadow: "0 4px 12px rgba(2,132,199,0.3)", transition: "all 0.2s" }}
+                  style={{ background: "linear-gradient(135deg, #1c1c1e, #2c2c2e)", color: "#fff", border: "none", padding: "10px 20px", borderRadius: 10, cursor: "pointer", fontSize: 14, fontWeight: 700, display: "flex", alignItems: "center", gap: 8, boxShadow: "0 4px 12px rgba(0,0,0,0.12)", transition: "all 0.2s" }}
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14"/></svg>
                   Add Employer
@@ -959,7 +959,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                     className={`px-5 py-2.5 text-sm font-semibold rounded-t-lg border border-b-0 transition-all ${
                       configSubTab === "users"
                         ? "bg-white border-[#c6c6c8] text-[#1c1c1e] shadow-sm -mb-px"
-                        : "bg-transparent border-transparent text-[#8e8e93] hover:text-gray-800"
+                        : "bg-transparent border-transparent text-[#8e8e93] hover:text-[#1c1c1e]"
                     }`}
                     style={{ cursor: "pointer" }}
                   >
@@ -970,7 +970,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                     className={`px-5 py-2.5 text-sm font-semibold rounded-t-lg border border-b-0 transition-all ${
                       configSubTab === "content"
                         ? "bg-white border-[#c6c6c8] text-[#1c1c1e] shadow-sm -mb-px"
-                        : "bg-transparent border-transparent text-[#8e8e93] hover:text-gray-800"
+                        : "bg-transparent border-transparent text-[#8e8e93] hover:text-[#1c1c1e]"
                     }`}
                     style={{ cursor: "pointer" }}
                   >
@@ -1033,7 +1033,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                                 return (
                                   <div key={req.userId} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "#fff", padding: "10px 14px", borderRadius: 8, border: "1px solid #fde68a" }}>
                                     <div>
-                                      <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "#374151" }}>{name} (Telegram: {req.telegramId})</p>
+                                      <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "#1c1c1e" }}>{name} (Telegram: {req.telegramId})</p>
                                       <p style={{ margin: "3px 0 0 0", fontSize: 12, color: "#b45309" }}>Ex-employer wants now to become a job seeker.</p>
                                     </div>
                                     <button
@@ -1053,29 +1053,29 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                         {/* Search Bar */}
                         <div className="flex flex-col sm:flex-row gap-3 p-4 border-b border-[#e5e5ea] bg-white">
                           <div className="flex-1 relative">
-                            <svg className="absolute left-3 top-1/2 -trangray-y-1/2 text-gray-400" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                            <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-[#aeaeb2]" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
                             <input
                               type="text"
                               placeholder="Search by name..."
                               value={userSearchName}
                               onChange={e => setUserSearchName(e.target.value)}
-                              className="w-full pl-9 pr-4 py-2.5 bg-[#f2f2f7] border border-[#c6c6c8] rounded-xl text-sm text-black focus:outline-none focus:ring-2 focus:ring-[#1c1c1e]/20 focus:border-[#1c1c1e] transition-all placeholder-gray-400 font-medium"
+                              className="w-full pl-9 pr-4 py-2.5 bg-[#f2f2f7] border border-[#c6c6c8] rounded-xl text-sm text-black focus:outline-none focus:ring-2 focus:ring-[#007aff]/20 focus:border-[#007aff] transition-all placeholder-[#aeaeb2] font-medium"
                             />
                           </div>
                           <div className="flex-1 relative">
-                            <svg className="absolute left-3 top-1/2 -trangray-y-1/2 text-gray-400" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13.1a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.62 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 9.91a16 16 0 0 0 6.16 6.16l.97-.97a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                            <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-[#aeaeb2]" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13.1a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.62 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 9.91a16 16 0 0 0 6.16 6.16l.97-.97a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
                             <input
                               type="text"
                               placeholder="Search by phone number..."
                               value={userSearchPhone}
                               onChange={e => setUserSearchPhone(e.target.value)}
-                              className="w-full pl-9 pr-4 py-2.5 bg-[#f2f2f7] border border-[#c6c6c8] rounded-xl text-sm text-black focus:outline-none focus:ring-2 focus:ring-[#1c1c1e]/20 focus:border-[#1c1c1e] transition-all placeholder-gray-400 font-medium"
+                              className="w-full pl-9 pr-4 py-2.5 bg-[#f2f2f7] border border-[#c6c6c8] rounded-xl text-sm text-black focus:outline-none focus:ring-2 focus:ring-[#007aff]/20 focus:border-[#007aff] transition-all placeholder-[#aeaeb2] font-medium"
                             />
                           </div>
                           {(userSearchName || userSearchPhone) && (
                             <button
                               onClick={() => { setUserSearchName(""); setUserSearchPhone(""); }}
-                              className="px-3 py-2 text-xs font-semibold text-[#8e8e93] hover:text-[#1c1c1e] bg-[#e5e5ea] hover:bg-gray-200 rounded-xl transition-colors whitespace-nowrap"
+                              className="px-3 py-2 text-xs font-semibold text-[#8e8e93] hover:text-[#1c1c1e] bg-[#e5e5ea] hover:bg-[#e5e5ea] rounded-xl transition-colors whitespace-nowrap"
                             >
                               Clear
                             </button>
@@ -1096,11 +1096,11 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                           <table className="w-full text-left border-collapse">
                             <thead>
                               <tr className="bg-[#f2f2f7] border-b border-[#c6c6c8]">
-                                <th style={{ padding: "12px 20px", color: "#6b7280", fontSize: 12, textTransform: "uppercase" }}>Name</th>
-                                <th style={{ padding: "12px 20px", color: "#6b7280", fontSize: 12, textTransform: "uppercase" }}>Phone Number</th>
-                                <th style={{ padding: "12px 20px", color: "#6b7280", fontSize: 12, textTransform: "uppercase" }}>Telegram ID</th>
-                                <th style={{ padding: "12px 20px", color: "#6b7280", fontSize: 12, textTransform: "uppercase" }}>Role</th>
-                                <th style={{ padding: "12px 20px", color: "#6b7280", fontSize: 12, textTransform: "uppercase", textAlign: "right" }}>Actions</th>
+                                <th style={{ padding: "12px 20px", color: "#8e8e93", fontSize: 12, textTransform: "uppercase" }}>Name</th>
+                                <th style={{ padding: "12px 20px", color: "#8e8e93", fontSize: 12, textTransform: "uppercase" }}>Phone Number</th>
+                                <th style={{ padding: "12px 20px", color: "#8e8e93", fontSize: 12, textTransform: "uppercase" }}>Telegram ID</th>
+                                <th style={{ padding: "12px 20px", color: "#8e8e93", fontSize: 12, textTransform: "uppercase" }}>Role</th>
+                                <th style={{ padding: "12px 20px", color: "#8e8e93", fontSize: 12, textTransform: "uppercase", textAlign: "right" }}>Actions</th>
                               </tr>
                             </thead>
                             <tbody>
@@ -1110,11 +1110,11 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                                     {item.profiles?.full_name || "Unonboarded"}
                                     {item.is_banned && <span style={{ color: "red", marginLeft: 6, fontSize: 12 }}>(Banned)</span>}
                                   </td>
-                                  <td style={{ padding: "14px 20px", color: "#6b7280" }}>
-                                    {item.profiles?.phone_number || <span className="text-gray-300">—</span>}
+                                  <td style={{ padding: "14px 20px", color: "#8e8e93" }}>
+                                    {item.profiles?.phone_number || <span className="text-[#c6c6c8]">—</span>}
                                   </td>
-                                  <td style={{ padding: "14px 20px", color: "#6b7280" }}>{item.telegram_id}</td>
-                                  <td style={{ padding: "14px 20px", textTransform: "capitalize", color: "#6b7280" }}>{item.role}</td>
+                                  <td style={{ padding: "14px 20px", color: "#8e8e93" }}>{item.telegram_id}</td>
+                                  <td style={{ padding: "14px 20px", textTransform: "capitalize", color: "#8e8e93" }}>{item.role}</td>
                                   <td style={{ padding: "14px 20px", textAlign: "right" }}>
                                     <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
                                       <button
@@ -1139,7 +1139,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                             </tbody>
                           </table>
                           {filteredUsers.length === 0 && (
-                            <div style={{ padding: 40, textAlign: "center", color: "#6b7280" }}>No users match your search.</div>
+                            <div style={{ padding: 40, textAlign: "center", color: "#8e8e93" }}>No users match your search.</div>
                           )}
                         </div>
 
@@ -1149,12 +1149,12 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                             <div key={item.id} className="bg-white p-4 rounded-xl border border-[#c6c6c8] shadow-sm flex flex-col gap-3">
                               <div className="flex justify-between items-start">
                                 <div>
-                                  <h4 className="font-semibold text-gray-800 m-0">
+                                  <h4 className="font-semibold text-[#1c1c1e] m-0">
                                     {item.profiles?.full_name || "Unonboarded"}
                                     {item.is_banned && <span className="text-red-500 text-xs ml-2">(Banned)</span>}
                                   </h4>
                                   <p className="text-xs text-[#8e8e93] m-0 mt-1">{item.profiles?.phone_number || "No phone"}</p>
-                                  <p className="text-xs text-gray-400 m-0 mt-0.5 font-mono">TG: {item.telegram_id}</p>
+                                  <p className="text-xs text-[#aeaeb2] m-0 mt-0.5 font-mono">TG: {item.telegram_id}</p>
                                 </div>
                                 <span className="text-xs font-medium text-[#8e8e93] bg-[#e5e5ea] border border-[#c6c6c8] px-2 py-1 rounded-md capitalize">{item.role}</span>
                               </div>
@@ -1178,7 +1178,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                             </div>
                           ))}
                           {filteredUsers.length === 0 && (
-                            <div className="text-center py-10 text-gray-400 text-sm">No users match your search.</div>
+                            <div className="text-center py-10 text-[#aeaeb2] text-sm">No users match your search.</div>
                           )}
                         </div>
                       </div>
@@ -1187,22 +1187,22 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
 
                   {/* ---- PLACEHOLDER TABS ---- */}
                   {seekerSubTab === "tab2" && (
-                    <div className="flex flex-col items-center justify-center py-20 text-gray-400">
-                      <Settings size={40} className="mb-3 text-gray-300" />
+                    <div className="flex flex-col items-center justify-center py-20 text-[#aeaeb2]">
+                      <Settings size={40} className="mb-3 text-[#c6c6c8]" />
                       <p className="text-base font-semibold">Tab 2</p>
                       <p className="text-sm mt-1">Coming soon</p>
                     </div>
                   )}
                   {seekerSubTab === "tab3" && (
-                    <div className="flex flex-col items-center justify-center py-20 text-gray-400">
-                      <BookOpen size={40} className="mb-3 text-gray-300" />
+                    <div className="flex flex-col items-center justify-center py-20 text-[#aeaeb2]">
+                      <BookOpen size={40} className="mb-3 text-[#c6c6c8]" />
                       <p className="text-base font-semibold">Tab 3</p>
                       <p className="text-sm mt-1">Coming soon</p>
                     </div>
                   )}
                   {seekerSubTab === "tab4" && (
-                    <div className="flex flex-col items-center justify-center py-20 text-gray-400">
-                      <CreditCard size={40} className="mb-3 text-gray-300" />
+                    <div className="flex flex-col items-center justify-center py-20 text-[#aeaeb2]">
+                      <CreditCard size={40} className="mb-3 text-[#c6c6c8]" />
                       <p className="text-base font-semibold">Tab 4</p>
                       <p className="text-sm mt-1">Coming soon</p>
                     </div>
@@ -1218,25 +1218,25 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                   <tr className="bg-[#f2f2f7] border-b border-[#c6c6c8]">
                     {activeTab === "employers" && (
                       <>
-                        <th style={{ padding: "12px 24px", color: "#6b7280", fontSize: 12, textTransform: "uppercase" }}>Business Name</th>
-                        <th style={{ padding: "12px 24px", color: "#6b7280", fontSize: 12, textTransform: "uppercase" }}>Telegram ID</th>
-                        <th style={{ padding: "12px 24px", color: "#6b7280", fontSize: 12, textTransform: "uppercase" }}>Post Limit</th>
-                        <th style={{ padding: "12px 24px", color: "#6b7280", fontSize: 12, textTransform: "uppercase" }}>Status</th>
-                        <th style={{ padding: "12px 24px", color: "#6b7280", fontSize: 12, textTransform: "uppercase", textAlign: "right" }}>Actions</th>
+                        <th style={{ padding: "12px 24px", color: "#8e8e93", fontSize: 12, textTransform: "uppercase" }}>Business Name</th>
+                        <th style={{ padding: "12px 24px", color: "#8e8e93", fontSize: 12, textTransform: "uppercase" }}>Telegram ID</th>
+                        <th style={{ padding: "12px 24px", color: "#8e8e93", fontSize: 12, textTransform: "uppercase" }}>Post Limit</th>
+                        <th style={{ padding: "12px 24px", color: "#8e8e93", fontSize: 12, textTransform: "uppercase" }}>Status</th>
+                        <th style={{ padding: "12px 24px", color: "#8e8e93", fontSize: 12, textTransform: "uppercase", textAlign: "right" }}>Actions</th>
                       </>
                     )}
                     {activeTab === "jobs" && !selectedEmployerId && (
                       <>
-                        <th style={{ padding: "12px 24px", color: "#6b7280", fontSize: 12, textTransform: "uppercase" }}>Business Name</th>
-                        <th style={{ padding: "12px 24px", color: "#6b7280", fontSize: 12, textTransform: "uppercase" }}>Total Jobs</th>
-                        <th style={{ padding: "12px 24px", color: "#6b7280", fontSize: 12, textTransform: "uppercase", textAlign: "right" }}>Actions</th>
+                        <th style={{ padding: "12px 24px", color: "#8e8e93", fontSize: 12, textTransform: "uppercase" }}>Business Name</th>
+                        <th style={{ padding: "12px 24px", color: "#8e8e93", fontSize: 12, textTransform: "uppercase" }}>Total Jobs</th>
+                        <th style={{ padding: "12px 24px", color: "#8e8e93", fontSize: 12, textTransform: "uppercase", textAlign: "right" }}>Actions</th>
                       </>
                     )}
                     {activeTab === "jobs" && selectedEmployerId && (
                       <>
-                        <th style={{ padding: "12px 24px", color: "#6b7280", fontSize: 12, textTransform: "uppercase" }}>Job Title</th>
-                        <th style={{ padding: "12px 24px", color: "#6b7280", fontSize: 12, textTransform: "uppercase" }}>Status</th>
-                        <th style={{ padding: "12px 24px", color: "#6b7280", fontSize: 12, textTransform: "uppercase", textAlign: "right" }}>Actions</th>
+                        <th style={{ padding: "12px 24px", color: "#8e8e93", fontSize: 12, textTransform: "uppercase" }}>Job Title</th>
+                        <th style={{ padding: "12px 24px", color: "#8e8e93", fontSize: 12, textTransform: "uppercase" }}>Status</th>
+                        <th style={{ padding: "12px 24px", color: "#8e8e93", fontSize: 12, textTransform: "uppercase", textAlign: "right" }}>Actions</th>
                       </>
                     )}
 
@@ -1257,7 +1257,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                           </button>
                         </span>
                       </td>
-                      <td style={{ padding: "16px 24px", color: "#6b7280" }}>{item.users?.telegram_id || "—"}</td>
+                      <td style={{ padding: "16px 24px", color: "#8e8e93" }}>{item.users?.telegram_id || "—"}</td>
                       <td style={{ padding: "16px 24px" }}>
                         <span style={{
                           padding: "2px 8px", borderRadius: 100, fontSize: 12, fontWeight: 600,
@@ -1300,9 +1300,9 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                     return (
                       <tr key={emp.id} onClick={() => setSelectedEmployerId(emp.id)} style={{ borderBottom: "1px solid #f3f4f6", cursor: "pointer" }} className="hover:bg-[#f2f2f7] transition-colors">
                         <td style={{ padding: "16px 24px", fontWeight: 500 }}>{emp.business_name}</td>
-                        <td style={{ padding: "16px 24px", color: "#6b7280" }}>{jobCount} Job{jobCount !== 1 && "s"}</td>
+                        <td style={{ padding: "16px 24px", color: "#8e8e93" }}>{jobCount} Job{jobCount !== 1 && "s"}</td>
                         <td style={{ padding: "16px 24px", textAlign: "right" }}>
-                          <button onClick={(e) => { e.stopPropagation(); setSelectedEmployerId(emp.id); }} style={{ background: "#f3f4f6", color: "#374151", border: "1px solid #d1d5db", padding: "6px 12px", borderRadius: 6, cursor: "pointer", fontSize: 12 }}>
+                          <button onClick={(e) => { e.stopPropagation(); setSelectedEmployerId(emp.id); }} style={{ background: "#f3f4f6", color: "#1c1c1e", border: "1px solid #d1d5db", padding: "6px 12px", borderRadius: 6, cursor: "pointer", fontSize: 12 }}>
                             View Jobs
                           </button>
                         </td>
@@ -1348,7 +1348,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                   <div className="flex justify-between items-start">
                     <div>
                       <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-                        <h4 className="font-semibold text-gray-800 m-0">{item.business_name}</h4>
+                        <h4 className="font-semibold text-[#1c1c1e] m-0">{item.business_name}</h4>
                         <button
                           onClick={() => { setEditModal({ id: item.id, name: item.business_name, type: item.business_type || "", postLimit: item.daily_post_limit ?? 3 }); setEditName(item.business_name); setEditType(item.business_type || ""); setEditPostLimit(item.daily_post_limit ?? 3); setEditLogoFile(null); setEditError(""); }}
                           style={{ background: "transparent", border: "none", cursor: "pointer", color: "#9ca3af", padding: "2px", display: "flex", alignItems: "center" }}
@@ -1399,11 +1399,11 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                 return (
                   <div key={emp.id} onClick={() => setSelectedEmployerId(emp.id)} className="bg-white p-4 rounded-xl border border-[#c6c6c8] shadow-sm flex flex-col gap-3 mb-3 cursor-pointer">
                     <div className="flex justify-between items-center">
-                      <h4 className="font-semibold text-gray-800 m-0">{emp.business_name}</h4>
+                      <h4 className="font-semibold text-[#1c1c1e] m-0">{emp.business_name}</h4>
                       <span className="text-xs font-medium text-[#8e8e93] bg-[#e5e5ea] border border-[#c6c6c8] px-2 py-1 rounded-md">{jobCount} Job{jobCount !== 1 && "s"}</span>
                     </div>
                     <div className="flex justify-end mt-1">
-                      <button onClick={(e) => { e.stopPropagation(); setSelectedEmployerId(emp.id); }} className="bg-[#e5e5ea] text-[#1c1c1e] border border-gray-300 px-3 py-1.5 rounded-lg text-xs font-medium">
+                      <button onClick={(e) => { e.stopPropagation(); setSelectedEmployerId(emp.id); }} className="bg-[#e5e5ea] text-[#1c1c1e] border border-[#c6c6c8] px-3 py-1.5 rounded-lg text-xs font-medium">
                         View Jobs
                       </button>
                     </div>
@@ -1414,7 +1414,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
               {activeTab === "jobs" && selectedEmployerId && data.jobs.filter((j: any) => j.employer_id === selectedEmployerId).map((item: any) => (
                 <div key={item.id} onClick={() => setViewingJob(item)} style={{ cursor: "pointer" }} className="bg-white p-4 rounded-xl border border-[#c6c6c8] shadow-sm flex flex-col gap-3 mb-3 hover:bg-[#f2f2f7] transition-colors">
                   <div className="flex justify-between items-start">
-                    <h4 className="font-semibold text-gray-800 m-0">{item.title}</h4>
+                    <h4 className="font-semibold text-[#1c1c1e] m-0">{item.title}</h4>
                     <span style={{
                       padding: "2px 8px", borderRadius: 100, fontSize: 11, fontWeight: 600,
                       background: item.status === "active" ? "#d1fae5" : item.status === "closed" ? "#fee2e2" : "#fef3c7",
@@ -1441,7 +1441,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
             </div>
             
             {activeTab === "employers" && data.employers.length === 0 && (
-              <div style={{ padding: 40, textAlign: "center", color: "#6b7280" }}>
+              <div style={{ padding: 40, textAlign: "center", color: "#8e8e93" }}>
                 No employers found.
               </div>
             )}
@@ -1454,7 +1454,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
             {activeTab === "monetization" && (
               <div className="flex flex-col items-center justify-center py-20 px-4 text-center">
                 <div className="bg-[#f2f2f7] rounded-full p-4 mb-4">
-                  <CreditCard className="w-8 h-8 text-gray-400" />
+                  <CreditCard className="w-8 h-8 text-[#aeaeb2]" />
                 </div>
                 <h3 className="text-lg font-semibold text-black mb-1">Monetization &amp; Plans</h3>
                 <p className="text-sm text-[#8e8e93] max-w-sm">
@@ -1463,12 +1463,12 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
               </div>
             )}
             {activeTab === "jobs" && !selectedEmployerId && data.jobs.length === 0 && (
-              <div style={{ padding: 40, textAlign: "center", color: "#6b7280" }}>
+              <div style={{ padding: 40, textAlign: "center", color: "#8e8e93" }}>
                 No jobs found.
               </div>
             )}
             {activeTab === "jobs" && selectedEmployerId && data.jobs.filter((j: any) => j.employer_id === selectedEmployerId).length === 0 && (
-              <div style={{ padding: 40, textAlign: "center", color: "#6b7280" }}>
+              <div style={{ padding: 40, textAlign: "center", color: "#8e8e93" }}>
                 This employer has no jobs.
               </div>
             )}
@@ -1488,7 +1488,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
             </p>
             <form onSubmit={handleDeleteEmployer} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
               <div>
-                <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#374151", marginBottom: 6 }}>Admin Password Required</label>
+                <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#1c1c1e", marginBottom: 6 }}>Admin Password Required</label>
                 <input 
                   type="password" 
                   value={adminPassword}
@@ -1504,7 +1504,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                   type="button" 
                   onClick={() => setDeleteModal(null)}
                   disabled={deleteLoading}
-                  style={{ background: "#f3f4f6", color: "#374151", border: "none", padding: "8px 16px", borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: "pointer" }}
+                  style={{ background: "#f3f4f6", color: "#1c1c1e", border: "none", padding: "8px 16px", borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: "pointer" }}
                 >
                   Cancel
                 </button>
@@ -1534,12 +1534,12 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
 
             <form onSubmit={handleApproveSpecialRequest} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
               <div>
-                <label style={{ display: "block", marginBottom: 6, fontSize: 13, fontWeight: 500, color: "#374151" }}>Admin Password</label>
+                <label style={{ display: "block", marginBottom: 6, fontSize: 13, fontWeight: 500, color: "#1c1c1e" }}>Admin Password</label>
                 <input type="password" required value={userActionPassword} onChange={(e: any) => setUserActionPassword(e.target.value)} placeholder="••••••••" style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid #d1d5db", fontSize: 14, boxSizing: "border-box" }} />
               </div>
               {userActionError && <p style={{ margin: 0, fontSize: 13, color: "#ef4444" }}>{userActionError}</p>}
               <div style={{ display: "flex", gap: 12, marginTop: 4 }}>
-                <button type="button" onClick={() => { setApproveReqModal(null); setUserActionError(""); setUserActionPassword(""); }} style={{ flex: 1, padding: "10px", background: "#f3f4f6", border: "none", borderRadius: 10, color: "#374151", fontSize: 14, fontWeight: 600, cursor: "pointer" }}>
+                <button type="button" onClick={() => { setApproveReqModal(null); setUserActionError(""); setUserActionPassword(""); }} style={{ flex: 1, padding: "10px", background: "#f3f4f6", border: "none", borderRadius: 10, color: "#1c1c1e", fontSize: 14, fontWeight: 600, cursor: "pointer" }}>
                   Cancel
                 </button>
                 <button type="submit" disabled={userActionLoading} style={{ flex: 1, padding: "10px", background: "#059669", border: "none", borderRadius: 10, color: "#fff", fontSize: 14, fontWeight: 600, cursor: userActionLoading ? "wait" : "pointer", opacity: userActionLoading ? 0.7 : 1 }}>
@@ -1556,10 +1556,10 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100, padding: "0 16px" }}>
           <div style={{ background: "#fff", borderRadius: 12, padding: 24, width: "100%", maxWidth: 420, boxShadow: "0 20px 25px -5px rgba(0,0,0,0.1)" }}>
             <h3 style={{ margin: "0 0 4px 0", fontSize: 18, fontWeight: 700, color: "#111827" }}>Edit Employer</h3>
-            <p style={{ margin: "0 0 20px 0", fontSize: 13, color: "#6b7280" }}>Update business details and daily job post limit.</p>
+            <p style={{ margin: "0 0 20px 0", fontSize: 13, color: "#8e8e93" }}>Update business details and daily job post limit.</p>
             <form onSubmit={handleEditEmployer} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
               <div>
-                <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#374151", marginBottom: 6 }}>Business Name</label>
+                <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#1c1c1e", marginBottom: 6 }}>Business Name</label>
                 <input
                   type="text"
                   value={editName}
@@ -1569,7 +1569,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                 />
               </div>
               <div>
-                <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#374151", marginBottom: 6 }}>Business Type</label>
+                <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#1c1c1e", marginBottom: 6 }}>Business Type</label>
                 <input
                   type="text"
                   value={editType}
@@ -1581,7 +1581,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
               
               {/* Logo Upload */}
               <div>
-                <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#374151", marginBottom: 6 }}>Business Profile Photo (Logo)</label>
+                <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#1c1c1e", marginBottom: 6 }}>Business Profile Photo (Logo)</label>
                 <input
                   type="file"
                   accept="image/*"
@@ -1593,7 +1593,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
 
               {/* Daily Post Limit */}
               <div>
-                <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#374151", marginBottom: 8 }}>Daily Job Post Limit</label>
+                <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#1c1c1e", marginBottom: 8 }}>Daily Job Post Limit</label>
                 <div style={{ display: "flex", gap: 8 }}>
                   {POST_LIMIT_OPTIONS.map(opt => (
                     <button
@@ -1623,7 +1623,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                   type="button"
                   onClick={() => setEditModal(null)}
                   disabled={editLoading}
-                  style={{ background: "#f3f4f6", color: "#374151", border: "none", padding: "8px 16px", borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: "pointer" }}
+                  style={{ background: "#f3f4f6", color: "#1c1c1e", border: "none", padding: "8px 16px", borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: "pointer" }}
                 >
                   Cancel
                 </button>
@@ -1651,7 +1651,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
             </p>
             <form onSubmit={handleDeleteUser} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
               <div>
-                <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#374151", marginBottom: 6 }}>Admin Password Required</label>
+                <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#1c1c1e", marginBottom: 6 }}>Admin Password Required</label>
                 <input 
                   type="password" 
                   value={userActionPassword}
@@ -1667,7 +1667,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                   type="button" 
                   onClick={() => setDeleteUserModal(null)}
                   disabled={userActionLoading}
-                  style={{ background: "#f3f4f6", color: "#374151", border: "none", padding: "8px 16px", borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: "pointer" }}
+                  style={{ background: "#f3f4f6", color: "#1c1c1e", border: "none", padding: "8px 16px", borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: "pointer" }}
                 >
                   Cancel
                 </button>
@@ -1695,7 +1695,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
             </p>
             <form onSubmit={handleToggleBan} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
               <div>
-                <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#374151", marginBottom: 6 }}>Admin Password Required</label>
+                <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#1c1c1e", marginBottom: 6 }}>Admin Password Required</label>
                 <input 
                   type="password" 
                   value={userActionPassword}
@@ -1711,7 +1711,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                   type="button" 
                   onClick={() => setBanUserModal(null)}
                   disabled={userActionLoading}
-                  style={{ background: "#f3f4f6", color: "#374151", border: "none", padding: "8px 16px", borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: "pointer" }}
+                  style={{ background: "#f3f4f6", color: "#1c1c1e", border: "none", padding: "8px 16px", borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: "pointer" }}
                 >
                   Cancel
                 </button>
@@ -1756,7 +1756,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
               </button>
             </div>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: 16, fontSize: 14, color: "#374151" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 16, fontSize: 14, color: "#1c1c1e" }}>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, background: "#f9fafb", padding: 12, borderRadius: 8 }}>
                 <div>
                   <span style={{ fontSize: 11, color: "#9ca3af", textTransform: "uppercase", fontWeight: 600 }}>Category</span>
@@ -1845,7 +1845,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
               <button
                 type="button"
                 onClick={() => setViewingJob(null)}
-                style={{ background: "#f3f4f6", color: "#374151", border: "none", padding: "8px 16px", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer" }}
+                style={{ background: "#f3f4f6", color: "#1c1c1e", border: "none", padding: "8px 16px", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer" }}
               >
                 Close Details
               </button>
@@ -1860,9 +1860,6 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
           <div style={{ background: "#fff", borderRadius: 20, padding: 32, width: "100%", maxWidth: 480, boxShadow: "0 25px 60px rgba(0,0,0,0.25)", border: "1px solid rgba(255,255,255,0.2)" }}>
             {/* Header */}
             <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 28 }}>
-              <div style={{ width: 48, height: 48, borderRadius: 14, background: "linear-gradient(135deg, #1c1c1e, #2c2c2e)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 16px rgba(2,132,199,0.3)" }}>
-                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>
-              </div>
               <div>
                 <h3 style={{ margin: 0, fontSize: 20, fontWeight: 800, color: "#1c1c1e", letterSpacing: "-0.02em" }}>Add New Employer</h3>
               </div>
@@ -1871,9 +1868,8 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
 
             <form onSubmit={handleAddEmployer} style={{ display: "flex", flexDirection: "column", gap: 18 }}>
               <div>
-                <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#374151", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.05em" }}>Telegram ID</label>
+                <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#1c1c1e", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.05em" }}>Telegram ID</label>
                 <div style={{ position: "relative" }}>
-                  <span style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", fontSize: 15 }}>📱</span>
                   <input
                     type="text"
                     inputMode="numeric"
@@ -1882,14 +1878,14 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                     onChange={e => setNewTelegramId(e.target.value.replace(/[^0-9]/g, ""))}
                     required
                     placeholder="e.g. 123456789"
-                    style={{ width: "100%", paddingLeft: 40, paddingRight: 14, paddingTop: 12, paddingBottom: 12, borderRadius: 10, border: "1.5px solid #e2e8f0", fontSize: 14, fontWeight: 500, color: "#1c1c1e", background: "#f8fafc", boxSizing: "border-box", outline: "none", transition: "border-color 0.2s" }}
+                    style={{ width: "100%", padding: "12px 14px", borderRadius: 10, border: "1.5px solid #e2e8f0", fontSize: 14, fontWeight: 500, color: "#1c1c1e", background: "#f8fafc", boxSizing: "border-box", outline: "none", transition: "border-color 0.2s" }}
                   />
                 </div>
                 <p style={{ margin: "5px 0 0 0", fontSize: 11, color: "#94a3b8" }}>Must be 5–12 digits, no leading zero.</p>
               </div>
 
               <div>
-                <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#374151", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.05em" }}>Business Name</label>
+                <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#1c1c1e", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.05em" }}>Business Name</label>
                 <input
                   type="text"
                   value={newBusinessName}
@@ -1901,7 +1897,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
               </div>
 
               <div>
-                <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#374151", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.05em" }}>Business Type</label>
+                <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#1c1c1e", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.05em" }}>Business Type</label>
                 <input
                   type="text"
                   value={newBusinessType}
@@ -1918,7 +1914,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
 
               <div style={{ display: "flex", gap: 10, marginTop: 4 }}>
                 <button type="button" onClick={() => setAddEmployerModalOpen(false)} disabled={formLoading} style={{ flex: 1, padding: "12px", borderRadius: 10, border: "1.5px solid #e2e8f0", background: "#f8fafc", color: "#64748b", fontSize: 14, fontWeight: 600, cursor: "pointer" }}>Cancel</button>
-                <button type="submit" disabled={formLoading || !newTelegramId || !newBusinessName || !newBusinessType} style={{ flex: 2, padding: "12px", borderRadius: 10, border: "none", background: formLoading ? "#93c5fd" : "linear-gradient(135deg, #1c1c1e, #2c2c2e)", color: "#fff", fontSize: 14, fontWeight: 700, cursor: formLoading ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, boxShadow: "0 4px 12px rgba(2,132,199,0.3)" }}>
+                <button type="submit" disabled={formLoading || !newTelegramId || !newBusinessName || !newBusinessType} style={{ flex: 2, padding: "12px", borderRadius: 10, border: "none", background: formLoading ? "#93c5fd" : "linear-gradient(135deg, #1c1c1e, #2c2c2e)", color: "#fff", fontSize: 14, fontWeight: 700, cursor: formLoading ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, boxShadow: "0 4px 12px rgba(0,0,0,0.12)" }}>
                   {formLoading ? (<><svg style={{ animation: "spin 1s linear infinite" }} xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Registering...</>) : (<>Register Employer</>)}
                 </button>
               </div>
@@ -1971,7 +1967,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
           <div style={{ padding: 32, textAlign: "center" }}>
             <Settings style={{ width: 48, height: 48, color: "#d1d5db", margin: "0 auto 16px" }} />
             <h3 style={{ fontSize: 18, fontWeight: 700, color: "#111827", marginBottom: 8 }}>Settings Overview</h3>
-            <p style={{ fontSize: 14, color: "#6b7280" }}>System settings will be available here soon.</p>
+            <p style={{ fontSize: 14, color: "#8e8e93" }}>System settings will be available here soon.</p>
           </div>
         </FloatingWindow>
       )}

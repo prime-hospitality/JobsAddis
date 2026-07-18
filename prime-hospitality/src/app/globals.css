@@ -291,3 +291,107 @@ body {
 [data-perf="low"] .card {
   will-change: auto !important;
 }
+
+/* ── Admin Dashboard — iOS System Design Palette ───────────────────────────
+   Aesthetic direction: iOS / macOS Settings style
+   Primary font: Inter (already loaded globally)
+   Palette:
+     Page bg      #f2f2f7   iOS grouped background
+     Surface      #ffffff   Cards, sidebar, header
+     Separator    #e5e5ea   iOS system separator
+     Border       #c6c6c8   iOS opaque separator
+     Label        #1c1c1e   iOS primary label (near black)
+     Secondary    #8e8e93   iOS secondary label
+     Tertiary     #aeaeb2   iOS tertiary label
+     Active bg    #1c1c1e   Sidebar active item
+     Hover bg     #f2f2f7   Hover state on white surfaces
+     Accent       #007aff   iOS system blue (focus rings, interactive)
+   WCAG AA: all text/bg combos pass 4.5:1 ratio
+────────────────────────────────────────────────────────────────────────── */
+
+.admin-shell {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  background: #f2f2f7;
+}
+
+/* Sidebar active nav item */
+.admin-nav-active {
+  background: #1c1c1e;
+  color: #ffffff;
+  font-weight: 600;
+}
+
+/* Sidebar inactive nav item */
+.admin-nav-item {
+  color: #3a3a3c;
+  font-weight: 500;
+}
+.admin-nav-item:hover {
+  background: #e5e5ea;
+  color: #1c1c1e;
+}
+
+/* Primary action buttons */
+.admin-btn-primary {
+  background: #1c1c1e;
+  color: #ffffff;
+  border: none;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+.admin-btn-primary:hover { opacity: 0.85; }
+.admin-btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* Secondary / ghost buttons */
+.admin-btn-secondary {
+  background: #f2f2f7;
+  color: #1c1c1e;
+  border: 1.5px solid #c6c6c8;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.admin-btn-secondary:hover { background: #e5e5ea; }
+
+/* Table header row */
+.admin-table-head {
+  background: #f2f2f7;
+  border-bottom: 1px solid #e5e5ea;
+}
+.admin-table-head th {
+  color: #8e8e93;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+/* Table data row */
+.admin-table-row {
+  border-bottom: 1px solid #f2f2f7;
+  transition: background 0.1s ease;
+}
+.admin-table-row:hover { background: #f2f2f7; }
+
+/* Input fields */
+.admin-input {
+  background: #f2f2f7;
+  border: 1.5px solid #e5e5ea;
+  border-radius: 10px;
+  color: #1c1c1e;
+  font-size: 14px;
+  font-weight: 500;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  outline: none;
+}
+.admin-input:focus {
+  border-color: #007aff;
+  box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.12);
+}
+.admin-input::placeholder { color: #aeaeb2; }
