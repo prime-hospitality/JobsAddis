@@ -536,6 +536,29 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
     }
   };
 
+  const handleDeleteSubAdmin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!deleteSubAdminModal) return;
+
+    setUserActionLoading(true);
+    setUserActionError("");
+
+    try {
+      const res = await deleteSubAdmin(deleteSubAdminModal.id, userActionPassword);
+      if (res.success) {
+        setSubAdmins((prev) => prev.filter((a) => a.id !== deleteSubAdminModal.id));
+        setDeleteSubAdminModal(null);
+        setUserActionPassword("");
+      } else {
+        setUserActionError(res.error || "Failed to delete admin");
+      }
+    } catch (err: any) {
+      setUserActionError(err.message || "Failed to delete admin");
+    } finally {
+      setUserActionLoading(false);
+    }
+  };
+
   const handleApproveSpecialRequest = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!approveReqModal) return;
