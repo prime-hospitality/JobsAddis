@@ -109,17 +109,33 @@ export default async function PricingPage() {
         </p>
       </div>
 
-      {/* Pricing Cards */}
-      <div style={{ 
-        maxWidth: 1200, 
-        margin: "0 auto", 
-        padding: "0 24px 40px", 
-        display: "grid", 
-        gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", 
-        gap: 32,
-        alignItems: "stretch"
-      }}>
-        {/* Long Term Memberships */}
+      {/* Pricing Cards Container */}
+      <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 24px 40px" }}>
+        
+        {/* Currency Badge UI */}
+        <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 24 }}>
+          <div style={{ 
+            display: "inline-flex", 
+            alignItems: "center", 
+            gap: 8, 
+            padding: "8px 16px", 
+            backgroundColor: "#fff", 
+            borderRadius: 20, 
+            border: "1px solid #E2E8F0",
+            boxShadow: "0 2px 4px rgba(0,0,0,0.02)"
+          }}>
+            <span style={{ fontSize: 16 }}>🇪🇹</span>
+            <span style={{ fontSize: 14, fontWeight: 600, color: "#475569" }}>Prices are in ETB</span>
+          </div>
+        </div>
+
+        <div style={{ 
+          display: "grid", 
+          gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", 
+          gap: 32,
+          alignItems: "stretch"
+        }}>
+          {/* Long Term Memberships */}
         <div style={{ 
           backgroundColor: "#fff", 
           borderRadius: 24, 
@@ -186,7 +202,7 @@ export default async function PricingPage() {
           </div>
           <h3 style={{ fontSize: 20, fontWeight: 700, color: "#fff", marginBottom: 8 }}>Standard Packages</h3>
           <p style={{ fontSize: 15, color: "#94A3B8", marginBottom: 28, minHeight: 44, lineHeight: 1.5 }}>
-            Posted <strong>(3) Times Per Day</strong>. Prices are in ETB.
+            Posted <strong>(3) Times Per Day</strong>.
           </p>
           <div style={{ marginBottom: 32, display: "flex", alignItems: "baseline", gap: 8 }}>
             <span style={{ fontSize: 20, fontWeight: 600, color: "#94A3B8" }}>From</span>
@@ -257,6 +273,7 @@ export default async function PricingPage() {
               </li>
             ))}
           </ul>
+        </div>
         </div>
       </div>
 
