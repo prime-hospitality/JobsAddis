@@ -17,7 +17,7 @@ function FloatingWindow({
   children: React.ReactNode;
 }) {
   const [pos, setPos] = useState({ x: 0, y: 0 });
-  const [size, setSize] = useState({ w: 640, h: 480 });
+  const [size, setSize] = useState({ w: 860, h: 620 });
   const [isMaximized, setIsMaximized] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const dragging = useRef(false);

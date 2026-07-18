@@ -61,6 +61,17 @@ export async function loginEmployer(telegramId: string, authNumber: string) {
     return { success: false, error: "This account has been banned. Please contact support." };
   }
 
+  // Check employer status before verifying auth code
+  const { data: employerStatusCheck } = await supabase
+    .from("employers")
+    .select("status")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (employerStatusCheck?.status === "rejected") {
+    return { success: false, error: "rejected" };
+  }
+
   const { data: employer } = await supabase
     .from("employers")
     .select("id, business_name, business_type, status, logo_url, authorization_number")
