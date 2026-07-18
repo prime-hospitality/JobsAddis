@@ -807,7 +807,36 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
             const perfEmployer = employers.find(e => e.id === overviewEmployerId);
             const perfData = perfEmployer ? (() => {
               const empJobs = jobs.filter(j => j.employer_id === perfEmployer.id && inWindow(j.created_at));
-              return [{ name: perfEmployer.business_name, posts: empJobs.length, active: empJobs.filter(j => j.status === "active").length }];
+              
+              const duration = Number(overviewDuration);
+              const days = [];
+              for (let i = duration - 1; i >= 0; i--) {
+                const d = new Date();
+                d.setDate(d.getDate() - i);
+                days.push({
+                  dateStr: d.toISOString().split('T')[0],
+                  label: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+                  posts: 0,
+                  active: 0
+                });
+              }
+
+              empJobs.forEach(j => {
+                const jDate = new Date(j.created_at).toISOString().split('T')[0];
+                const dayMatch = days.find(d => d.dateStr === jDate);
+                if (dayMatch) {
+                  dayMatch.posts++;
+                  if (j.status === "active") {
+                    dayMatch.active++;
+                  }
+                }
+              });
+
+              return days.map(d => ({
+                name: d.label,
+                posts: d.posts,
+                active: d.active
+              }));
             })() : [];
 
             const maxBar = Math.max(...perfData.map(d => d.posts), 1);
@@ -892,22 +921,22 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
 
                     {!overviewEmployerId ? (
                       <div className="text-center py-12 text-[#aeaeb2] text-sm">Select an employer above to view their performance.</div>
-                    ) : perfData.length === 0 || perfData[0].posts === 0 ? (
+                    ) : perfData.length === 0 || perfData.every(d => d.posts === 0) ? (
                       <div className="text-center py-12 text-[#aeaeb2] text-sm">No job activity in this period for the selected employer.</div>
                     ) : (
-                      <div className="overflow-x-auto">
-                        <div className="flex items-end gap-4 min-w-max pb-2" style={{ minHeight: 180 }}>
+                      <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300">
+                        <div className="flex items-end gap-4 min-w-max pb-4" style={{ minHeight: 180 }}>
                           {perfData.map((d, i) => (
-                            <div key={i} className="flex flex-col items-center gap-1" style={{ width: 72 }}>
-                              <div className="flex items-end gap-1" style={{ height: 140 }}>
-                                <div title={`${d.posts} total posts`} style={{ width: 22, height: `${Math.max((d.posts / maxBar) * 130, 4)}px`, background: "#6366f1", borderRadius: "4px 4px 0 0", transition: "height .4s" }} />
-                                <div title={`${d.active} active`} style={{ width: 22, height: `${Math.max((d.active / maxBar) * 130, 4)}px`, background: "#10b981", borderRadius: "4px 4px 0 0", transition: "height .4s" }} />
+                            <div key={i} className="flex flex-col items-center gap-1 group" style={{ width: 40 }}>
+                              <div className="flex items-end gap-1 w-full justify-center" style={{ height: 140 }}>
+                                <div title={`${d.posts} total posts on ${d.name}`} style={{ width: 12, height: `${Math.max((d.posts / maxBar) * 130, 4)}px`, background: "#6366f1", borderRadius: "4px 4px 0 0", transition: "height .4s" }} className="hover:bg-indigo-400 cursor-pointer" />
+                                <div title={`${d.active} active jobs on ${d.name}`} style={{ width: 12, height: `${Math.max((d.active / maxBar) * 130, 4)}px`, background: "#10b981", borderRadius: "4px 4px 0 0", transition: "height .4s" }} className="hover:bg-emerald-400 cursor-pointer" />
                               </div>
-                              <p className="text-[10px] text-[#8e8e93] text-center leading-tight" style={{ maxWidth: 72, wordBreak: "break-word" }}>{d.name}</p>
+                              <p className="text-[10px] text-[#8e8e93] text-center leading-tight whitespace-nowrap mt-1 group-hover:text-[#1c1c1e] transition-colors">{d.name}</p>
                             </div>
                           ))}
                         </div>
-                        <div className="flex items-center gap-4 mt-3">
+                        <div className="flex items-center gap-4 mt-1">
                           <div className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm inline-block" style={{ background: "#6366f1" }} /><span className="text-xs text-[#8e8e93]">Total Posts</span></div>
                           <div className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm inline-block" style={{ background: "#10b981" }} /><span className="text-xs text-[#8e8e93]">Active Jobs</span></div>
                         </div>
