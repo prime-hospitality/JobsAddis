@@ -134,8 +134,9 @@ export default async function PricingPage() {
             Posted <strong>(5) Times Per Day</strong>. Best for frequent hiring.
           </p>
           <div style={{ marginBottom: 32, display: "flex", alignItems: "baseline", gap: 8 }}>
-            <span style={{ fontSize: 36, fontWeight: 800, color: "#0F172A", letterSpacing: "-0.02em" }}>
-              From {config.sixMonths}
+            <span style={{ fontSize: 20, fontWeight: 600, color: "#64748B" }}>From</span>
+            <span style={{ fontSize: 36, fontWeight: 800, color: "#0F172A", letterSpacing: "-0.02em", whiteSpace: "nowrap" }}>
+              {config.sixMonths}
             </span>
             <span style={{ fontSize: 16, color: "#64748B", fontWeight: 500 }}>ETB</span>
           </div>
@@ -188,8 +189,9 @@ export default async function PricingPage() {
             Posted <strong>(3) Times Per Day</strong>. Prices are in ETB.
           </p>
           <div style={{ marginBottom: 32, display: "flex", alignItems: "baseline", gap: 8 }}>
-            <span style={{ fontSize: 36, fontWeight: 800, color: "#fff", letterSpacing: "-0.02em" }}>
-              From {config.threeDays}
+            <span style={{ fontSize: 20, fontWeight: 600, color: "#94A3B8" }}>From</span>
+            <span style={{ fontSize: 36, fontWeight: 800, color: "#fff", letterSpacing: "-0.02em", whiteSpace: "nowrap" }}>
+              {config.threeDays}
             </span>
             <span style={{ fontSize: 16, color: "#94A3B8", fontWeight: 500 }}>ETB</span>
           </div>
