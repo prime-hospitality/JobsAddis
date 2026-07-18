@@ -129,15 +129,24 @@ function CustomInput(props: any) {
   );
 }
 
-function CustomSelect({ value, onChange, options, placeholder, className = "" }: { value: string, onChange: (v: string) => void, options: {value: string | number, label: string}[], placeholder: string, className?: string }) {
+function CustomSelect({ value, onChange, options, placeholder, className = "", searchable = false }: { value: string, onChange: (v: string) => void, options: {value: string | number, label: string}[], placeholder: string, className?: string, searchable?: boolean }) {
   const [isOpen, setIsOpen] = useState(false);
+  const [search, setSearch] = useState("");
   const selected = options.find(o => String(o.value) === String(value));
+  const filteredOptions = searchable && search.trim()
+    ? options.filter(o => o.label.toLowerCase().includes(search.toLowerCase()))
+    : options;
+
+  const handleOpen = () => {
+    setIsOpen(!isOpen);
+    setSearch("");
+  };
   
   return (
     <div className={`relative ${className}`}>
       <button
         type="button"
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={handleOpen}
         className="w-full px-3 py-2 sm:px-4 sm:py-2.5 bg-[#f2f2f7]/50 hover:bg-white border border-[#c6c6c8] rounded-xl text-xs sm:text-sm text-black focus:outline-none focus:ring-4 focus:ring-[#007aff]/20 focus:border-[#007aff] transition-all flex items-center justify-between text-left font-medium"
       >
         <span className={`${selected ? "text-black" : "text-[#aeaeb2]"} truncate mr-1.5`}>{selected ? selected.label : placeholder}</span>
@@ -146,24 +155,45 @@ function CustomSelect({ value, onChange, options, placeholder, className = "" }:
       
       {isOpen && (
         <>
-          <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
-          <div className="absolute z-50 w-full mt-2 bg-white border border-[#c6c6c8] rounded-xl shadow-xl max-h-60 overflow-y-auto top-full py-1">
-            {options.map((opt) => (
-              <button
-                key={opt.value}
-                type="button"
-                className={`w-full text-left px-3 py-2 sm:px-4 sm:py-2.5 text-xs sm:text-sm hover:bg-[#f2f2f7] transition-colors flex items-center justify-between ${String(value) === String(opt.value) ? "text-[#1c1c1e] bg-[#f1f5f9]" : "text-[#1c1c1e]"}`}
-                onClick={() => {
-                  onChange(String(opt.value));
-                  setIsOpen(false);
-                }}
-              >
-                <span className={`${String(value) === String(opt.value) ? "font-bold" : "font-medium"} truncate mr-2`}>{opt.label}</span>
-                {String(value) === String(opt.value) && (
-                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#1c1c1e] flex-shrink-0"><path d="M20 6 9 17l-5-5"/></svg>
-                )}
-              </button>
-            ))}
+          <div className="fixed inset-0 z-40" onClick={() => { setIsOpen(false); setSearch(""); }} />
+          <div className="absolute z-50 w-full mt-2 bg-white border border-[#c6c6c8] rounded-xl shadow-xl top-full overflow-hidden">
+            {searchable && (
+              <div className="p-2 border-b border-[#e5e5ea]">
+                <div className="relative">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#aeaeb2] pointer-events-none"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                  <input
+                    autoFocus
+                    type="text"
+                    value={search}
+                    onChange={e => setSearch(e.target.value)}
+                    placeholder="Search employer..."
+                    onClick={e => e.stopPropagation()}
+                    className="w-full pl-7 pr-3 py-1.5 text-xs bg-[#f2f2f7] border border-[#e5e5ea] rounded-lg text-black placeholder-[#aeaeb2] font-medium focus:outline-none focus:ring-2 focus:ring-[#007aff]/20 focus:border-[#007aff] transition-all"
+                  />
+                </div>
+              </div>
+            )}
+            <div className="max-h-52 overflow-y-auto py-1">
+              {filteredOptions.length === 0 ? (
+                <p className="px-4 py-3 text-xs text-[#aeaeb2] font-medium">No employers found</p>
+              ) : filteredOptions.map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  className={`w-full text-left px-3 py-2 sm:px-4 sm:py-2.5 text-xs sm:text-sm hover:bg-[#f2f2f7] transition-colors flex items-center justify-between ${String(value) === String(opt.value) ? "text-[#1c1c1e] bg-[#f1f5f9]" : "text-[#1c1c1e]"}`}
+                  onClick={() => {
+                    onChange(String(opt.value));
+                    setIsOpen(false);
+                    setSearch("");
+                  }}
+                >
+                  <span className={`${String(value) === String(opt.value) ? "font-bold" : "font-medium"} truncate mr-2`}>{opt.label}</span>
+                  {String(value) === String(opt.value) && (
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#1c1c1e] flex-shrink-0"><path d="M20 6 9 17l-5-5"/></svg>
+                  )}
+                </button>
+              ))}
+            </div>
           </div>
         </>
       )}
@@ -842,6 +872,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                           placeholder="Select Employer"
                           options={employers.map(emp => ({ value: emp.id, label: emp.business_name }))}
                           className="flex-1 min-w-0 sm:w-48"
+                          searchable
                         />
                         <CustomSelect
                           value={overviewDuration}
