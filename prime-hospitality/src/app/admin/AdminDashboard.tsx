@@ -721,7 +721,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
             <div className="relative">
               <button 
                 onClick={() => setProfileMenuOpen(!profileMenuOpen)}
-                className="flex items-center gap-3 focus:outline-none hover:bg-gray-50 rounded-lg p-1.5 -m-1.5 transition-colors"
+                className="flex items-center gap-3 focus:outline-none hover:bg-gray-50 rounded-lg p-1.5 -m-1.5 transition-colors cursor-pointer"
               >
                 <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(data.adminUsername || "Admin")}&background=random`} alt={data.adminUsername || "Admin"} className="w-10 h-10 rounded-full object-cover border border-gray-200" />
                 <div className="flex flex-col text-left">
@@ -813,7 +813,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                       { label: "Pending Moderation", value: jobs.filter(j => j.status === "pending").length, icon: "/icons/pending.svg", color: "#f59e0b" },
                       { label: "Total Job Posts", value: jobs.length, icon: "/icons/jobs.svg", color: "#10b981" },
                     ].map(stat => (
-                      <div key={stat.label} className="rounded-xl border border-gray-100 bg-gray-50/80 p-3 sm:p-4 flex flex-col lg:flex-row items-start lg:items-center gap-2 lg:gap-4 transition-all hover:bg-white hover:shadow-md hover:-translate-y-0.5 cursor-default">
+                      <div key={stat.label} className="rounded-xl border border-gray-100 bg-gray-50/80 p-3 sm:p-4 flex flex-col lg:flex-row items-start lg:items-center gap-2 lg:gap-4 transition-all hover:bg-white hover:shadow-md hover:-translate-y-0.5 cursor-pointer">
                         <div className="flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 lg:w-14 lg:h-14 rounded-xl bg-white shadow-sm border border-gray-100 flex-shrink-0">
                           <img src={stat.icon} alt={stat.label} className="w-6 h-6 sm:w-7 sm:h-7 lg:w-8 lg:h-8 object-contain drop-shadow-sm" />
                         </div>
