@@ -311,15 +311,17 @@ export default function EmployerLoginPage() {
 
           {/* Title — hide on blocked states */}
           {step !== "rejected" && step !== "not_found" && (
-            <h1 style={{ fontSize: 26, fontWeight: 800, color: "#111827", letterSpacing: "-0.03em", lineHeight: 1.1, marginBottom: 6 }}>
-              {step === "telegram" ? "Employer Sign In" : `Welcome back!`}
-            </h1>
-            <p style={{ fontSize: 14, color: "#6b7280", lineHeight: 1.5 }}>
-              {step === "telegram"
-                ? "Enter your Telegram ID to access your employer dashboard"
-                : `Enter the 5-digit code provided by your admin`}
-            </p>
-          </div>
+            <div style={{ marginBottom: 28 }}>
+              <h1 style={{ fontSize: 26, fontWeight: 800, color: "#111827", letterSpacing: "-0.03em", lineHeight: 1.1, marginBottom: 6 }}>
+                {step === "telegram" ? "Employer Sign In" : `Welcome back!`}
+              </h1>
+              <p style={{ fontSize: 14, color: "#6b7280", lineHeight: 1.5 }}>
+                {step === "telegram"
+                  ? "Enter your Telegram ID to access your employer dashboard"
+                  : `Enter the 5-digit code provided by your admin`}
+              </p>
+            </div>
+          )}
 
           {/* Step 1: Telegram ID */}
           {step === "telegram" && (
