@@ -574,7 +574,7 @@ export default function EmployerLoginPage() {
               <div style={{ textAlign: "center", marginBottom: 12 }}>
                 <h2 style={{ fontSize: 22, fontWeight: 800, color: "#111827", letterSpacing: "-0.03em", marginBottom: 6 }}>Create Profile Password</h2>
                 <p style={{ fontSize: 13, color: "#6b7280", lineHeight: 1.5 }}>
-                  Set a password for your account. You will use this instead of the auth code for future logins.
+                  Set a password for your account.
                 </p>
               </div>
 
