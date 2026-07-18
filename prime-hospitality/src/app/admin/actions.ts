@@ -673,3 +673,27 @@ export async function updateOnboardingConfig(key: string, label: string, value: 
   return { success: true };
 }
 
+export async function getPricingConfig() {
+  const supabase = getSupabase();
+  const { data: pCfg } = await supabase.from("app_config").select("value").eq("key", "pricing_config").maybeSingle();
+  let pricingConfig = null;
+  try {
+    if (pCfg?.value) pricingConfig = JSON.parse(pCfg.value);
+  } catch (e) {}
+  return pricingConfig;
+}
+
+export async function updatePricingConfig(config: any) {
+  const auth = (await cookies()).get("admin_session");
+  if (!auth?.value) throw new Error("Unauthorized");
+
+  const supabase = getSupabase();
+  const { error } = await supabase.from("app_config").upsert({
+    key: "pricing_config",
+    value: JSON.stringify(config),
+    updated_at: new Date().toISOString()
+  });
+
+  if (error) throw error;
+  return { success: true };
+}

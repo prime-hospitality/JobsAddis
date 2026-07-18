@@ -6,9 +6,10 @@ import { Plus, Save, Trash2, Pencil, X, Briefcase, MapPin, CreditCard, Calendar,
 import { searchLocations } from "@/data/locations";
 import JobDetailScreen from "@/screens/JobDetailScreen";
 import { Job } from "@/data/jobs";
+import PricingConfigTab from "./PricingConfigTab";
 
 export default function ContentManagementTab() {
-  const [activeSubTab, setActiveSubTab] = useState<"faqs" | "templates" | "onboarding">("faqs");
+  const [activeSubTab, setActiveSubTab] = useState<"faqs" | "templates" | "onboarding" | "pricing">("faqs");
   const [data, setData] = useState<{ faqs: any[]; templates: any[]; onboardingConfig: any[] }>({ faqs: [], templates: [], onboardingConfig: [] });
   const [loading, setLoading] = useState(true);
 
@@ -183,9 +184,20 @@ export default function ContentManagementTab() {
         >
           Onboarding Texts
         </button>
+        <button
+          onClick={() => setActiveSubTab("pricing")}
+          className={`px-6 py-4 text-sm font-medium transition-colors ${activeSubTab === "pricing" ? "text-[#0284c7] border-b-2 border-[#0284c7] bg-white" : "text-[#8e8e93] hover:text-[#1c1c1e]"}`}
+        >
+          Pricing & Bank
+        </button>
       </div>
 
       <div className="p-6 overflow-y-auto" style={{ maxHeight: "calc(100vh - 200px)" }}>
+        {/* Pricing */}
+        {activeSubTab === "pricing" && (
+          <PricingConfigTab />
+        )}
+
         {/* FAQs */}
         {activeSubTab === "faqs" && (
           <div>

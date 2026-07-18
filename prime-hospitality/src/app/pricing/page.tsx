@@ -1,10 +1,68 @@
 import Link from "next/link";
 import React from "react";
 import { cookies } from "next/headers";
+import { createClient } from "@supabase/supabase-js";
+
+// Default config - used as fallback if nothing is saved in the DB yet
+const DEFAULT_CONFIG = {
+  standardPackages: [
+    { label: 'Three Days Package', price: '1,983.75' },
+    { label: 'Five Days Package', price: '2,645.00' },
+    { label: 'One Week Package', price: '3,306.25' },
+    { label: 'Two Weeks Package', price: '5,290.00' },
+    { label: 'One Month Package', price: '7,273.75' },
+    { label: "Three Month's Package", price: '16,531.25' }
+  ],
+  premiumPackages: [
+    { label: "Six Month's Membership", price: '25,127.50' },
+    { label: 'One Year Membership', price: '46,287.50' }
+  ],
+  addOns: [
+    { label: 'Pin Your Vacancy', price: '1,000 / Day' }
+  ],
+  bankDetails: {
+    companyName: 'Prime Hospitality Business Group PLC',
+    bankName: 'Awash Bank',
+    accountNumber: '013041457659800'
+  },
+  contact: {
+    phone1: '+251 90 488 5295',
+    phone2: '+251 98 566 1540'
+  }
+};
+
+async function getPricingConfig() {
+  try {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
+    if (!supabaseUrl || !supabaseServiceKey) return DEFAULT_CONFIG;
+
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    const { data } = await supabase
+      .from("app_config")
+      .select("value")
+      .eq("key", "pricing_config")
+      .maybeSingle();
+
+    if (data?.value) {
+      const parsed = JSON.parse(data.value);
+      // Merge with defaults in case any fields are missing
+      return { ...DEFAULT_CONFIG, ...parsed };
+    }
+  } catch (e) {
+    console.error("Failed to fetch pricing config:", e);
+  }
+  return DEFAULT_CONFIG;
+}
 
 export default async function PricingPage() {
   const sessionCookie = (await cookies()).get("employer_session");
   const isAuthenticated = !!sessionCookie?.value;
+  const config = await getPricingConfig();
+
+  const checkIcon = (stroke: string) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={stroke} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+  );
 
   return (
     <div style={{ minHeight: "100vh", backgroundColor: "#F8FAFC", fontFamily: "'Inter', sans-serif" }}>
@@ -40,66 +98,62 @@ export default async function PricingPage() {
 
       {/* Hero */}
       <div style={{ padding: "80px 24px 60px", textAlign: "center" }}>
-        <div style={{ display: "inline-block", padding: "6px 16px", backgroundColor: "#E0F2FE", color: "#0284C7", borderRadius: 20, fontSize: 13, fontWeight: 700, marginBottom: 24, letterSpacing: "0.05em", textTransform: "uppercase" }}>Pricing Plans</div>
-        <h1 style={{ fontSize: 52, fontWeight: 800, color: "#0F172A", marginBottom: 20, letterSpacing: "-0.03em" }}>
-          Simple, transparent pricing
+        <div style={{ display: "inline-block", padding: "6px 16px", backgroundColor: "#E0F2FE", color: "#0284C7", borderRadius: 20, fontSize: 13, fontWeight: 700, marginBottom: 24, letterSpacing: "0.05em", textTransform: "uppercase" }}>Warm Greetings</div>
+        <h1 style={{ fontSize: 42, fontWeight: 800, color: "#0F172A", marginBottom: 20, letterSpacing: "-0.03em" }}>
+          Thank You for Choosing JobsAddis
         </h1>
         <p style={{ fontSize: 18, color: "#64748B", maxWidth: 600, margin: "0 auto", lineHeight: 1.6 }}>
-          Choose the perfect plan for your hiring needs. No hidden fees, cancel at any time.
+          Please Review Our Jobs Advertisement Packages Below &amp; Select The One That Fits Your Hiring Need.
         </p>
       </div>
 
       {/* Pricing Cards */}
       <div style={{ 
-        maxWidth: 1100, 
+        maxWidth: 1200, 
         margin: "0 auto", 
-        padding: "0 24px 100px", 
+        padding: "0 24px 40px", 
         display: "grid", 
         gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", 
         gap: 32,
-        alignItems: "start"
+        alignItems: "stretch"
       }}>
-        {/* Starter Plan */}
+        {/* Standard Packages */}
         <div style={{ 
           backgroundColor: "#fff", 
           borderRadius: 24, 
           padding: 40, 
           border: "1px solid #E2E8F0",
-          boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)"
+          boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)",
+          display: "flex",
+          flexDirection: "column"
         }}>
-          <h3 style={{ fontSize: 20, fontWeight: 700, color: "#0F172A", marginBottom: 8 }}>Starter</h3>
-          <p style={{ fontSize: 15, color: "#64748B", marginBottom: 28, minHeight: 44, lineHeight: 1.5 }}>Perfect for small businesses hiring occasionally.</p>
+          <h3 style={{ fontSize: 20, fontWeight: 700, color: "#0F172A", marginBottom: 8 }}>Standard Packages</h3>
+          <p style={{ fontSize: 15, color: "#64748B", marginBottom: 28, minHeight: 44, lineHeight: 1.5 }}>
+            Posted <strong>(3) Times Per Day</strong>. Prices are in ETB.
+          </p>
           <div style={{ marginBottom: 32, display: "flex", alignItems: "baseline", gap: 8 }}>
-            <span style={{ fontSize: 48, fontWeight: 800, color: "#0F172A", letterSpacing: "-0.02em" }}>Free</span>
+            <span style={{ fontSize: 36, fontWeight: 800, color: "#0F172A", letterSpacing: "-0.02em" }}>
+              From {config.standardPackages[0]?.price ?? "—"}
+            </span>
+            <span style={{ fontSize: 16, color: "#64748B", fontWeight: 500 }}>ETB</span>
           </div>
-          <Link href={isAuthenticated ? "/emp/dashboard" : "/emp"} style={{ 
-            display: "block", 
-            width: "100%", 
-            textAlign: "center", 
-            backgroundColor: "#F1F5F9", 
-            color: "#0F172A", 
-            padding: "14px 0", 
-            borderRadius: 12, 
-            fontWeight: 600, 
-            textDecoration: "none",
-            marginBottom: 36,
-            border: "1px solid #E2E8F0"
-          }}>
-            {isAuthenticated ? "Current Plan" : "Get Started"}
-          </Link>
-          <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 16 }}>
-            {['1 active job post', 'Basic applicant tracking', 'Standard support', '7-day post visibility'].map((feature, i) => (
-              <li key={i} style={{ display: "flex", alignItems: "center", gap: 14, fontSize: 15, color: "#475569" }}>
-                <div style={{ backgroundColor: "#ECFDF5", borderRadius: "50%", padding: 4, display: "flex" }}>
-                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10B981" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+          
+          <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 16, flexGrow: 1 }}>
+            {config.standardPackages.map((pkg: { label: string; price: string }, i: number) => (
+              <li key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 15, color: "#475569" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                  <div style={{ backgroundColor: "#ECFDF5", borderRadius: "50%", padding: 4, display: "flex", minWidth: 22, minHeight: 22 }}>
+                    {checkIcon("#10B981")}
+                  </div>
+                  <span>{pkg.label}</span>
                 </div>
-                {feature}
+                <span style={{ fontWeight: 600, color: "#0F172A", textAlign: "right" }}>{pkg.price}</span>
               </li>
             ))}
           </ul>
         </div>
 
-        {/* Professional Plan */}
+        {/* Premium Memberships Plan */}
         <div style={{ 
           backgroundColor: "#0F172A", 
           borderRadius: 24, 
@@ -107,7 +161,8 @@ export default async function PricingPage() {
           border: "1px solid #1E293B",
           boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
           position: "relative",
-          transform: "translateY(-16px)"
+          display: "flex",
+          flexDirection: "column"
         }}>
           <div style={{ 
             position: "absolute", 
@@ -124,77 +179,75 @@ export default async function PricingPage() {
             textTransform: "uppercase",
             boxShadow: "0 4px 6px -1px rgba(14, 165, 233, 0.4)"
           }}>
-            Most Popular
+            Memberships
           </div>
-          <h3 style={{ fontSize: 20, fontWeight: 700, color: "#fff", marginBottom: 8 }}>Professional</h3>
-          <p style={{ fontSize: 15, color: "#94A3B8", marginBottom: 28, minHeight: 44, lineHeight: 1.5 }}>For growing teams that need more power and reach.</p>
+          <h3 style={{ fontSize: 20, fontWeight: 700, color: "#fff", marginBottom: 8 }}>Long Term Memberships</h3>
+          <p style={{ fontSize: 15, color: "#94A3B8", marginBottom: 28, minHeight: 44, lineHeight: 1.5 }}>
+            Posted <strong>(5) Times Per Day</strong>. Best for frequent hiring.
+          </p>
           <div style={{ marginBottom: 32, display: "flex", alignItems: "baseline", gap: 8 }}>
-            <span style={{ fontSize: 48, fontWeight: 800, color: "#fff", letterSpacing: "-0.02em" }}>2,500</span>
-            <span style={{ fontSize: 16, color: "#94A3B8", fontWeight: 500 }}>ETB / mo</span>
+            <span style={{ fontSize: 36, fontWeight: 800, color: "#fff", letterSpacing: "-0.02em" }}>
+              From {config.premiumPackages[0]?.price ?? "—"}
+            </span>
+            <span style={{ fontSize: 16, color: "#94A3B8", fontWeight: 500 }}>ETB</span>
           </div>
-          <button style={{ 
-            display: "block", 
-            width: "100%", 
-            textAlign: "center", 
-            backgroundColor: "#0ea5e9", 
-            color: "#fff", 
-            padding: "14px 0", 
-            borderRadius: 12, 
-            fontWeight: 600, 
-            border: "none",
-            cursor: "pointer",
-            fontSize: 16,
-            marginBottom: 36,
-            boxShadow: "0 4px 6px -1px rgba(14, 165, 233, 0.2)"
-          }}>
-            Upgrade to Pro
-          </button>
-          <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 16 }}>
-            {['Up to 5 active job posts', 'Advanced candidate filtering', 'Priority support', '30-day post visibility', 'Featured job highlights'].map((feature, i) => (
-              <li key={i} style={{ display: "flex", alignItems: "center", gap: 14, fontSize: 15, color: "#E2E8F0" }}>
-                <div style={{ backgroundColor: "rgba(56, 189, 248, 0.2)", borderRadius: "50%", padding: 4, display: "flex" }}>
-                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#38BDF8" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+          
+          <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 16, flexGrow: 1, marginBottom: 24 }}>
+            {config.premiumPackages.map((pkg: { label: string; price: string }, i: number) => (
+              <li key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 15, color: "#E2E8F0" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                  <div style={{ backgroundColor: "rgba(56, 189, 248, 0.2)", borderRadius: "50%", padding: 4, display: "flex", minWidth: 22, minHeight: 22 }}>
+                    {checkIcon("#38BDF8")}
+                  </div>
+                  <span>{pkg.label}</span>
                 </div>
-                {feature}
+                <span style={{ fontWeight: 600, color: "#fff", textAlign: "right", whiteSpace: "nowrap" }}>{pkg.price}</span>
               </li>
             ))}
           </ul>
+          
+          <div style={{ backgroundColor: "rgba(255,255,255,0.05)", padding: 16, borderRadius: 12, marginTop: "auto" }}>
+            <p style={{ fontSize: 14, color: "#E2E8F0", lineHeight: 1.5, margin: 0 }}>
+              <span style={{ color: "#38BDF8", fontWeight: 600, marginRight: 6 }}>📌 Note:</span>
+              Any of the Package Doesn&apos;t Have a Position limitation. It Means, You can Post Multiple Positions Under Any of the Package.
+            </p>
+          </div>
         </div>
 
-        {/* Enterprise Plan */}
+        {/* Add-ons Plan */}
         <div style={{ 
           backgroundColor: "#fff", 
           borderRadius: 24, 
           padding: 40, 
           border: "1px solid #E2E8F0",
-          boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)"
+          boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)",
+          display: "flex",
+          flexDirection: "column"
         }}>
-          <h3 style={{ fontSize: 20, fontWeight: 700, color: "#0F172A", marginBottom: 8 }}>Enterprise</h3>
-          <p style={{ fontSize: 15, color: "#64748B", marginBottom: 28, minHeight: 44, lineHeight: 1.5 }}>Custom solutions for large hospitality chains.</p>
+          <h3 style={{ fontSize: 20, fontWeight: 700, color: "#0F172A", marginBottom: 8 }}>Add-ons &amp; Consulting</h3>
+          <p style={{ fontSize: 15, color: "#64748B", marginBottom: 28, minHeight: 44, lineHeight: 1.5 }}>Extra services for your business in your preference.</p>
           <div style={{ marginBottom: 32, display: "flex", alignItems: "baseline", gap: 8 }}>
-            <span style={{ fontSize: 48, fontWeight: 800, color: "#0F172A", letterSpacing: "-0.02em" }}>Custom</span>
+            <span style={{ fontSize: 36, fontWeight: 800, color: "#0F172A", letterSpacing: "-0.02em" }}>Custom</span>
           </div>
-          <button style={{ 
-            display: "block", 
-            width: "100%", 
-            textAlign: "center", 
-            backgroundColor: "#fff", 
-            color: "#0F172A", 
-            padding: "14px 0", 
-            borderRadius: 12, 
-            fontWeight: 600, 
-            border: "1px solid #E2E8F0",
-            cursor: "pointer",
-            fontSize: 16,
-            marginBottom: 36
-          }}>
-            Contact Sales
-          </button>
-          <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 16 }}>
-            {['Unlimited job posts', 'Dedicated account manager', 'API access & integrations', 'Custom branding', 'SLA support'].map((feature, i) => (
-              <li key={i} style={{ display: "flex", alignItems: "center", gap: 14, fontSize: 15, color: "#475569" }}>
-                <div style={{ backgroundColor: "#ECFDF5", borderRadius: "50%", padding: 4, display: "flex" }}>
-                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10B981" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+          
+          <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 16, flexGrow: 1 }}>
+            {config.addOns.map((addon: { label: string; price: string }, i: number) => (
+              <li key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 15, color: "#475569", paddingBottom: i < config.addOns.length - 1 ? 16 : 0, borderBottom: i < config.addOns.length - 1 ? "1px solid #E2E8F0" : "none" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                  <div style={{ backgroundColor: "#EFF6FF", borderRadius: "50%", padding: 4, display: "flex", minWidth: 22, minHeight: 22 }}>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                  </div>
+                  <span style={{ fontWeight: 500 }}>{addon.label}</span>
+                </div>
+                <span style={{ fontWeight: 600, color: "#0F172A", textAlign: "right" }}>{addon.price}</span>
+              </li>
+            ))}
+            
+            <div style={{ fontSize: 13, fontWeight: 600, color: "#64748B", textTransform: "uppercase", marginTop: 8, letterSpacing: "0.05em" }}>We Also Provide:</div>
+            {['Screening & Hiring', 'Training', 'Cost & Operational Audit', 'Food Safety Audit', 'Menu Development', 'Monthly Financial Review', 'Hospitality Consultancy'].map((feature, i) => (
+              <li key={`extra-${i}`} style={{ display: "flex", alignItems: "center", gap: 14, fontSize: 15, color: "#475569" }}>
+                <div style={{ backgroundColor: "#ECFDF5", borderRadius: "50%", padding: 4, display: "flex", minWidth: 22, minHeight: 22 }}>
+                  {checkIcon("#10B981")}
                 </div>
                 {feature}
               </li>
@@ -202,6 +255,82 @@ export default async function PricingPage() {
           </ul>
         </div>
       </div>
+
+      {/* Details Section */}
+      <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 24px 80px" }}>
+        <div style={{ 
+          backgroundColor: "#fff", 
+          borderRadius: 24, 
+          padding: 40, 
+          border: "1px solid #E2E8F0",
+          display: "flex",
+          flexDirection: "column",
+          gap: 32,
+          boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.05)"
+        }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 40 }}>
+            {/* Payment Details */}
+            <div>
+              <h4 style={{ fontSize: 18, fontWeight: 700, color: "#0F172A", marginBottom: 16, display: "flex", alignItems: "center", gap: 8 }}>
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0ea5e9" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+                Payment Detail
+              </h4>
+              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                <div style={{ display: "flex", flexDirection: "column" }}>
+                  <span style={{ fontSize: 13, color: "#64748B", fontWeight: 500 }}>Company Name</span>
+                  <span style={{ fontSize: 16, color: "#0F172A", fontWeight: 600 }}>{config.bankDetails.companyName}</span>
+                </div>
+                <div style={{ display: "flex", flexDirection: "column" }}>
+                  <span style={{ fontSize: 13, color: "#64748B", fontWeight: 500 }}>Bank</span>
+                  <span style={{ fontSize: 16, color: "#0F172A", fontWeight: 600 }}>{config.bankDetails.bankName}</span>
+                </div>
+                <div style={{ display: "flex", flexDirection: "column" }}>
+                  <span style={{ fontSize: 13, color: "#64748B", fontWeight: 500 }}>Account No</span>
+                  <span style={{ fontSize: 18, color: "#0284c7", fontWeight: 700, letterSpacing: "0.05em" }}>{config.bankDetails.accountNumber}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Important Notes & Contact */}
+            <div style={{ display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+              <div>
+                <h4 style={{ fontSize: 18, fontWeight: 700, color: "#0F172A", marginBottom: 16, display: "flex", alignItems: "center", gap: 8 }}>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                  Important Information
+                </h4>
+                <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 12 }}>
+                  <li style={{ display: "flex", alignItems: "flex-start", gap: 10, fontSize: 15, color: "#475569", lineHeight: 1.5 }}>
+                    <span style={{ marginTop: 2 }}>📍</span>
+                    <span>Posting Days for Any Package is Only <strong>Consecutive Days</strong> as of the Starting day.</span>
+                  </li>
+                  <li style={{ display: "flex", alignItems: "flex-start", gap: 10, fontSize: 15, color: "#475569", lineHeight: 1.5 }}>
+                    <span style={{ marginTop: 2 }}>📌</span>
+                    <span>Call Us for Further Discussion regarding Consulting and Custom Services.</span>
+                  </li>
+                </ul>
+              </div>
+              
+              <div style={{ marginTop: 24, padding: "16px 20px", backgroundColor: "#F8FAFC", borderRadius: 12, border: "1px solid #E2E8F0" }}>
+                <div style={{ fontSize: 14, fontWeight: 600, color: "#64748B", marginBottom: 8 }}>Contact Us</div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 16 }}>
+                  <a href={`tel:${config.contact.phone1.replace(/\s/g, "")}`} style={{ display: "flex", alignItems: "center", gap: 8, color: "#0F172A", fontWeight: 600, textDecoration: "none", fontSize: 16 }}>
+                    <span>☎️</span> {config.contact.phone1}
+                  </a>
+                  <a href={`tel:${config.contact.phone2.replace(/\s/g, "")}`} style={{ display: "flex", alignItems: "center", gap: 8, color: "#0F172A", fontWeight: 600, textDecoration: "none", fontSize: 16 }}>
+                    <span>☎️</span> {config.contact.phone2}
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div style={{ borderTop: "1px solid #E2E8F0", paddingTop: 24, textAlign: "center", color: "#64748B", fontSize: 16 }}>
+            Thank you,<br/>
+            <span style={{ fontWeight: 700, color: "#0F172A", fontSize: 18, marginTop: 4, display: "inline-block" }}>JobsAddis</span>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
+
