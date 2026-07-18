@@ -5,7 +5,7 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Employer Dashboard | Addis Jobs",
-  description: "Manage your job postings, track applicants, and view analytics on the Addis Jobs Employer Portal.",
+  description: "Manage your job postings, track applicants, and view analytics on the Addis Jobs Employer Dashboard.",
 };
 
 async function getSession() {

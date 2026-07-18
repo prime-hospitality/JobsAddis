@@ -96,10 +96,10 @@ export default async function EmployerDashboardPage() {
     <div style={{ maxWidth: 1200, margin: "0 auto" }}>
 
       {/* Welcome Banner */}
-      <div style={{ background: "linear-gradient(135deg, #0284c7 0%, #0369a1 50%, #1e40af 100%)", borderRadius: 16, padding: "24px 28px", marginBottom: 24, color: "#fff", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 16 }}>
+      <div style={{ background: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)", borderRadius: 16, padding: "24px 28px", marginBottom: 24, color: "#fff", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 16 }}>
         <div>
           <h2 style={{ fontSize: 22, fontWeight: 800, margin: 0, letterSpacing: "-0.02em" }}>
-            Welcome back, {session.businessName}! 👋
+            Welcome back, {session.businessName}!
           </h2>
           <p style={{ fontSize: 14, color: "rgba(255,255,255,0.7)", margin: "6px 0 0 0" }}>Here&apos;s an overview of your recruitment activity</p>
         </div>
@@ -150,8 +150,10 @@ export default async function EmployerDashboardPage() {
             <a href="/emp/dashboard/jobs" style={{ fontSize: 12, fontWeight: 600, color: "#0284c7", textDecoration: "none" }}>View all →</a>
           </div>
           {data.activeJobs.length === 0 ? (
-            <div style={{ padding: "36px 20px", textAlign: "center" }}>
-              <div style={{ fontSize: 36, marginBottom: 10 }}>📋</div>
+            <div style={{ padding: "36px 20px", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center" }}>
+              <div style={{ color: "#94a3b8", marginBottom: 16 }}>
+                <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg>
+              </div>
               <p style={{ fontSize: 14, color: "#94a3b8", fontWeight: 500 }}>No active job postings yet</p>
               <a href="/emp/dashboard/jobs" style={{ display: "inline-flex", alignItems: "center", gap: 6, marginTop: 14, background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 8, padding: "8px 16px", fontSize: 13, fontWeight: 600, color: "#0284c7", textDecoration: "none" }}>
                 Post your first job
@@ -190,8 +192,10 @@ export default async function EmployerDashboardPage() {
             <a href="/emp/dashboard/applicants" style={{ fontSize: 12, fontWeight: 600, color: "#0284c7", textDecoration: "none" }}>View all →</a>
           </div>
           {data.recentApplications.length === 0 ? (
-            <div style={{ padding: "36px 20px", textAlign: "center" }}>
-              <div style={{ fontSize: 36, marginBottom: 10 }}>👥</div>
+            <div style={{ padding: "36px 20px", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center" }}>
+              <div style={{ color: "#94a3b8", marginBottom: 16 }}>
+                <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+              </div>
               <p style={{ fontSize: 14, color: "#94a3b8", fontWeight: 500 }}>No applications yet</p>
             </div>
           ) : (

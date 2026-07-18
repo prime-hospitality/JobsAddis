@@ -198,6 +198,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
   const [formError, setFormError] = useState("");
   const [addEmployerModalOpen, setAddEmployerModalOpen] = useState(false);
   const [authNumberResult, setAuthNumberResult] = useState<{ name: string; number: string } | null>(null);
+  const [copied, setCopied] = useState(false);
 
   const [deleteModal, setDeleteModal] = useState<{ id: string; name: string } | null>(null);
   const [adminPassword, setAdminPassword] = useState("");
@@ -1945,10 +1946,14 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
 
             <div style={{ display: "flex", gap: 10 }}>
               <button
-                onClick={() => { navigator.clipboard.writeText(authNumberResult.number); }}
-                style={{ flex: 1, padding: "12px", borderRadius: 10, border: "1.5px solid #e2e8f0", background: "#f8fafc", color: "#1c1c1e", fontSize: 14, fontWeight: 700, cursor: "pointer" }}
+                onClick={() => { 
+                  navigator.clipboard.writeText(authNumberResult.number); 
+                  setCopied(true);
+                  setTimeout(() => setCopied(false), 2000);
+                }}
+                style={{ flex: 1, padding: "12px", borderRadius: 10, border: "1.5px solid #e2e8f0", background: copied ? "#dcfce3" : "#f8fafc", color: copied ? "#166534" : "#1c1c1e", fontSize: 14, fontWeight: 700, cursor: "pointer", transition: "all 0.2s" }}
               >
-                📋 Copy Code
+                {copied ? "✅ Copied!" : "📋 Copy Code"}
               </button>
               <button
                 onClick={() => setAuthNumberResult(null)}

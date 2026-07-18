@@ -145,7 +145,7 @@ export default function EmployerLoginPage() {
           </div>
           <div>
             <span style={{ fontSize: 18, fontWeight: 800, color: "#111827", letterSpacing: "-0.02em" }}>Addis Jobs</span>
-            <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 600, marginTop: 1 }}>EMPLOYER PORTAL</div>
+            <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 600, marginTop: 1 }}>EMPLOYER DASHBOARD</div>
           </div>
         </div>
 
@@ -180,7 +180,7 @@ export default function EmployerLoginPage() {
             </h1>
             <p style={{ fontSize: 14, color: "#6b7280", lineHeight: 1.5 }}>
               {step === "telegram"
-                ? "Enter your Telegram ID to access your employer portal"
+                ? "Enter your Telegram ID to access your employer dashboard"
                 : `Enter the 5-digit code provided by your admin`}
             </p>
           </div>
@@ -282,7 +282,9 @@ export default function EmployerLoginPage() {
             <form className="auth-step" onSubmit={handleLogin} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
               {/* Employer badge */}
               <div style={{ display: "flex", alignItems: "center", gap: 10, background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 10, padding: "10px 14px", marginBottom: 4 }}>
-                <div style={{ width: 32, height: 32, borderRadius: "50%", background: "#22c55e", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, flexShrink: 0 }}>🏢</div>
+                <div style={{ width: 32, height: 32, borderRadius: "50%", background: "#22c55e", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="16" height="20" x="4" y="2" rx="2" ry="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01"/><path d="M16 6h.01"/><path d="M12 6h.01"/><path d="M12 10h.01"/><path d="M12 14h.01"/><path d="M16 10h.01"/><path d="M16 14h.01"/><path d="M8 10h.01"/><path d="M8 14h.01"/></svg>
+                </div>
                 <div>
                   <p style={{ fontSize: 13, fontWeight: 700, color: "#16a34a", margin: 0 }}>{employerName}</p>
                   <p style={{ fontSize: 11, color: "#15803d", margin: 0 }}>ID: {telegramId}</p>

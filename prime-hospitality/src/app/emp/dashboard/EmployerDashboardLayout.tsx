@@ -138,7 +138,7 @@ export default function EmployerDashboardLayout({
             </div>
             <div>
               <div style={{ fontSize: 14, fontWeight: 800, color: "#0f172a", letterSpacing: "-0.01em" }}>Addis Jobs</div>
-              <div style={{ fontSize: 10, color: "#94a3b8", fontWeight: 500, marginTop: 1 }}>Employer Portal</div>
+              <div style={{ fontSize: 10, color: "#94a3b8", fontWeight: 500, marginTop: 1 }}>Employer Dashboard</div>
             </div>
             <button
               onClick={() => setSidebarOpen(false)}
