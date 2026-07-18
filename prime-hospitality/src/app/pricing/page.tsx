@@ -1,9 +1,11 @@
-"use client";
-
 import Link from "next/link";
 import React from "react";
+import { cookies } from "next/headers";
 
-export default function PricingPage() {
+export default async function PricingPage() {
+  const sessionCookie = (await cookies()).get("employer_session");
+  const isAuthenticated = !!sessionCookie?.value;
+
   return (
     <div style={{ minHeight: "100vh", backgroundColor: "#F8FAFC", fontFamily: "'Inter', sans-serif" }}>
       {/* Navigation */}
@@ -14,23 +16,26 @@ export default function PricingPage() {
           </div>
           <span style={{ letterSpacing: "-0.01em" }}>Prime Hospitality</span>
         </div>
-        <Link href="/emp/dashboard/billing" style={{ 
-          color: "#475569", 
-          textDecoration: "none", 
-          fontWeight: 600, 
-          fontSize: 14,
-          display: "flex",
-          alignItems: "center",
-          gap: 6,
-          padding: "8px 16px",
-          borderRadius: 8,
-          border: "1px solid #E2E8F0",
-          backgroundColor: "#fff",
-          transition: "all 0.2s"
-        }}>
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
-          Back to Dashboard
-        </Link>
+        
+        {isAuthenticated && (
+          <Link href="/emp/dashboard/billing" style={{ 
+            color: "#475569", 
+            textDecoration: "none", 
+            fontWeight: 600, 
+            fontSize: 14,
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+            padding: "8px 16px",
+            borderRadius: 8,
+            border: "1px solid #E2E8F0",
+            backgroundColor: "#fff",
+            transition: "all 0.2s"
+          }}>
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+            Back to Dashboard
+          </Link>
+        )}
       </nav>
 
       {/* Hero */}
@@ -67,7 +72,7 @@ export default function PricingPage() {
           <div style={{ marginBottom: 32, display: "flex", alignItems: "baseline", gap: 8 }}>
             <span style={{ fontSize: 48, fontWeight: 800, color: "#0F172A", letterSpacing: "-0.02em" }}>Free</span>
           </div>
-          <Link href="/emp/dashboard" style={{ 
+          <Link href={isAuthenticated ? "/emp/dashboard" : "/emp"} style={{ 
             display: "block", 
             width: "100%", 
             textAlign: "center", 
@@ -80,7 +85,7 @@ export default function PricingPage() {
             marginBottom: 36,
             border: "1px solid #E2E8F0"
           }}>
-            Current Plan
+            {isAuthenticated ? "Current Plan" : "Get Started"}
           </Link>
           <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 16 }}>
             {['1 active job post', 'Basic applicant tracking', 'Standard support', '7-day post visibility'].map((feature, i) => (
