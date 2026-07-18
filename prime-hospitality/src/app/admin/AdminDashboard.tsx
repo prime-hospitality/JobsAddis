@@ -204,6 +204,7 @@ function CustomSelect({ value, onChange, options, placeholder, className = "", s
 type Tab = "overview" | "employers" | "jobs" | "configuration" | "monetization" | "settings";
 type ConfigSubTab = "users" | "content";
 type SeekerSubTab = "user-config" | "tab2" | "tab3" | "tab4";
+type MonSubTab = "monetization" | "pricing";
 
 export default function AdminDashboard({ initialData }: { initialData: any }) {
   const [data, setData] = useState(initialData);
@@ -218,6 +219,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
 
   const [activeTab, setActiveTab] = useState<Tab>(getInitialTab);
   const [configSubTab, setConfigSubTab] = useState<ConfigSubTab>("users");
+  const [monSubTab, setMonSubTab] = useState<MonSubTab>("monetization");
   const [selectedEmployerId, setSelectedEmployerId] = useState<string | null>(null);
   const [loading, setLoading] = useState<string | null>(null);
 
@@ -274,7 +276,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
     { id: "employers", label: "Employers & Companies", icon: Briefcase },
     { id: "jobs", label: "Job Posting Moderation", icon: FileText },
     { id: "configuration", label: "Configuration", icon: Settings },
-    { id: "monetization", label: "Monetization & Plans", icon: CreditCard },
+    { id: "monetization", label: "Monetization & Pricing", icon: CreditCard },
   ] as const;
 
   const POST_LIMIT_OPTIONS = [
@@ -1484,14 +1486,172 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
             )}
             
             {activeTab === "monetization" && (
-              <div className="flex flex-col items-center justify-center py-20 px-4 text-center">
-                <div className="bg-[#f2f2f7] rounded-full p-4 mb-4">
-                  <CreditCard className="w-8 h-8 text-[#aeaeb2]" />
+              <div className="max-w-4xl mx-auto">
+                {/* Sub-tab bar */}
+                <div className="flex gap-1 bg-[#f2f2f7] rounded-xl p-1 mb-6 w-fit">
+                  {(["monetization", "pricing"] as MonSubTab[]).map((tab) => (
+                    <button
+                      key={tab}
+                      onClick={() => setMonSubTab(tab)}
+                      className={`px-5 py-2 rounded-lg text-sm font-semibold transition-all ${
+                        monSubTab === tab
+                          ? "bg-white text-[#1c1c1e] shadow-sm"
+                          : "text-[#8e8e93] hover:text-[#1c1c1e]"
+                      }`}
+                    >
+                      {tab === "monetization" ? "Monetization" : "Pricing"}
+                    </button>
+                  ))}
                 </div>
-                <h3 className="text-lg font-semibold text-black mb-1">Monetization &amp; Plans</h3>
-                <p className="text-sm text-[#8e8e93] max-w-sm">
-                  This section is currently under construction and will be available in a future update.
-                </p>
+
+                {/* Monetization sub-tab */}
+                {monSubTab === "monetization" && (
+                  <div className="bg-white rounded-xl border border-[#c6c6c8] shadow-sm p-10 text-center flex flex-col items-center">
+                    <div className="bg-[#f2f2f7] rounded-full p-4 mb-4">
+                      <CreditCard className="w-8 h-8 text-[#aeaeb2]" />
+                    </div>
+                    <h3 className="text-lg font-bold text-black mb-2">Monetization</h3>
+                    <p className="text-sm text-[#8e8e93] max-w-sm">
+                      Configure revenue streams, commission settings, and payment gateway integrations. Coming soon.
+                    </p>
+                  </div>
+                )}
+
+                {/* Pricing sub-tab */}
+                {monSubTab === "pricing" && (
+                  <div className="space-y-6">
+
+                    {/* Header */}
+                    <div className="bg-[#1c1c1e] rounded-xl p-6 text-white flex items-center justify-between flex-wrap gap-4">
+                      <div>
+                        <h3 className="text-xl font-bold tracking-tight mb-1">Employer Pricing Packages</h3>
+                        <p className="text-[#94a3b8] text-sm">All prices are in Ethiopian Birr (ETB). No position limitations on any package.</p>
+                      </div>
+                      <div className="flex items-center gap-2 bg-white/10 rounded-lg px-4 py-2 text-sm font-semibold text-white border border-white/20">
+                        <CreditCard className="w-4 h-4" />
+                        ETB — Ethiopian Birr
+                      </div>
+                    </div>
+
+                    {/* 3 Posts/Day Packages */}
+                    <div className="bg-white rounded-xl border border-[#c6c6c8] shadow-sm overflow-hidden">
+                      <div className="flex items-center gap-3 px-6 py-4 border-b border-[#e5e5ea] bg-[#f2f2f7]/60">
+                        <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-[#1c1c1e] text-white text-xs font-black">3×</div>
+                        <div>
+                          <p className="text-sm font-bold text-[#1c1c1e]">Standard Packages</p>
+                          <p className="text-xs text-[#8e8e93] font-medium">Posted 3 times per day</p>
+                        </div>
+                      </div>
+                      <div className="divide-y divide-[#f1f5f9]">
+                        {[
+                          { label: "Three Days", price: "1,983.75", tag: null },
+                          { label: "Five Days", price: "2,645.00", tag: null },
+                          { label: "One Week", price: "3,306.25", tag: "Popular" },
+                          { label: "Two Weeks", price: "5,290.00", tag: null },
+                          { label: "One Month", price: "7,273.75", tag: null },
+                          { label: "Three Months", price: "16,531.25", tag: "Best Value" },
+                        ].map(pkg => (
+                          <div key={pkg.label} className="flex items-center justify-between px-6 py-4 hover:bg-[#f8fafc] transition-colors">
+                            <div className="flex items-center gap-3">
+                              <div className="w-2 h-2 rounded-full bg-[#1c1c1e] flex-shrink-0" />
+                              <span className="text-sm font-semibold text-[#1c1c1e]">{pkg.label} Package</span>
+                              {pkg.tag && (
+                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#1c1c1e] text-white tracking-wide">{pkg.tag}</span>
+                              )}
+                            </div>
+                            <div className="text-right">
+                              <span className="text-base font-black text-[#1c1c1e]">ETB {pkg.price}</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* 5 Posts/Day Packages */}
+                    <div className="bg-white rounded-xl border border-[#c6c6c8] shadow-sm overflow-hidden">
+                      <div className="flex items-center gap-3 px-6 py-4 border-b border-[#e5e5ea] bg-[#f2f2f7]/60">
+                        <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-[#059669] text-white text-xs font-black">5×</div>
+                        <div>
+                          <p className="text-sm font-bold text-[#1c1c1e]">Premium Memberships</p>
+                          <p className="text-xs text-[#8e8e93] font-medium">Posted 5 times per day</p>
+                        </div>
+                      </div>
+                      <div className="divide-y divide-[#f1f5f9]">
+                        {[
+                          { label: "Six Months Membership", price: "25,127.50" },
+                          { label: "One Year Membership", price: "46,287.50" },
+                        ].map(pkg => (
+                          <div key={pkg.label} className="flex items-center justify-between px-6 py-4 hover:bg-[#f8fafc] transition-colors">
+                            <div className="flex items-center gap-3">
+                              <div className="w-2 h-2 rounded-full bg-[#059669] flex-shrink-0" />
+                              <span className="text-sm font-semibold text-[#1c1c1e]">{pkg.label}</span>
+                            </div>
+                            <span className="text-base font-black text-[#059669]">ETB {pkg.price}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Pin Vacancy */}
+                    <div className="bg-white rounded-xl border border-[#c6c6c8] shadow-sm">
+                      <div className="flex items-center justify-between px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-[#f59e0b] text-white">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"/></svg>
+                          </div>
+                          <div>
+                            <p className="text-sm font-bold text-[#1c1c1e]">Pin Your Vacancy</p>
+                            <p className="text-xs text-[#8e8e93] font-medium">Per day pinned promotion</p>
+                          </div>
+                        </div>
+                        <span className="text-base font-black text-[#f59e0b]">ETB 1,000 / day</span>
+                      </div>
+                    </div>
+
+                    {/* Notes */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="bg-[#eff6ff] border border-[#bfdbfe] rounded-xl p-4">
+                        <div className="flex items-start gap-3">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0284c7" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0 mt-0.5"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+                          <div>
+                            <p className="text-xs font-bold text-[#0369a1] mb-1">No Position Limit</p>
+                            <p className="text-xs text-[#0284c7] leading-relaxed">Any package allows posting multiple positions. There is no cap on the number of roles per package.</p>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="bg-[#fff7ed] border border-[#fed7aa] rounded-xl p-4">
+                        <div className="flex items-start gap-3">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ea580c" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0 mt-0.5"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                          <div>
+                            <p className="text-xs font-bold text-[#c2410c] mb-1">Consecutive Days Only</p>
+                            <p className="text-xs text-[#ea580c] leading-relaxed">Posting days are only consecutive days starting from the package activation date.</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Payment Details */}
+                    <div className="bg-white rounded-xl border border-[#c6c6c8] shadow-sm overflow-hidden">
+                      <div className="flex items-center gap-3 px-6 py-4 border-b border-[#e5e5ea] bg-[#f2f2f7]/60">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1c1c1e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+                        <p className="text-sm font-bold text-[#1c1c1e]">Payment Details</p>
+                      </div>
+                      <div className="px-6 py-5 grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        {[
+                          { label: "Company Name", value: "Prime Hospitality Business Group PLC" },
+                          { label: "Bank", value: "Awash Bank" },
+                          { label: "Account No.", value: "013041457659800" },
+                        ].map(item => (
+                          <div key={item.label}>
+                            <p className="text-[10px] font-bold text-[#8e8e93] uppercase tracking-wider mb-1">{item.label}</p>
+                            <p className="text-sm font-bold text-[#1c1c1e]">{item.value}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                  </div>
+                )}
               </div>
             )}
             {activeTab === "jobs" && !selectedEmployerId && data.jobs.length === 0 && (
