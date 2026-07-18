@@ -823,7 +823,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                 <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(data.adminUsername || "Admin")}&background=random`} alt={data.adminUsername || "Admin"} className="w-10 h-10 rounded-full object-cover border border-[#c6c6c8]" />
                 <div className="flex flex-col text-left">
                   <span className="text-sm font-bold text-black leading-none mb-1">{data.adminUsername || "Admin"}</span>
-                  <span className="text-xs text-[#8e8e93] font-medium leading-none">Super Admin</span>
+                  <span className="text-xs text-[#8e8e93] font-medium leading-none">{isSuperAdmin ? "Super Admin" : "Sub Admin"}</span>
                 </div>
               </button>
 
@@ -831,12 +831,14 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                 <>
                   <div className="fixed inset-0 z-40" onClick={() => setProfileMenuOpen(false)} />
                   <div className="absolute right-0 mt-2 w-48 bg-white border border-[#c6c6c8] rounded-xl shadow-lg z-50 py-1 overflow-hidden">
-                    <button 
-                      onClick={() => { setProfileMenuOpen(false); setSettingsOpen(true); }}
-                      className="w-full text-left px-4 py-2.5 text-sm font-semibold text-[#1c1c1e] hover:bg-[#f2f2f7] hover:text-green-600 transition-colors flex items-center gap-2"
-                    >
-                      <Settings className="w-4 h-4" /> Settings
-                    </button>
+                    {isSuperAdmin && (
+                      <button 
+                        onClick={() => { setProfileMenuOpen(false); setSettingsOpen(true); }}
+                        className="w-full text-left px-4 py-2.5 text-sm font-semibold text-[#1c1c1e] hover:bg-[#f2f2f7] hover:text-green-600 transition-colors flex items-center gap-2"
+                      >
+                        <Settings className="w-4 h-4" /> Settings
+                      </button>
+                    )}
                     <button 
                       onClick={() => setProfileMenuOpen(false)}
                       className="w-full text-left px-4 py-2.5 text-sm font-semibold text-[#1c1c1e] hover:bg-[#f2f2f7] hover:text-green-600 transition-colors flex items-center gap-2"
