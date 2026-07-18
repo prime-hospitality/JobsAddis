@@ -103,7 +103,6 @@ export default async function PricingPage() {
 
       {/* Hero */}
       <div style={{ padding: "80px 24px 60px", textAlign: "center" }}>
-        <div style={{ display: "inline-block", padding: "6px 16px", backgroundColor: "#E0F2FE", color: "#0284C7", borderRadius: 20, fontSize: 13, fontWeight: 700, marginBottom: 24, letterSpacing: "0.05em", textTransform: "uppercase" }}>Warm Greetings</div>
         <h1 style={{ fontSize: 42, fontWeight: 800, color: "#0F172A", marginBottom: 20, letterSpacing: "-0.03em" }}>
           Thank You for Choosing JobsAddis
         </h1>
