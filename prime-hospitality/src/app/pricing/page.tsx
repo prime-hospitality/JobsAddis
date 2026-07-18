@@ -34,7 +34,12 @@ async function getPricingConfig() {
 
     if (data?.value) {
       const parsed = JSON.parse(data.value);
-      return { ...DEFAULT_CONFIG, ...parsed };
+      const sanitized = Object.fromEntries(
+        Object.entries(parsed).map(([k, v]) => 
+          [k, typeof v === 'string' ? v.replace(/\$/g, '') : v]
+        )
+      );
+      return { ...DEFAULT_CONFIG, ...sanitized };
     }
   } catch (e) {
     console.error("Failed to fetch pricing config:", e);
@@ -48,21 +53,21 @@ export default async function PricingPage() {
   const config = await getPricingConfig();
 
   const standardPackages = [
-    { label: 'Three Days Package', price: config.threeDays },
-    { label: 'Five Days Package', price: config.fiveDays },
-    { label: 'One Week Package', price: config.oneWeek },
-    { label: 'Two Weeks Package', price: config.twoWeeks },
-    { label: 'One Month Package', price: config.oneMonth },
-    { label: "Three Month's Package", price: config.threeMonths },
+    { label: 'Three Days Package', price: `${config.threeDays} ETB` },
+    { label: 'Five Days Package', price: `${config.fiveDays} ETB` },
+    { label: 'One Week Package', price: `${config.oneWeek} ETB` },
+    { label: 'Two Weeks Package', price: `${config.twoWeeks} ETB` },
+    { label: 'One Month Package', price: `${config.oneMonth} ETB` },
+    { label: "Three Month's Package", price: `${config.threeMonths} ETB` },
   ];
 
   const premiumPackages = [
-    { label: "Six Month's Membership", price: config.sixMonths },
-    { label: 'One Year Membership', price: config.oneYear },
+    { label: "Six Month's Membership", price: `${config.sixMonths} ETB` },
+    { label: 'One Year Membership', price: `${config.oneYear} ETB` },
   ];
 
   const addOns = [
-    { label: 'Pin Your Vacancy', price: `${config.pinVacancy} / Day` }
+    { label: 'Pin Your Vacancy', price: `${config.pinVacancy} ETB / Day` }
   ];
 
   const checkIcon = (stroke: string) => (
