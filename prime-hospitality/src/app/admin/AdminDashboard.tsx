@@ -123,7 +123,7 @@ function CustomInput(props: any) {
   return (
     <input
       {...props}
-      className={`w-full px-4 py-3 bg-gray-50/50 hover:bg-white border border-gray-200 rounded-xl text-sm text-gray-900 focus:outline-none focus:ring-4 focus:ring-[#1c1c1e]/10 focus:border-[#1c1c1e] transition-all placeholder-gray-400 font-medium ${props.className || ""}`}
+      className={`w-full px-4 py-3 bg-[#f2f2f7]/50 hover:bg-white border border-[#c6c6c8] rounded-xl text-sm text-black focus:outline-none focus:ring-4 focus:ring-[#1c1c1e]/10 focus:border-[#1c1c1e] transition-all placeholder-gray-400 font-medium ${props.className || ""}`}
       style={undefined}
     />
   );
@@ -138,21 +138,21 @@ function CustomSelect({ value, onChange, options, placeholder, className = "" }:
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full px-3 py-2 sm:px-4 sm:py-2.5 bg-gray-50/50 hover:bg-white border border-gray-200 rounded-xl text-xs sm:text-sm text-gray-900 focus:outline-none focus:ring-4 focus:ring-[#1c1c1e]/10 focus:border-[#1c1c1e] transition-all flex items-center justify-between text-left font-medium"
+        className="w-full px-3 py-2 sm:px-4 sm:py-2.5 bg-[#f2f2f7]/50 hover:bg-white border border-[#c6c6c8] rounded-xl text-xs sm:text-sm text-black focus:outline-none focus:ring-4 focus:ring-[#1c1c1e]/10 focus:border-[#1c1c1e] transition-all flex items-center justify-between text-left font-medium"
       >
-        <span className={`${selected ? "text-gray-900" : "text-gray-400"} truncate mr-1.5`}>{selected ? selected.label : placeholder}</span>
+        <span className={`${selected ? "text-black" : "text-gray-400"} truncate mr-1.5`}>{selected ? selected.label : placeholder}</span>
         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`text-gray-400 flex-shrink-0 transition-transform ${isOpen ? "rotate-180" : ""}`}><path d="m6 9 6 6 6-6"/></svg>
       </button>
       
       {isOpen && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
-          <div className="absolute z-50 w-full mt-2 bg-white border border-gray-200 rounded-xl shadow-xl max-h-60 overflow-y-auto top-full py-1">
+          <div className="absolute z-50 w-full mt-2 bg-white border border-[#c6c6c8] rounded-xl shadow-xl max-h-60 overflow-y-auto top-full py-1">
             {options.map((opt) => (
               <button
                 key={opt.value}
                 type="button"
-                className={`w-full text-left px-3 py-2 sm:px-4 sm:py-2.5 text-xs sm:text-sm hover:bg-gray-50 transition-colors flex items-center justify-between ${String(value) === String(opt.value) ? "text-[#1c1c1e] bg-[#f1f5f9]" : "text-gray-700"}`}
+                className={`w-full text-left px-3 py-2 sm:px-4 sm:py-2.5 text-xs sm:text-sm hover:bg-[#f2f2f7] transition-colors flex items-center justify-between ${String(value) === String(opt.value) ? "text-[#1c1c1e] bg-[#f1f5f9]" : "text-[#1c1c1e]"}`}
                 onClick={() => {
                   onChange(String(opt.value));
                   setIsOpen(false);
@@ -494,16 +494,16 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
   };
 
   return (
-    <div className="flex h-screen bg-gray-50 font-sans overflow-hidden">
+    <div className="flex h-screen bg-[#f2f2f7] font-sans overflow-hidden">
       {/* Mobile Sidebar Overlay */}
       {mobileMenuOpen && (
         <div className="fixed inset-0 z-40 bg-gray-900/50 md:hidden" onClick={() => setMobileMenuOpen(false)} />
       )}
 
       {/* Sidebar */}
-      <aside className={`fixed inset-y-0 left-0 z-50 w-72 bg-white border-r border-gray-200 transform transition-transform duration-200 ease-in-out md:trangray-x-0 md:static md:shrink-0 flex flex-col ${mobileMenuOpen ? "trangray-x-0" : "-trangray-x-full"}`}>
+      <aside className={`fixed inset-y-0 left-0 z-50 w-72 bg-white border-r border-[#c6c6c8] transform transition-transform duration-200 ease-in-out md:trangray-x-0 md:static md:shrink-0 flex flex-col ${mobileMenuOpen ? "trangray-x-0" : "-trangray-x-full"}`}>
         {/* Logo Area */}
-        <div className="h-16 flex items-center px-6 border-b border-gray-100 shrink-0">
+        <div className="h-16 flex items-center px-6 border-b border-[#e5e5ea] shrink-0">
           <div
             style={{
               width: 48, height: 48, borderRadius: 12, flexShrink: 0,
@@ -517,8 +517,8 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
           >
             <img src="/addis_jobs_logo_mark_only.svg" alt="Addis Jobs Logo" style={{ width: "80%", height: "80%", objectFit: "contain" }} />
           </div>
-          <span className="text-xl font-bold text-gray-900">Addis Jobs</span>
-          <button onClick={() => setMobileMenuOpen(false)} className="ml-auto md:hidden text-gray-500 hover:text-gray-700">
+          <span className="text-xl font-bold text-black">Addis Jobs</span>
+          <button onClick={() => setMobileMenuOpen(false)} className="ml-auto md:hidden text-[#8e8e93] hover:text-[#1c1c1e]">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -540,7 +540,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                   className={`w-full flex items-center px-4 py-3 text-[14px] rounded-xl transition-all duration-200 ${
                     isActive 
                       ? "bg-[#1c1c1e] text-white shadow-md shadow-gray-500/20 font-semibold" 
-                      : "text-gray-600 font-medium hover:bg-gray-100 hover:text-gray-900"
+                      : "text-[#8e8e93] font-medium hover:bg-[#e5e5ea] hover:text-black"
                   }`}
                   style={{ border: "none", cursor: "pointer", textAlign: "left" }}
                 >
@@ -553,13 +553,13 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
         </nav>
 
         {/* Logout */}
-        <div className="p-4 border-t border-gray-100 shrink-0">
+        <div className="p-4 border-t border-[#e5e5ea] shrink-0">
           <button
             onClick={handleLogout}
-            className="w-full flex items-center px-3 py-2.5 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-100 hover:text-gray-900 transition-colors"
+            className="w-full flex items-center px-3 py-2.5 text-sm font-medium text-[#1c1c1e] rounded-lg hover:bg-[#e5e5ea] hover:text-black transition-colors"
             style={{ border: "none", cursor: "pointer", textAlign: "left" }}
           >
-            <LogOut className="mr-3 flex-shrink-0 h-5 w-5 text-gray-400 group-hover:text-gray-500" />
+            <LogOut className="mr-3 flex-shrink-0 h-5 w-5 text-gray-400 group-hover:text-[#8e8e93]" />
             Sign Out
           </button>
         </div>
@@ -568,15 +568,15 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
       {/* Main Content Wrapper */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Mobile Header */}
-        <header className="md:hidden bg-white border-b border-gray-200 h-16 flex items-center justify-between px-4 shrink-0">
+        <header className="md:hidden bg-white border-b border-[#c6c6c8] h-16 flex items-center justify-between px-4 shrink-0">
           <div className="flex items-center">
-            <span className="text-lg font-bold text-gray-900 tracking-tight">Admin Dashboard</span>
+            <span className="text-lg font-bold text-black tracking-tight">Admin Dashboard</span>
           </div>
           <div className="flex items-center gap-4">
             <div className="relative">
               <button 
                 onClick={() => setShowNotifications(!showNotifications)}
-                className="text-gray-500 hover:text-gray-700 relative transition-colors cursor-pointer border-none bg-transparent flex items-center justify-center"
+                className="text-[#8e8e93] hover:text-[#1c1c1e] relative transition-colors cursor-pointer border-none bg-transparent flex items-center justify-center"
               >
                 {data.specialRequests && data.specialRequests.length > 0 && (
                   <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full border border-white"></span>
@@ -587,9 +587,9 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
               {showNotifications && (
                 <>
                   <div className="fixed inset-0 z-40" onClick={() => setShowNotifications(false)} />
-                  <div className="absolute right-0 mt-2 w-80 bg-white border border-gray-200 rounded-xl shadow-lg z-50 overflow-hidden">
-                    <div className="p-3 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
-                      <h3 className="font-bold text-gray-900 text-sm">Notifications</h3>
+                  <div className="absolute right-0 mt-2 w-80 bg-white border border-[#c6c6c8] rounded-xl shadow-lg z-50 overflow-hidden">
+                    <div className="p-3 border-b border-[#e5e5ea] bg-[#f2f2f7] flex items-center justify-between">
+                      <h3 className="font-bold text-black text-sm">Notifications</h3>
                       {data.specialRequests && data.specialRequests.length > 0 && (
                         <span className="bg-[#1c1c1e] text-white text-xs font-bold px-2 py-0.5 rounded-full">
                           {data.specialRequests.length}
@@ -602,16 +602,16 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                           const userObj = data.users?.find((u: any) => u.id === req.userId);
                           const name = userObj?.profiles?.full_name || "Unknown Name";
                           return (
-                            <div key={req.userId} className="p-4 border-b border-gray-50 hover:bg-gray-50 transition-colors last:border-b-0">
+                            <div key={req.userId} className="p-4 border-b border-gray-50 hover:bg-[#f2f2f7] transition-colors last:border-b-0">
                               <div className="flex items-start gap-3">
                                 <div className="mt-0.5 bg-amber-100 p-1.5 rounded-full text-amber-600 shrink-0">
                                   <Users size={14} />
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                  <p className="text-sm font-semibold text-gray-900 leading-tight">
+                                  <p className="text-sm font-semibold text-black leading-tight">
                                     Special Request
                                   </p>
-                                  <p className="text-xs text-gray-600 mt-1 truncate">
+                                  <p className="text-xs text-[#8e8e93] mt-1 truncate">
                                     <span className="font-medium text-gray-800">{name}</span> (Telegram: {req.telegramId})
                                   </p>
                                   <p className="text-xs text-amber-700 mt-1.5 leading-relaxed">
@@ -623,7 +623,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                                       setActiveTab("configuration");
                                       setConfigSubTab("users");
                                     }}
-                                    className="mt-2.5 text-xs font-semibold text-[#1c1c1e] hover:text-[#2c2c2e] bg-gray-100 hover:bg-gray-200 px-3 py-1.5 rounded-md transition-colors w-full text-center"
+                                    className="mt-2.5 text-xs font-semibold text-[#1c1c1e] hover:text-[#2c2c2e] bg-[#e5e5ea] hover:bg-gray-200 px-3 py-1.5 rounded-md transition-colors w-full text-center"
                                   >
                                     View or Fix
                                   </button>
@@ -633,7 +633,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                           );
                         })
                       ) : (
-                        <div className="p-6 text-center text-gray-500 text-sm">
+                        <div className="p-6 text-center text-[#8e8e93] text-sm">
                           No new notifications
                         </div>
                       )}
@@ -642,20 +642,20 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                 </>
               )}
             </div>
-            <button onClick={() => setMobileMenuOpen(true)} className="text-gray-500 hover:text-gray-700 focus:outline-none">
+            <button onClick={() => setMobileMenuOpen(true)} className="text-[#8e8e93] hover:text-[#1c1c1e] focus:outline-none">
               <Menu className="w-6 h-6" />
             </button>
           </div>
         </header>
 
         {/* Desktop Header */}
-        <header className="hidden md:flex bg-white h-[72px] items-center justify-between px-8 shrink-0 shadow-sm z-10 border-b border-gray-200">
-          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Admin Dashboard</h1>
+        <header className="hidden md:flex bg-white h-[72px] items-center justify-between px-8 shrink-0 shadow-sm z-10 border-b border-[#c6c6c8]">
+          <h1 className="text-2xl font-bold text-black tracking-tight">Admin Dashboard</h1>
           <div className="flex items-center gap-6">
             <div className="relative">
               <button 
                 onClick={() => setShowNotifications(!showNotifications)}
-                className="text-gray-500 hover:text-gray-700 relative transition-colors cursor-pointer border-none bg-transparent flex items-center justify-center"
+                className="text-[#8e8e93] hover:text-[#1c1c1e] relative transition-colors cursor-pointer border-none bg-transparent flex items-center justify-center"
               >
                 {data.specialRequests && data.specialRequests.length > 0 && (
                   <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full border border-white"></span>
@@ -666,9 +666,9 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
               {showNotifications && (
                 <>
                   <div className="fixed inset-0 z-40" onClick={() => setShowNotifications(false)} />
-                  <div className="absolute right-0 mt-2 w-80 bg-white border border-gray-200 rounded-xl shadow-lg z-50 overflow-hidden">
-                    <div className="p-3 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
-                      <h3 className="font-bold text-gray-900 text-sm">Notifications</h3>
+                  <div className="absolute right-0 mt-2 w-80 bg-white border border-[#c6c6c8] rounded-xl shadow-lg z-50 overflow-hidden">
+                    <div className="p-3 border-b border-[#e5e5ea] bg-[#f2f2f7] flex items-center justify-between">
+                      <h3 className="font-bold text-black text-sm">Notifications</h3>
                       {data.specialRequests && data.specialRequests.length > 0 && (
                         <span className="bg-[#1c1c1e] text-white text-xs font-bold px-2 py-0.5 rounded-full">
                           {data.specialRequests.length}
@@ -681,16 +681,16 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                           const userObj = data.users?.find((u: any) => u.id === req.userId);
                           const name = userObj?.profiles?.full_name || "Unknown Name";
                           return (
-                            <div key={req.userId} className="p-4 border-b border-gray-50 hover:bg-gray-50 transition-colors last:border-b-0">
+                            <div key={req.userId} className="p-4 border-b border-gray-50 hover:bg-[#f2f2f7] transition-colors last:border-b-0">
                               <div className="flex items-start gap-3">
                                 <div className="mt-0.5 bg-amber-100 p-1.5 rounded-full text-amber-600 shrink-0">
                                   <Users size={14} />
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                  <p className="text-sm font-semibold text-gray-900 leading-tight">
+                                  <p className="text-sm font-semibold text-black leading-tight">
                                     Special Request
                                   </p>
-                                  <p className="text-xs text-gray-600 mt-1 truncate">
+                                  <p className="text-xs text-[#8e8e93] mt-1 truncate">
                                     <span className="font-medium text-gray-800">{name}</span> (Telegram: {req.telegramId})
                                   </p>
                                   <p className="text-xs text-amber-700 mt-1.5 leading-relaxed">
@@ -702,7 +702,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                                       setActiveTab("configuration");
                                       setConfigSubTab("users");
                                     }}
-                                    className="mt-2.5 text-xs font-semibold text-[#1c1c1e] hover:text-[#2c2c2e] bg-gray-100 hover:bg-gray-200 px-3 py-1.5 rounded-md transition-colors w-full text-center"
+                                    className="mt-2.5 text-xs font-semibold text-[#1c1c1e] hover:text-[#2c2c2e] bg-[#e5e5ea] hover:bg-gray-200 px-3 py-1.5 rounded-md transition-colors w-full text-center"
                                   >
                                     View or Fix
                                   </button>
@@ -712,7 +712,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                           );
                         })
                       ) : (
-                        <div className="p-6 text-center text-gray-500 text-sm">
+                        <div className="p-6 text-center text-[#8e8e93] text-sm">
                           No new notifications
                         </div>
                       )}
@@ -725,28 +725,28 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
             <div className="relative">
               <button 
                 onClick={() => setProfileMenuOpen(!profileMenuOpen)}
-                className="flex items-center gap-3 focus:outline-none hover:bg-gray-50 rounded-lg p-1.5 -m-1.5 transition-colors cursor-pointer"
+                className="flex items-center gap-3 focus:outline-none hover:bg-[#f2f2f7] rounded-lg p-1.5 -m-1.5 transition-colors cursor-pointer"
               >
-                <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(data.adminUsername || "Admin")}&background=random`} alt={data.adminUsername || "Admin"} className="w-10 h-10 rounded-full object-cover border border-gray-200" />
+                <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(data.adminUsername || "Admin")}&background=random`} alt={data.adminUsername || "Admin"} className="w-10 h-10 rounded-full object-cover border border-[#c6c6c8]" />
                 <div className="flex flex-col text-left">
-                  <span className="text-sm font-bold text-gray-900 leading-none mb-1">{data.adminUsername || "Admin"}</span>
-                  <span className="text-xs text-gray-500 font-medium leading-none">Super Admin</span>
+                  <span className="text-sm font-bold text-black leading-none mb-1">{data.adminUsername || "Admin"}</span>
+                  <span className="text-xs text-[#8e8e93] font-medium leading-none">Super Admin</span>
                 </div>
               </button>
 
               {profileMenuOpen && (
                 <>
                   <div className="fixed inset-0 z-40" onClick={() => setProfileMenuOpen(false)} />
-                  <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-xl shadow-lg z-50 py-1 overflow-hidden">
+                  <div className="absolute right-0 mt-2 w-48 bg-white border border-[#c6c6c8] rounded-xl shadow-lg z-50 py-1 overflow-hidden">
                     <button 
                       onClick={() => { setProfileMenuOpen(false); setSettingsOpen(true); }}
-                      className="w-full text-left px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 hover:text-green-600 transition-colors flex items-center gap-2"
+                      className="w-full text-left px-4 py-2.5 text-sm font-semibold text-[#1c1c1e] hover:bg-[#f2f2f7] hover:text-green-600 transition-colors flex items-center gap-2"
                     >
                       <Settings className="w-4 h-4" /> Settings
                     </button>
                     <button 
                       onClick={() => setProfileMenuOpen(false)}
-                      className="w-full text-left px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 hover:text-green-600 transition-colors flex items-center gap-2"
+                      className="w-full text-left px-4 py-2.5 text-sm font-semibold text-[#1c1c1e] hover:bg-[#f2f2f7] hover:text-green-600 transition-colors flex items-center gap-2"
                     >
                       <User className="w-4 h-4" /> Profile
                     </button>
@@ -808,7 +808,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
               <div className="max-w-6xl mx-auto space-y-5">
 
                 {/* ---- ROW 1: Overall Stats — full width ---- */}
-                <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+                <div className="bg-white rounded-xl border border-[#c6c6c8] shadow-sm p-6">
                   <h2 className="text-base font-bold text-gray-800 mb-5">Overall Stats</h2>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     {[
@@ -817,12 +817,12 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                       { label: "Pending Moderation", value: jobs.filter(j => j.status === "pending").length, icon: "/icons/pending.svg", color: "#f59e0b" },
                       { label: "Total Job Posts", value: jobs.length, icon: "/icons/jobs.svg", color: "#10b981" },
                     ].map(stat => (
-                      <div key={stat.label} className="rounded-xl border border-gray-100 bg-gray-50/80 p-3 sm:p-4 flex flex-col lg:flex-row items-start lg:items-center gap-2 lg:gap-4 transition-all hover:bg-white hover:shadow-md hover:-trangray-y-0.5 cursor-pointer">
-                        <div className="flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 lg:w-14 lg:h-14 rounded-xl bg-white shadow-sm border border-gray-100 flex-shrink-0">
+                      <div key={stat.label} className="rounded-xl border border-[#e5e5ea] bg-[#f2f2f7]/80 p-3 sm:p-4 flex flex-col lg:flex-row items-start lg:items-center gap-2 lg:gap-4 transition-all hover:bg-white hover:shadow-md hover:-trangray-y-0.5 cursor-pointer">
+                        <div className="flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 lg:w-14 lg:h-14 rounded-xl bg-white shadow-sm border border-[#e5e5ea] flex-shrink-0">
                           <img src={stat.icon} alt={stat.label} className="w-6 h-6 sm:w-7 sm:h-7 lg:w-8 lg:h-8 object-contain drop-shadow-sm" />
                         </div>
                         <div className="min-w-0">
-                          <p className="text-[10px] sm:text-xs text-gray-500 font-bold tracking-wider uppercase mb-1 leading-snug">{stat.label}</p>
+                          <p className="text-[10px] sm:text-xs text-[#8e8e93] font-bold tracking-wider uppercase mb-1 leading-snug">{stat.label}</p>
                           <p className="text-xl sm:text-2xl font-black tracking-tight leading-none" style={{ color: stat.color }}>{stat.value}</p>
                         </div>
                       </div>
@@ -831,7 +831,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                 </div>
 
                 {/* ---- ROW 2: Employer Performance ---- */}
-                <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+                <div className="bg-white rounded-xl border border-[#c6c6c8] shadow-sm p-6">
                   <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-6">
                       <h2 className="text-base font-bold text-gray-800">Employer Performance</h2>
                       <div className="flex flex-row items-center gap-2 w-full sm:w-auto">
@@ -869,20 +869,20 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                                 <div title={`${d.posts} total posts`} style={{ width: 22, height: `${Math.max((d.posts / maxBar) * 130, 4)}px`, background: "#6366f1", borderRadius: "4px 4px 0 0", transition: "height .4s" }} />
                                 <div title={`${d.active} active`} style={{ width: 22, height: `${Math.max((d.active / maxBar) * 130, 4)}px`, background: "#10b981", borderRadius: "4px 4px 0 0", transition: "height .4s" }} />
                               </div>
-                              <p className="text-[10px] text-gray-500 text-center leading-tight" style={{ maxWidth: 72, wordBreak: "break-word" }}>{d.name}</p>
+                              <p className="text-[10px] text-[#8e8e93] text-center leading-tight" style={{ maxWidth: 72, wordBreak: "break-word" }}>{d.name}</p>
                             </div>
                           ))}
                         </div>
                         <div className="flex items-center gap-4 mt-3">
-                          <div className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm inline-block" style={{ background: "#6366f1" }} /><span className="text-xs text-gray-500">Total Posts</span></div>
-                          <div className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm inline-block" style={{ background: "#10b981" }} /><span className="text-xs text-gray-500">Active Jobs</span></div>
+                          <div className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm inline-block" style={{ background: "#6366f1" }} /><span className="text-xs text-[#8e8e93]">Total Posts</span></div>
+                          <div className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm inline-block" style={{ background: "#10b981" }} /><span className="text-xs text-[#8e8e93]">Active Jobs</span></div>
                         </div>
                       </div>
                     )}
                   </div>
 
                 {/* ---- ROW 3: Employer Activity — full width ---- */}
-                <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+                <div className="bg-white rounded-xl border border-[#c6c6c8] shadow-sm p-6">
                   <h2 className="text-base font-bold text-gray-800 mb-1">Employer Activity</h2>
                   <p className="text-xs text-gray-400 mb-5">Latest actions taken by employers on the platform</p>
                   {activityFeed.length === 0 ? (
@@ -898,7 +898,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-semibold text-gray-800">{item.employer}</p>
-                            <p className="text-sm text-gray-500">{item.action} — <span className="font-medium text-gray-700">{item.detail}</span></p>
+                            <p className="text-sm text-[#8e8e93]">{item.action} — <span className="font-medium text-[#1c1c1e]">{item.detail}</span></p>
                           </div>
                           <span className="text-xs text-gray-400 whitespace-nowrap mt-1 flex-shrink-0">{fmtTime(item.time)}</span>
                         </div>
@@ -913,15 +913,15 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
 
           {/* ========== OTHER TABS ========== */}
           {activeTab !== "overview" && (
-          <div className="max-w-6xl mx-auto bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-          <div className="p-4 md:p-6 border-b border-gray-200 flex justify-between items-center">
+          <div className="max-w-6xl mx-auto bg-white rounded-xl border border-[#c6c6c8] shadow-sm overflow-hidden">
+          <div className="p-4 md:p-6 border-b border-[#c6c6c8] flex justify-between items-center">
             <h2 className="m-0 text-lg md:text-xl font-semibold capitalize text-gray-800">
               {activeTab === "jobs" && selectedEmployerId ? "Jobs by Employer" : activeTab === "configuration" ? "Configuration" : navItems.find(n => n.id === activeTab)?.label || activeTab}
             </h2>
             {activeTab === "jobs" && selectedEmployerId && (
               <button 
                 onClick={() => setSelectedEmployerId(null)} 
-                className="bg-transparent border border-gray-300 px-3 py-1.5 rounded-lg cursor-pointer text-sm font-medium hover:bg-gray-50 transition-colors"
+                className="bg-transparent border border-gray-300 px-3 py-1.5 rounded-lg cursor-pointer text-sm font-medium hover:bg-[#f2f2f7] transition-colors"
               >
                 ← Back to Employers
               </button>
@@ -953,13 +953,13 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
             {activeTab === "configuration" && (
               <div>
                 {/* Sub-tab switcher */}
-                <div className="flex border-b border-gray-200 bg-gray-50/60 px-6 pt-4 gap-1">
+                <div className="flex border-b border-[#c6c6c8] bg-[#f2f2f7]/60 px-6 pt-4 gap-1">
                   <button
                     onClick={() => setConfigSubTab("users")}
                     className={`px-5 py-2.5 text-sm font-semibold rounded-t-lg border border-b-0 transition-all ${
                       configSubTab === "users"
-                        ? "bg-white border-gray-200 text-[#1c1c1e] shadow-sm -mb-px"
-                        : "bg-transparent border-transparent text-gray-500 hover:text-gray-800"
+                        ? "bg-white border-[#c6c6c8] text-[#1c1c1e] shadow-sm -mb-px"
+                        : "bg-transparent border-transparent text-[#8e8e93] hover:text-gray-800"
                     }`}
                     style={{ cursor: "pointer" }}
                   >
@@ -969,8 +969,8 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                     onClick={() => setConfigSubTab("content")}
                     className={`px-5 py-2.5 text-sm font-semibold rounded-t-lg border border-b-0 transition-all ${
                       configSubTab === "content"
-                        ? "bg-white border-gray-200 text-[#1c1c1e] shadow-sm -mb-px"
-                        : "bg-transparent border-transparent text-gray-500 hover:text-gray-800"
+                        ? "bg-white border-[#c6c6c8] text-[#1c1c1e] shadow-sm -mb-px"
+                        : "bg-transparent border-transparent text-[#8e8e93] hover:text-gray-800"
                     }`}
                     style={{ cursor: "pointer" }}
                   >
@@ -981,9 +981,9 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
             )}
 
             {activeTab === "configuration" && configSubTab === "users" && (
-              <div className="flex border-t border-gray-200" style={{ minHeight: 500 }}>
+              <div className="flex border-t border-[#c6c6c8]" style={{ minHeight: 500 }}>
                 {/* ===== 4-TAB SIDE NAV ===== */}
-                <aside className="w-52 shrink-0 border-r border-gray-200 bg-gray-50/50 py-4 flex flex-col gap-1 px-3">
+                <aside className="w-52 shrink-0 border-r border-[#c6c6c8] bg-[#f2f2f7]/50 py-4 flex flex-col gap-1 px-3">
                   {([
                     { id: "user-config", label: "User Configuration", icon: Users },
                     { id: "tab2", label: "Tab 2", icon: Settings },
@@ -996,7 +996,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                       className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-semibold transition-all text-left ${
                         seekerSubTab === id
                           ? "bg-[#1c1c1e] text-white shadow-sm"
-                          : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                          : "text-[#8e8e93] hover:bg-[#e5e5ea] hover:text-black"
                       }`}
                       style={{ border: "none", cursor: "pointer" }}
                     >
@@ -1051,7 +1051,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                         )}
 
                         {/* Search Bar */}
-                        <div className="flex flex-col sm:flex-row gap-3 p-4 border-b border-gray-100 bg-white">
+                        <div className="flex flex-col sm:flex-row gap-3 p-4 border-b border-[#e5e5ea] bg-white">
                           <div className="flex-1 relative">
                             <svg className="absolute left-3 top-1/2 -trangray-y-1/2 text-gray-400" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
                             <input
@@ -1059,7 +1059,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                               placeholder="Search by name..."
                               value={userSearchName}
                               onChange={e => setUserSearchName(e.target.value)}
-                              className="w-full pl-9 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#1c1c1e]/20 focus:border-[#1c1c1e] transition-all placeholder-gray-400 font-medium"
+                              className="w-full pl-9 pr-4 py-2.5 bg-[#f2f2f7] border border-[#c6c6c8] rounded-xl text-sm text-black focus:outline-none focus:ring-2 focus:ring-[#1c1c1e]/20 focus:border-[#1c1c1e] transition-all placeholder-gray-400 font-medium"
                             />
                           </div>
                           <div className="flex-1 relative">
@@ -1069,13 +1069,13 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                               placeholder="Search by phone number..."
                               value={userSearchPhone}
                               onChange={e => setUserSearchPhone(e.target.value)}
-                              className="w-full pl-9 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#1c1c1e]/20 focus:border-[#1c1c1e] transition-all placeholder-gray-400 font-medium"
+                              className="w-full pl-9 pr-4 py-2.5 bg-[#f2f2f7] border border-[#c6c6c8] rounded-xl text-sm text-black focus:outline-none focus:ring-2 focus:ring-[#1c1c1e]/20 focus:border-[#1c1c1e] transition-all placeholder-gray-400 font-medium"
                             />
                           </div>
                           {(userSearchName || userSearchPhone) && (
                             <button
                               onClick={() => { setUserSearchName(""); setUserSearchPhone(""); }}
-                              className="px-3 py-2 text-xs font-semibold text-gray-500 hover:text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors whitespace-nowrap"
+                              className="px-3 py-2 text-xs font-semibold text-[#8e8e93] hover:text-[#1c1c1e] bg-[#e5e5ea] hover:bg-gray-200 rounded-xl transition-colors whitespace-nowrap"
                             >
                               Clear
                             </button>
@@ -1083,8 +1083,8 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                         </div>
 
                         {/* Result count */}
-                        <div className="px-5 py-2 bg-gray-50 border-b border-gray-100">
-                          <p className="text-xs text-gray-500 font-medium">
+                        <div className="px-5 py-2 bg-[#f2f2f7] border-b border-[#e5e5ea]">
+                          <p className="text-xs text-[#8e8e93] font-medium">
                             {filteredUsers.length === data.users.length
                               ? `${data.users.length} total job seekers`
                               : `${filteredUsers.length} of ${data.users.length} job seekers`}
@@ -1095,7 +1095,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                         <div className="hidden md:block w-full overflow-x-auto">
                           <table className="w-full text-left border-collapse">
                             <thead>
-                              <tr className="bg-gray-50 border-b border-gray-200">
+                              <tr className="bg-[#f2f2f7] border-b border-[#c6c6c8]">
                                 <th style={{ padding: "12px 20px", color: "#6b7280", fontSize: 12, textTransform: "uppercase" }}>Name</th>
                                 <th style={{ padding: "12px 20px", color: "#6b7280", fontSize: 12, textTransform: "uppercase" }}>Phone Number</th>
                                 <th style={{ padding: "12px 20px", color: "#6b7280", fontSize: 12, textTransform: "uppercase" }}>Telegram ID</th>
@@ -1105,7 +1105,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                             </thead>
                             <tbody>
                               {filteredUsers.map((item: any) => (
-                                <tr key={item.id} style={{ borderBottom: "1px solid #f3f4f6" }} className="hover:bg-gray-50 transition-colors">
+                                <tr key={item.id} style={{ borderBottom: "1px solid #f3f4f6" }} className="hover:bg-[#f2f2f7] transition-colors">
                                   <td style={{ padding: "14px 20px", fontWeight: 500 }}>
                                     {item.profiles?.full_name || "Unonboarded"}
                                     {item.is_banned && <span style={{ color: "red", marginLeft: 6, fontSize: 12 }}>(Banned)</span>}
@@ -1144,21 +1144,21 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                         </div>
 
                         {/* Mobile Cards */}
-                        <div className="md:hidden flex flex-col p-4 bg-gray-50/50 gap-3">
+                        <div className="md:hidden flex flex-col p-4 bg-[#f2f2f7]/50 gap-3">
                           {filteredUsers.map((item: any) => (
-                            <div key={item.id} className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex flex-col gap-3">
+                            <div key={item.id} className="bg-white p-4 rounded-xl border border-[#c6c6c8] shadow-sm flex flex-col gap-3">
                               <div className="flex justify-between items-start">
                                 <div>
                                   <h4 className="font-semibold text-gray-800 m-0">
                                     {item.profiles?.full_name || "Unonboarded"}
                                     {item.is_banned && <span className="text-red-500 text-xs ml-2">(Banned)</span>}
                                   </h4>
-                                  <p className="text-xs text-gray-500 m-0 mt-1">{item.profiles?.phone_number || "No phone"}</p>
+                                  <p className="text-xs text-[#8e8e93] m-0 mt-1">{item.profiles?.phone_number || "No phone"}</p>
                                   <p className="text-xs text-gray-400 m-0 mt-0.5 font-mono">TG: {item.telegram_id}</p>
                                 </div>
-                                <span className="text-xs font-medium text-gray-600 bg-gray-100 border border-gray-200 px-2 py-1 rounded-md capitalize">{item.role}</span>
+                                <span className="text-xs font-medium text-[#8e8e93] bg-[#e5e5ea] border border-[#c6c6c8] px-2 py-1 rounded-md capitalize">{item.role}</span>
                               </div>
-                              <div className="flex justify-end gap-2 pt-3 border-t border-gray-100">
+                              <div className="flex justify-end gap-2 pt-3 border-t border-[#e5e5ea]">
                                 <button
                                   disabled={!!loading}
                                   onClick={() => { setBanUserModal({ id: item.id, name: item.profiles?.full_name || "Unonboarded", is_banned: item.is_banned }); setUserActionPassword(""); setUserActionError(""); }}
@@ -1215,7 +1215,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
             <div className="hidden md:block w-full">
               <table className="w-full text-left border-collapse min-w-[700px]">
                 <thead>
-                  <tr className="bg-gray-50 border-b border-gray-200">
+                  <tr className="bg-[#f2f2f7] border-b border-[#c6c6c8]">
                     {activeTab === "employers" && (
                       <>
                         <th style={{ padding: "12px 24px", color: "#6b7280", fontSize: 12, textTransform: "uppercase" }}>Business Name</th>
@@ -1298,7 +1298,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                     const jobCount = data.jobs.filter((j: any) => j.employer_id === emp.id).length;
                     if (jobCount === 0) return null;
                     return (
-                      <tr key={emp.id} onClick={() => setSelectedEmployerId(emp.id)} style={{ borderBottom: "1px solid #f3f4f6", cursor: "pointer" }} className="hover:bg-gray-50 transition-colors">
+                      <tr key={emp.id} onClick={() => setSelectedEmployerId(emp.id)} style={{ borderBottom: "1px solid #f3f4f6", cursor: "pointer" }} className="hover:bg-[#f2f2f7] transition-colors">
                         <td style={{ padding: "16px 24px", fontWeight: 500 }}>{emp.business_name}</td>
                         <td style={{ padding: "16px 24px", color: "#6b7280" }}>{jobCount} Job{jobCount !== 1 && "s"}</td>
                         <td style={{ padding: "16px 24px", textAlign: "right" }}>
@@ -1311,7 +1311,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                   })}
 
                   {activeTab === "jobs" && selectedEmployerId && data.jobs.filter((j: any) => j.employer_id === selectedEmployerId).map((item: any) => (
-                    <tr key={item.id} onClick={() => setViewingJob(item)} style={{ borderBottom: "1px solid #f3f4f6", cursor: "pointer" }} className="hover:bg-gray-50 transition-colors">
+                    <tr key={item.id} onClick={() => setViewingJob(item)} style={{ borderBottom: "1px solid #f3f4f6", cursor: "pointer" }} className="hover:bg-[#f2f2f7] transition-colors">
                       <td style={{ padding: "16px 24px", fontWeight: 500 }}>{item.title}</td>
                       <td style={{ padding: "16px 24px" }}>
                         <span style={{
@@ -1342,9 +1342,9 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
             </div>
 
             {/* Mobile Card View */}
-            <div className="md:hidden flex flex-col p-4 bg-gray-50/50">
+            <div className="md:hidden flex flex-col p-4 bg-[#f2f2f7]/50">
               {activeTab === "employers" && data.employers.map((item: any) => (
-                <div key={item.id} className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex flex-col gap-3 mb-3">
+                <div key={item.id} className="bg-white p-4 rounded-xl border border-[#c6c6c8] shadow-sm flex flex-col gap-3 mb-3">
                   <div className="flex justify-between items-start">
                     <div>
                       <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
@@ -1357,7 +1357,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                           <Pencil size={13} />
                         </button>
                       </span>
-                      <p className="text-xs text-gray-500 m-0 mt-1 font-mono">ID: {item.users?.telegram_id || "—"}</p>
+                      <p className="text-xs text-[#8e8e93] m-0 mt-1 font-mono">ID: {item.users?.telegram_id || "—"}</p>
                     </div>
                     <div className="flex flex-col items-end gap-1">
                       <span style={{
@@ -1375,7 +1375,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                       </span>
                     </div>
                   </div>
-                  <div className="flex gap-2 justify-end mt-2 pt-3 border-t border-gray-100">
+                  <div className="flex gap-2 justify-end mt-2 pt-3 border-t border-[#e5e5ea]">
                     {item.status !== "approved" && (
                       <button disabled={!!loading} onClick={() => handleApprove(item.id)} className="bg-emerald-600 text-white border-none px-3 py-1.5 rounded-lg text-xs font-medium">Approve</button>
                     )}
@@ -1397,13 +1397,13 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                 const jobCount = data.jobs.filter((j: any) => j.employer_id === emp.id).length;
                 if (jobCount === 0) return null;
                 return (
-                  <div key={emp.id} onClick={() => setSelectedEmployerId(emp.id)} className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex flex-col gap-3 mb-3 cursor-pointer">
+                  <div key={emp.id} onClick={() => setSelectedEmployerId(emp.id)} className="bg-white p-4 rounded-xl border border-[#c6c6c8] shadow-sm flex flex-col gap-3 mb-3 cursor-pointer">
                     <div className="flex justify-between items-center">
                       <h4 className="font-semibold text-gray-800 m-0">{emp.business_name}</h4>
-                      <span className="text-xs font-medium text-gray-600 bg-gray-100 border border-gray-200 px-2 py-1 rounded-md">{jobCount} Job{jobCount !== 1 && "s"}</span>
+                      <span className="text-xs font-medium text-[#8e8e93] bg-[#e5e5ea] border border-[#c6c6c8] px-2 py-1 rounded-md">{jobCount} Job{jobCount !== 1 && "s"}</span>
                     </div>
                     <div className="flex justify-end mt-1">
-                      <button onClick={(e) => { e.stopPropagation(); setSelectedEmployerId(emp.id); }} className="bg-gray-100 text-gray-700 border border-gray-300 px-3 py-1.5 rounded-lg text-xs font-medium">
+                      <button onClick={(e) => { e.stopPropagation(); setSelectedEmployerId(emp.id); }} className="bg-[#e5e5ea] text-[#1c1c1e] border border-gray-300 px-3 py-1.5 rounded-lg text-xs font-medium">
                         View Jobs
                       </button>
                     </div>
@@ -1412,7 +1412,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
               })}
 
               {activeTab === "jobs" && selectedEmployerId && data.jobs.filter((j: any) => j.employer_id === selectedEmployerId).map((item: any) => (
-                <div key={item.id} onClick={() => setViewingJob(item)} style={{ cursor: "pointer" }} className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex flex-col gap-3 mb-3 hover:bg-gray-50 transition-colors">
+                <div key={item.id} onClick={() => setViewingJob(item)} style={{ cursor: "pointer" }} className="bg-white p-4 rounded-xl border border-[#c6c6c8] shadow-sm flex flex-col gap-3 mb-3 hover:bg-[#f2f2f7] transition-colors">
                   <div className="flex justify-between items-start">
                     <h4 className="font-semibold text-gray-800 m-0">{item.title}</h4>
                     <span style={{
@@ -1423,7 +1423,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                       {item.status === "active" ? "active" : item.status === "closed" ? "closed" : "under review"}
                     </span>
                   </div>
-                  <div className="flex gap-2 justify-end mt-2 pt-3 border-t border-gray-100" onClick={(e) => e.stopPropagation()}>
+                  <div className="flex gap-2 justify-end mt-2 pt-3 border-t border-[#e5e5ea]" onClick={(e) => e.stopPropagation()}>
                     {item.status === "active" && (
                       <button disabled={!!loading} onClick={() => handleJobStatus(item.id, "pending")} className="bg-amber-500 text-white border-none px-3 py-1.5 rounded-lg text-xs font-medium">Pause</button>
                     )}
@@ -1453,11 +1453,11 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
             
             {activeTab === "monetization" && (
               <div className="flex flex-col items-center justify-center py-20 px-4 text-center">
-                <div className="bg-gray-50 rounded-full p-4 mb-4">
+                <div className="bg-[#f2f2f7] rounded-full p-4 mb-4">
                   <CreditCard className="w-8 h-8 text-gray-400" />
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-1">Monetization &amp; Plans</h3>
-                <p className="text-sm text-gray-500 max-w-sm">
+                <h3 className="text-lg font-semibold text-black mb-1">Monetization &amp; Plans</h3>
+                <p className="text-sm text-[#8e8e93] max-w-sm">
                   This section is currently under construction and will be available in a future update.
                 </p>
               </div>
@@ -1912,11 +1912,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                 />
               </div>
 
-              {/* Info note */}
-              <div style={{ background: "#f1f5f9", border: "1px solid #bfdbfe", borderRadius: 10, padding: "12px 14px", display: "flex", gap: 10, alignItems: "flex-start" }}>
-                <span style={{ fontSize: 16, flexShrink: 0 }}>🔐</span>
-                <p style={{ margin: 0, fontSize: 12, color: "#1e40af", lineHeight: 1.5 }}>A unique <strong>5-digit authorization code</strong> will be generated automatically. Share it with the employer so they can access the employer portal.</p>
-              </div>
+
 
               {formError && <p style={{ margin: 0, fontSize: 13, color: "#dc2626", background: "#fef2f2", padding: "10px 14px", borderRadius: 8, border: "1px solid #fecaca" }}>{formError}</p>}
 
