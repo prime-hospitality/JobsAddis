@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { approveEmployer, rejectEmployer, toggleUserBan, toggleJobStatus, logoutAdmin, addEmployer, deleteEmployer, updateEmployer, adminUpdateEmployerLogo, deleteUser, approveSpecialRequest, getPricingConfig, updatePricingConfig, updateAdminCredentials } from "./actions";
+import { approveEmployer, rejectEmployer, toggleUserBan, toggleJobStatus, logoutAdmin, addEmployer, deleteEmployer, updateEmployer, adminUpdateEmployerLogo, deleteUser, approveSpecialRequest, getPricingConfig, updatePricingConfig, getLoggedInAdmin, createSubAdmin, updateSubAdminPermissions, deleteSubAdmin, listSubAdmins } from "./actions";
+import type { AdminPermissions, SubAdmin } from "./actions";
 import { Trash2, Pencil, Image as ImageIcon, Menu, X, LayoutDashboard, Briefcase, FileText, Users, LogOut, Settings, CreditCard, CheckCircle, BookOpen, User, Building2, Hourglass } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import ContentManagementTab from "./ContentManagementTab";
@@ -269,18 +270,24 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
   const [isEditingPricing, setIsEditingPricing] = useState(false);
   const [pricingSaving, setPricingSaving] = useState(false);
 
-  // Admin settings states
-  const [newAdminUsername, setNewAdminUsername] = useState("");
-  const [newAdminPassword, setNewAdminPassword] = useState("");
-  const [adminSettingsLoading, setAdminSettingsLoading] = useState(false);
-  const [adminSettingsError, setAdminSettingsError] = useState("");
-  const [adminSettingsSuccess, setAdminSettingsSuccess] = useState("");
+  // Sub-admin management state
+  const [loggedInAdmin, setLoggedInAdmin] = useState<{ username: string; role: "super_admin" | "sub_admin"; permissions: AdminPermissions } | null>(null);
+  const [subAdmins, setSubAdmins] = useState<(SubAdmin & { password: string })[]>([]);
+  const [newSubUsername, setNewSubUsername] = useState("");
+  const [newSubPassword, setNewSubPassword] = useState("");
+  const [subAdminLoading, setSubAdminLoading] = useState(false);
+  const [subAdminError, setSubAdminError] = useState("");
+  const [subAdminSuccess, setSubAdminSuccess] = useState("");
+  const [showSubAdminForm, setShowSubAdminForm] = useState(false);
 
-  // Load pricing config from DB on mount
+  // Load pricing config and admin info on mount
   useEffect(() => {
     getPricingConfig().then((cfg) => {
       if (cfg) setPricingState((prev) => ({ ...prev, ...cfg }));
     }).catch(() => {});
+    // Load logged-in admin identity + sub-admins
+    getLoggedInAdmin().then((a) => setLoggedInAdmin(a)).catch(() => {});
+    listSubAdmins().then((res) => { if (res.success) setSubAdmins(res.data as any); }).catch(() => {});
   }, []);
 
   const handleSavePricing = async () => {
@@ -321,13 +328,23 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
     }
   }, [activeTab]);
 
-  const navItems = [
-    { id: "overview", label: "Admin Overview", icon: LayoutDashboard },
-    { id: "employers", label: "Employers & Companies", icon: Briefcase },
-    { id: "jobs", label: "Job Posting Moderation", icon: FileText },
-    { id: "configuration", label: "Configuration", icon: Settings },
-    { id: "monetization", label: "Monetization & Pricing", icon: CreditCard },
+  const perms = loggedInAdmin?.permissions;
+  const isSuperAdmin = loggedInAdmin?.role === "super_admin";
+
+  const allNavItems = [
+    { id: "overview", label: "Admin Overview", icon: LayoutDashboard, perm: null },
+    { id: "employers", label: "Employers & Companies", icon: Briefcase, perm: "manageEmployers" as keyof AdminPermissions },
+    { id: "jobs", label: "Job Posting Moderation", icon: FileText, perm: "manageJobs" as keyof AdminPermissions },
+    { id: "configuration", label: "Configuration", icon: Settings, perm: "manageConfiguration" as keyof AdminPermissions },
+    { id: "monetization", label: "Monetization & Pricing", icon: CreditCard, perm: "manageConfiguration" as keyof AdminPermissions },
   ] as const;
+
+  // For super admin show all; for sub-admin only tabs they have permission for
+  const navItems = allNavItems.filter((item) => {
+    if (!item.perm) return true; // overview always visible
+    if (isSuperAdmin) return true;
+    return perms?.[item.perm] ?? false;
+  });
 
   const POST_LIMIT_OPTIONS = [
     { value: 3, label: "3 / day", description: "Basic" },
@@ -2314,77 +2331,158 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
       {/* Settings Floating Window */}
       {settingsOpen && (
         <FloatingWindow title="Admin Settings" onClose={() => setSettingsOpen(false)}>
-          <div style={{ padding: 32, textAlign: "left", maxWidth: 400, margin: "0 auto" }}>
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBottom: 24 }}>
-              <Settings style={{ width: 48, height: 48, color: "#007aff", marginBottom: 12 }} />
-              <h3 style={{ fontSize: 20, fontWeight: 700, color: "#111827", margin: 0 }}>Admin Settings</h3>
-              <p style={{ fontSize: 14, color: "#8e8e93", marginTop: 4 }}>Update system admin credentials</p>
+          <div style={{ padding: "24px 28px", overflowY: "auto", height: "100%", boxSizing: "border-box" }}>
+            {/* Header */}
+            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24, paddingBottom: 18, borderBottom: "1px solid #f0f0f0" }}>
+              <div style={{ width: 42, height: 42, borderRadius: 12, background: "linear-gradient(135deg, #1c1c1e, #3a3a3c)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                <Users style={{ width: 22, height: 22, color: "#fff" }} />
+              </div>
+              <div>
+                <h3 style={{ fontSize: 17, fontWeight: 700, color: "#111827", margin: 0 }}>Admin User Management</h3>
+                <p style={{ fontSize: 13, color: "#8e8e93", margin: 0, marginTop: 2 }}>Create sub-admins and control their permissions</p>
+              </div>
+              {isSuperAdmin && (
+                <button
+                  onClick={() => { setShowSubAdminForm(!showSubAdminForm); setSubAdminError(""); setSubAdminSuccess(""); }}
+                  style={{ marginLeft: "auto", padding: "8px 14px", borderRadius: 8, border: "none", background: showSubAdminForm ? "#f1f5f9" : "#1c1c1e", color: showSubAdminForm ? "#374151" : "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}
+                >
+                  {showSubAdminForm ? (
+                    <><X style={{ width: 14, height: 14 }} /> Cancel</>
+                  ) : (
+                    <><span style={{ fontSize: 18, lineHeight: 1 }}>+</span> New Admin</>
+                  )}
+                </button>
+              )}
             </div>
 
-            <form onSubmit={async (e) => {
-              e.preventDefault();
-              setAdminSettingsError("");
-              setAdminSettingsSuccess("");
-              
-              if (!newAdminUsername.trim() || !newAdminPassword.trim()) {
-                setAdminSettingsError("Both name and password are required.");
-                return;
-              }
-
-              setAdminSettingsLoading(true);
-              const result = await updateAdminCredentials(newAdminUsername.trim(), newAdminPassword);
-              setAdminSettingsLoading(false);
-
-              if (result.success) {
-                setAdminSettingsSuccess("Admin credentials updated successfully!");
-                setNewAdminUsername("");
-                setNewAdminPassword("");
-              } else {
-                setAdminSettingsError(result.error || "Failed to update credentials.");
-              }
-            }}>
-              <div style={{ marginBottom: 16 }}>
-                <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#4b5563", marginBottom: 6 }}>Admin Username (Name)</label>
-                <CustomInput 
-                  type="text"
-                  placeholder="Enter new admin name..."
-                  value={newAdminUsername}
-                  onChange={(e: any) => setNewAdminUsername(e.target.value)}
-                />
-              </div>
-
-              <div style={{ marginBottom: 24 }}>
-                <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#4b5563", marginBottom: 6 }}>Admin Password</label>
-                <CustomInput 
-                  type="password"
-                  placeholder="Enter new admin password..."
-                  value={newAdminPassword}
-                  onChange={(e: any) => setNewAdminPassword(e.target.value)}
-                />
-              </div>
-
-              {adminSettingsError && (
-                <div style={{ padding: "10px 12px", background: "#fef2f2", color: "#dc2626", fontSize: 13, borderRadius: 8, marginBottom: 16, border: "1px solid #fecaca" }}>
-                  {adminSettingsError}
-                </div>
-              )}
-              {adminSettingsSuccess && (
-                <div style={{ padding: "10px 12px", background: "#f0fdf4", color: "#16a34a", fontSize: 13, borderRadius: 8, marginBottom: 16, border: "1px solid #bbf7d0" }}>
-                  {adminSettingsSuccess}
-                </div>
-              )}
-
-              <button
-                type="submit"
-                disabled={adminSettingsLoading}
-                style={{ width: "100%", padding: "12px", borderRadius: 10, border: "none", background: "#007aff", color: "#fff", fontSize: 15, fontWeight: 700, cursor: adminSettingsLoading ? "not-allowed" : "pointer", opacity: adminSettingsLoading ? 0.7 : 1, transition: "background 0.2s" }}
+            {/* Create sub-admin form */}
+            {isSuperAdmin && showSubAdminForm && (
+              <form
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  setSubAdminError(""); setSubAdminSuccess("");
+                  if (!newSubUsername.trim() || !newSubPassword.trim()) { setSubAdminError("Both fields are required."); return; }
+                  setSubAdminLoading(true);
+                  const result = await createSubAdmin(newSubUsername.trim(), newSubPassword.trim());
+                  setSubAdminLoading(false);
+                  if (result.success && result.subAdmin) {
+                    setSubAdmins((prev) => [...prev, { ...result.subAdmin!, password: "***" }]);
+                    setNewSubUsername(""); setNewSubPassword("");
+                    setSubAdminSuccess(`Admin "${result.subAdmin.username}" created! Set their permissions below.`);
+                    setShowSubAdminForm(false);
+                  } else {
+                    setSubAdminError(result.error || "Failed to create admin.");
+                  }
+                }}
+                style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 14, padding: 20, marginBottom: 20 }}
               >
-                {adminSettingsLoading ? "Updating..." : "Update Credentials"}
-              </button>
-            </form>
+                <p style={{ fontSize: 13, fontWeight: 700, color: "#374151", marginBottom: 14, textTransform: "uppercase", letterSpacing: "0.06em" }}>New Admin Details</p>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 14 }}>
+                  <div>
+                    <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#6b7280", marginBottom: 6 }}>Username</label>
+                    <CustomInput type="text" placeholder="e.g. john_admin" value={newSubUsername} onChange={(e: any) => setNewSubUsername(e.target.value)} />
+                  </div>
+                  <div>
+                    <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#6b7280", marginBottom: 6 }}>Password</label>
+                    <CustomInput type="password" placeholder="Set a password" value={newSubPassword} onChange={(e: any) => setNewSubPassword(e.target.value)} />
+                  </div>
+                </div>
+                {subAdminError && <div style={{ padding: "8px 12px", background: "#fef2f2", color: "#dc2626", fontSize: 13, borderRadius: 8, marginBottom: 12, border: "1px solid #fecaca" }}>{subAdminError}</div>}
+                <button type="submit" disabled={subAdminLoading} style={{ width: "100%", padding: "11px", borderRadius: 10, border: "none", background: "#22c55e", color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer", opacity: subAdminLoading ? 0.7 : 1 }}>
+                  {subAdminLoading ? "Creating..." : "Create Admin"}
+                </button>
+              </form>
+            )}
+
+            {subAdminSuccess && (
+              <div style={{ padding: "10px 14px", background: "#f0fdf4", color: "#16a34a", fontSize: 13, borderRadius: 10, marginBottom: 16, border: "1px solid #bbf7d0", fontWeight: 600 }}>
+                ✓ {subAdminSuccess}
+              </div>
+            )}
+
+            {/* Sub-admin list */}
+            {subAdmins.length === 0 ? (
+              <div style={{ textAlign: "center", padding: "40px 20px", color: "#9ca3af" }}>
+                <Users style={{ width: 40, height: 40, margin: "0 auto 12px", opacity: 0.4 }} />
+                <p style={{ fontSize: 14, fontWeight: 500 }}>No sub-admins yet</p>
+                <p style={{ fontSize: 12, marginTop: 4 }}>Click "New Admin" to create one</p>
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                {subAdmins.map((admin) => {
+                  const PERMS: { key: keyof AdminPermissions; label: string; desc: string }[] = [
+                    { key: "manageEmployers", label: "Manage Employers", desc: "Approve, reject, edit employers" },
+                    { key: "manageJobs", label: "Manage Jobs", desc: "Moderate job postings" },
+                    { key: "manageUsers", label: "Manage Users", desc: "Ban and delete job seekers" },
+                    { key: "manageConfiguration", label: "Manage Configuration", desc: "Edit FAQs, pricing, templates" },
+                  ];
+                  return (
+                    <div key={admin.id} style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 14, overflow: "hidden" }}>
+                      {/* Admin card header */}
+                      <div style={{ padding: "14px 18px", display: "flex", alignItems: "center", gap: 12, borderBottom: "1px solid #f1f5f9" }}>
+                        <div style={{ width: 36, height: 36, borderRadius: "50%", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                          <span style={{ fontSize: 14, fontWeight: 700, color: "#fff" }}>{admin.username[0].toUpperCase()}</span>
+                        </div>
+                        <div>
+                          <p style={{ fontSize: 14, fontWeight: 700, color: "#111827", margin: 0 }}>{admin.username}</p>
+                          <p style={{ fontSize: 11, color: "#9ca3af", margin: 0, marginTop: 1 }}>Sub Admin · Created {new Date(admin.createdAt).toLocaleDateString()}</p>
+                        </div>
+                        {isSuperAdmin && (
+                          <button
+                            onClick={async () => {
+                              if (!confirm(`Delete admin "${admin.username}"?`)) return;
+                              const res = await deleteSubAdmin(admin.id);
+                              if (res.success) setSubAdmins((prev) => prev.filter((a) => a.id !== admin.id));
+                            }}
+                            style={{ marginLeft: "auto", padding: "6px 10px", borderRadius: 8, border: "1px solid #fecaca", background: "#fef2f2", color: "#dc2626", fontSize: 12, fontWeight: 600, cursor: "pointer" }}
+                          >
+                            Remove
+                          </button>
+                        )}
+                      </div>
+                      {/* Permissions toggles */}
+                      <div style={{ padding: "12px 18px", display: "flex", flexDirection: "column", gap: 0 }}>
+                        {PERMS.map((p, idx) => (
+                          <div key={p.key} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 0", borderBottom: idx < PERMS.length - 1 ? "1px solid #f8fafc" : "none" }}>
+                            <div>
+                              <p style={{ fontSize: 13, fontWeight: 600, color: "#374151", margin: 0 }}>{p.label}</p>
+                              <p style={{ fontSize: 11, color: "#9ca3af", margin: 0, marginTop: 2 }}>{p.desc}</p>
+                            </div>
+                            {/* Toggle switch */}
+                            <button
+                              onClick={async () => {
+                                if (!isSuperAdmin) return;
+                                const updatedPerms = { ...admin.permissions, [p.key]: !admin.permissions[p.key] };
+                                const res = await updateSubAdminPermissions(admin.id, updatedPerms);
+                                if (res.success) {
+                                  setSubAdmins((prev) => prev.map((a) => a.id === admin.id ? { ...a, permissions: updatedPerms } : a));
+                                }
+                              }}
+                              disabled={!isSuperAdmin}
+                              style={{
+                                width: 44, height: 24, borderRadius: 12, border: "none", cursor: isSuperAdmin ? "pointer" : "default",
+                                background: admin.permissions[p.key] ? "#22c55e" : "#d1d5db",
+                                position: "relative", transition: "background 0.2s", flexShrink: 0
+                              }}
+                            >
+                              <span style={{
+                                position: "absolute", top: 2, left: admin.permissions[p.key] ? 22 : 2,
+                                width: 20, height: 20, borderRadius: "50%", background: "#fff",
+                                transition: "left 0.2s", boxShadow: "0 1px 4px rgba(0,0,0,0.2)"
+                              }} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </FloatingWindow>
       )}
     </div>
   );
 }
+

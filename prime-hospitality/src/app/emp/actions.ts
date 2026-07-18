@@ -57,10 +57,12 @@ export async function verifyEmployerAuthCode(telegramId: string, authNumber: str
   if (!user || user.role !== "employer") return { success: false, error: "Not a registered employer" };
   if (user.is_banned) return { success: false, error: "This account has been banned. Please contact support." };
 
-  const { data: employerStatusCheck } = await supabase.from("employers").select("status").eq("user_id", user.id).maybeSingle();
+  const { data: employerStatusCheck, error: statusErr } = await supabase.from("employers").select("status").eq("user_id", user.id).maybeSingle();
+  if (statusErr) return { success: false, error: `DB error: ${statusErr.message}` };
   if (employerStatusCheck?.status === "rejected") return { success: false, error: "rejected" };
 
-  const { data: employer } = await supabase.from("employers").select("authorization_number, password_hash").eq("user_id", user.id).maybeSingle();
+  const { data: employer, error: empErr } = await supabase.from("employers").select("authorization_number, password_hash").eq("user_id", user.id).maybeSingle();
+  if (empErr) return { success: false, error: `DB error: ${empErr.message}` };
   if (!employer) return { success: false, error: "not_found" };
 
   if (employer.password_hash) return { success: false, error: "Account already onboarded" };

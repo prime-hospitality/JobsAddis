@@ -9,22 +9,133 @@ const getSupabase = () => {
   return createClient(supabaseUrl, supabaseServiceKey);
 };
 
+// ── Permission Types ────────────────────────────────────────────────────────
+export type AdminPermissions = {
+  manageEmployers: boolean;
+  manageJobs: boolean;
+  manageUsers: boolean;
+  manageConfiguration: boolean;
+};
+
+export type SubAdmin = {
+  id: string;
+  username: string;
+  password: string;
+  permissions: AdminPermissions;
+  createdAt: string;
+};
+
+// ── Sub-admin helpers ────────────────────────────────────────────────────────
+async function getSubAdmins(): Promise<SubAdmin[]> {
+  const supabase = getSupabase();
+  const { data } = await supabase.from("app_config").select("value").eq("key", "sub_admins").maybeSingle();
+  try { return data?.value ? JSON.parse(data.value) : []; } catch { return []; }
+}
+
+async function saveSubAdmins(admins: SubAdmin[]): Promise<void> {
+  await getSupabase().from("app_config").upsert({ key: "sub_admins", value: JSON.stringify(admins), updated_at: new Date().toISOString() }, { onConflict: "key" });
+}
+
+// ── Session helpers ─────────────────────────────────────────────────────────
+async function getSession() {
+  const cookie = (await cookies()).get("admin_session");
+  if (!cookie?.value) return null;
+  try { return JSON.parse(cookie.value); } catch { return null; }
+}
+
+export async function getLoggedInAdmin(): Promise<{ username: string; role: "super_admin" | "sub_admin"; permissions: AdminPermissions } | null> {
+  const session = await getSession();
+  if (!session) return null;
+  if (session.role === "super_admin") {
+    return { username: session.username, role: "super_admin", permissions: { manageEmployers: true, manageJobs: true, manageUsers: true, manageConfiguration: true } };
+  }
+  // Sub-admin: load permissions from DB
+  const subs = await getSubAdmins();
+  const found = subs.find((s) => s.username === session.username);
+  if (!found) return null;
+  return { username: found.username, role: "sub_admin", permissions: found.permissions };
+}
+
+async function requirePermission(perm: keyof AdminPermissions) {
+  const admin = await getLoggedInAdmin();
+  if (!admin) throw new Error("Unauthorized");
+  if (!admin.permissions[perm]) throw new Error("Permission denied");
+}
+
 export async function loginAdmin(username: string, password: string) {
   const supabase = getSupabase();
 
-  // Get stored username (default: "admin")
+  // Check super admin first
   const { data: uCfg } = await supabase.from("app_config").select("value").eq("key", "admin_username").single();
   const storedUsername = uCfg?.value?.trim() || "admin";
-
-  // Get stored password (fallback to env var)
   const { data: pCfg } = await supabase.from("app_config").select("value").eq("key", "admin_password").single();
   const storedPassword = pCfg?.value?.trim() || process.env.ADMIN_PASSWORD || "admin123";
 
   if (username.toLowerCase() === storedUsername.toLowerCase() && password === storedPassword) {
-    (await cookies()).set("admin_session", "true", { maxAge: 60 * 60 * 24, httpOnly: true, secure: process.env.NODE_ENV === "production" });
-    return { success: true };
+    const sessionData = JSON.stringify({ username: storedUsername, role: "super_admin" });
+    (await cookies()).set("admin_session", sessionData, { maxAge: 60 * 60 * 24, httpOnly: true, secure: process.env.NODE_ENV === "production" });
+    return { success: true, role: "super_admin" };
   }
+
+  // Check sub-admins
+  const subs = await getSubAdmins();
+  const sub = subs.find((s) => s.username.toLowerCase() === username.toLowerCase() && s.password === password);
+  if (sub) {
+    const sessionData = JSON.stringify({ username: sub.username, role: "sub_admin" });
+    (await cookies()).set("admin_session", sessionData, { maxAge: 60 * 60 * 24, httpOnly: true, secure: process.env.NODE_ENV === "production" });
+    return { success: true, role: "sub_admin" };
+  }
+
   return { success: false, error: "Invalid username or password" };
+}
+
+// ── Sub-Admin Management ─────────────────────────────────────────────────────
+export async function createSubAdmin(username: string, password: string) {
+  const session = await getSession();
+  if (!session || session.role !== "super_admin") return { success: false, error: "Only the super admin can create sub-admins" };
+  if (!username.trim() || !password.trim()) return { success: false, error: "Username and password are required" };
+
+  const subs = await getSubAdmins();
+  if (subs.some((s) => s.username.toLowerCase() === username.toLowerCase())) {
+    return { success: false, error: "An admin with that username already exists" };
+  }
+
+  const newSub: SubAdmin = {
+    id: Date.now().toString(),
+    username: username.trim(),
+    password: password.trim(),
+    permissions: { manageEmployers: false, manageJobs: false, manageUsers: false, manageConfiguration: false },
+    createdAt: new Date().toISOString(),
+  };
+
+  await saveSubAdmins([...subs, newSub]);
+  return { success: true, subAdmin: newSub };
+}
+
+export async function updateSubAdminPermissions(id: string, permissions: AdminPermissions) {
+  const session = await getSession();
+  if (!session || session.role !== "super_admin") return { success: false, error: "Only the super admin can update permissions" };
+
+  const subs = await getSubAdmins();
+  const updated = subs.map((s) => s.id === id ? { ...s, permissions } : s);
+  await saveSubAdmins(updated);
+  return { success: true };
+}
+
+export async function deleteSubAdmin(id: string) {
+  const session = await getSession();
+  if (!session || session.role !== "super_admin") return { success: false, error: "Only the super admin can delete sub-admins" };
+
+  const subs = await getSubAdmins();
+  await saveSubAdmins(subs.filter((s) => s.id !== id));
+  return { success: true };
+}
+
+export async function listSubAdmins() {
+  const session = await getSession();
+  if (!session || session.role !== "super_admin") return { success: false, error: "Unauthorized", data: [] };
+  const subs = await getSubAdmins();
+  return { success: true, data: subs.map((s) => ({ ...s, password: "***" })) };
 }
 
 export async function logoutAdmin() {
@@ -33,8 +144,8 @@ export async function logoutAdmin() {
 
 export async function getAdminData() {
   // Verify auth
-  const auth = (await cookies()).get("admin_session");
-  if (!auth?.value) throw new Error("Unauthorized");
+  const session = await getSession();
+  if (!session) throw new Error("Unauthorized");
 
   // Fetch all employers (exclude system/admin employers)
   const { data: rawEmployers } = await getSupabase()
@@ -77,8 +188,7 @@ export async function getAdminData() {
 }
 
 export async function approveEmployer(employerId: string) {
-  const auth = (await cookies()).get("admin_session");
-  if (!auth?.value) throw new Error("Unauthorized");
+  await requirePermission("manageEmployers");
 
   const { error } = await getSupabase().from("employers").update({ status: "approved" }).eq("id", employerId);
   if (error) throw error;
@@ -86,8 +196,7 @@ export async function approveEmployer(employerId: string) {
 }
 
 export async function rejectEmployer(employerId: string) {
-  const auth = (await cookies()).get("admin_session");
-  if (!auth?.value) throw new Error("Unauthorized");
+  await requirePermission("manageEmployers");
 
   const { error } = await getSupabase().from("employers").update({ status: "rejected" }).eq("id", employerId);
   if (error) throw error;
@@ -95,8 +204,7 @@ export async function rejectEmployer(employerId: string) {
 }
 
 export async function adminUpdateEmployerLogo(employerId: string, logoUrl: string) {
-  const auth = (await cookies()).get("admin_session");
-  if (!auth?.value) throw new Error("Unauthorized");
+  await requirePermission("manageEmployers");
 
   const { error } = await getSupabase().from("employers").update({ logo_url: logoUrl }).eq("id", employerId);
   if (error) throw error;
@@ -104,12 +212,16 @@ export async function adminUpdateEmployerLogo(employerId: string, logoUrl: strin
 }
 
 export async function toggleUserBan(userId: string, isBanned: boolean, passwordAttempt: string) {
-  const auth = (await cookies()).get("admin_session");
-  if (!auth?.value) return { success: false, error: "Unauthorized" };
+  const admin = await getLoggedInAdmin();
+  if (!admin) return { success: false, error: "Unauthorized" };
+  if (!admin.permissions.manageUsers) return { success: false, error: "Permission denied" };
 
-  const adminPassword = process.env.ADMIN_PASSWORD || "admin123";
-  if (passwordAttempt !== adminPassword) {
-    return { success: false, error: "Incorrect admin password" };
+  // Only verify password for super admin; sub-admins with permission can act directly
+  if (admin.role === "super_admin") {
+    const supabase = getSupabase();
+    const { data: pCfg } = await supabase.from("app_config").select("value").eq("key", "admin_password").single();
+    const storedPassword = pCfg?.value?.trim() || process.env.ADMIN_PASSWORD || "admin123";
+    if (passwordAttempt !== storedPassword) return { success: false, error: "Incorrect admin password" };
   }
 
   const { error } = await getSupabase().from("users").update({ is_banned: isBanned }).eq("id", userId);
@@ -118,12 +230,15 @@ export async function toggleUserBan(userId: string, isBanned: boolean, passwordA
 }
 
 export async function deleteUser(userId: string, passwordAttempt: string) {
-  const auth = (await cookies()).get("admin_session");
-  if (!auth?.value) return { success: false, error: "Unauthorized" };
+  const admin = await getLoggedInAdmin();
+  if (!admin) return { success: false, error: "Unauthorized" };
+  if (!admin.permissions.manageUsers) return { success: false, error: "Permission denied" };
 
-  const adminPassword = process.env.ADMIN_PASSWORD || "admin123";
-  if (passwordAttempt !== adminPassword) {
-    return { success: false, error: "Incorrect admin password" };
+  if (admin.role === "super_admin") {
+    const supabase = getSupabase();
+    const { data: pCfg } = await supabase.from("app_config").select("value").eq("key", "admin_password").single();
+    const storedPassword = pCfg?.value?.trim() || process.env.ADMIN_PASSWORD || "admin123";
+    if (passwordAttempt !== storedPassword) return { success: false, error: "Incorrect admin password" };
   }
 
   const supabase = getSupabase();
@@ -169,8 +284,7 @@ export async function deleteUser(userId: string, passwordAttempt: string) {
 }
 
 export async function toggleJobStatus(jobId: string, status: "active" | "closed" | "pending") {
-  const auth = (await cookies()).get("admin_session");
-  if (!auth?.value) throw new Error("Unauthorized");
+  await requirePermission("manageJobs");
 
   const { error } = await getSupabase().from("jobs").update({ status }).eq("id", jobId);
   if (error) throw error;
@@ -315,8 +429,7 @@ export async function postJobFromTemplate(templateId: string) {
 }
 
 export async function addEmployer(telegramId: number, businessName: string, businessType: string) {
-  const auth = (await cookies()).get("admin_session");
-  if (!auth?.value) throw new Error("Unauthorized");
+  await requirePermission("manageEmployers");
 
   // Validate telegramId format (positive integer, 5-12 digits, no leading 0)
   const tgIdStr = telegramId.toString();
@@ -403,8 +516,7 @@ export async function addEmployer(telegramId: number, businessName: string, busi
 }
 
 export async function updateEmployer(employerId: string, businessName: string, businessType: string, dailyPostLimit: number) {
-  const auth = (await cookies()).get("admin_session");
-  if (!auth?.value) throw new Error("Unauthorized");
+  await requirePermission("manageEmployers");
 
   if (!businessName.trim()) throw new Error("Business name cannot be empty.");
   if (![3, 5, -1].includes(dailyPostLimit)) throw new Error("Invalid post limit value.");
@@ -425,12 +537,15 @@ export async function updateEmployer(employerId: string, businessName: string, b
 }
 
 export async function deleteEmployer(employerId: string, passwordAttempt: string) {
-  const auth = (await cookies()).get("admin_session");
-  if (!auth?.value) return { success: false, error: "Unauthorized" };
+  const admin = await getLoggedInAdmin();
+  if (!admin) return { success: false, error: "Unauthorized" };
+  if (!admin.permissions.manageEmployers) return { success: false, error: "Permission denied" };
 
-  const adminPassword = process.env.ADMIN_PASSWORD || "admin123";
-  if (passwordAttempt !== adminPassword) {
-    return { success: false, error: "Incorrect admin password" };
+  if (admin.role === "super_admin") {
+    const supabase = getSupabase();
+    const { data: pCfg } = await supabase.from("app_config").select("value").eq("key", "admin_password").single();
+    const storedPassword = pCfg?.value?.trim() || process.env.ADMIN_PASSWORD || "admin123";
+    if (passwordAttempt !== storedPassword) return { success: false, error: "Incorrect admin password" };
   }
 
   const supabase = getSupabase();
@@ -497,12 +612,15 @@ export async function submitSpecialRequest(telegramId: number) {
 }
 
 export async function approveSpecialRequest(userId: string, passwordAttempt: string) {
-  const auth = (await cookies()).get("admin_session");
-  if (!auth?.value) return { success: false, error: "Unauthorized" };
+  const admin = await getLoggedInAdmin();
+  if (!admin) return { success: false, error: "Unauthorized" };
+  if (!admin.permissions.manageUsers) return { success: false, error: "Permission denied" };
 
-  const adminPassword = process.env.ADMIN_PASSWORD || "admin123";
-  if (passwordAttempt !== adminPassword) {
-    return { success: false, error: "Incorrect admin password" };
+  if (admin.role === "super_admin") {
+    const supabase = getSupabase();
+    const { data: pCfg } = await supabase.from("app_config").select("value").eq("key", "admin_password").single();
+    const storedPassword = pCfg?.value?.trim() || process.env.ADMIN_PASSWORD || "admin123";
+    if (passwordAttempt !== storedPassword) return { success: false, error: "Incorrect admin password" };
   }
 
   const supabase = getSupabase();
@@ -650,8 +768,7 @@ export async function upsertVacancyTemplate(payload: VacancyTemplatePayload) {
 }
 
 export async function deleteVacancyTemplate(id: string) {
-  const auth = (await cookies()).get("admin_session");
-  if (!auth?.value) throw new Error("Unauthorized");
+  await requirePermission("manageConfiguration");
 
   const { error } = await getSupabase().from("vacancy_templates").delete().eq("id", id);
   if (error) throw error;
@@ -659,8 +776,7 @@ export async function deleteVacancyTemplate(id: string) {
 }
 
 export async function updateOnboardingConfig(key: string, label: string, value: string) {
-  const auth = (await cookies()).get("admin_session");
-  if (!auth?.value) throw new Error("Unauthorized");
+  await requirePermission("manageConfiguration");
 
   const { error } = await getSupabase().from("onboarding_config").upsert({
     key,
@@ -684,8 +800,7 @@ export async function getPricingConfig() {
 }
 
 export async function updatePricingConfig(config: any) {
-  const auth = (await cookies()).get("admin_session");
-  if (!auth?.value) throw new Error("Unauthorized");
+  await requirePermission("manageConfiguration");
 
   const supabase = getSupabase();
   const { error } = await supabase.from("app_config").upsert({
@@ -698,23 +813,3 @@ export async function updatePricingConfig(config: any) {
   return { success: true };
 }
 
-export async function updateAdminCredentials(username: string, password: string) {
-  const auth = (await cookies()).get("admin_session");
-  if (!auth) return { success: false, error: "Not authorized" };
-
-  const supabase = getSupabase();
-
-  // Upsert username
-  const { error: uErr } = await supabase
-    .from("app_config")
-    .upsert({ key: "admin_username", value: username, updated_at: new Date().toISOString() }, { onConflict: "key" });
-  if (uErr) return { success: false, error: uErr.message };
-
-  // Upsert password
-  const { error: pErr } = await supabase
-    .from("app_config")
-    .upsert({ key: "admin_password", value: password, updated_at: new Date().toISOString() }, { onConflict: "key" });
-  if (pErr) return { success: false, error: pErr.message };
-
-  return { success: true };
-}
