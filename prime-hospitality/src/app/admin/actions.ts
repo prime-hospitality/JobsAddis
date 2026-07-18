@@ -143,9 +143,9 @@ export async function logoutAdmin() {
 }
 
 export async function getAdminData() {
-  // Verify auth
-  const session = await getSession();
-  if (!session) throw new Error("Unauthorized");
+  // Verify auth and get logged in admin profile
+  const admin = await getLoggedInAdmin();
+  if (!admin) throw new Error("Unauthorized");
 
   // Fetch all employers (exclude system/admin employers)
   const { data: rawEmployers } = await getSupabase()
@@ -177,13 +177,28 @@ export async function getAdminData() {
   try {
     if (srCfg?.value) specialRequests = JSON.parse(srCfg.value);
   } catch (e) {}
+  
+  // Fetch pricing config
+  const pricingConfig = await getPricingConfig();
+  
+  // Fetch sub-admins if super admin
+  let subAdmins: any[] = [];
+  if (admin.role === "super_admin") {
+    const subsRes = await listSubAdmins();
+    if (subsRes.success) {
+      subAdmins = subsRes.data || [];
+    }
+  }
 
   return {
     employers: employers ?? [],
     jobs: jobs ?? [],
     users: users ?? [],
     adminUsername,
-    specialRequests
+    specialRequests,
+    loggedInAdmin: admin,
+    pricingConfig: pricingConfig || null,
+    subAdmins
   };
 }
 

@@ -265,30 +265,21 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
     pinVacancy: "1,000",
     companyName: "Prime Hospitality Business Group PLC",
     bankName: "Awash Bank",
-    accountNo: "013041457659800"
+    accountNo: "013041457659800",
+    ...(initialData?.pricingConfig || {})
   });
   const [isEditingPricing, setIsEditingPricing] = useState(false);
   const [pricingSaving, setPricingSaving] = useState(false);
 
   // Sub-admin management state
-  const [loggedInAdmin, setLoggedInAdmin] = useState<{ username: string; role: "super_admin" | "sub_admin"; permissions: AdminPermissions } | null>(null);
-  const [subAdmins, setSubAdmins] = useState<(SubAdmin & { password: string })[]>([]);
+  const [loggedInAdmin, setLoggedInAdmin] = useState<{ username: string; role: "super_admin" | "sub_admin"; permissions: AdminPermissions } | null>(initialData?.loggedInAdmin || null);
+  const [subAdmins, setSubAdmins] = useState<(SubAdmin & { password: string })[]>(initialData?.subAdmins || []);
   const [newSubUsername, setNewSubUsername] = useState("");
   const [newSubPassword, setNewSubPassword] = useState("");
   const [subAdminLoading, setSubAdminLoading] = useState(false);
   const [subAdminError, setSubAdminError] = useState("");
   const [subAdminSuccess, setSubAdminSuccess] = useState("");
   const [showSubAdminForm, setShowSubAdminForm] = useState(false);
-
-  // Load pricing config and admin info on mount
-  useEffect(() => {
-    getPricingConfig().then((cfg) => {
-      if (cfg) setPricingState((prev) => ({ ...prev, ...cfg }));
-    }).catch(() => {});
-    // Load logged-in admin identity + sub-admins
-    getLoggedInAdmin().then((a) => setLoggedInAdmin(a)).catch(() => {});
-    listSubAdmins().then((res) => { if (res.success) setSubAdmins(res.data as any); }).catch(() => {});
-  }, []);
 
   const handleSavePricing = async () => {
     if (!isEditingPricing) {
