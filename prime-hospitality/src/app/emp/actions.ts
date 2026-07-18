@@ -3,6 +3,7 @@
 import { cookies } from "next/headers";
 import { createClient } from "@supabase/supabase-js";
 import { redirect } from "next/navigation";
+import bcrypt from "bcryptjs";
 
 const getSupabase = () => {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://placeholder.supabase.co";
@@ -26,17 +27,17 @@ export async function checkEmployerByTelegramId(telegramId: string) {
 
   const { data: employer } = await supabase
     .from("employers")
-    .select("id, business_name, business_type, status, logo_url")
+    .select("id, business_name, business_type, status, logo_url, password_hash")
     .eq("user_id", user.id)
     .maybeSingle();
 
   if (!employer) return { exists: false };
 
-  return { exists: true, employer };
+  return { exists: true, employer, has_password: !!employer.password_hash };
 }
 
-/** Verify authorization number and log employer in */
-export async function loginEmployer(telegramId: string, authNumber: string) {
+/** Verify authorization number before setup */
+export async function verifyEmployerAuthCode(telegramId: string, authNumber: string) {
   const id = parseInt(telegramId, 10);
   if (isNaN(id)) return { success: false, error: "Invalid Telegram ID" };
 
@@ -53,40 +54,43 @@ export async function loginEmployer(telegramId: string, authNumber: string) {
     .eq("telegram_id", id)
     .maybeSingle();
 
-  if (!user || user.role !== "employer") {
-    return { success: false, error: "Not a registered employer" };
-  }
+  if (!user || user.role !== "employer") return { success: false, error: "Not a registered employer" };
+  if (user.is_banned) return { success: false, error: "This account has been banned. Please contact support." };
 
-  if (user.is_banned) {
-    return { success: false, error: "This account has been banned. Please contact support." };
-  }
+  const { data: employerStatusCheck } = await supabase.from("employers").select("status").eq("user_id", user.id).maybeSingle();
+  if (employerStatusCheck?.status === "rejected") return { success: false, error: "rejected" };
 
-  // Check employer status before verifying auth code
-  const { data: employerStatusCheck } = await supabase
+  const { data: employer } = await supabase.from("employers").select("authorization_number, password_hash").eq("user_id", user.id).maybeSingle();
+  if (!employer) return { success: false, error: "not_found" };
+
+  if (employer.password_hash) return { success: false, error: "Account already onboarded" };
+  if (employer.authorization_number !== trimmedCode) return { success: false, error: "Invalid authorization code. Please try again." };
+
+  return { success: true };
+}
+
+/** Setup password and login */
+export async function setupEmployerPassword(telegramId: string, authNumber: string, password: string) {
+  const verify = await verifyEmployerAuthCode(telegramId, authNumber);
+  if (!verify.success) return verify;
+
+  if (password.length < 6) return { success: false, error: "Password must be at least 6 characters" };
+
+  const supabase = getSupabase();
+  const id = parseInt(telegramId, 10);
+  const { data: user } = await supabase.from("users").select("id").eq("telegram_id", id).single();
+
+  const passwordHash = await bcrypt.hash(password, 10);
+
+  const { data: employer, error: updateError } = await supabase
     .from("employers")
-    .select("status")
-    .eq("user_id", user.id)
-    .maybeSingle();
+    .update({ password_hash: passwordHash, authorization_number: null })
+    .eq("user_id", user!.id)
+    .select("id, business_name, business_type, status, logo_url")
+    .single();
 
-  if (employerStatusCheck?.status === "rejected") {
-    return { success: false, error: "rejected" };
-  }
+  if (updateError || !employer) return { success: false, error: "Failed to setup password" };
 
-  const { data: employer } = await supabase
-    .from("employers")
-    .select("id, business_name, business_type, status, logo_url, authorization_number")
-    .eq("user_id", user.id)
-    .maybeSingle();
-
-  if (!employer) {
-    return { success: false, error: "not_found" };
-  }
-
-  if (employer.authorization_number !== trimmedCode) {
-    return { success: false, error: "Invalid authorization code. Please try again." };
-  }
-
-  // Set employer session cookie
   const sessionData = JSON.stringify({
     employerId: employer.id,
     telegramId: id,
@@ -96,12 +100,52 @@ export async function loginEmployer(telegramId: string, authNumber: string) {
     status: employer.status,
   });
 
-  (await cookies()).set("employer_session", sessionData, {
-    maxAge: 60 * 60 * 8, // 8 hours
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    path: "/",
+  (await cookies()).set("employer_session", sessionData, { maxAge: 60 * 60 * 8, httpOnly: true, secure: process.env.NODE_ENV === "production", path: "/" });
+
+  return { success: true };
+}
+
+/** Login returning employer with password */
+export async function loginWithPassword(telegramId: string, password: string) {
+  const id = parseInt(telegramId, 10);
+  if (isNaN(id)) return { success: false, error: "Invalid Telegram ID" };
+
+  const supabase = getSupabase();
+
+  const { data: user } = await supabase
+    .from("users")
+    .select("id, role, is_banned")
+    .eq("telegram_id", id)
+    .maybeSingle();
+
+  if (!user || user.role !== "employer") return { success: false, error: "Not a registered employer" };
+  if (user.is_banned) return { success: false, error: "This account has been banned. Please contact support." };
+
+  const { data: employerStatusCheck } = await supabase.from("employers").select("status").eq("user_id", user.id).maybeSingle();
+  if (employerStatusCheck?.status === "rejected") return { success: false, error: "rejected" };
+
+  const { data: employer } = await supabase
+    .from("employers")
+    .select("id, business_name, business_type, status, logo_url, password_hash")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (!employer) return { success: false, error: "not_found" };
+  if (!employer.password_hash) return { success: false, error: "Account not onboarded yet" };
+
+  const isValid = await bcrypt.compare(password, employer.password_hash);
+  if (!isValid) return { success: false, error: "Invalid password" };
+
+  const sessionData = JSON.stringify({
+    employerId: employer.id,
+    telegramId: id,
+    businessName: employer.business_name,
+    businessType: employer.business_type,
+    logoUrl: employer.logo_url || null,
+    status: employer.status,
   });
+
+  (await cookies()).set("employer_session", sessionData, { maxAge: 60 * 60 * 8, httpOnly: true, secure: process.env.NODE_ENV === "production", path: "/" });
 
   return { success: true };
 }

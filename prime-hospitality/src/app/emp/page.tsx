@@ -2,14 +2,16 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { checkEmployerByTelegramId, loginEmployer } from "./actions";
+import { checkEmployerByTelegramId, loginWithPassword, verifyEmployerAuthCode, setupEmployerPassword } from "./actions";
 
 export default function EmployerLoginPage() {
   const router = useRouter();
 
-  const [step, setStep] = useState<"telegram" | "auth" | "rejected" | "not_found">("telegram");
+  const [step, setStep] = useState<"telegram" | "auth" | "setup_password" | "password" | "rejected" | "not_found">("telegram");
   const [telegramId, setTelegramId] = useState("");
   const [authCode, setAuthCode] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [employerName, setEmployerName] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -25,7 +27,11 @@ export default function EmployerLoginPage() {
         setError("not_registered");
       } else {
         setEmployerName(result.employer?.business_name || "");
-        setStep("auth");
+        if (result.has_password) {
+          setStep("password");
+        } else {
+          setStep("auth");
+        }
       }
     } catch {
       setError("Something went wrong. Please try again.");
@@ -34,21 +40,59 @@ export default function EmployerLoginPage() {
     }
   };
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleAuthCode = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!authCode.trim()) return;
     setLoading(true);
     setError("");
     try {
-      const result = await loginEmployer(telegramId.trim(), authCode.trim());
+      const result = await verifyEmployerAuthCode(telegramId.trim(), authCode.trim());
       if (!result.success) {
-        if (result.error === "rejected") {
-          setStep("rejected");
-        } else if (result.error === "not_found") {
-          setStep("not_found");
-        } else {
-          setError(result.error || "Login failed");
-        }
+        if (result.error === "rejected") setStep("rejected");
+        else if (result.error === "not_found") setStep("not_found");
+        else setError(result.error || "Verification failed");
+      } else {
+        setStep("setup_password");
+      }
+    } catch {
+      setError("Something went wrong. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSetupPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (password.length < 6) return setError("Password must be at least 6 characters");
+    if (password !== confirmPassword) return setError("Passwords do not match");
+
+    setLoading(true);
+    setError("");
+    try {
+      const result = await setupEmployerPassword(telegramId.trim(), authCode.trim(), password);
+      if (!result.success) {
+        setError(result.error || "Failed to setup password");
+      } else {
+        router.push("/emp/dashboard");
+      }
+    } catch {
+      setError("Something went wrong. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLoginPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!password.trim()) return;
+    setLoading(true);
+    setError("");
+    try {
+      const result = await loginWithPassword(telegramId.trim(), password);
+      if (!result.success) {
+        if (result.error === "rejected") setStep("rejected");
+        else if (result.error === "not_found") setStep("not_found");
+        else setError(result.error || "Login failed");
       } else {
         router.push("/emp/dashboard");
       }
@@ -417,7 +461,7 @@ export default function EmployerLoginPage() {
 
           {/* Step 2: Authorization Code */}
           {step === "auth" && (
-            <form className="auth-step" onSubmit={handleLogin} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            <form className="auth-step" onSubmit={handleAuthCode} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
               {/* Employer badge */}
               <div style={{ display: "flex", alignItems: "center", gap: 10, background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 10, padding: "10px 14px", marginBottom: 4 }}>
                 <div style={{ width: 32, height: 32, borderRadius: "50%", background: "#22c55e", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
@@ -506,18 +550,151 @@ export default function EmployerLoginPage() {
                   alignItems: "center",
                   justifyContent: "center",
                   gap: 8,
+                  marginTop: 8
                 }}
               >
                 {loading ? (
                   <>
                     <svg style={{ animation: "spin 1s linear infinite" }} xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
-                    Signing in...
+                    Verifying...
                   </>
                 ) : (
                   <>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
-                    Sign In to Dashboard
+                    Continue to Profile
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
                   </>
+                )}
+              </button>
+            </form>
+          )}
+
+          {/* Step 3: Setup Password (Onboarding) */}
+          {step === "setup_password" && (
+            <form className="auth-step" onSubmit={handleSetupPassword} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              <div style={{ textAlign: "center", marginBottom: 12 }}>
+                <h2 style={{ fontSize: 22, fontWeight: 800, color: "#111827", letterSpacing: "-0.03em", marginBottom: 6 }}>Create Profile Password</h2>
+                <p style={{ fontSize: 13, color: "#6b7280", lineHeight: 1.5 }}>
+                  Set a password for your account. You will use this instead of the auth code for future logins.
+                </p>
+              </div>
+
+              <div>
+                <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#4b5563", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                  New Password
+                </label>
+                <div style={{ position: "relative" }}>
+                  <div style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }}>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                  </div>
+                  <input
+                    className="input-field"
+                    type="password"
+                    value={password}
+                    onChange={(e) => { setPassword(e.target.value); setError(""); }}
+                    placeholder="At least 6 characters"
+                    required
+                    style={{ width: "100%", paddingLeft: 42, paddingRight: 14, paddingTop: 14, paddingBottom: 14, borderRadius: 12, border: "1.5px solid #e5e7eb", background: "#ffffff", color: "#111827", fontSize: 16, fontWeight: 500, fontFamily: "Inter, sans-serif" }}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#4b5563", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                  Confirm Password
+                </label>
+                <div style={{ position: "relative" }}>
+                  <div style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }}>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                  </div>
+                  <input
+                    className="input-field"
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => { setConfirmPassword(e.target.value); setError(""); }}
+                    placeholder="Confirm your password"
+                    required
+                    style={{ width: "100%", paddingLeft: 42, paddingRight: 14, paddingTop: 14, paddingBottom: 14, borderRadius: 12, border: "1.5px solid #e5e7eb", background: "#ffffff", color: "#111827", fontSize: 16, fontWeight: 500, fontFamily: "Inter, sans-serif" }}
+                  />
+                </div>
+              </div>
+
+              {error && <p style={{ marginTop: 2, fontSize: 13, color: "#ef4444" }}>{error}</p>}
+
+              <button
+                className="btn-primary"
+                type="submit"
+                disabled={loading || !password || !confirmPassword}
+                style={{ width: "100%", padding: "15px", borderRadius: 12, border: "none", background: loading || !password || !confirmPassword ? "#86efac" : "#22c55e", color: "#fff", fontSize: 15, fontWeight: 700, cursor: loading || !password || !confirmPassword ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginTop: 8 }}
+              >
+                {loading ? (
+                  <>
+                    <svg style={{ animation: "spin 1s linear infinite" }} xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+                    Saving...
+                  </>
+                ) : (
+                  <>Save & Log In</>
+                )}
+              </button>
+            </form>
+          )}
+
+          {/* Step 4: Password Login (Returning users) */}
+          {step === "password" && (
+            <form className="auth-step" onSubmit={handleLoginPassword} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              {/* Employer badge */}
+              <div style={{ display: "flex", alignItems: "center", gap: 10, background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 10, padding: "10px 14px", marginBottom: 4 }}>
+                <div style={{ width: 32, height: 32, borderRadius: "50%", background: "#22c55e", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="16" height="20" x="4" y="2" rx="2" ry="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01"/><path d="M16 6h.01"/><path d="M12 6h.01"/><path d="M12 10h.01"/><path d="M12 14h.01"/><path d="M16 10h.01"/><path d="M16 14h.01"/><path d="M8 10h.01"/><path d="M8 14h.01"/></svg>
+                </div>
+                <div>
+                  <p style={{ fontSize: 13, fontWeight: 700, color: "#16a34a", margin: 0 }}>{employerName}</p>
+                  <p style={{ fontSize: 11, color: "#15803d", margin: 0 }}>ID: {telegramId}</p>
+                </div>
+                <button
+                  type="button"
+                  className="back-btn"
+                  onClick={() => { setStep("telegram"); setPassword(""); setError(""); }}
+                  style={{ marginLeft: "auto", background: "none", border: "none", cursor: "pointer", color: "#6b7280", fontSize: 11, fontWeight: 600, display: "flex", alignItems: "center", gap: 4, transition: "color 0.2s" }}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+                  Change
+                </button>
+              </div>
+
+              <div>
+                <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#4b5563", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                  Password
+                </label>
+                <div style={{ position: "relative" }}>
+                  <div style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }}>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                  </div>
+                  <input
+                    className="input-field"
+                    type="password"
+                    value={password}
+                    onChange={(e) => { setPassword(e.target.value); setError(""); }}
+                    placeholder="Enter your password"
+                    required
+                    style={{ width: "100%", paddingLeft: 42, paddingRight: 14, paddingTop: 14, paddingBottom: 14, borderRadius: 12, border: "1.5px solid #e5e7eb", background: "#ffffff", color: "#111827", fontSize: 16, fontWeight: 500, fontFamily: "Inter, sans-serif" }}
+                  />
+                </div>
+                {error && <p style={{ marginTop: 8, fontSize: 13, color: "#ef4444" }}>{error}</p>}
+              </div>
+
+              <button
+                className="btn-primary"
+                type="submit"
+                disabled={loading || !password}
+                style={{ width: "100%", padding: "15px", borderRadius: 12, border: "none", background: loading || !password ? "#86efac" : "#22c55e", color: "#fff", fontSize: 15, fontWeight: 700, cursor: loading || !password ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginTop: 8 }}
+              >
+                {loading ? (
+                  <>
+                    <svg style={{ animation: "spin 1s linear infinite" }} xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+                    Signing In...
+                  </>
+                ) : (
+                  <>Sign In</>
                 )}
               </button>
             </form>
