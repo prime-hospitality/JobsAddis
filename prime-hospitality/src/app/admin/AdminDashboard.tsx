@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { approveEmployer, rejectEmployer, toggleUserBan, toggleJobStatus, logoutAdmin, addEmployer, deleteEmployer, updateEmployer, adminUpdateEmployerLogo, deleteUser, approveSpecialRequest, getPricingConfig, updatePricingConfig } from "./actions";
+import { approveEmployer, rejectEmployer, toggleUserBan, toggleJobStatus, logoutAdmin, addEmployer, deleteEmployer, updateEmployer, adminUpdateEmployerLogo, deleteUser, approveSpecialRequest, getPricingConfig, updatePricingConfig, updateAdminCredentials } from "./actions";
 import { Trash2, Pencil, Image as ImageIcon, Menu, X, LayoutDashboard, Briefcase, FileText, Users, LogOut, Settings, CreditCard, CheckCircle, BookOpen, User, Building2, Hourglass } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import ContentManagementTab from "./ContentManagementTab";
@@ -268,6 +268,13 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
   });
   const [isEditingPricing, setIsEditingPricing] = useState(false);
   const [pricingSaving, setPricingSaving] = useState(false);
+
+  // Admin settings states
+  const [newAdminUsername, setNewAdminUsername] = useState("");
+  const [newAdminPassword, setNewAdminPassword] = useState("");
+  const [adminSettingsLoading, setAdminSettingsLoading] = useState(false);
+  const [adminSettingsError, setAdminSettingsError] = useState("");
+  const [adminSettingsSuccess, setAdminSettingsSuccess] = useState("");
 
   // Load pricing config from DB on mount
   useEffect(() => {
@@ -2307,10 +2314,74 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
       {/* Settings Floating Window */}
       {settingsOpen && (
         <FloatingWindow title="Admin Settings" onClose={() => setSettingsOpen(false)}>
-          <div style={{ padding: 32, textAlign: "center" }}>
-            <Settings style={{ width: 48, height: 48, color: "#d1d5db", margin: "0 auto 16px" }} />
-            <h3 style={{ fontSize: 18, fontWeight: 700, color: "#111827", marginBottom: 8 }}>Settings Overview</h3>
-            <p style={{ fontSize: 14, color: "#8e8e93" }}>System settings will be available here soon.</p>
+          <div style={{ padding: 32, textAlign: "left", maxWidth: 400, margin: "0 auto" }}>
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBottom: 24 }}>
+              <Settings style={{ width: 48, height: 48, color: "#007aff", marginBottom: 12 }} />
+              <h3 style={{ fontSize: 20, fontWeight: 700, color: "#111827", margin: 0 }}>Admin Settings</h3>
+              <p style={{ fontSize: 14, color: "#8e8e93", marginTop: 4 }}>Update system admin credentials</p>
+            </div>
+
+            <form onSubmit={async (e) => {
+              e.preventDefault();
+              setAdminSettingsError("");
+              setAdminSettingsSuccess("");
+              
+              if (!newAdminUsername.trim() || !newAdminPassword.trim()) {
+                setAdminSettingsError("Both name and password are required.");
+                return;
+              }
+
+              setAdminSettingsLoading(true);
+              const result = await updateAdminCredentials(newAdminUsername.trim(), newAdminPassword);
+              setAdminSettingsLoading(false);
+
+              if (result.success) {
+                setAdminSettingsSuccess("Admin credentials updated successfully!");
+                setNewAdminUsername("");
+                setNewAdminPassword("");
+              } else {
+                setAdminSettingsError(result.error || "Failed to update credentials.");
+              }
+            }}>
+              <div style={{ marginBottom: 16 }}>
+                <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#4b5563", marginBottom: 6 }}>Admin Username (Name)</label>
+                <CustomInput 
+                  type="text"
+                  placeholder="Enter new admin name..."
+                  value={newAdminUsername}
+                  onChange={(e: any) => setNewAdminUsername(e.target.value)}
+                />
+              </div>
+
+              <div style={{ marginBottom: 24 }}>
+                <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#4b5563", marginBottom: 6 }}>Admin Password</label>
+                <CustomInput 
+                  type="password"
+                  placeholder="Enter new admin password..."
+                  value={newAdminPassword}
+                  onChange={(e: any) => setNewAdminPassword(e.target.value)}
+                />
+              </div>
+
+              {adminSettingsError && (
+                <div style={{ padding: "10px 12px", background: "#fef2f2", color: "#dc2626", fontSize: 13, borderRadius: 8, marginBottom: 16, border: "1px solid #fecaca" }}>
+                  {adminSettingsError}
+                </div>
+              )}
+              {adminSettingsSuccess && (
+                <div style={{ padding: "10px 12px", background: "#f0fdf4", color: "#16a34a", fontSize: 13, borderRadius: 8, marginBottom: 16, border: "1px solid #bbf7d0" }}>
+                  {adminSettingsSuccess}
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={adminSettingsLoading}
+                style={{ width: "100%", padding: "12px", borderRadius: 10, border: "none", background: "#007aff", color: "#fff", fontSize: 15, fontWeight: 700, cursor: adminSettingsLoading ? "not-allowed" : "pointer", opacity: adminSettingsLoading ? 0.7 : 1, transition: "background 0.2s" }}
+              >
+                {adminSettingsLoading ? "Updating..." : "Update Credentials"}
+              </button>
+            </form>
           </div>
         </FloatingWindow>
       )}

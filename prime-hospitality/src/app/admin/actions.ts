@@ -697,3 +697,24 @@ export async function updatePricingConfig(config: any) {
   if (error) throw error;
   return { success: true };
 }
+
+export async function updateAdminCredentials(username: string, password: string) {
+  const auth = (await cookies()).get("admin_session");
+  if (!auth) return { success: false, error: "Not authorized" };
+
+  const supabase = getSupabase();
+
+  // Upsert username
+  const { error: uErr } = await supabase
+    .from("app_config")
+    .upsert({ key: "admin_username", value: username, updated_at: new Date().toISOString() }, { onConflict: "key" });
+  if (uErr) return { success: false, error: uErr.message };
+
+  // Upsert password
+  const { error: pErr } = await supabase
+    .from("app_config")
+    .upsert({ key: "admin_password", value: password, updated_at: new Date().toISOString() }, { onConflict: "key" });
+  if (pErr) return { success: false, error: pErr.message };
+
+  return { success: true };
+}
