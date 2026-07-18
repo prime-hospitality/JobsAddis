@@ -2,8 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { approveEmployer, rejectEmployer, toggleUserBan, toggleJobStatus, logoutAdmin, addEmployer, deleteEmployer, updateEmployer, adminUpdateEmployerLogo, deleteUser, approveSpecialRequest } from "./actions";
-import { Trash2, Pencil, Image as ImageIcon, Menu, X, LayoutDashboard, Briefcase, FileText, Users, LogOut, Settings, CreditCard, CheckCircle, BookOpen, User } from "lucide-react";
-import { Buildings, UsersThree, HourglassMedium, Briefcase as BriefcasePhosphor } from "@phosphor-icons/react";
+import { Trash2, Pencil, Image as ImageIcon, Menu, X, LayoutDashboard, Briefcase, FileText, Users, LogOut, Settings, CreditCard, CheckCircle, BookOpen, User, Building2, Hourglass } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import ContentManagementTab from "./ContentManagementTab";
 
@@ -813,10 +812,10 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                   <h2 className="text-base font-bold text-[#1c1c1e] mb-5">Overall Stats</h2>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     {[
-                      { label: "Total Employers", value: employers.length, icon: <Buildings weight="duotone" className="w-6 h-6 sm:w-7 sm:h-7 lg:w-8 lg:h-8" color="#6366f1" />, color: "#6366f1" },
-                      { label: "Active Job Seekers", value: users.length, icon: <UsersThree weight="duotone" className="w-6 h-6 sm:w-7 sm:h-7 lg:w-8 lg:h-8" color="#1c1c1e" />, color: "#1c1c1e" },
-                      { label: "Pending Moderation", value: jobs.filter(j => j.status === "pending").length, icon: <HourglassMedium weight="duotone" className="w-6 h-6 sm:w-7 sm:h-7 lg:w-8 lg:h-8" color="#f59e0b" />, color: "#f59e0b" },
-                      { label: "Total Job Posts", value: jobs.length, icon: <BriefcasePhosphor weight="duotone" className="w-6 h-6 sm:w-7 sm:h-7 lg:w-8 lg:h-8" color="#10b981" />, color: "#10b981" },
+                      { label: "Total Employers", value: employers.length, icon: <Building2 className="w-6 h-6 sm:w-7 sm:h-7 lg:w-8 lg:h-8" color="#6366f1" strokeWidth={1.5} />, color: "#6366f1" },
+                      { label: "Active Job Seekers", value: users.length, icon: <Users className="w-6 h-6 sm:w-7 sm:h-7 lg:w-8 lg:h-8" color="#1c1c1e" strokeWidth={1.5} />, color: "#1c1c1e" },
+                      { label: "Pending Moderation", value: jobs.filter(j => j.status === "pending").length, icon: <Hourglass className="w-6 h-6 sm:w-7 sm:h-7 lg:w-8 lg:h-8" color="#f59e0b" strokeWidth={1.5} />, color: "#f59e0b" },
+                      { label: "Total Job Posts", value: jobs.length, icon: <Briefcase className="w-6 h-6 sm:w-7 sm:h-7 lg:w-8 lg:h-8" color="#10b981" strokeWidth={1.5} />, color: "#10b981" },
                     ].map(stat => (
                       <div key={stat.label} className="rounded-xl border border-[#e5e5ea] bg-[#f2f2f7]/80 p-3 sm:p-4 flex flex-col lg:flex-row items-start lg:items-center gap-2 lg:gap-4 transition-all hover:bg-white hover:shadow-md hover:-translate-y-0.5 cursor-pointer">
                         <div className="flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 lg:w-14 lg:h-14 rounded-xl bg-white shadow-sm border border-[#e5e5ea] flex-shrink-0">
