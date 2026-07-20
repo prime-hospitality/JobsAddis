@@ -276,7 +276,7 @@ export default function ContentManagementTab() {
 
                       setViewingTemplateJob({
                         id: tpl.id,
-                        businessName: "Addis Jobs",
+                        businessName: "Jobs Addis",
                         businessLogo: "🏢",
                         logoUrl: "/addis_jobs_logo_mark_only.svg",
                         businessType: "Platform",

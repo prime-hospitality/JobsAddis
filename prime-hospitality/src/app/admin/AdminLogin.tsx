@@ -60,13 +60,13 @@ export default function AdminLogin() {
 
         <div style={{ zIndex: 1, display: "flex", flexDirection: "column", alignItems: "center" }}>
 
-          {/* Addis Jobs Logo */}
+          {/* PBG Logo */}
           <div 
             className="animate-pulse"
             style={{
-            width: 96,
-            height: 96,
-            borderRadius: "50%",
+            width: 120,
+            height: 120,
+            borderRadius: "16px",
             background: "rgba(255,255,255,0.12)",
             border: "1.5px solid rgba(255,255,255,0.3)",
             backdropFilter: "blur(8px)",
@@ -75,11 +75,12 @@ export default function AdminLogin() {
             justifyContent: "center",
             marginBottom: 20,
             boxShadow: "0 4px 24px 0 rgba(0,0,0,0.18)",
+            overflow: "hidden"
           }}>
             <img
-              src="/addis_jobs_logo_mark_only.svg"
-              alt="Addis Jobs Logo"
-              style={{ width: "70%", height: "70%", objectFit: "contain", filter: "brightness(0) invert(1)" }}
+              src="/pbg_logo.png"
+              alt="PBG Logo"
+              style={{ width: "100%", height: "100%", objectFit: "cover" }}
             />
           </div>
           
@@ -98,9 +99,15 @@ export default function AdminLogin() {
 
           <div style={{ width: "80%", height: "1px", background: "rgba(255,255,255,0.2)", marginBottom: "24px" }} />
 
-          <div style={{ textAlign: "center", display: "flex", flexDirection: "column", gap: "2px" }}>
-            <span style={{ fontSize: "clamp(20px, 4vw, 28px)", fontWeight: 300, letterSpacing: "-0.5px" }}>Addis JOBS</span>
-            <span style={{ fontSize: "clamp(24px, 5vw, 36px)", fontWeight: 700, letterSpacing: "-1px" }}>Dashboard</span>
+          <div style={{ textAlign: "center", display: "flex", flexDirection: "column", gap: "2px", alignItems: "center" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "8px" }}>
+              <img src="/addis_jobs_logo_mark_only.svg" alt="Jobs Addis Logo" style={{ width: 40, height: 40, filter: "brightness(0) invert(1)" }} />
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start" }}>
+                <span style={{ fontSize: "clamp(20px, 4vw, 28px)", fontWeight: 700, letterSpacing: "-0.5px", lineHeight: "1" }}>Jobs Addis</span>
+                <span style={{ fontSize: "clamp(12px, 2vw, 16px)", fontWeight: 900, letterSpacing: "0.5px", color: "#FDE047", marginTop: "4px", textTransform: "uppercase" }}>A.A Hotel Associates Union</span>
+              </div>
+            </div>
+            <span style={{ fontSize: "clamp(20px, 4vw, 28px)", fontWeight: 300, letterSpacing: "-1px", marginTop: "8px" }}>Admin Dashboard</span>
           </div>
         </div>
       </div>

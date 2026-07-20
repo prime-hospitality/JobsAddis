@@ -634,9 +634,12 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
               boxShadow: "0 1px 4px 0 rgba(27,58,92,0.10)",
             }}
           >
-            <img src="/addis_jobs_logo_mark_only.svg" alt="Addis Jobs Logo" style={{ width: "80%", height: "80%", objectFit: "contain" }} />
+            <img src="/addis_jobs_logo_mark_only.svg" alt="Jobs Addis Logo" style={{ width: "80%", height: "80%", objectFit: "contain" }} />
           </div>
-          <span className="text-xl font-bold text-black">Addis Jobs</span>
+          <div className="flex flex-col">
+            <span className="text-xl font-bold text-black leading-none mt-1">Jobs Addis</span>
+            <span className="text-[10px] font-black text-[#B08D57] uppercase tracking-wider mt-1">A.A Hotel Associates Union</span>
+          </div>
           <button onClick={() => setMobileMenuOpen(false)} className="ml-auto md:hidden text-[#8e8e93] hover:text-[#1c1c1e]">
             <X className="w-5 h-5" />
           </button>

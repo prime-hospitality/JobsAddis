@@ -316,7 +316,7 @@ export async function checkTemplateStatus(templateId: string) {
   const { data: tpl } = await supabase.from("vacancy_templates").select("title, updated_at").eq("id", templateId).single();
   if (!tpl) return null;
 
-  const { data: employer } = await supabase.from("employers").select("id").eq("business_name", "Addis Jobs").maybeSingle();
+  const { data: employer } = await supabase.from("employers").select("id").eq("business_name", "Jobs Addis").maybeSingle();
   if (!employer) return { status: "new" };
 
   const { data: job } = await supabase
@@ -375,11 +375,11 @@ export async function postJobFromTemplate(templateId: string) {
     salaryMax = tpl.salary_max ?? tpl.salary_min ?? 0;
   }
 
-  // Look up (or create) the "Addis Jobs" platform employer
+  // Look up (or create) the "Jobs Addis" platform employer
   let { data: platformEmployer } = await supabase
     .from("employers")
     .select("id")
-    .eq("business_name", "Addis Jobs")
+    .eq("business_name", "Jobs Addis")
     .maybeSingle();
 
   if (!platformEmployer) {
@@ -405,7 +405,7 @@ export async function postJobFromTemplate(templateId: string) {
       .from("employers")
       .insert({ 
         user_id: systemUser.id,
-        business_name: "Addis Jobs", 
+        business_name: "Jobs Addis", 
         business_type: "Platform", 
         status: "approved",
         logo_url: "/addis_jobs_logo_mark_only.svg"
