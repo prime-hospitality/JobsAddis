@@ -408,7 +408,7 @@ export async function postJobFromTemplate(templateId: string) {
         business_name: "Jobs Addis", 
         business_type: "Platform", 
         status: "approved",
-        logo_url: "/addis_jobs_logo_mark_only.svg"
+        logo_url: "/addis_jobs_logo.png"
       })
       .select("id")
       .single();

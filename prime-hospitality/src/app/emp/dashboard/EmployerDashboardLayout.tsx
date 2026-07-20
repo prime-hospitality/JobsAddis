@@ -144,7 +144,7 @@ export default function EmployerDashboardLayout({
           {/* Brand */}
           <div style={{ padding: "20px 20px 16px", borderBottom: "1px solid #f1f5f9", display: "flex", alignItems: "center", gap: 10 }}>
             <div style={{ width: 36, height: 36, borderRadius: 10, background: "#eff6ff", border: "1px solid #bfdbfe", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-              <img src="/addis_jobs_logo_mark_only.svg" alt="Jobs Addis" style={{ width: 22, height: 22, objectFit: "contain" }} />
+              <img src="/addis_jobs_logo.png" alt="Jobs Addis" style={{ width: 22, height: 22, objectFit: "contain" }} />
             </div>
             <div>
               <div style={{ fontSize: 14, fontWeight: 800, color: "#0f172a", letterSpacing: "-0.01em", lineHeight: 1 }}>Jobs Addis</div>

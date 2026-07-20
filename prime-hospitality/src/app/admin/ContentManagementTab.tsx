@@ -278,7 +278,7 @@ export default function ContentManagementTab() {
                         id: tpl.id,
                         businessName: "Jobs Addis",
                         businessLogo: "🏢",
-                        logoUrl: "/addis_jobs_logo_mark_only.svg",
+                        logoUrl: "/addis_jobs_logo.png",
                         businessType: "Platform",
                         title: tpl.title || "Untitled",
                         category: tpl.job_category || "Other",
@@ -308,7 +308,7 @@ export default function ContentManagementTab() {
                     <div style={{ display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 12 }}>
                       {/* Logo */}
                       <div style={{ width: 48, height: 48, borderRadius: 12, background: "var(--brand-subtle, rgba(14,165,233,0.12))", border: "1px solid var(--border, rgba(255,255,255,0.08))", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                        <img src="/addis_jobs_logo_mark_only.svg" alt="Addis Jobs Logo" style={{ width: "100%", height: "100%", objectFit: "contain", padding: 6 }} />
+                        <img src="/addis_jobs_logo.png" alt="Addis Jobs Logo" style={{ width: "100%", height: "100%", objectFit: "contain", padding: 6 }} />
                       </div>
                       {/* Title + category */}
                       <div style={{ flex: 1, minWidth: 0 }}>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Loader2 } from "lucide-react";
+// import { Loader2 } from "lucide-react"; // No longer needed
 
 export function GlobalFetchInterceptor() {
   const [isLoading, setIsLoading] = useState(false);
@@ -68,7 +68,19 @@ export function GlobalFetchInterceptor() {
           animation: "fadeIn 0.2s ease-out",
         }}
       >
-        <Loader2 size={32} color="#22C55E" style={{ animation: "spin 1s linear infinite" }} />
+        <img 
+          src="/addis_jobs_logo.png" 
+          alt="Loading..." 
+          style={{ width: 40, height: 40, objectFit: "contain", animation: "pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite" }} 
+        />
+        <style>
+          {`
+            @keyframes pulse {
+              0%, 100% { opacity: 1; transform: scale(1); }
+              50% { opacity: .5; transform: scale(0.95); }
+            }
+          `}
+        </style>
       </div>
     </div>
   );

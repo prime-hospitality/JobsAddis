@@ -179,7 +179,7 @@ export default function HomeScreen({ onJobSelect, onSearchPress, onBellPress, un
                   }}
                 >
                   <img 
-                    src="/addis_jobs_logo_mark_only.svg" 
+                    src="/addis_jobs_logo.png" 
                     alt="Jobs Addis Logo" 
                     style={{ 
                       width: "100%", 

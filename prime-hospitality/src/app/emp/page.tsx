@@ -241,7 +241,7 @@ export default function EmployerLoginPage() {
         {/* Logo Header */}
         <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 40, animation: "fadeIn 0.4s ease-out" }}>
           <div style={{ width: 44, height: 44, borderRadius: 12, background: "#ffffff", border: "1px solid #e5e7eb", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
-            <img src="/addis_jobs_logo_mark_only.svg" alt="Jobs Addis" style={{ width: 28, height: 28, objectFit: "contain" }} />
+            <img src="/addis_jobs_logo.png" alt="Jobs Addis" style={{ width: 28, height: 28, objectFit: "contain" }} />
           </div>
           <div>
             <span style={{ fontSize: 18, fontWeight: 800, color: "#111827", letterSpacing: "-0.02em", display: "block", lineHeight: 1 }}>Jobs Addis</span>

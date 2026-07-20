@@ -101,7 +101,7 @@ export default function AdminLogin() {
 
           <div style={{ textAlign: "center", display: "flex", flexDirection: "column", gap: "2px", alignItems: "center" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "8px" }}>
-              <img src="/addis_jobs_logo_mark_only.svg" alt="Jobs Addis Logo" style={{ width: 40, height: 40, filter: "brightness(0) invert(1)" }} />
+              <img src="/addis_jobs_logo.png" alt="Jobs Addis Logo" style={{ width: 40, height: 40, filter: "brightness(0) invert(1)" }} />
               <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start" }}>
                 <span style={{ fontSize: "clamp(20px, 4vw, 28px)", fontWeight: 700, letterSpacing: "-0.5px", lineHeight: "1" }}>Jobs Addis</span>
                 <span style={{ fontSize: "clamp(12px, 2vw, 16px)", fontWeight: 900, letterSpacing: "0.5px", color: "#FDE047", marginTop: "4px", textTransform: "uppercase" }}>A.A Hotel Associates Union</span>

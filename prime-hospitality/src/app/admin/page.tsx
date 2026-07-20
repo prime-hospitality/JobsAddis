@@ -6,7 +6,7 @@ import { getAdminData } from "./actions";
 export const metadata = {
   title: "Jobs Addis Admin",
   icons: {
-    icon: "/addis_jobs_logo_mark_only.svg",
+    icon: "/addis_jobs_logo.png",
   },
 };
 
