@@ -206,6 +206,8 @@ type Tab = "overview" | "employers" | "jobs" | "configuration" | "monetization" 
 type ConfigSubTab = "users" | "content";
 type SeekerSubTab = "user-config" | "tab2" | "tab3" | "tab4";
 type MonSubTab = "monetization" | "pricing";
+type EmpSubTab = "emp_config";
+type EmpConfigSubTab = "view_emp";
 
 export default function AdminDashboard({ initialData }: { initialData: any }) {
   const [data, setData] = useState(initialData);
@@ -221,6 +223,8 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
   const [activeTab, setActiveTab] = useState<Tab>(getInitialTab);
   const [configSubTab, setConfigSubTab] = useState<ConfigSubTab>("users");
   const [monSubTab, setMonSubTab] = useState<MonSubTab>("monetization");
+  const [empSubTab, setEmpSubTab] = useState<EmpSubTab>("emp_config");
+  const [empConfigSubTab, setEmpConfigSubTab] = useState<EmpConfigSubTab>("view_emp");
   const [selectedEmployerId, setSelectedEmployerId] = useState<string | null>(null);
   const [loading, setLoading] = useState<string | null>(null);
 
@@ -1103,7 +1107,41 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
           </div>
 
           <div className="overflow-x-auto">
+            {/* ========== EMPLOYERS SUB-TABS ========== */}
             {activeTab === "employers" && (
+              <div>
+                <div className="flex border-b border-[#c6c6c8] bg-[#f2f2f7]/60 px-6 pt-4 gap-1">
+                  <button
+                    onClick={() => setEmpSubTab("emp_config")}
+                    className={`px-5 py-2.5 text-sm font-semibold rounded-t-lg border border-b-0 transition-all ${
+                      empSubTab === "emp_config"
+                        ? "bg-white border-[#c6c6c8] text-[#1c1c1e] shadow-sm -mb-px"
+                        : "bg-transparent border-transparent text-[#8e8e93] hover:text-[#1c1c1e]"
+                    }`}
+                    style={{ cursor: "pointer" }}
+                  >
+                    <span className="flex items-center gap-2"><Settings size={15} /> Emp Config</span>
+                  </button>
+                </div>
+                {empSubTab === "emp_config" && (
+                  <div className="flex border-b border-[#c6c6c8] bg-white px-6 pt-2 gap-2">
+                    <button
+                      onClick={() => setEmpConfigSubTab("view_emp")}
+                      className={`px-4 py-2 text-sm font-medium rounded-t-md border-b-2 transition-all ${
+                        empConfigSubTab === "view_emp"
+                          ? "border-[#1c1c1e] text-[#1c1c1e]"
+                          : "border-transparent text-[#8e8e93] hover:text-[#1c1c1e]"
+                      }`}
+                      style={{ cursor: "pointer" }}
+                    >
+                      <span className="flex items-center gap-2"><Users size={14} /> View Emp</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {activeTab === "employers" && empSubTab === "emp_config" && empConfigSubTab === "view_emp" && (
               <div style={{ padding: "16px 24px", background: "#f8fafc", borderBottom: "1px solid #e5e7eb", display: "flex", alignItems: "center", justifyContent: "flex-end" }}>
                 <button
                   onClick={() => { setAddEmployerModalOpen(true); setFormError(""); setNewTelegramId(""); setNewBusinessName(""); setNewBusinessType(""); }}
@@ -1381,7 +1419,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
               <table className="w-full text-left border-collapse min-w-[700px]">
                 <thead>
                   <tr className="bg-[#f2f2f7] border-b border-[#c6c6c8]">
-                    {activeTab === "employers" && (
+                    {activeTab === "employers" && empSubTab === "emp_config" && empConfigSubTab === "view_emp" && (
                       <>
                         <th style={{ padding: "12px 24px", color: "#8e8e93", fontSize: 12, textTransform: "uppercase" }}>Business Name</th>
                         <th style={{ padding: "12px 24px", color: "#8e8e93", fontSize: 12, textTransform: "uppercase" }}>Telegram ID</th>
@@ -1408,7 +1446,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                   </tr>
                 </thead>
                 <tbody>
-                  {activeTab === "employers" && data.employers.map((item: any) => (
+                  {activeTab === "employers" && empSubTab === "emp_config" && empConfigSubTab === "view_emp" && data.employers.map((item: any) => (
                     <tr key={item.id} style={{ borderBottom: "1px solid #f3f4f6" }}>
                       <td style={{ padding: "16px 24px", fontWeight: 500 }}>
                         <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
@@ -1508,7 +1546,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
 
             {/* Mobile Card View */}
             <div className="md:hidden flex flex-col p-4 bg-[#f2f2f7]/50">
-              {activeTab === "employers" && data.employers.map((item: any) => (
+              {activeTab === "employers" && empSubTab === "emp_config" && empConfigSubTab === "view_emp" && data.employers.map((item: any) => (
                 <div key={item.id} className="bg-white p-4 rounded-xl border border-[#c6c6c8] shadow-sm flex flex-col gap-3 mb-3">
                   <div className="flex justify-between items-start">
                     <div>
@@ -1605,7 +1643,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
 
             </div>
             
-            {activeTab === "employers" && data.employers.length === 0 && (
+            {activeTab === "employers" && empSubTab === "emp_config" && empConfigSubTab === "view_emp" && data.employers.length === 0 && (
               <div style={{ padding: 40, textAlign: "center", color: "#8e8e93" }}>
                 No employers found.
               </div>
