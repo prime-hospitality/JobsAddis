@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { GlobalFetchInterceptor } from "@/components/GlobalFetchInterceptor";
 
 export const metadata: Metadata = {
   title: "Employer Dashboard | Jobs Addis",
@@ -6,5 +7,10 @@ export const metadata: Metadata = {
 };
 
 export default function EmpLayout({ children }: { children: React.ReactNode }) {
-  return children;
+  return (
+    <>
+      <GlobalFetchInterceptor />
+      {children}
+    </>
+  );
 }
