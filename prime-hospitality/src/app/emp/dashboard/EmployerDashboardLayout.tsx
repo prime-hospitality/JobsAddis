@@ -144,10 +144,10 @@ export default function EmployerDashboardLayout({
           {/* Brand */}
           <div style={{ padding: "20px 20px 16px", borderBottom: "1px solid #f1f5f9", display: "flex", alignItems: "center", gap: 10 }}>
             <div style={{ width: 36, height: 36, borderRadius: 10, background: "#eff6ff", border: "1px solid #bfdbfe", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-              <img src="/addis_jobs_logo.png" alt="Jobs Addis" style={{ width: 22, height: 22, objectFit: "contain" }} />
+              <img src="/addis_jobs_logo.png" alt="JobsAdis" style={{ width: 22, height: 22, objectFit: "contain" }} />
             </div>
             <div>
-              <div style={{ fontSize: 14, fontWeight: 800, color: "#0f172a", letterSpacing: "-0.01em", lineHeight: 1 }}>Jobs Addis</div>
+              <div style={{ fontSize: 14, fontWeight: 800, color: "#0f172a", letterSpacing: "-0.01em", lineHeight: 1 }}>JobsAdis</div>
               <div style={{ fontSize: 8, fontWeight: 900, color: "#B08D57", letterSpacing: "0.05em", textTransform: "uppercase", marginTop: 2 }}>A.A Hotel Associates Union</div>
               <div style={{ fontSize: 10, color: "#94a3b8", fontWeight: 500, marginTop: 2 }}>Employer Dashboard</div>
             </div>

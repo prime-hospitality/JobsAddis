@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { GlobalFetchInterceptor } from "@/components/GlobalFetchInterceptor";
 
 export const metadata: Metadata = {
-  title: "Admin Dashboard | Jobs Addis",
+  title: "Admin Dashboard | JobsAdis",
   description: "Addis Jobs admin control panel.",
 };
 

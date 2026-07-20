@@ -1711,7 +1711,7 @@ export default function ProfileScreen() {
                       </div>
 
                       <p style={{ textAlign: "center", fontSize: 12, color: "var(--text-muted)", marginTop: 20, paddingBottom: 8 }}>
-                        Jobs Addis · Prime Hospitality © {new Date().getFullYear()}
+                        JobsAdis · Prime Hospitality © {new Date().getFullYear()}
                       </p>
                     </div>
                   </div>

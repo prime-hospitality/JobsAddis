@@ -200,7 +200,7 @@ export default function HomeScreen({ onJobSelect, onSearchPress, onBellPress, un
                 >
                   <img 
                     src="/addis_jobs_logo.png" 
-                    alt="Jobs Addis Logo" 
+                    alt="JobsAdis Logo" 
                     style={{ 
                       width: "75%", 
                       height: "75%", 
@@ -218,7 +218,7 @@ export default function HomeScreen({ onJobSelect, onSearchPress, onBellPress, un
                       lineHeight: 1.1,
                     }}
                   >
-                    Jobs Addis
+                    JobsAdis
                   </span>
                   <span style={{ fontSize: 11, fontWeight: 900, color: "var(--brand-accent, #B08D57)", letterSpacing: "0.05em", textTransform: "uppercase", marginTop: 2 }}>
                     A.A Hotel Associates Union

@@ -241,10 +241,10 @@ export default function EmployerLoginPage() {
         {/* Logo Header */}
         <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 40, animation: "fadeIn 0.4s ease-out" }}>
           <div style={{ width: 44, height: 44, borderRadius: 12, background: "#ffffff", border: "1px solid #e5e7eb", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
-            <img src="/addis_jobs_logo.png" alt="Jobs Addis" style={{ width: 28, height: 28, objectFit: "contain" }} />
+            <img src="/addis_jobs_logo.png" alt="JobsAdis" style={{ width: 28, height: 28, objectFit: "contain" }} />
           </div>
           <div>
-            <span style={{ fontSize: 18, fontWeight: 800, color: "#111827", letterSpacing: "-0.02em", display: "block", lineHeight: 1 }}>Jobs Addis</span>
+            <span style={{ fontSize: 18, fontWeight: 800, color: "#111827", letterSpacing: "-0.02em", display: "block", lineHeight: 1 }}>JobsAdis</span>
             <span style={{ fontSize: 10, fontWeight: 900, color: "#B08D57", letterSpacing: "0.05em", textTransform: "uppercase", display: "block", marginTop: 2 }}>A.A Hotel Associates Union</span>
             <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 600, marginTop: 4 }}>EMPLOYER DASHBOARD</div>
           </div>
@@ -285,7 +285,7 @@ export default function EmployerLoginPage() {
               </div>
               <h2 style={{ fontSize: 22, fontWeight: 800, color: "#111827", letterSpacing: "-0.03em", marginBottom: 8, lineHeight: 1.2 }}>Account Rejected</h2>
               <p style={{ fontSize: 14, color: "#6b7280", lineHeight: 1.6, marginBottom: 28, maxWidth: 300 }}>
-                Your employer account <strong style={{ color: "#374151" }}>{employerName}</strong> has been reviewed and rejected by the Jobs Addis team.
+                Your employer account <strong style={{ color: "#374151" }}>{employerName}</strong> has been reviewed and rejected by the JobsAdis team.
               </p>
 
               {/* Contact card */}
@@ -349,7 +349,7 @@ export default function EmployerLoginPage() {
               </div>
               <h2 style={{ fontSize: 22, fontWeight: 800, color: "#111827", letterSpacing: "-0.03em", marginBottom: 8, lineHeight: 1.2 }}>Account Not Found</h2>
               <p style={{ fontSize: 14, color: "#6b7280", lineHeight: 1.6, marginBottom: 28, maxWidth: 300 }}>
-                Your employer account could not be found. It may have been removed. Please contact the Jobs Addis team for assistance.
+                Your employer account could not be found. It may have been removed. Please contact the JobsAdis team for assistance.
               </p>
 
               {/* Contact card */}
@@ -787,7 +787,7 @@ export default function EmployerLoginPage() {
 
         {/* Footer */}
         <p style={{ marginTop: 28, fontSize: 12, color: "#6b7280", textAlign: "center", animation: "fadeIn 0.6s ease-out 0.3s both" }}>
-          Powered by <span style={{ color: "#111827", fontWeight: 600 }}>Jobs Addis Platform</span>
+          Powered by <span style={{ color: "#111827", fontWeight: 600 }}>JobsAdis Platform</span>
         </p>
       </div>
     </>

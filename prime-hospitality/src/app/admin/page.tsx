@@ -4,7 +4,7 @@ import AdminLogin from "./AdminLogin";
 import { getAdminData } from "./actions";
 
 export const metadata = {
-  title: "Jobs Addis Admin",
+  title: "JobsAdis Admin",
   icons: {
     icon: "/addis_jobs_logo.png",
   },
