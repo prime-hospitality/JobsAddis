@@ -1,8 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { checkEmployerByTelegramId, loginWithPassword, verifyEmployerAuthCode, setupEmployerPassword } from "./actions";
+
+const SAVED_ID_KEY = "emp_saved_telegram_id";
+const SAVED_NAME_KEY = "emp_saved_employer_name";
 
 export default function EmployerLoginPage() {
   const router = useRouter();
@@ -15,6 +18,50 @@ export default function EmployerLoginPage() {
   const [employerName, setEmployerName] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [savedId, setSavedId] = useState<string | null>(null);
+  const [savedName, setSavedName] = useState<string | null>(null);
+
+  // Load saved Telegram ID on mount
+  useEffect(() => {
+    const id = localStorage.getItem(SAVED_ID_KEY);
+    const name = localStorage.getItem(SAVED_NAME_KEY);
+    if (id) {
+      setSavedId(id);
+      setSavedName(name);
+    }
+  }, []);
+
+  const handleForgetSaved = () => {
+    localStorage.removeItem(SAVED_ID_KEY);
+    localStorage.removeItem(SAVED_NAME_KEY);
+    setSavedId(null);
+    setSavedName(null);
+    setTelegramId("");
+  };
+
+  const handleUseSaved = async () => {
+    if (!savedId) return;
+    setTelegramId(savedId);
+    setLoading(true);
+    setError("");
+    try {
+      const result = await checkEmployerByTelegramId(savedId);
+      if (!result.exists) {
+        setError("not_registered");
+      } else {
+        setEmployerName(result.employer?.business_name || "");
+        if (result.has_password) {
+          setStep("password");
+        } else {
+          setStep("auth");
+        }
+      }
+    } catch {
+      setError("Something went wrong. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleCheckTelegram = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -94,6 +141,9 @@ export default function EmployerLoginPage() {
         else if (result.error === "not_found") setStep("not_found");
         else setError(result.error || "Login failed");
       } else {
+        // Save Telegram ID for next visit (never save passwords)
+        localStorage.setItem(SAVED_ID_KEY, telegramId.trim());
+        if (employerName) localStorage.setItem(SAVED_NAME_KEY, employerName);
         router.push("/emp/dashboard");
       }
     } catch {
@@ -370,9 +420,42 @@ export default function EmployerLoginPage() {
           {/* Step 1: Telegram ID */}
           {step === "telegram" && (
             <form onSubmit={handleCheckTelegram} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+
+              {/* Saved account chip */}
+              {savedId && (
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 12, padding: "10px 14px", animation: "fadeSlideUp 0.3s ease-out" }}>
+                  <button
+                    type="button"
+                    onClick={handleUseSaved}
+                    style={{ display: "flex", alignItems: "center", gap: 10, background: "none", border: "none", cursor: "pointer", padding: 0, flex: 1, textAlign: "left" }}
+                  >
+                    <div style={{ width: 34, height: 34, borderRadius: "50%", background: "#22c55e", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                    </div>
+                    <div>
+                      {savedName && <p style={{ fontSize: 13, fontWeight: 700, color: "#15803d", margin: 0 }}>{savedName}</p>}
+                      <p style={{ fontSize: 12, color: "#16a34a", margin: 0, fontWeight: 500 }}>ID: {savedId}</p>
+                    </div>
+                    <div style={{ marginLeft: "auto", paddingLeft: 8 }}>
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+                    </div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleForgetSaved}
+                    title="Forget this account"
+                    style={{ marginLeft: 8, background: "none", border: "none", cursor: "pointer", color: "#9ca3af", padding: 4, display: "flex", alignItems: "center", flexShrink: 0, borderRadius: 6, transition: "color 0.15s" }}
+                    onMouseEnter={e => (e.currentTarget.style.color = "#ef4444")}
+                    onMouseLeave={e => (e.currentTarget.style.color = "#9ca3af")}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                  </button>
+                </div>
+              )}
+
               <div>
                 <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#4b5563", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>
-                  Telegram ID
+                  {savedId ? "Or enter a different ID" : "Telegram ID"}
                 </label>
                 <div style={{ position: "relative" }}>
                   <div style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }}>
