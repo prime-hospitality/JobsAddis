@@ -223,11 +223,12 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
   const [activeTab, setActiveTab] = useState<Tab>(getInitialTab);
   const [configSubTab, setConfigSubTab] = useState<ConfigSubTab>("users");
   const [monSubTab, setMonSubTab] = useState<MonSubTab>("monetization");
-  const [empSubTab, setEmpSubTab] = useState<EmpSubTab>(null);
+  const [empSubTab, setEmpSubTab] = useState<EmpSubTab>("emp_config");
   const [empConfigSubTab, setEmpConfigSubTab] = useState<EmpConfigSubTab>(null);
   const [selectedEmployerId, setSelectedEmployerId] = useState<string | null>(null);
   const [loading, setLoading] = useState<string | null>(null);
 
+  const [empViewSearch, setEmpViewSearch] = useState("");
   const [newTelegramId, setNewTelegramId] = useState("");
   const [newBusinessName, setNewBusinessName] = useState("");
   const [newBusinessType, setNewBusinessType] = useState("");
@@ -1157,6 +1158,18 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
               </div>
             )}
 
+            {activeTab === "employers" && empSubTab === "emp_config" && empConfigSubTab === "view_emp" && (
+              <div style={{ padding: "16px 24px", background: "#f8fafc", borderBottom: "1px solid #e5e7eb", display: "flex", alignItems: "center", justifyContent: "flex-end" }}>
+                <input
+                  type="text"
+                  placeholder="Search employers..."
+                  value={empViewSearch}
+                  onChange={(e) => setEmpViewSearch(e.target.value)}
+                  className="px-3 py-2 border border-[#c6c6c8] rounded-lg text-sm w-48 md:w-64 focus:outline-none focus:ring-2 focus:ring-[#1c1c1e] focus:border-transparent transition-all"
+                />
+              </div>
+            )}
+
             {activeTab === "employers" && empSubTab === "emp_config" && empConfigSubTab === "add_emp" && (
               <div style={{ padding: "32px 24px", maxWidth: 600, margin: "0 auto" }}>
                 <div style={{ background: "#fff", borderRadius: 16, padding: 32, border: "1px solid #e5e7eb", boxShadow: "0 4px 12px rgba(0,0,0,0.05)" }}>
@@ -1503,7 +1516,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                   </tr>
                 </thead>
                 <tbody>
-                  {activeTab === "employers" && empSubTab === "emp_config" && empConfigSubTab === "view_emp" && data.employers.map((item: any) => (
+                  {activeTab === "employers" && empSubTab === "emp_config" && empConfigSubTab === "view_emp" && data.employers.filter((emp: any) => (emp.business_name || "").toLowerCase().includes(empViewSearch.toLowerCase())).map((item: any) => (
                     <tr key={item.id} style={{ borderBottom: "1px solid #f3f4f6" }}>
                       <td style={{ padding: "16px 24px", fontWeight: 500 }}>
                         <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
@@ -1603,7 +1616,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
 
             {/* Mobile Card View */}
             <div className="md:hidden flex flex-col p-4 bg-[#f2f2f7]/50">
-              {activeTab === "employers" && empSubTab === "emp_config" && empConfigSubTab === "view_emp" && data.employers.map((item: any) => (
+              {activeTab === "employers" && empSubTab === "emp_config" && empConfigSubTab === "view_emp" && data.employers.filter((emp: any) => (emp.business_name || "").toLowerCase().includes(empViewSearch.toLowerCase())).map((item: any) => (
                 <div key={item.id} className="bg-white p-4 rounded-xl border border-[#c6c6c8] shadow-sm flex flex-col gap-3 mb-3">
                   <div className="flex justify-between items-start">
                     <div>
@@ -1700,7 +1713,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
 
             </div>
             
-            {activeTab === "employers" && empSubTab === "emp_config" && empConfigSubTab === "view_emp" && data.employers.length === 0 && (
+            {activeTab === "employers" && empSubTab === "emp_config" && empConfigSubTab === "view_emp" && data.employers.filter((emp: any) => (emp.business_name || "").toLowerCase().includes(empViewSearch.toLowerCase())).length === 0 && (
               <div style={{ padding: 40, textAlign: "center", color: "#8e8e93" }}>
                 No employers found.
               </div>
