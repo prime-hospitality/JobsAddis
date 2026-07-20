@@ -206,8 +206,8 @@ type Tab = "overview" | "employers" | "jobs" | "configuration" | "monetization" 
 type ConfigSubTab = "users" | "content";
 type SeekerSubTab = "user-config" | "tab2" | "tab3" | "tab4";
 type MonSubTab = "monetization" | "pricing";
-type EmpSubTab = "emp_config";
-type EmpConfigSubTab = "view_emp" | "add_emp";
+type EmpSubTab = "emp_config" | null;
+type EmpConfigSubTab = "view_emp" | "add_emp" | null;
 
 export default function AdminDashboard({ initialData }: { initialData: any }) {
   const [data, setData] = useState(initialData);
@@ -223,8 +223,8 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
   const [activeTab, setActiveTab] = useState<Tab>(getInitialTab);
   const [configSubTab, setConfigSubTab] = useState<ConfigSubTab>("users");
   const [monSubTab, setMonSubTab] = useState<MonSubTab>("monetization");
-  const [empSubTab, setEmpSubTab] = useState<EmpSubTab>("emp_config");
-  const [empConfigSubTab, setEmpConfigSubTab] = useState<EmpConfigSubTab>("view_emp");
+  const [empSubTab, setEmpSubTab] = useState<EmpSubTab>(null);
+  const [empConfigSubTab, setEmpConfigSubTab] = useState<EmpConfigSubTab>(null);
   const [selectedEmployerId, setSelectedEmployerId] = useState<string | null>(null);
   const [loading, setLoading] = useState<string | null>(null);
 
@@ -1146,7 +1146,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                     >
                       <span className="flex items-center gap-2">
                         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14"/></svg>
-                        Add Tab
+                        Add
                       </span>
                     </button>
                   </div>
