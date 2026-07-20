@@ -18,7 +18,6 @@ export const viewport: Viewport = {
 };
 
 import { CvUploadProvider } from "@/hooks/useCvUpload";
-import NextTopLoader from "nextjs-toploader";
 import { GlobalFetchInterceptor } from "@/components/GlobalFetchInterceptor";
 
 export default function RootLayout({
@@ -72,17 +71,6 @@ export default function RootLayout({
         />
       </head>
       <body className="antialiased">
-        <NextTopLoader
-          color="#22C55E"
-          initialPosition={0.08}
-          crawlSpeed={200}
-          height={3}
-          crawl={true}
-          showSpinner={true}
-          easing="ease"
-          speed={200}
-          shadow="0 0 10px #22C55E,0 0 5px #22C55E"
-        />
         <GlobalFetchInterceptor />
         <CvUploadProvider>
           {children}
