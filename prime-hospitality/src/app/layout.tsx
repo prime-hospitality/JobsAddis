@@ -18,7 +18,6 @@ export const viewport: Viewport = {
 };
 
 import { CvUploadProvider } from "@/hooks/useCvUpload";
-import { GlobalFetchInterceptor } from "@/components/GlobalFetchInterceptor";
 
 export default function RootLayout({
   children,
@@ -71,7 +70,6 @@ export default function RootLayout({
         />
       </head>
       <body className="antialiased">
-        <GlobalFetchInterceptor />
         <CvUploadProvider>
           {children}
         </CvUploadProvider>
