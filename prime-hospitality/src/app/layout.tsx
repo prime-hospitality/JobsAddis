@@ -19,6 +19,7 @@ export const viewport: Viewport = {
 
 import { CvUploadProvider } from "@/hooks/useCvUpload";
 import NextTopLoader from "nextjs-toploader";
+import { GlobalFetchInterceptor } from "@/components/GlobalFetchInterceptor";
 
 export default function RootLayout({
   children,
@@ -82,6 +83,7 @@ export default function RootLayout({
           speed={200}
           shadow="0 0 10px #22C55E,0 0 5px #22C55E"
         />
+        <GlobalFetchInterceptor />
         <CvUploadProvider>
           {children}
         </CvUploadProvider>
