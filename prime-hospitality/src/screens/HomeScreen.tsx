@@ -179,39 +179,33 @@ export default function HomeScreen({ onJobSelect, onSearchPress, onBellPress, un
                   }}
                 >
                   <img 
-                    src="/logo.png" 
-                    alt="Logo" 
+                    src="/addis_jobs_logo_mark_only.svg" 
+                    alt="Jobs Addis Logo" 
                     style={{ 
                       width: "100%", 
                       height: "100%", 
-                      objectFit: "cover",
-                      mixBlendMode: "screen"
+                      objectFit: "contain",
+                      padding: 4
                     }} 
                   />
                 </div>
-                <span
-                  style={{
-                    fontSize: 17,
-                    fontWeight: 800,
-                    color: "var(--text-primary)",
-                    letterSpacing: "-0.02em",
-                  }}
-                >
-                  Prime{" "}
+                <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
                   <span
-                    className="text-brand-gradient"
-                    style={{ fontWeight: 800 }}
+                    style={{
+                      fontSize: 20,
+                      fontWeight: 800,
+                      color: "var(--text-primary)",
+                      letterSpacing: "-0.03em",
+                      lineHeight: 1.1,
+                    }}
                   >
-                    Hospitality
+                    Jobs Addis
                   </span>
-                </span>
+                  <span style={{ fontSize: 11, fontWeight: 900, color: "var(--brand-accent, #B08D57)", letterSpacing: "0.05em", textTransform: "uppercase", marginTop: 2 }}>
+                    A.A Hotel Associates Union
+                  </span>
+                </div>
               </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, marginLeft: 40, marginTop: -2 }}>
-                <p style={{ fontSize: 13, fontWeight: 500, color: "var(--text-muted)" }}>
-                  Jobs Addis
-                </p>
-              </div>
-            </div>
 
             {/* Notification bell */}
             <motion.button

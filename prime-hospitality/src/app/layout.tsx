@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Prime Hospitality — Jobs in Addis Ababa",
+  title: "Jobs Addis — Prime Hospitality Business Group",
   description:
     "Find hospitality jobs in Addis Ababa — hotels, restaurants, cafes and more. Ethiopia's premium hospitality job marketplace.",
   keywords: "jobs Ethiopia, hospitality jobs Addis Ababa, hotel jobs, restaurant jobs Ethiopia",
