@@ -62,7 +62,6 @@ export default function AdminLogin() {
 
           {/* PBG Logo */}
           <div 
-            className="animate-pulse"
             style={{
             width: 120,
             height: 120,
@@ -75,14 +74,21 @@ export default function AdminLogin() {
             justifyContent: "center",
             marginBottom: 20,
             boxShadow: "0 4px 24px 0 rgba(0,0,0,0.18)",
-            overflow: "hidden"
+            overflow: "hidden",
+            animation: "adminLogoFadeIn 0.5s ease forwards",
           }}>
             <img
               src="/pbg_logo.png"
               alt="PBG Logo"
-              style={{ width: "100%", height: "100%", objectFit: "cover" }}
+              style={{ width: "100%", height: "100%", objectFit: "cover", opacity: 0, animation: "adminLogoFadeIn 0.5s ease 0.05s forwards" }}
             />
           </div>
+          <style>{`
+            @keyframes adminLogoFadeIn {
+              from { opacity: 0; transform: scale(0.93); }
+              to   { opacity: 1; transform: scale(1); }
+            }
+          `}</style>
           
           <h1 style={{ 
             fontFamily: "'Playfair Display', 'Times New Roman', serif", 

@@ -27,6 +27,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
+        {/* Preload the splash logo so it's in cache before the loading screen renders */}
+        <link rel="preload" href="/logo.png" as="image" />
+        {/* Preload admin login logo */}
+        <link rel="preload" href="/pbg_logo.png" as="image" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link

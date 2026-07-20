@@ -373,8 +373,9 @@ export default function App() {
         }}
       >
         <motion.div
-          animate={{ scale: [1, 1.06, 1], opacity: [0.85, 1, 0.85] }}
-          transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
+          initial={{ opacity: 0, scale: 0.92 }}
+          animate={{ scale: [0.92, 1, 1.06, 1], opacity: [0, 1, 1, 1] }}
+          transition={{ duration: 0.5, ease: "easeOut", times: [0, 0.4, 0.7, 1] }}
           style={{
             width: 72, height: 72, borderRadius: 16,
             display: "flex", alignItems: "center", justifyContent: "center",
@@ -383,6 +384,7 @@ export default function App() {
             boxShadow: "0 12px 24px rgba(0,0,0,0.7), 0 4px 8px rgba(0,0,0,0.5), inset 0 2px 2px rgba(255,255,255,0.15), inset 0 -2px 4px rgba(0,0,0,0.4), inset 0 0 0 1px rgba(5,150,105,0.5)",
           }}
         >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/logo.png" alt="Prime Hospitality Logo" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
         </motion.div>
       </div>
