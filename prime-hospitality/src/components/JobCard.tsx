@@ -10,6 +10,7 @@ interface JobCardProps {
   onClick: (job: Job) => void;
   index: number;
   enableAnimations?: boolean;
+  skipEntranceAnimation?: boolean;
 }
 
 function timeAgo(iso: string): string {
@@ -34,18 +35,21 @@ function formatSalary(min: number, max: number): string {
   return `ETB ${fmt(min)}–${fmt(max)}/mo`;
 }
 
-const JobCard = memo(function JobCard({ job, onClick, index, enableAnimations = true }: JobCardProps) {
+const JobCard = memo(function JobCard({ job, onClick, index, enableAnimations = true, skipEntranceAnimation = false }: JobCardProps) {
   const shouldReduceMotion = useReducedMotion();
   const skipAnimations = !enableAnimations || shouldReduceMotion;
 
   const cardVariants = {
-    hidden: { opacity: 0, y: skipAnimations ? 0 : 16 },
+    hidden: { 
+      opacity: (skipAnimations || skipEntranceAnimation) ? 1 : 0, 
+      y: (skipAnimations || skipEntranceAnimation) ? 0 : 16 
+    },
     visible: {
       opacity: 1,
       y: 0,
       transition: {
         duration: 0.25,
-        delay: Math.min(index * 0.05, 0.3),
+        delay: skipEntranceAnimation ? 0 : Math.min(index * 0.05, 0.3),
         ease: [0.25, 0.46, 0.45, 0.94] as const,
       },
     },

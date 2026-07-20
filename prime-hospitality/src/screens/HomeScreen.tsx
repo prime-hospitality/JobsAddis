@@ -117,16 +117,34 @@ export default function HomeScreen({ onJobSelect, onSearchPress, onBellPress, un
     return () => window.removeEventListener("themeToggle", handleTheme);
   }, []);
 
+  const jobPairs = useMemo(() => {
+    const pairs = [];
+    for (let i = 0; i < jobs.length; i += 2) {
+      pairs.push(jobs.slice(i, i + 2));
+    }
+    return pairs;
+  }, [jobs]);
+
   const virtualizer = useVirtualizer({
-    count: jobs.length,
+    count: jobPairs.length,
     getScrollElement: () => scrollRef.current,
-    estimateSize: useCallback(() => 180, []),
+    estimateSize: useCallback(() => 360, []),
     measureElement: useCallback((el: Element) => el.getBoundingClientRect().height, []),
     overscan: 3,
   });
 
   return (
     <LazyMotion features={domAnimation}>
+      <style dangerouslySetInnerHTML={{__html: `
+        @keyframes fadeSlideIn {
+          0% { opacity: 0; transform: translateY(16px); }
+          100% { opacity: 1; transform: translateY(0); }
+        }
+        .animate-pair-item {
+          animation: fadeSlideIn 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+          opacity: 0;
+        }
+      `}} />
       <div
         ref={scrollRef}
         style={{
@@ -674,11 +692,11 @@ export default function HomeScreen({ onJobSelect, onSearchPress, onBellPress, un
               }}
             >
               {virtualizer.getVirtualItems().map((virtualItem) => {
-                const job = jobs[virtualItem.index];
-                if (!job) return null;
+                const pair = jobPairs[virtualItem.index];
+                if (!pair) return null;
                 return (
                   <div
-                    key={job.id}
+                    key={`pair-${virtualItem.index}`}
                     data-index={virtualItem.index}
                     ref={virtualizer.measureElement}
                     style={{
@@ -689,12 +707,23 @@ export default function HomeScreen({ onJobSelect, onSearchPress, onBellPress, un
                       transform: `translateY(${virtualItem.start}px)`,
                     }}
                   >
-                    <JobCard
-                      job={job}
-                      onClick={onJobSelect}
-                      index={virtualItem.index}
-                      enableAnimations={enableAnimations}
-                    />
+                    {pair.map((job, idx) => (
+                      <div 
+                        key={job.id} 
+                        className={enableAnimations && !shouldReduceMotion ? "animate-pair-item" : ""}
+                        style={{ 
+                          animationDelay: `${idx * 0.08}s` 
+                        }}
+                      >
+                        <JobCard
+                          job={job}
+                          onClick={onJobSelect}
+                          index={0}
+                          enableAnimations={enableAnimations}
+                          skipEntranceAnimation={true}
+                        />
+                      </div>
+                    ))}
                   </div>
                 );
               })}
