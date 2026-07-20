@@ -206,6 +206,7 @@ export default function HomeScreen({ onJobSelect, onSearchPress, onBellPress, un
                   </span>
                 </div>
               </div>
+            </div>
 
             {/* Notification bell */}
             <motion.button
