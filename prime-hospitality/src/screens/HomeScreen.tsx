@@ -185,14 +185,16 @@ export default function HomeScreen({ onJobSelect, onSearchPress, onBellPress, un
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 0 }}>
                 <div
                   style={{
-                    width: 36,
-                    height: 36,
-                    borderRadius: 10,
+                    width: 40,
+                    height: 40,
+                    borderRadius: "50%",
                     overflow: "hidden",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    background: "#0D1F0D",
+                    background: "#fff",
+                    border: "1.5px solid #e2e8f0",
+                    boxShadow: "0 1px 4px 0 rgba(27,58,92,0.10)",
                     flexShrink: 0,
                   }}
                 >
@@ -200,10 +202,9 @@ export default function HomeScreen({ onJobSelect, onSearchPress, onBellPress, un
                     src="/addis_jobs_logo.png" 
                     alt="Jobs Addis Logo" 
                     style={{ 
-                      width: "100%", 
-                      height: "100%", 
+                      width: "75%", 
+                      height: "75%", 
                       objectFit: "contain",
-                      padding: 4
                     }} 
                   />
                 </div>
