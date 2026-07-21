@@ -113,6 +113,7 @@ export default function ContentManagementTab() {
     } finally {
       setPostingTemplateId(null);
     }
+  };
   const [scheduleTemplateModal, setScheduleTemplateModal] = useState<{ id: string; title: string } | null>(null);
   const [scheduleDate, setScheduleDate] = useState("");
   const [scheduleTime, setScheduleTime] = useState("");
