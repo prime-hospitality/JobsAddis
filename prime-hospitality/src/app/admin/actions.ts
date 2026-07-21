@@ -438,7 +438,7 @@ export async function checkTemplateStatus(templateId: string) {
 
 export async function postJobFromTemplate(templateId: string) {
   const auth = (await cookies()).get("admin_session");
-  if (!auth?.value) throw new Error("Unauthorized");
+  if (!auth?.value) return { success: false, error: "Unauthorized" };
 
   const supabase = getSupabase();
 
@@ -448,7 +448,7 @@ export async function postJobFromTemplate(templateId: string) {
     .select("*")
     .eq("id", templateId)
     .single();
-  if (tplErr || !tpl) throw new Error("Template not found");
+  if (tplErr || !tpl) return { success: false, error: "Template not found" };
 
   // Build the full description
   const formatList = (txt: string) =>
@@ -493,7 +493,7 @@ export async function postJobFromTemplate(templateId: string) {
         .insert({ telegram_id: systemTelegramId, role: "admin", is_banned: false })
         .select("id")
         .single();
-      if (uErr) throw new Error(uErr.message || "Failed to create system user");
+      if (uErr) return { success: false, error: uErr.message || "Failed to create system user" };
       systemUser = newUser;
     }
 
@@ -508,7 +508,7 @@ export async function postJobFromTemplate(templateId: string) {
       })
       .select("id")
       .single();
-    if (empErr) throw new Error(empErr.message || "Failed to create platform employer");
+    if (empErr) return { success: false, error: empErr.message || "Failed to create platform employer" };
     platformEmployer = newEmp;
   }
 
@@ -537,13 +537,13 @@ export async function postJobFromTemplate(templateId: string) {
     status: "active",
   });
 
-  if (jobErr) throw new Error(jobErr.message || "Failed to insert job");
+  if (jobErr) return { success: false, error: jobErr.message || "Failed to insert job" };
   return { success: true };
 }
 
 export async function scheduleJobFromTemplate(templateId: string, scheduledAt: string) {
   const auth = (await cookies()).get("admin_session");
-  if (!auth?.value) throw new Error("Unauthorized");
+  if (!auth?.value) return { success: false, error: "Unauthorized" };
 
   const supabase = getSupabase();
   const { data: tpl, error: tplErr } = await supabase
@@ -551,7 +551,7 @@ export async function scheduleJobFromTemplate(templateId: string, scheduledAt: s
     .select("*")
     .eq("id", templateId)
     .single();
-  if (tplErr || !tpl) throw new Error("Template not found");
+  if (tplErr || !tpl) return { success: false, error: "Template not found" };
 
   const formatList = (txt: string) =>
     txt.split("\n").filter((l: string) => l.trim()).map((l: string) => l.trim().match(/^[-•*]/) ? l : `• ${l.trim()}`).join("\n");
@@ -592,7 +592,7 @@ export async function scheduleJobFromTemplate(templateId: string, scheduledAt: s
         .insert({ telegram_id: systemTelegramId, role: "admin", is_banned: false })
         .select("id")
         .single();
-      if (uErr) throw new Error(uErr.message || "Failed to create system user");
+      if (uErr) return { success: false, error: uErr.message || "Failed to create system user" };
       systemUser = newUser;
     }
 
@@ -607,7 +607,7 @@ export async function scheduleJobFromTemplate(templateId: string, scheduledAt: s
       })
       .select("id")
       .single();
-    if (empErr) throw new Error(empErr.message || "Failed to create platform employer");
+    if (empErr) return { success: false, error: empErr.message || "Failed to create platform employer" };
     platformEmployer = newEmp;
   }
 
@@ -660,7 +660,7 @@ export async function scheduleJobFromTemplate(templateId: string, scheduledAt: s
       quantity: tpl.quantity || 1,
       status: "scheduled",
     });
-    if (fallbackErr) throw new Error(fallbackErr.message || "Failed to insert scheduled job");
+    if (fallbackErr) return { success: false, error: fallbackErr.message || "Failed to insert scheduled job" };
   }
   return { success: true };
 }

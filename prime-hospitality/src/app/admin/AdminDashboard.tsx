@@ -3,7 +3,8 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { approveEmployer, rejectEmployer, toggleUserBan, toggleJobStatus, scheduleJobPost, logoutAdmin, addEmployer, deleteEmployer, updateEmployer, adminUpdateEmployerLogo, deleteUser, approveSpecialRequest, getPricingConfig, updatePricingConfig, getLoggedInAdmin, createSubAdmin, updateSubAdminPermissions, deleteSubAdmin, listSubAdmins, searchUsers, getProfessionCounts, searchEmployers, getPackages } from "./actions";
 import type { AdminPermissions, SubAdmin } from "./actions";
-import { Trash2, Pencil, Image as ImageIcon, Menu, X, LayoutDashboard, Briefcase, FileText, Users, LogOut, Settings, CreditCard, CheckCircle, BookOpen, User, Building2, Hourglass } from "lucide-react";
+import { Trash2, Pencil, Image as ImageIcon, Menu, X, LayoutDashboard, Briefcase, FileText, Users, LogOut, Settings, CreditCard, CheckCircle, BookOpen, User, Building2, Hourglass, ChevronDown, Check } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { Timer } from "@phosphor-icons/react";
 import { supabase } from "@/lib/supabase";
 import ContentManagementTab from "./ContentManagementTab";
@@ -200,6 +201,106 @@ function CustomSelect({ value, onChange, options, placeholder, className = "", s
           </div>
         </>
       )}
+    </div>
+  );
+}
+
+function PackageDropdown({ packages, selectedId, onSelect }: { packages: any[], selectedId: string, onSelect: (id: string) => void }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const selectedPkg = packages.find(p => p.id === selectedId);
+
+  return (
+    <div ref={dropdownRef} style={{ position: "relative", width: "100%" }}>
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className="admin-input"
+        style={{
+          width: "100%", padding: "12px 14px", display: "flex", alignItems: "center", justifyContent: "space-between",
+          background: "#f8fafc", border: isOpen ? "1.5px solid #007aff" : "1.5px solid #e2e8f0", cursor: "pointer",
+          borderRadius: 10, outline: "none", boxShadow: isOpen ? "0 0 0 3px rgba(0,122,255,0.12)" : "none", transition: "border-color 0.2s, box-shadow 0.2s"
+        }}
+      >
+        <span style={{ color: selectedPkg ? "#1c1c1e" : "#8e8e93", fontSize: 14, fontWeight: 500 }}>
+          {selectedPkg ? selectedPkg.name : "No Package (Free / Manual Later)"}
+        </span>
+        <ChevronDown size={16} color="#8e8e93" style={{ transform: isOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }} />
+      </button>
+      
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: -5, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -5, scale: 0.98 }}
+            transition={{ duration: 0.15, ease: "easeOut" }}
+            style={{
+              position: "absolute", top: "calc(100% + 6px)", left: 0, right: 0, zIndex: 50,
+              background: "#ffffff", borderRadius: 12, border: "1px solid #e5e5ea",
+              boxShadow: "0 10px 25px rgba(0,0,0,0.08)", overflow: "hidden"
+            }}
+          >
+            <div style={{ maxHeight: 240, overflowY: "auto", padding: 6 }}>
+              <button
+                type="button"
+                onClick={() => { onSelect(""); setIsOpen(false); }}
+                style={{
+                  width: "100%", display: "flex", alignItems: "center", padding: "10px 12px", gap: 10,
+                  background: selectedId === "" ? "#f2f2f7" : "transparent", border: "none", borderRadius: 8, cursor: "pointer",
+                  textAlign: "left"
+                }}
+                onMouseEnter={(e) => { if(selectedId !== "") e.currentTarget.style.background = "#f2f2f7" }}
+                onMouseLeave={(e) => { if(selectedId !== "") e.currentTarget.style.background = "transparent" }}
+              >
+                <div style={{ width: 16, display: "flex", justifyContent: "center" }}>
+                  {selectedId === "" && <Check size={16} color="#007aff" />}
+                </div>
+                <span style={{ fontSize: 14, fontWeight: 500, color: "#1c1c1e" }}>No Package (Free / Manual Later)</span>
+              </button>
+
+              {packages.map(pkg => (
+                <button
+                  key={pkg.id}
+                  type="button"
+                  onClick={() => { onSelect(pkg.id); setIsOpen(false); }}
+                  style={{
+                    width: "100%", display: "flex", alignItems: "center", padding: "10px 12px", gap: 10,
+                    background: selectedId === pkg.id ? "#f2f2f7" : "transparent", border: "none", borderRadius: 8, cursor: "pointer",
+                    textAlign: "left", marginTop: 2
+                  }}
+                  onMouseEnter={(e) => { if(selectedId !== pkg.id) e.currentTarget.style.background = "#f2f2f7" }}
+                  onMouseLeave={(e) => { if(selectedId !== pkg.id) e.currentTarget.style.background = "transparent" }}
+                >
+                  <div style={{ width: 16, display: "flex", justifyContent: "center", flexShrink: 0 }}>
+                    {selectedId === pkg.id && <Check size={16} color="#007aff" />}
+                  </div>
+                  <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 4 }}>
+                    <span style={{ fontSize: 14, fontWeight: 600, color: "#1c1c1e" }}>{pkg.name}</span>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                    <span style={{ padding: "4px 8px", background: "#e5e5ea", borderRadius: 100, fontSize: 11, fontWeight: 600, color: "#3a3a3c" }}>
+                      {pkg.duration_days} Days
+                    </span>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: "#1c1c1e" }}>{pkg.price} ETB</span>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -1339,18 +1440,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                     </div>
                     <div>
                       <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#1c1c1e", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.05em" }}>Subscription Package (Optional)</label>
-                      <select
-                        value={selectedPackageId}
-                        onChange={e => setSelectedPackageId(e.target.value)}
-                        style={{ width: "100%", padding: "12px 14px", borderRadius: 10, border: "1.5px solid #e2e8f0", fontSize: 14, fontWeight: 500, color: "#1c1c1e", background: "#f8fafc", boxSizing: "border-box", outline: "none" }}
-                      >
-                        <option value="">No Package (Free / Manual Later)</option>
-                        {packages.map((pkg) => (
-                          <option key={pkg.id} value={pkg.id}>
-                            {pkg.name} — {pkg.duration_days} Days ({pkg.price} ETB)
-                          </option>
-                        ))}
-                      </select>
+                      <PackageDropdown packages={packages} selectedId={selectedPackageId} onSelect={setSelectedPackageId} />
                     </div>
                     {formError && <p style={{ margin: 0, fontSize: 13, color: "#dc2626", background: "#fef2f2", padding: "10px 14px", borderRadius: 8, border: "1px solid #fecaca" }}>{formError}</p>}
                     <div style={{ display: "flex", gap: 10, marginTop: 4 }}>

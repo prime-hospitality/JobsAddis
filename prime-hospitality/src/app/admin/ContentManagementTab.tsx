@@ -105,7 +105,11 @@ export default function ContentManagementTab() {
     setConfirmPostData(null);
     setPostingTemplateId(templateId);
     try {
-      await postJobFromTemplate(templateId);
+      const res = await postJobFromTemplate(templateId);
+      if (res && res.error) {
+        setErrorModal("Failed to post job: " + res.error);
+        return;
+      }
       setPostedTemplateId(templateId);
       setTimeout(() => setPostedTemplateId(null), 3000);
     } catch (err) {
@@ -127,7 +131,11 @@ export default function ContentManagementTab() {
     setScheduleError("");
     try {
       const scheduledIso = new Date(`${scheduleDate}T${scheduleTime}`).toISOString();
-      await scheduleJobFromTemplate(scheduleTemplateModal.id, scheduledIso);
+      const res = await scheduleJobFromTemplate(scheduleTemplateModal.id, scheduledIso);
+      if (res && res.error) {
+        setScheduleError(res.error);
+        return;
+      }
       setScheduleTemplateModal(null);
       setScheduleDate("");
       setScheduleTime("");
