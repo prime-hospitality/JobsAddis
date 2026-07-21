@@ -376,13 +376,33 @@ export async function deleteUser(userId: string, passwordAttempt: string) {
   return { success: true };
 }
 
-export async function toggleJobStatus(jobId: string, status: "active" | "closed" | "pending") {
+export async function toggleJobStatus(jobId: string, status: "active" | "closed" | "pending" | "scheduled") {
   await requirePermission("manageJobs");
 
   const { error } = await getSupabase().from("jobs").update({ status }).eq("id", jobId);
   if (error) throw error;
   return { success: true };
 }
+
+export async function scheduleJobPost(jobId: string, scheduledAt: string) {
+  await requirePermission("manageJobs");
+
+  const supabase = getSupabase();
+  const { error } = await supabase
+    .from("jobs")
+    .update({ status: "scheduled", scheduled_at: scheduledAt })
+    .eq("id", jobId);
+
+  if (error) {
+    const { error: err2 } = await supabase
+      .from("jobs")
+      .update({ status: "scheduled" })
+      .eq("id", jobId);
+    if (err2) throw err2;
+  }
+  return { success: true, scheduledAt };
+}
+
 
 export async function checkTemplateStatus(templateId: string) {
   const auth = (await cookies()).get("admin_session");
