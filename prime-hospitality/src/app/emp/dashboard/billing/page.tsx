@@ -32,7 +32,8 @@ export default async function BillingPage() {
     .eq("id", session.employerId)
     .maybeSingle();
 
-  const activePackage = employer?.packages;
+  const pkgData = employer?.packages as any;
+  const activePackage = Array.isArray(pkgData) ? pkgData[0] : pkgData;
   const expiresAt = employer?.package_expires_at ? new Date(employer.package_expires_at) : null;
   const isExpired = expiresAt ? expiresAt.getTime() < Date.now() : false;
 
