@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import EmployerDashboardLayout from "./EmployerDashboardLayout";
+import ExpiredLockScreen from "./ExpiredLockScreen";
 import { validateEmployerSession, logoutEmployer } from "../actions";
 import type { Metadata } from "next";
 
@@ -30,6 +31,12 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const validation = await validateEmployerSession();
 
   if (!validation.valid) {
+    if (validation.reason === "expired") {
+      return (
+        <ExpiredLockScreen session={session} initiallyRequested={validation.renewalRequested || false} />
+      );
+    }
+
     // Clear the stale cookie
     await logoutEmployer();
 

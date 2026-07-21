@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { approveEmployer, rejectEmployer, toggleUserBan, toggleJobStatus, scheduleJobPost, logoutAdmin, addEmployer, deleteEmployer, updateEmployer, adminUpdateEmployerLogo, deleteUser, approveSpecialRequest, getPricingConfig, updatePricingConfig, getLoggedInAdmin, createSubAdmin, updateSubAdminPermissions, deleteSubAdmin, listSubAdmins, searchUsers, getProfessionCounts, searchEmployers } from "./actions";
+import { approveEmployer, rejectEmployer, toggleUserBan, toggleJobStatus, scheduleJobPost, logoutAdmin, addEmployer, deleteEmployer, updateEmployer, adminUpdateEmployerLogo, deleteUser, approveSpecialRequest, getPricingConfig, updatePricingConfig, getLoggedInAdmin, createSubAdmin, updateSubAdminPermissions, deleteSubAdmin, listSubAdmins, searchUsers, getProfessionCounts, searchEmployers, getPackages } from "./actions";
 import type { AdminPermissions, SubAdmin } from "./actions";
 import { Trash2, Pencil, Image as ImageIcon, Menu, X, LayoutDashboard, Briefcase, FileText, Users, LogOut, Settings, CreditCard, CheckCircle, BookOpen, User, Building2, Hourglass } from "lucide-react";
 import { Timer } from "@phosphor-icons/react";
@@ -239,6 +239,8 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
   const [newTelegramId, setNewTelegramId] = useState("");
   const [newBusinessName, setNewBusinessName] = useState("");
   const [newBusinessType, setNewBusinessType] = useState("");
+  const [packages, setPackages] = useState<any[]>([]);
+  const [selectedPackageId, setSelectedPackageId] = useState<string>("");
   const [formLoading, setFormLoading] = useState(false);
   const [formError, setFormError] = useState("");
   const [authNumberResult, setAuthNumberResult] = useState<{ name: string; number: string } | null>(null);
@@ -260,6 +262,8 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
   const [editName, setEditName] = useState("");
   const [editType, setEditType] = useState("");
   const [editPostLimit, setEditPostLimit] = useState<number>(3);
+  const [editPackageId, setEditPackageId] = useState<string>("");
+  const [editExtendDays, setEditExtendDays] = useState<number>(0);
   const [editLoading, setEditLoading] = useState(false);
   const [editLogoFile, setEditLogoFile] = useState<File | null>(null);
   const [editError, setEditError] = useState("");
@@ -393,6 +397,20 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
     }
   }, [activeTab, empSubTab, empConfigSubTab, empViewSearch, empPage]);
 
+  useEffect(() => {
+    if (activeTab === "employers" && empSubTab === "emp_config") {
+      const fetchPkgs = async () => {
+        try {
+          const res = await getPackages();
+          setPackages(res);
+        } catch (e) {
+          console.error(e);
+        }
+      };
+      fetchPkgs();
+    }
+  }, [activeTab, empSubTab]);
+
   // Sync active tab to sessionStorage so refresh restores the same tab
   useEffect(() => {
     sessionStorage.setItem("adminActiveTab", activeTab);
@@ -436,7 +454,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
     setEditLoading(true);
     setEditError("");
     try {
-      const res = await updateEmployer(editModal.id, editName, editType, editPostLimit);
+      const res = await updateEmployer(editModal.id, editName, editType, editPostLimit, editPackageId || null, editExtendDays);
       
       let logoUrl = null;
       if (editLogoFile) {
@@ -523,7 +541,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
         throw new Error("Invalid Telegram ID");
       }
 
-      const res = await addEmployer(parsedTelegramId, newBusinessName, newBusinessType);
+      const res = await addEmployer(parsedTelegramId, newBusinessName, newBusinessType, selectedPackageId || null);
       if (res.success && res.employer) {
         setData((prev: any) => ({
           ...prev,
@@ -537,6 +555,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
         setNewTelegramId("");
         setNewBusinessName("");
         setNewBusinessType("");
+        setSelectedPackageId("");
       }
     } catch (err: any) {
       setFormError(err.message || "Failed to add employer");
@@ -1247,7 +1266,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                       <span className="flex items-center gap-2"><Users size={14} /> View Emp</span>
                     </button>
                     <button
-                      onClick={() => { setEmpConfigSubTab("add_emp"); setFormError(""); setNewTelegramId(""); setNewBusinessName(""); setNewBusinessType(""); }}
+                      onClick={() => { setEmpConfigSubTab("add_emp"); setFormError(""); setNewTelegramId(""); setNewBusinessName(""); setNewBusinessType(""); setSelectedPackageId(""); }}
                       className={`px-4 py-2 text-sm font-medium rounded-t-md border-b-2 transition-all ${
                         empConfigSubTab === "add_emp"
                           ? "border-[#1c1c1e] text-[#1c1c1e]"
@@ -1317,6 +1336,21 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                         placeholder="e.g. Hotel, Restaurant, NGO"
                         style={{ width: "100%", padding: "12px 14px", borderRadius: 10, border: "1.5px solid #e2e8f0", fontSize: 14, fontWeight: 500, color: "#1c1c1e", background: "#f8fafc", boxSizing: "border-box", outline: "none" }}
                       />
+                    </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#1c1c1e", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.05em" }}>Subscription Package (Optional)</label>
+                      <select
+                        value={selectedPackageId}
+                        onChange={e => setSelectedPackageId(e.target.value)}
+                        style={{ width: "100%", padding: "12px 14px", borderRadius: 10, border: "1.5px solid #e2e8f0", fontSize: 14, fontWeight: 500, color: "#1c1c1e", background: "#f8fafc", boxSizing: "border-box", outline: "none" }}
+                      >
+                        <option value="">No Package (Free / Manual Later)</option>
+                        {packages.map((pkg) => (
+                          <option key={pkg.id} value={pkg.id}>
+                            {pkg.name} — {pkg.duration_days} Days ({pkg.price} ETB)
+                          </option>
+                        ))}
+                      </select>
                     </div>
                     {formError && <p style={{ margin: 0, fontSize: 13, color: "#dc2626", background: "#fef2f2", padding: "10px 14px", borderRadius: 8, border: "1px solid #fecaca" }}>{formError}</p>}
                     <div style={{ display: "flex", gap: 10, marginTop: 4 }}>
@@ -1617,7 +1651,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                         <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
                           {item.business_name}
                           <button
-                            onClick={() => { setEditModal({ id: item.id, name: item.business_name, type: item.business_type || "", postLimit: item.daily_post_limit ?? 3 }); setEditName(item.business_name); setEditType(item.business_type || ""); setEditPostLimit(item.daily_post_limit ?? 3); setEditLogoFile(null); setEditError(""); }}
+                            onClick={() => { setEditModal({ id: item.id, name: item.business_name, type: item.business_type || "", postLimit: item.daily_post_limit ?? 3 }); setEditName(item.business_name); setEditType(item.business_type || ""); setEditPostLimit(item.daily_post_limit ?? 3); setEditPackageId(item.active_package_id || ""); setEditExtendDays(0); setEditLogoFile(null); setEditError(""); }}
                             style={{ background: "transparent", border: "none", cursor: "pointer", color: "#9ca3af", padding: "4px", borderRadius: 6, display: "flex", alignItems: "center", justifyContent: "center" }}
                             title="Edit employer"
                           >
@@ -1718,7 +1752,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                       <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
                         <h4 className="font-semibold text-[#1c1c1e] m-0">{item.business_name}</h4>
                         <button
-                          onClick={() => { setEditModal({ id: item.id, name: item.business_name, type: item.business_type || "", postLimit: item.daily_post_limit ?? 3 }); setEditName(item.business_name); setEditType(item.business_type || ""); setEditPostLimit(item.daily_post_limit ?? 3); setEditLogoFile(null); setEditError(""); }}
+                          onClick={() => { setEditModal({ id: item.id, name: item.business_name, type: item.business_type || "", postLimit: item.daily_post_limit ?? 3 }); setEditName(item.business_name); setEditType(item.business_type || ""); setEditPostLimit(item.daily_post_limit ?? 3); setEditPackageId(item.active_package_id || ""); setEditExtendDays(0); setEditLogoFile(null); setEditError(""); }}
                           style={{ background: "transparent", border: "none", cursor: "pointer", color: "#9ca3af", padding: "2px", display: "flex", alignItems: "center" }}
                           title="Edit employer"
                         >
@@ -2204,6 +2238,37 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                 />
                 {editLogoFile && <p style={{ fontSize: 12, color: "#059669", marginTop: 4 }}>Selected: {editLogoFile.name}</p>}
               </div>
+
+              {/* Subscription Package */}
+              <div>
+                <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#1c1c1e", marginBottom: 6 }}>Subscription Package</label>
+                <select
+                  value={editPackageId}
+                  onChange={e => setEditPackageId(e.target.value)}
+                  style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid #d1d5db", fontSize: 14, boxSizing: "border-box" }}
+                >
+                  <option value="">No Package (Free / Manual Later)</option>
+                  {packages.map((pkg) => (
+                    <option key={pkg.id} value={pkg.id}>
+                      {pkg.name} — {pkg.duration_days} Days ({pkg.price} ETB)
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Extend Days */}
+              {editPackageId && (
+                <div>
+                  <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#1c1c1e", marginBottom: 6 }}>Extend Package Duration (Days)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={editExtendDays}
+                    onChange={e => setEditExtendDays(parseInt(e.target.value) || 0)}
+                    style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid #d1d5db", fontSize: 14, boxSizing: "border-box" }}
+                  />
+                </div>
+              )}
 
               {/* Daily Post Limit */}
               <div>

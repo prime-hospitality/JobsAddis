@@ -172,12 +172,15 @@ export async function validateEmployerSession() {
   const supabase = getSupabase();
   const { data: employer } = await supabase
     .from("employers")
-    .select("id, status")
+    .select("id, status, package_expires_at, renewal_requested")
     .eq("id", session.employerId)
     .maybeSingle();
 
   if (!employer) return { valid: false, reason: "deleted" as const };
   if (employer.status === "rejected") return { valid: false, reason: "rejected" as const };
+  if (employer.package_expires_at && new Date(employer.package_expires_at) < new Date()) {
+    return { valid: false, reason: "expired" as const, renewalRequested: employer.renewal_requested };
+  }
   return { valid: true };
 }
 
@@ -217,4 +220,39 @@ export async function getEmployerDashboardData() {
     pendingApplications: pendingApplications.length,
     recentApplications,
   };
+}
+
+export async function requestEmployerRenewal(employerId: string) {
+  const supabase = getSupabase();
+  const { error } = await supabase
+    .from("employers")
+    .update({ renewal_requested: true })
+    .eq("id", employerId);
+  if (error) throw new Error(error.message);
+  return { success: true };
+}
+
+export async function getEmployerNotifications() {
+  const session = await getEmployerSession();
+  if (!session) return [];
+
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from("notifications")
+    .select("*")
+    .eq("user_telegram_id", session.telegramId)
+    .order("created_at", { ascending: false });
+
+  if (error) throw new Error(error.message);
+  return data || [];
+}
+
+export async function markNotificationAsRead(id: string) {
+  const supabase = getSupabase();
+  const { error } = await supabase
+    .from("notifications")
+    .update({ read: true })
+    .eq("id", id);
+  if (error) throw new Error(error.message);
+  return { success: true };
 }

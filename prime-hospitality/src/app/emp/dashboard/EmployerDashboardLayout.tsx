@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
-import { logoutEmployer } from "../actions";
+import { logoutEmployer, getEmployerNotifications, markNotificationAsRead } from "../actions";
 
 const navItems = [
   {
@@ -79,6 +79,24 @@ export default function EmployerDashboardLayout({
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [notifOpen, setNotifOpen] = useState(false);
+
+  useEffect(() => {
+    const fetchNotifs = async () => {
+      try {
+        const res = await getEmployerNotifications();
+        setNotifications(res);
+      } catch (e) {
+        console.error("Failed to fetch notifications", e);
+      }
+    };
+    fetchNotifs();
+    const interval = setInterval(fetchNotifs, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const unreadCount = notifications.filter(n => !n.read).length;
 
   const activeItem = navItems.find((n) => pathname === n.href || (n.href !== "/emp/dashboard" && pathname.startsWith(n.href)));
   const pageTitle = activeItem?.label || "Employer Dashboard";
@@ -226,9 +244,78 @@ export default function EmployerDashboardLayout({
 
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               {/* Notifications */}
-              <button className="emp-topbar-btn">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
-              </button>
+              <div style={{ position: "relative" }}>
+                <button className="emp-topbar-btn" onClick={() => setNotifOpen(!notifOpen)} style={{ position: "relative" }}>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+                  {unreadCount > 0 && (
+                    <span style={{ position: "absolute", top: -2, right: -2, width: 16, height: 16, borderRadius: "50%", background: "#ef4444", color: "#fff", fontSize: 9, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", border: "2px solid #fff" }}>
+                      {unreadCount}
+                    </span>
+                  )}
+                </button>
+                {notifOpen && (
+                  <>
+                    <div style={{ position: "fixed", inset: 0, zIndex: 40 }} onClick={() => setNotifOpen(false)} />
+                    <div style={{ position: "absolute", right: 0, top: "calc(100% + 8px)", background: "#fff", border: "1px solid #e2e8f0", borderRadius: 16, boxShadow: "0 10px 25px -5px rgba(0,0,0,0.1)", zIndex: 50, width: 320, overflow: "hidden" }}>
+                      <div style={{ padding: "12px 16px", borderBottom: "1px solid #f1f5f9", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <span style={{ fontSize: 14, fontWeight: 700, color: "#0f172a" }}>Notifications</span>
+                        {unreadCount > 0 && (
+                          <span style={{ fontSize: 11, fontWeight: 600, color: "#0284c7" }}>{unreadCount} unread</span>
+                        )}
+                      </div>
+                      <div style={{ maxHeight: 280, overflowY: "auto" }}>
+                        {notifications.length === 0 ? (
+                          <div style={{ padding: "24px 16px", textAlign: "center", color: "#94a3b8", fontSize: 13 }}>
+                            No notifications yet
+                          </div>
+                        ) : (
+                          notifications.map((notif) => {
+                            let text = "";
+                            let bg = "#f8fafc";
+                            if (notif.type === "job_expiring") {
+                              text = `Your job post "${notif.job_title}" is expiring within 48 hours. Extend it before it goes offline!`;
+                              bg = notif.read ? "#fff" : "#fffbeb";
+                            } else if (notif.type === "subscription_expired") {
+                              text = `Your subscription has expired. All active jobs have been hidden.`;
+                              bg = notif.read ? "#fff" : "#fef2f2";
+                            } else {
+                              text = `Someone applied to your "${notif.job_title}" position.`;
+                              bg = notif.read ? "#fff" : "#eff6ff";
+                            }
+                            return (
+                              <div
+                                key={notif.id}
+                                onClick={async () => {
+                                  if (!notif.read) {
+                                    await markNotificationAsRead(notif.id);
+                                    setNotifications(prev => prev.map(n => n.id === notif.id ? { ...n, read: true } : n));
+                                  }
+                                }}
+                                style={{
+                                  padding: "12px 16px",
+                                  borderBottom: "1px solid #f1f5f9",
+                                  fontSize: 13,
+                                  color: "#374151",
+                                  cursor: "pointer",
+                                  background: bg,
+                                  transition: "background 0.15s",
+                                }}
+                                onMouseEnter={(e) => (e.currentTarget.style.background = "#f1f5f9")}
+                                onMouseLeave={(e) => (e.currentTarget.style.background = bg)}
+                              >
+                                <p style={{ margin: 0, lineHeight: 1.4, fontWeight: notif.read ? 400 : 600 }}>{text}</p>
+                                <span style={{ fontSize: 10, color: "#94a3b8", marginTop: 4, display: "block" }}>
+                                  {new Date(notif.created_at).toLocaleDateString()}
+                                </span>
+                              </div>
+                            );
+                          })
+                        )}
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
 
               {/* Profile dropdown */}
               <div style={{ position: "relative" }}>

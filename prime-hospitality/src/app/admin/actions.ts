@@ -665,7 +665,7 @@ export async function scheduleJobFromTemplate(templateId: string, scheduledAt: s
   return { success: true };
 }
 
-export async function addEmployer(telegramId: number, businessName: string, businessType: string) {
+export async function addEmployer(telegramId: number, businessName: string, businessType: string, packageId: string | null = null) {
   await requirePermission("manageEmployers");
 
   // Validate telegramId format (positive integer, 5-12 digits, no leading 0)
@@ -734,6 +734,21 @@ export async function addEmployer(telegramId: number, businessName: string, busi
     authNumber = generateAuthNumber();
   }
 
+  let packageExpiresAt: string | null = null;
+  if (packageId) {
+    const { data: pkg, error: pkgErr } = await supabase
+      .from("packages")
+      .select("duration_days")
+      .eq("id", packageId)
+      .maybeSingle();
+    if (pkgErr) throw pkgErr;
+    if (pkg) {
+      const now = new Date();
+      now.setDate(now.getDate() + pkg.duration_days);
+      packageExpiresAt = now.toISOString();
+    }
+  }
+
   // 3. Insert new employer record with authorization number
   const { data: newEmp, error: insertEmpErr } = await supabase
     .from("employers")
@@ -743,6 +758,8 @@ export async function addEmployer(telegramId: number, businessName: string, busi
       business_type: businessType,
       status: "approved",
       authorization_number: authNumber,
+      active_package_id: packageId,
+      package_expires_at: packageExpiresAt,
     })
     .select("*, users(telegram_id)")
     .single();
@@ -752,19 +769,43 @@ export async function addEmployer(telegramId: number, businessName: string, busi
   return { success: true, employer: newEmp, authorizationNumber: authNumber };
 }
 
-export async function updateEmployer(employerId: string, businessName: string, businessType: string, dailyPostLimit: number) {
+export async function updateEmployer(employerId: string, businessName: string, businessType: string, dailyPostLimit: number, packageId?: string | null, extendDays: number = 0) {
   await requirePermission("manageEmployers");
 
   if (!businessName.trim()) throw new Error("Business name cannot be empty.");
   if (![3, 5, -1].includes(dailyPostLimit)) throw new Error("Invalid post limit value.");
 
-  const { data, error } = await getSupabase()
+  const supabase = getSupabase();
+  const updateFields: any = {
+    business_name: businessName.trim(),
+    business_type: businessType.trim(),
+    daily_post_limit: dailyPostLimit,
+  };
+
+  if (packageId !== undefined) {
+    if (packageId === null || packageId === "") {
+      updateFields.active_package_id = null;
+      updateFields.package_expires_at = null;
+    } else {
+      const { data: pkg, error: pkgErr } = await supabase
+        .from("packages")
+        .select("duration_days")
+        .eq("id", packageId)
+        .maybeSingle();
+      if (pkgErr) throw pkgErr;
+      if (pkg) {
+        const now = new Date();
+        now.setDate(now.getDate() + pkg.duration_days + extendDays);
+        updateFields.active_package_id = packageId;
+        updateFields.package_expires_at = now.toISOString();
+        updateFields.renewal_requested = false;
+      }
+    }
+  }
+
+  const { data, error } = await supabase
     .from("employers")
-    .update({
-      business_name: businessName.trim(),
-      business_type: businessType.trim(),
-      daily_post_limit: dailyPostLimit,
-    })
+    .update(updateFields)
     .eq("id", employerId)
     .select("*, users(telegram_id)")
     .single();
@@ -1077,4 +1118,15 @@ export async function getProfessionCounts() {
   return Object.entries(counts)
     .map(([name, count]) => ({ name, count }))
     .sort((a, b) => b.count - a.count);
+}
+
+export async function getPackages() {
+  await requirePermission("manageEmployers");
+  const { data, error } = await getSupabase()
+    .from("packages")
+    .select("*")
+    .order("price", { ascending: true });
+    
+  if (error) throw new Error(error.message);
+  return data || [];
 }
