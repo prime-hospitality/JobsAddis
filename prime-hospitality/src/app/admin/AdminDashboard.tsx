@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { approveEmployer, rejectEmployer, toggleUserBan, toggleJobStatus, logoutAdmin, addEmployer, deleteEmployer, updateEmployer, adminUpdateEmployerLogo, deleteUser, approveSpecialRequest, getPricingConfig, updatePricingConfig, getLoggedInAdmin, createSubAdmin, updateSubAdminPermissions, deleteSubAdmin, listSubAdmins, searchUsers } from "./actions";
+import { approveEmployer, rejectEmployer, toggleUserBan, toggleJobStatus, logoutAdmin, addEmployer, deleteEmployer, updateEmployer, adminUpdateEmployerLogo, deleteUser, approveSpecialRequest, getPricingConfig, updatePricingConfig, getLoggedInAdmin, createSubAdmin, updateSubAdminPermissions, deleteSubAdmin, listSubAdmins, searchUsers, getProfessionCounts } from "./actions";
 import type { AdminPermissions, SubAdmin } from "./actions";
 import { Trash2, Pencil, Image as ImageIcon, Menu, X, LayoutDashboard, Briefcase, FileText, Users, LogOut, Settings, CreditCard, CheckCircle, BookOpen, User, Building2, Hourglass } from "lucide-react";
 import { supabase } from "@/lib/supabase";
@@ -322,6 +322,26 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
   const [userPage, setUserPage] = useState(1);
   const [userLoading, setUserLoading] = useState(false);
   const userPageSize = 25;
+
+  const [professionsData, setProfessionsData] = useState<{name: string, count: number}[]>([]);
+  const [professionsLoading, setProfessionsLoading] = useState(false);
+
+  useEffect(() => {
+    if (activeTab === "configuration" && configSubTab === "users" && seekerSubTab === "tab2") {
+      const fetchProfessions = async () => {
+        setProfessionsLoading(true);
+        try {
+          const res = await getProfessionCounts();
+          setProfessionsData(res);
+        } catch (e) {
+          console.error(e);
+        } finally {
+          setProfessionsLoading(false);
+        }
+      };
+      fetchProfessions();
+    }
+  }, [activeTab, configSubTab, seekerSubTab]);
 
   useEffect(() => {
     if (activeTab === "configuration" && configSubTab === "users" && seekerSubTab === "user-config") {
@@ -1281,7 +1301,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                 <aside className="w-52 shrink-0 border-r border-[#c6c6c8] bg-[#f2f2f7]/50 py-4 flex flex-col gap-1 px-3">
                   {([
                     { id: "user-config", label: "User Configuration", icon: Users },
-                    { id: "tab2", label: "Tab 2", icon: Settings },
+                    { id: "tab2", label: "Professions", icon: Briefcase },
                     { id: "tab3", label: "Tab 3", icon: BookOpen },
                     { id: "tab4", label: "Tab 4", icon: CreditCard },
                   ] as { id: SeekerSubTab; label: string; icon: any }[]).map(({ id, label, icon: Icon }) => (
@@ -1454,10 +1474,26 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
 
                   {/* ---- PLACEHOLDER TABS ---- */}
                   {seekerSubTab === "tab2" && (
-                    <div className="flex flex-col items-center justify-center py-20 text-[#aeaeb2]">
-                      <Settings size={40} className="mb-3 text-[#c6c6c8]" />
-                      <p className="text-base font-semibold">Tab 2</p>
-                      <p className="text-sm mt-1">Coming soon</p>
+                    <div className="flex flex-col h-full bg-[#f2f2f7]">
+                      <div className="p-4 md:p-6 pb-20 overflow-y-auto">
+                        <h2 className="text-lg font-bold text-black mb-4">Job Seeker Professions</h2>
+                        {professionsLoading ? (
+                          <div className="text-center py-10 text-[#aeaeb2] text-sm">Loading professions...</div>
+                        ) : professionsData.length === 0 ? (
+                          <div className="text-center py-10 text-[#aeaeb2] text-sm">No professions found.</div>
+                        ) : (
+                          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                            {professionsData.map((prof, idx) => (
+                              <div key={idx} className="bg-white p-4 rounded-xl border border-[#c6c6c8] shadow-sm flex items-center justify-between">
+                                <span className="font-semibold text-[#1c1c1e] capitalize truncate mr-2" title={prof.name}>{prof.name}</span>
+                                <span className="bg-[#e5e5ea] text-[#1c1c1e] text-xs font-bold px-2.5 py-1 rounded-full whitespace-nowrap">
+                                  {prof.count} {prof.count === 1 ? 'person' : 'people'}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   )}
                   {seekerSubTab === "tab3" && (
