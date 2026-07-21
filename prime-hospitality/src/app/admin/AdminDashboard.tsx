@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { approveEmployer, rejectEmployer, toggleUserBan, toggleJobStatus, logoutAdmin, addEmployer, deleteEmployer, updateEmployer, adminUpdateEmployerLogo, deleteUser, approveSpecialRequest, getPricingConfig, updatePricingConfig, getLoggedInAdmin, createSubAdmin, updateSubAdminPermissions, deleteSubAdmin, listSubAdmins, searchUsers, getProfessionCounts } from "./actions";
+import { approveEmployer, rejectEmployer, toggleUserBan, toggleJobStatus, logoutAdmin, addEmployer, deleteEmployer, updateEmployer, adminUpdateEmployerLogo, deleteUser, approveSpecialRequest, getPricingConfig, updatePricingConfig, getLoggedInAdmin, createSubAdmin, updateSubAdminPermissions, deleteSubAdmin, listSubAdmins, searchUsers, getProfessionCounts, searchEmployers } from "./actions";
 import type { AdminPermissions, SubAdmin } from "./actions";
 import { Trash2, Pencil, Image as ImageIcon, Menu, X, LayoutDashboard, Briefcase, FileText, Users, LogOut, Settings, CreditCard, CheckCircle, BookOpen, User, Building2, Hourglass } from "lucide-react";
 import { supabase } from "@/lib/supabase";
@@ -229,6 +229,11 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
   const [loading, setLoading] = useState<string | null>(null);
 
   const [empViewSearch, setEmpViewSearch] = useState("");
+  const [empResults, setEmpResults] = useState<any[]>([]);
+  const [empTotal, setEmpTotal] = useState(0);
+  const [empPage, setEmpPage] = useState(1);
+  const [empLoading, setEmpLoading] = useState(false);
+  const empPageSize = 20;
   const [newTelegramId, setNewTelegramId] = useState("");
   const [newBusinessName, setNewBusinessName] = useState("");
   const [newBusinessType, setNewBusinessType] = useState("");
@@ -361,6 +366,24 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
     }
   }, [activeTab, configSubTab, seekerSubTab, userSearchName, userSearchPhone, userPage]);
 
+  useEffect(() => {
+    if (activeTab === "employers" && empSubTab === "emp_config" && empConfigSubTab === "view_emp") {
+      const handler = setTimeout(async () => {
+        setEmpLoading(true);
+        try {
+          const res = await searchEmployers(empViewSearch, empPage, empPageSize);
+          setEmpResults(res.employers);
+          setEmpTotal(res.total);
+        } catch (e) {
+          console.error(e);
+        } finally {
+          setEmpLoading(false);
+        }
+      }, 300);
+      return () => clearTimeout(handler);
+    }
+  }, [activeTab, empSubTab, empConfigSubTab, empViewSearch, empPage]);
+
   // Sync active tab to sessionStorage so refresh restores the same tab
   useEffect(() => {
     sessionStorage.setItem("adminActiveTab", activeTab);
@@ -437,6 +460,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
           ...prev,
           employers: prev.employers.map((emp: any) => emp.id === editModal.id ? finalEmployer : emp)
         }));
+        setEmpResults((prev: any[]) => prev.map((emp: any) => emp.id === editModal.id ? finalEmployer : emp));
         setEditModal(null);
       }
     } catch (err: any) {
@@ -462,6 +486,8 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
         employers: prev.employers.filter((emp: any) => emp.id !== deleteModal.id),
         jobs: prev.jobs.filter((job: any) => job.employer_id !== deleteModal.id)
       }));
+      setEmpResults((prev: any[]) => prev.filter((emp: any) => emp.id !== deleteModal.id));
+      setEmpTotal((prev: number) => Math.max(0, prev - 1));
       setDeleteModal(null);
       setAdminPassword("");
     } catch (err: any) {
@@ -495,6 +521,8 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
           employers: [res.employer, ...prev.employers],
           users: prev.users.filter((u: any) => u.telegram_id !== parsedTelegramId)
         }));
+        setEmpResults((prev: any[]) => [res.employer, ...prev]);
+        setEmpTotal((prev: number) => prev + 1);
         setEmpConfigSubTab("view_emp");
         setAuthNumberResult({ name: newBusinessName, number: res.authorizationNumber });
         setNewTelegramId("");
@@ -516,6 +544,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
         ...prev,
         employers: prev.employers.map((e: any) => e.id === id ? { ...e, status: "approved" } : e)
       }));
+      setEmpResults((prev: any[]) => prev.map((e: any) => e.id === id ? { ...e, status: "approved" } : e));
     } finally {
       setLoading(null);
     }
@@ -529,6 +558,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
         ...prev,
         employers: prev.employers.map((e: any) => e.id === id ? { ...e, status: "rejected" } : e)
       }));
+      setEmpResults((prev: any[]) => prev.map((e: any) => e.id === id ? { ...e, status: "rejected" } : e));
     } finally {
       setLoading(null);
     }
@@ -1206,7 +1236,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                   type="text"
                   placeholder="Search employers..."
                   value={empViewSearch}
-                  onChange={(e) => setEmpViewSearch(e.target.value)}
+                  onChange={(e) => { setEmpViewSearch(e.target.value); setEmpPage(1); }}
                   className="px-3 py-2 border border-[#c6c6c8] rounded-lg text-sm w-48 md:w-64 focus:outline-none focus:ring-2 focus:ring-[#1c1c1e] focus:border-transparent transition-all"
                 />
               </div>
@@ -1546,7 +1576,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                   </tr>
                 </thead>
                 <tbody>
-                  {activeTab === "employers" && empSubTab === "emp_config" && empConfigSubTab === "view_emp" && data.employers.filter((emp: any) => (emp.business_name || "").toLowerCase().includes(empViewSearch.toLowerCase())).map((item: any) => (
+                  {activeTab === "employers" && empSubTab === "emp_config" && empConfigSubTab === "view_emp" && empResults.map((item: any) => (
                     <tr key={item.id} style={{ borderBottom: "1px solid #f3f4f6" }}>
                       <td style={{ padding: "16px 24px", fontWeight: 500 }}>
                         <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
@@ -1646,7 +1676,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
 
             {/* Mobile Card View */}
             <div className="md:hidden flex flex-col p-4 bg-[#f2f2f7]/50">
-              {activeTab === "employers" && empSubTab === "emp_config" && empConfigSubTab === "view_emp" && data.employers.filter((emp: any) => (emp.business_name || "").toLowerCase().includes(empViewSearch.toLowerCase())).map((item: any) => (
+              {activeTab === "employers" && empSubTab === "emp_config" && empConfigSubTab === "view_emp" && empResults.map((item: any) => (
                 <div key={item.id} className="bg-white p-4 rounded-xl border border-[#c6c6c8] shadow-sm flex flex-col gap-3 mb-3">
                   <div className="flex justify-between items-start">
                     <div>
@@ -1743,9 +1773,39 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
 
             </div>
             
-            {activeTab === "employers" && empSubTab === "emp_config" && empConfigSubTab === "view_emp" && data.employers.filter((emp: any) => (emp.business_name || "").toLowerCase().includes(empViewSearch.toLowerCase())).length === 0 && (
+            {activeTab === "employers" && empSubTab === "emp_config" && empConfigSubTab === "view_emp" && !empLoading && empResults.length === 0 && (
               <div style={{ padding: 40, textAlign: "center", color: "#8e8e93" }}>
                 No employers found.
+              </div>
+            )}
+
+            {activeTab === "employers" && empSubTab === "emp_config" && empConfigSubTab === "view_emp" && empLoading && (
+              <div style={{ padding: 40, textAlign: "center", color: "#8e8e93" }}>
+                Loading employers...
+              </div>
+            )}
+
+            {activeTab === "employers" && empSubTab === "emp_config" && empConfigSubTab === "view_emp" && empTotal > 0 && (
+              <div className="flex justify-between items-center p-4 md:p-6 border-t border-[#e5e5ea] bg-white mt-auto">
+                <span className="text-sm text-[#8e8e93]">
+                  Showing {(empPage - 1) * empPageSize + 1} to {Math.min(empPage * empPageSize, empTotal)} of {empTotal} employers
+                </span>
+                <div className="flex gap-2">
+                  <button
+                    disabled={empPage === 1 || empLoading}
+                    onClick={() => setEmpPage(p => p - 1)}
+                    className="px-3 py-1.5 rounded-lg border border-[#c6c6c8] bg-white text-sm font-medium text-[#1c1c1e] disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#f2f2f7]"
+                  >
+                    Previous
+                  </button>
+                  <button
+                    disabled={empPage * empPageSize >= empTotal || empLoading}
+                    onClick={() => setEmpPage(p => p + 1)}
+                    className="px-3 py-1.5 rounded-lg border border-[#c6c6c8] bg-white text-sm font-medium text-[#1c1c1e] disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#f2f2f7]"
+                  >
+                    Next
+                  </button>
+                </div>
               </div>
             )}
 

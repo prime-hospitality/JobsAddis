@@ -252,6 +252,37 @@ export async function searchUsers(queryName: string, queryPhone: string, page: n
   };
 }
 
+export async function searchEmployers(queryBusinessName: string = "", page: number = 1, pageSize: number = 20) {
+  const admin = await getLoggedInAdmin();
+  if (!admin) throw new Error("Unauthorized");
+
+  let query = getSupabase()
+    .from("employers")
+    .select("*, users(telegram_id, role)", { count: "exact" });
+
+  if (queryBusinessName && queryBusinessName.trim()) {
+    query = query.ilike("business_name", `%${queryBusinessName.trim()}%`);
+  }
+
+  const from = (page - 1) * pageSize;
+  const to = from + pageSize - 1;
+
+  const { data, count, error } = await query
+    .order("created_at", { ascending: false })
+    .range(from, to);
+
+  if (error) throw new Error(error.message);
+
+  const employers = (data || []).filter((e: any) => e.users?.role !== "admin");
+
+  return {
+    employers,
+    total: count || 0,
+    page,
+    pageSize
+  };
+}
+
 export async function approveEmployer(employerId: string) {
   await requirePermission("manageEmployers");
 
@@ -876,7 +907,11 @@ export async function getProfessionCounts() {
   await requirePermission("manageUsers");
   
   const supabase = getSupabase();
-  const { data, error } = await supabase.from("profiles").select("selected_categories");
+  // Only count profiles belonging to job_seekers so the numbers match the overview stat
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("selected_categories, users!inner(role)")
+    .eq("users.role", "job_seeker");
   
   if (error) throw new Error(error.message);
 
@@ -885,8 +920,10 @@ export async function getProfessionCounts() {
     for (const row of data) {
       if (Array.isArray(row.selected_categories)) {
         for (const cat of row.selected_categories) {
-          if (cat) {
-            counts[cat] = (counts[cat] || 0) + 1;
+          // Trim whitespace and normalise case to avoid duplicate entries
+          const key = typeof cat === "string" ? cat.trim() : cat;
+          if (key) {
+            counts[key] = (counts[key] || 0) + 1;
           }
         }
       }
