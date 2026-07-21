@@ -541,6 +541,130 @@ export async function postJobFromTemplate(templateId: string) {
   return { success: true };
 }
 
+export async function scheduleJobFromTemplate(templateId: string, scheduledAt: string) {
+  const auth = (await cookies()).get("admin_session");
+  if (!auth?.value) throw new Error("Unauthorized");
+
+  const supabase = getSupabase();
+  const { data: tpl, error: tplErr } = await supabase
+    .from("vacancy_templates")
+    .select("*")
+    .eq("id", templateId)
+    .single();
+  if (tplErr || !tpl) throw new Error("Template not found");
+
+  const formatList = (txt: string) =>
+    txt.split("\n").filter((l: string) => l.trim()).map((l: string) => l.trim().match(/^[-•*]/) ? l : `• ${l.trim()}`).join("\n");
+
+  let description = tpl.description_template || "";
+  if (tpl.responsibilities_template) description += "\n\nResponsibilities:\n" + formatList(tpl.responsibilities_template);
+  if (tpl.requirements_template) description += "\n\nRequirements:\n" + formatList(tpl.requirements_template);
+  if (tpl.benefits_template) description += "\n\nBenefits:\n" + formatList(tpl.benefits_template);
+
+  let salaryMin: number;
+  let salaryMax: number;
+  if (tpl.salary_type === "negotiable") {
+    salaryMin = -1; salaryMax = -1;
+  } else if (tpl.salary_type === "company_scale") {
+    salaryMin = -2; salaryMax = -2;
+  } else {
+    salaryMin = tpl.salary_min ?? 0;
+    salaryMax = tpl.salary_max ?? tpl.salary_min ?? 0;
+  }
+
+  let { data: platformEmployer } = await supabase
+    .from("employers")
+    .select("id")
+    .eq("business_name", "JobsAdis")
+    .maybeSingle();
+
+  if (!platformEmployer) {
+    const systemTelegramId = 999999999;
+    let { data: systemUser } = await supabase
+      .from("users")
+      .select("id")
+      .eq("telegram_id", systemTelegramId)
+      .maybeSingle();
+      
+    if (!systemUser) {
+      const { data: newUser, error: uErr } = await supabase
+        .from("users")
+        .insert({ telegram_id: systemTelegramId, role: "admin", is_banned: false })
+        .select("id")
+        .single();
+      if (uErr) throw new Error(uErr.message || "Failed to create system user");
+      systemUser = newUser;
+    }
+
+    const { data: newEmp, error: empErr } = await supabase
+      .from("employers")
+      .insert({ 
+        user_id: systemUser.id,
+        business_name: "JobsAdis", 
+        business_type: "Platform", 
+        status: "approved",
+        logo_url: "/addis_jobs_logo.png"
+      })
+      .select("id")
+      .single();
+    if (empErr) throw new Error(empErr.message || "Failed to create platform employer");
+    platformEmployer = newEmp;
+  }
+
+  const { error: jobErr } = await supabase.from("jobs").insert({
+    employer_id: platformEmployer!.id,
+    title: tpl.title,
+    category: tpl.job_category,
+    location: tpl.location || "Addis Ababa",
+    neighborhood: tpl.location || "Addis Ababa",
+    job_type: tpl.employment_type || "Full Time",
+    salary_min: salaryMin,
+    salary_max: salaryMax,
+    currency: tpl.salary_currency || "ETB",
+    description: description,
+    full_description: description,
+    requirements: {
+      experience: tpl.experience_required || "Entry Level",
+      education: tpl.education_requirements || "",
+      languages: [],
+      locationPreference: null,
+      workingHours: null,
+    },
+    deadline: tpl.deadline || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
+    quantity: tpl.quantity || 1,
+    status: "scheduled",
+    scheduled_at: scheduledAt,
+  });
+
+  if (jobErr) {
+    const { error: fallbackErr } = await supabase.from("jobs").insert({
+      employer_id: platformEmployer!.id,
+      title: tpl.title,
+      category: tpl.job_category,
+      location: tpl.location || "Addis Ababa",
+      neighborhood: tpl.location || "Addis Ababa",
+      job_type: tpl.employment_type || "Full Time",
+      salary_min: salaryMin,
+      salary_max: salaryMax,
+      currency: tpl.salary_currency || "ETB",
+      description: description,
+      full_description: description,
+      requirements: {
+        experience: tpl.experience_required || "Entry Level",
+        education: tpl.education_requirements || "",
+        languages: [],
+        locationPreference: null,
+        workingHours: null,
+      },
+      deadline: tpl.deadline || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
+      quantity: tpl.quantity || 1,
+      status: "scheduled",
+    });
+    if (fallbackErr) throw new Error(fallbackErr.message || "Failed to insert scheduled job");
+  }
+  return { success: true };
+}
+
 export async function addEmployer(telegramId: number, businessName: string, businessType: string) {
   await requirePermission("manageEmployers");
 

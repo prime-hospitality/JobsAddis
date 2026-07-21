@@ -1684,29 +1684,18 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                       <td style={{ padding: "16px 24px" }}>
                         <span style={{
                           padding: "2px 8px", borderRadius: 100, fontSize: 12, fontWeight: 600,
-                          background: item.status === "active" ? "#d1fae5" : item.status === "scheduled" ? "#e0f2fe" : item.status === "closed" ? "#fee2e2" : "#fef3c7",
-                          color: item.status === "active" ? "#065f46" : item.status === "scheduled" ? "#0369a1" : item.status === "closed" ? "#991b1b" : "#92400e"
+                          background: item.status === "active" ? "#d1fae5" : item.status === "closed" ? "#fee2e2" : "#fef3c7",
+                          color: item.status === "active" ? "#065f46" : item.status === "closed" ? "#991b1b" : "#92400e"
                         }}>
-                          {item.status === "active" ? "active" : item.status === "scheduled" ? "scheduled" : item.status === "closed" ? "closed" : "under review"}
+                          {item.status === "active" ? "active" : item.status === "closed" ? "closed" : "under review"}
                         </span>
                       </td>
-                      <td style={{ padding: "16px 24px", textAlign: "right", display: "flex", gap: 6, justifyContent: "flex-end", alignItems: "center" }} onClick={(e) => e.stopPropagation()}>
+                      <td style={{ padding: "16px 24px", textAlign: "right", display: "flex", gap: 8, justifyContent: "flex-end", alignItems: "center" }} onClick={(e) => e.stopPropagation()}>
                         {item.status === "active" && (
                           <button disabled={!!loading} onClick={() => handleJobStatus(item.id, "pending")} style={{ background: "#f59e0b", color: "#fff", border: "none", padding: "6px 12px", borderRadius: 6, cursor: "pointer", fontSize: 12 }}>Pause</button>
                         )}
                         {item.status !== "active" && (
-                          <div style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
-                            <button disabled={!!loading} onClick={() => handleJobStatus(item.id, "active")} style={{ background: "#059669", color: "#fff", border: "none", padding: "6px 10px", borderRadius: 6, cursor: "pointer", fontSize: 12, fontWeight: 500 }}>Set Active</button>
-                            <button 
-                              type="button" 
-                              title="Schedule publication" 
-                              disabled={!!loading} 
-                              onClick={(e) => { e.stopPropagation(); setScheduleModal({ id: item.id, title: item.title, scheduledAt: item.scheduled_at }); }} 
-                              style={{ background: "#0284c7", color: "#fff", border: "none", padding: "6px 7px", borderRadius: 6, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
-                            >
-                              <Timer size={15} weight="bold" />
-                            </button>
-                          </div>
+                          <button disabled={!!loading} onClick={() => handleJobStatus(item.id, "active")} style={{ background: "#059669", color: "#fff", border: "none", padding: "6px 12px", borderRadius: 6, cursor: "pointer", fontSize: 12 }}>Set Active</button>
                         )}
                         {item.status !== "closed" && (
                           <button disabled={!!loading} onClick={() => handleJobStatus(item.id, "closed")} style={{ background: "#dc2626", color: "#fff", border: "none", padding: "6px 12px", borderRadius: 6, cursor: "pointer", fontSize: 12 }}>Close Job</button>
@@ -1796,10 +1785,10 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                     <h4 className="font-semibold text-[#1c1c1e] m-0">{item.title}</h4>
                     <span style={{
                       padding: "2px 8px", borderRadius: 100, fontSize: 11, fontWeight: 600,
-                      background: item.status === "active" ? "#d1fae5" : item.status === "scheduled" ? "#e0f2fe" : item.status === "closed" ? "#fee2e2" : "#fef3c7",
-                      color: item.status === "active" ? "#065f46" : item.status === "scheduled" ? "#0369a1" : item.status === "closed" ? "#991b1b" : "#92400e"
+                      background: item.status === "active" ? "#d1fae5" : item.status === "closed" ? "#fee2e2" : "#fef3c7",
+                      color: item.status === "active" ? "#065f46" : item.status === "closed" ? "#991b1b" : "#92400e"
                     }}>
-                      {item.status === "active" ? "active" : item.status === "scheduled" ? "scheduled" : item.status === "closed" ? "closed" : "under review"}
+                      {item.status === "active" ? "active" : item.status === "closed" ? "closed" : "under review"}
                     </span>
                   </div>
                   <div className="flex gap-2 justify-end mt-2 pt-3 border-t border-[#e5e5ea]" onClick={(e) => e.stopPropagation()}>
@@ -1807,18 +1796,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                       <button disabled={!!loading} onClick={() => handleJobStatus(item.id, "pending")} className="bg-amber-500 text-white border-none px-3 py-1.5 rounded-lg text-xs font-medium">Pause</button>
                     )}
                     {item.status !== "active" && (
-                      <div className="flex items-center gap-1">
-                        <button disabled={!!loading} onClick={() => handleJobStatus(item.id, "active")} className="bg-emerald-600 text-white border-none px-2.5 py-1.5 rounded-lg text-xs font-medium">Set Active</button>
-                        <button 
-                          type="button" 
-                          title="Schedule publication" 
-                          disabled={!!loading} 
-                          onClick={(e) => { e.stopPropagation(); setScheduleModal({ id: item.id, title: item.title, scheduledAt: item.scheduled_at }); }} 
-                          className="bg-sky-600 text-white border-none p-1.5 rounded-lg text-xs flex items-center justify-center cursor-pointer"
-                        >
-                          <Timer size={15} weight="bold" />
-                        </button>
-                      </div>
+                      <button disabled={!!loading} onClick={() => handleJobStatus(item.id, "active")} className="bg-emerald-600 text-white border-none px-3 py-1.5 rounded-lg text-xs font-medium">Set Active</button>
                     )}
                     {item.status !== "closed" && (
                       <button disabled={!!loading} onClick={() => handleJobStatus(item.id, "closed")} className="bg-red-600 text-white border-none px-3 py-1.5 rounded-lg text-xs font-medium">Close Job</button>
@@ -2497,27 +2475,16 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                   Pause Job
                 </button>
               ) : (
-                <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                  <button
-                    onClick={async () => {
-                      await handleJobStatus(viewingJob.id, "active");
-                      setViewingJob((prev: any) => prev ? { ...prev, status: "active" } : null);
-                    }}
-                    disabled={!!loading}
-                    style={{ background: "#059669", color: "#fff", border: "none", padding: "8px 14px", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer" }}
-                  >
-                    Activate Job
-                  </button>
-                  <button
-                    type="button"
-                    title="Schedule Publication"
-                    onClick={() => setScheduleModal({ id: viewingJob.id, title: viewingJob.title, scheduledAt: viewingJob.scheduled_at })}
-                    disabled={!!loading}
-                    style={{ background: "#0284c7", color: "#fff", border: "none", padding: "8px 10px", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
-                  >
-                    <Timer size={18} weight="bold" />
-                  </button>
-                </div>
+                <button
+                  onClick={async () => {
+                    await handleJobStatus(viewingJob.id, "active");
+                    setViewingJob((prev: any) => prev ? { ...prev, status: "active" } : null);
+                  }}
+                  disabled={!!loading}
+                  style={{ background: "#059669", color: "#fff", border: "none", padding: "8px 16px", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer" }}
+                >
+                  Activate Job
+                </button>
               )}
 
               {viewingJob.status !== "closed" && (
@@ -2541,74 +2508,6 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                 Close Details
               </button>
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* SCHEDULED PUBLICATION MODAL */}
-      {scheduleModal && (
-        <div style={{ position: "fixed", inset: 0, zIndex: 300, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
-          <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)" }} onClick={() => { setScheduleModal(null); setScheduleError(""); }} />
-          <div style={{ position: "relative", background: "#fff", borderRadius: 16, padding: 24, width: "100%", maxWidth: 420, boxShadow: "0 20px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1)" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
-              <div style={{ width: 40, height: 40, borderRadius: "50%", background: "#e0f2fe", color: "#0284c7", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                <Timer size={24} weight="bold" />
-              </div>
-              <div>
-                <h3 style={{ margin: 0, fontSize: 17, fontWeight: 700, color: "#111827" }}>Scheduled Publication</h3>
-                <p style={{ margin: 0, fontSize: 12, color: "#6b7280" }}>{scheduleModal.title}</p>
-              </div>
-            </div>
-
-            <form onSubmit={handleScheduleConfirm} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-              <div>
-                <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#374151", marginBottom: 6 }}>
-                  Publish Date
-                </label>
-                <input
-                  type="date"
-                  required
-                  value={scheduleDate}
-                  onChange={(e) => setScheduleDate(e.target.value)}
-                  min={new Date().toISOString().split("T")[0]}
-                  style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid #d1d5db", fontSize: 14, outline: "none" }}
-                />
-              </div>
-
-              <div>
-                <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#374151", marginBottom: 6 }}>
-                  Publish Time
-                </label>
-                <input
-                  type="time"
-                  required
-                  value={scheduleTime}
-                  onChange={(e) => setScheduleTime(e.target.value)}
-                  style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid #d1d5db", fontSize: 14, outline: "none" }}
-                />
-              </div>
-
-              {scheduleError && (
-                <p style={{ color: "#ef4444", fontSize: 12, margin: 0 }}>{scheduleError}</p>
-              )}
-
-              <div style={{ display: "flex", gap: 10, marginTop: 8 }}>
-                <button
-                  type="button"
-                  onClick={() => { setScheduleModal(null); setScheduleError(""); }}
-                  style={{ flex: 1, padding: "10px", background: "#f3f4f6", border: "none", borderRadius: 8, color: "#374151", fontSize: 14, fontWeight: 600, cursor: "pointer" }}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={scheduleLoading}
-                  style={{ flex: 1, padding: "10px", background: "#0284c7", border: "none", borderRadius: 8, color: "#fff", fontSize: 14, fontWeight: 600, cursor: scheduleLoading ? "not-allowed" : "pointer" }}
-                >
-                  {scheduleLoading ? "Scheduling..." : "Set Schedule"}
-                </button>
-              </div>
-            </form>
           </div>
         </div>
       )}

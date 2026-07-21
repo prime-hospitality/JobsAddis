@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { getContentData, upsertFaq, deleteFaq, upsertVacancyTemplate, deleteVacancyTemplate, updateOnboardingConfig, postJobFromTemplate, checkTemplateStatus } from "./actions";
+import { getContentData, upsertFaq, deleteFaq, upsertVacancyTemplate, deleteVacancyTemplate, updateOnboardingConfig, postJobFromTemplate, checkTemplateStatus, scheduleJobFromTemplate } from "./actions";
 import { Plus, Save, Trash2, Pencil, X, Briefcase, MapPin, CreditCard, Calendar, FileText, CheckCircle2, Clock, Users, Send, Loader2, AlertTriangle, RefreshCw } from "lucide-react";
+import { Timer } from "@phosphor-icons/react";
 import { searchLocations } from "@/data/locations";
 import JobDetailScreen from "@/screens/JobDetailScreen";
 import { Job } from "@/data/jobs";
@@ -111,6 +112,30 @@ export default function ContentManagementTab() {
       setErrorModal("Failed to post job: " + (err instanceof Error ? err.message : "Unknown error"));
     } finally {
       setPostingTemplateId(null);
+    }
+  const [scheduleTemplateModal, setScheduleTemplateModal] = useState<{ id: string; title: string } | null>(null);
+  const [scheduleDate, setScheduleDate] = useState("");
+  const [scheduleTime, setScheduleTime] = useState("");
+  const [scheduleLoading, setScheduleLoading] = useState(false);
+  const [scheduleError, setScheduleError] = useState("");
+
+  const handleScheduleTemplateConfirm = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!scheduleTemplateModal || !scheduleDate || !scheduleTime) return;
+    setScheduleLoading(true);
+    setScheduleError("");
+    try {
+      const scheduledIso = new Date(`${scheduleDate}T${scheduleTime}`).toISOString();
+      await scheduleJobFromTemplate(scheduleTemplateModal.id, scheduledIso);
+      setScheduleTemplateModal(null);
+      setScheduleDate("");
+      setScheduleTime("");
+      setPostedTemplateId(scheduleTemplateModal.id);
+      setTimeout(() => setPostedTemplateId(null), 4000);
+    } catch (err: any) {
+      setScheduleError(err.message || "Failed to schedule publication");
+    } finally {
+      setScheduleLoading(false);
     }
   };
   const [locationSuggestionsOpen, setLocationSuggestionsOpen] = useState(false);
@@ -363,52 +388,78 @@ export default function ContentManagementTab() {
                       )}
                     </div>
 
-                    {/* Post button */}
-                    <button
-                      onClick={async (e) => {
-                        e.stopPropagation();
-                        if (postingTemplateId) return;
-                        setPostingTemplateId(tpl.id);
-                        try {
-                          const status = await checkTemplateStatus(tpl.id);
-                          setConfirmPostData({
-                            templateId: tpl.id,
-                            status: (status?.status as "same" | "changed" | "new") || "new",
-                            lastPosted: status?.lastPosted
-                          });
-                        } catch (err) {
-                          setErrorModal("Failed to check status: " + (err instanceof Error ? err.message : "Unknown error"));
-                        } finally {
-                          setPostingTemplateId(null);
-                        }
-                      }}
-                      style={{
-                        marginTop: 12,
-                        width: "100%",
-                        padding: "9px 16px",
-                        borderRadius: 10,
-                        border: postedTemplateId === tpl.id ? "1px solid rgba(34,197,94,0.4)" : "1px solid rgba(34,197,94,0.25)",
-                        background: postedTemplateId === tpl.id ? "rgba(34,197,94,0.15)" : "rgba(34,197,94,0.08)",
-                        color: postedTemplateId === tpl.id ? "#16a34a" : "#22c55e",
-                        fontWeight: 600,
-                        fontSize: 13,
-                        cursor: postingTemplateId === tpl.id ? "not-allowed" : "pointer",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        gap: 6,
-                        transition: "all 0.2s",
-                        opacity: postingTemplateId && postingTemplateId !== tpl.id ? 0.5 : 1,
-                      }}
-                    >
-                      {postingTemplateId === tpl.id ? (
-                        <><Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} /> Posting...</>
-                      ) : postedTemplateId === tpl.id ? (
-                        <><CheckCircle2 size={14} /> Posted Successfully!</>
-                      ) : (
-                        <><Send size={14} /> Post</>
-                      )}
-                    </button>
+                    {/* Post & Schedule buttons */}
+                    <div style={{ display: "flex", gap: 8, marginTop: 12, width: "100%" }} onClick={(e) => e.stopPropagation()}>
+                      <button
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          if (postingTemplateId) return;
+                          setPostingTemplateId(tpl.id);
+                          try {
+                            const status = await checkTemplateStatus(tpl.id);
+                            setConfirmPostData({
+                              templateId: tpl.id,
+                              status: (status?.status as "same" | "changed" | "new") || "new",
+                              lastPosted: status?.lastPosted
+                            });
+                          } catch (err) {
+                            setErrorModal("Failed to check status: " + (err instanceof Error ? err.message : "Unknown error"));
+                          } finally {
+                            setPostingTemplateId(null);
+                          }
+                        }}
+                        style={{
+                          flex: 1,
+                          padding: "9px 12px",
+                          borderRadius: 10,
+                          border: postedTemplateId === tpl.id ? "1px solid rgba(34,197,94,0.4)" : "1px solid rgba(34,197,94,0.25)",
+                          background: postedTemplateId === tpl.id ? "rgba(34,197,94,0.15)" : "rgba(34,197,94,0.08)",
+                          color: postedTemplateId === tpl.id ? "#16a34a" : "#22c55e",
+                          fontWeight: 600,
+                          fontSize: 13,
+                          cursor: postingTemplateId === tpl.id ? "not-allowed" : "pointer",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          gap: 6,
+                          transition: "all 0.2s",
+                          opacity: postingTemplateId && postingTemplateId !== tpl.id ? 0.5 : 1,
+                        }}
+                      >
+                        {postingTemplateId === tpl.id ? (
+                          <><Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} /> Posting...</>
+                        ) : postedTemplateId === tpl.id ? (
+                          <><CheckCircle2 size={14} /> Posted Successfully!</>
+                        ) : (
+                          <><Send size={14} /> Post</>
+                        )}
+                      </button>
+
+                      <button
+                        type="button"
+                        title="Scheduled Publication"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setScheduleTemplateModal({ id: tpl.id, title: tpl.title });
+                        }}
+                        style={{
+                          padding: "9px 12px",
+                          borderRadius: 10,
+                          border: "1px solid rgba(2,132,199,0.3)",
+                          background: "rgba(2,132,199,0.1)",
+                          color: "#0284c7",
+                          fontWeight: 600,
+                          fontSize: 13,
+                          cursor: "pointer",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          transition: "all 0.2s",
+                        }}
+                      >
+                        <Timer size={16} weight="bold" />
+                      </button>
+                    </div>
                   </div>
                 );
               })}
@@ -1080,6 +1131,74 @@ export default function ContentManagementTab() {
                  "Confirm Post"}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* SCHEDULED PUBLICATION MODAL FOR TEMPLATES */}
+      {scheduleTemplateModal && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 300, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+          <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)" }} onClick={() => { setScheduleTemplateModal(null); setScheduleError(""); }} />
+          <div style={{ position: "relative", background: "#fff", borderRadius: 16, padding: 24, width: "100%", maxWidth: 420, boxShadow: "0 20px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1)" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
+              <div style={{ width: 40, height: 40, borderRadius: "50%", background: "#e0f2fe", color: "#0284c7", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                <Timer size={24} weight="bold" />
+              </div>
+              <div>
+                <h3 style={{ margin: 0, fontSize: 17, fontWeight: 700, color: "#111827" }}>Scheduled Publication</h3>
+                <p style={{ margin: 0, fontSize: 12, color: "#6b7280" }}>{scheduleTemplateModal.title}</p>
+              </div>
+            </div>
+
+            <form onSubmit={handleScheduleTemplateConfirm} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+              <div>
+                <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#374151", marginBottom: 6 }}>
+                  Publish Date
+                </label>
+                <input
+                  type="date"
+                  required
+                  value={scheduleDate}
+                  onChange={(e) => setScheduleDate(e.target.value)}
+                  min={new Date().toISOString().split("T")[0]}
+                  style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid #d1d5db", fontSize: 14, outline: "none" }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#374151", marginBottom: 6 }}>
+                  Publish Time
+                </label>
+                <input
+                  type="time"
+                  required
+                  value={scheduleTime}
+                  onChange={(e) => setScheduleTime(e.target.value)}
+                  style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid #d1d5db", fontSize: 14, outline: "none" }}
+                />
+              </div>
+
+              {scheduleError && (
+                <p style={{ color: "#ef4444", fontSize: 12, margin: 0 }}>{scheduleError}</p>
+              )}
+
+              <div style={{ display: "flex", gap: 10, marginTop: 8 }}>
+                <button
+                  type="button"
+                  onClick={() => { setScheduleTemplateModal(null); setScheduleError(""); }}
+                  style={{ flex: 1, padding: "10px", background: "#f3f4f6", border: "none", borderRadius: 8, color: "#374151", fontSize: 14, fontWeight: 600, cursor: "pointer" }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={scheduleLoading}
+                  style={{ flex: 1, padding: "10px", background: "#0284c7", border: "none", borderRadius: 8, color: "#fff", fontSize: 14, fontWeight: 600, cursor: scheduleLoading ? "not-allowed" : "pointer" }}
+                >
+                  {scheduleLoading ? "Scheduling..." : "Set Schedule"}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
