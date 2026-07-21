@@ -436,6 +436,42 @@ export async function checkTemplateStatus(templateId: string) {
   }
 }
 
+// ── Platform Employer Helper ──────────────────────────────────────────────────
+// Resolves the employer ID used for platform-posted jobs.
+// Strategy:
+//   1. Read from app_config key "platform_employer_id" (fastest, cached after first run)
+//   2. Fallback: search employers table by business_name "JobsAdis" or "JobsAddis"
+// Never touches the users table — avoids conflicts with admin accounts.
+async function getPlatformEmployerId(supabase: ReturnType<typeof getSupabase>): Promise<{ id: string } | { error: string }> {
+  // 1. Try cached config
+  const { data: cfg } = await supabase
+    .from("app_config")
+    .select("value")
+    .eq("key", "platform_employer_id")
+    .maybeSingle();
+  if (cfg?.value) return { id: cfg.value };
+
+  // 2. Try known platform business names
+  const names = ["Addis Jobs", "JobsAdis", "JobsAddis", "Jobs Addis", "jobsaddis"];
+  for (const name of names) {
+    const { data: emp } = await supabase
+      .from("employers")
+      .select("id")
+      .ilike("business_name", name)
+      .maybeSingle();
+    if (emp?.id) {
+      // Cache it for next time
+      await supabase.from("app_config").upsert(
+        { key: "platform_employer_id", value: emp.id, updated_at: new Date().toISOString() },
+        { onConflict: "key" }
+      );
+      return { id: emp.id };
+    }
+  }
+
+  return { error: "Platform employer not found. Please set the \"platform_employer_id\" key in app_config with the correct employer ID." };
+}
+
 export async function postJobFromTemplate(templateId: string) {
   const auth = (await cookies()).get("admin_session");
   if (!auth?.value) return { success: false, error: "Unauthorized" };
@@ -471,50 +507,13 @@ export async function postJobFromTemplate(templateId: string) {
     salaryMax = tpl.salary_max ?? tpl.salary_min ?? 0;
   }
 
-  // Look up (or create) the "JobsAdis" platform employer
-  let { data: platformEmployer } = await supabase
-    .from("employers")
-    .select("id")
-    .eq("business_name", "JobsAdis")
-    .maybeSingle();
+  // Resolve the platform employer
+  const employerResult = await getPlatformEmployerId(supabase);
+  if ("error" in employerResult) return { success: false, error: employerResult.error };
+  const platformEmployerId = employerResult.id;
 
-  if (!platformEmployer) {
-    // We need a user to associate with the employer. Let's create a system user.
-    const systemTelegramId = 999999999;
-    let { data: systemUser } = await supabase
-      .from("users")
-      .select("id")
-      .eq("telegram_id", systemTelegramId)
-      .maybeSingle();
-      
-    if (!systemUser) {
-      const { data: newUser, error: uErr } = await supabase
-        .from("users")
-        .insert({ telegram_id: systemTelegramId, role: "admin", is_banned: false })
-        .select("id")
-        .single();
-      if (uErr) return { success: false, error: uErr.message || "Failed to create system user" };
-      systemUser = newUser;
-    }
-
-    const { data: newEmp, error: empErr } = await supabase
-      .from("employers")
-      .insert({ 
-        user_id: systemUser.id,
-        business_name: "JobsAdis", 
-        business_type: "Platform", 
-        status: "approved",
-        logo_url: "/addis_jobs_logo.png"
-      })
-      .select("id")
-      .single();
-    if (empErr) return { success: false, error: empErr.message || "Failed to create platform employer" };
-    platformEmployer = newEmp;
-  }
-
-  // Insert the job using the real jobs table schema
   const { error: jobErr } = await supabase.from("jobs").insert({
-    employer_id: platformEmployer!.id,
+    employer_id: platformEmployerId,
     title: tpl.title,
     category: tpl.job_category,
     location: tpl.location || "Addis Ababa",
@@ -572,47 +571,13 @@ export async function scheduleJobFromTemplate(templateId: string, scheduledAt: s
     salaryMax = tpl.salary_max ?? tpl.salary_min ?? 0;
   }
 
-  let { data: platformEmployer } = await supabase
-    .from("employers")
-    .select("id")
-    .eq("business_name", "JobsAdis")
-    .maybeSingle();
-
-  if (!platformEmployer) {
-    const systemTelegramId = 999999999;
-    let { data: systemUser } = await supabase
-      .from("users")
-      .select("id")
-      .eq("telegram_id", systemTelegramId)
-      .maybeSingle();
-      
-    if (!systemUser) {
-      const { data: newUser, error: uErr } = await supabase
-        .from("users")
-        .insert({ telegram_id: systemTelegramId, role: "admin", is_banned: false })
-        .select("id")
-        .single();
-      if (uErr) return { success: false, error: uErr.message || "Failed to create system user" };
-      systemUser = newUser;
-    }
-
-    const { data: newEmp, error: empErr } = await supabase
-      .from("employers")
-      .insert({ 
-        user_id: systemUser.id,
-        business_name: "JobsAdis", 
-        business_type: "Platform", 
-        status: "approved",
-        logo_url: "/addis_jobs_logo.png"
-      })
-      .select("id")
-      .single();
-    if (empErr) return { success: false, error: empErr.message || "Failed to create platform employer" };
-    platformEmployer = newEmp;
-  }
+  // Resolve the platform employer
+  const employerResult2 = await getPlatformEmployerId(supabase);
+  if ("error" in employerResult2) return { success: false, error: employerResult2.error };
+  const platformEmployerId2 = employerResult2.id;
 
   const { error: jobErr } = await supabase.from("jobs").insert({
-    employer_id: platformEmployer!.id,
+    employer_id: platformEmployerId2,
     title: tpl.title,
     category: tpl.job_category,
     location: tpl.location || "Addis Ababa",
@@ -636,32 +601,7 @@ export async function scheduleJobFromTemplate(templateId: string, scheduledAt: s
     scheduled_at: scheduledAt,
   });
 
-  if (jobErr) {
-    const { error: fallbackErr } = await supabase.from("jobs").insert({
-      employer_id: platformEmployer!.id,
-      title: tpl.title,
-      category: tpl.job_category,
-      location: tpl.location || "Addis Ababa",
-      neighborhood: tpl.location || "Addis Ababa",
-      job_type: tpl.employment_type || "Full Time",
-      salary_min: salaryMin,
-      salary_max: salaryMax,
-      currency: tpl.salary_currency || "ETB",
-      description: description,
-      full_description: description,
-      requirements: {
-        experience: tpl.experience_required || "Entry Level",
-        education: tpl.education_requirements || "",
-        languages: [],
-        locationPreference: null,
-        workingHours: null,
-      },
-      deadline: tpl.deadline || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
-      quantity: tpl.quantity || 1,
-      status: "scheduled",
-    });
-    if (fallbackErr) return { success: false, error: fallbackErr.message || "Failed to insert scheduled job" };
-  }
+  if (jobErr) return { success: false, error: jobErr.message || "Failed to insert scheduled job" };
   return { success: true };
 }
 
@@ -735,36 +675,56 @@ export async function addEmployer(telegramId: number, businessName: string, busi
   }
 
   let packageExpiresAt: string | null = null;
+  // Try to resolve package duration (only if packages table exists in prod)
   if (packageId) {
-    const { data: pkg, error: pkgErr } = await supabase
-      .from("packages")
-      .select("duration_days")
-      .eq("id", packageId)
-      .maybeSingle();
-    if (pkgErr) throw pkgErr;
-    if (pkg) {
-      const now = new Date();
-      now.setDate(now.getDate() + pkg.duration_days);
-      packageExpiresAt = now.toISOString();
+    try {
+      const { data: pkg, error: pkgErr } = await supabase
+        .from("packages")
+        .select("duration_days")
+        .eq("id", packageId)
+        .maybeSingle();
+      if (!pkgErr && pkg) {
+        const now = new Date();
+        now.setDate(now.getDate() + pkg.duration_days);
+        packageExpiresAt = now.toISOString();
+      }
+    } catch (_) {
+      // packages table not yet migrated – skip silently
     }
   }
 
-  // 3. Insert new employer record with authorization number
-  const { data: newEmp, error: insertEmpErr } = await supabase
+  // 3. Try inserting with package fields; fall back without them if columns don't exist yet
+  let newEmp: any;
+  const baseInsert = {
+    user_id: userId,
+    business_name: businessName,
+    business_type: businessType,
+    status: "approved",
+    authorization_number: authNumber,
+  };
+
+  const { data: empWithPkg, error: insertEmpErrFull } = await supabase
     .from("employers")
-    .insert({
-      user_id: userId,
-      business_name: businessName,
-      business_type: businessType,
-      status: "approved",
-      authorization_number: authNumber,
-      active_package_id: packageId,
-      package_expires_at: packageExpiresAt,
-    })
+    .insert({ ...baseInsert, active_package_id: packageId || null, package_expires_at: packageExpiresAt })
     .select("*, users(telegram_id)")
     .single();
 
-  if (insertEmpErr) throw insertEmpErr;
+  if (insertEmpErrFull) {
+    // If error is about unknown column (migration not applied), retry without package fields
+    if (insertEmpErrFull.code === "42703" || insertEmpErrFull.message?.includes("active_package_id") || insertEmpErrFull.message?.includes("package_expires_at")) {
+      const { data: empFallback, error: insertEmpErrFallback } = await supabase
+        .from("employers")
+        .insert(baseInsert)
+        .select("*, users(telegram_id)")
+        .single();
+      if (insertEmpErrFallback) throw insertEmpErrFallback;
+      newEmp = empFallback;
+    } else {
+      throw insertEmpErrFull;
+    }
+  } else {
+    newEmp = empWithPkg;
+  }
 
   return { success: true, employer: newEmp, authorizationNumber: authNumber };
 }

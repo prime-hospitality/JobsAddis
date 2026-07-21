@@ -646,8 +646,8 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
       if (res.success && res.employer) {
         setData((prev: any) => ({
           ...prev,
-          employers: [res.employer, ...prev.employers],
-          users: prev.users.filter((u: any) => u.telegram_id !== parsedTelegramId)
+          employers: [res.employer, ...(prev.employers || [])],
+          ...(prev.users ? { users: prev.users.filter((u: any) => u.telegram_id !== parsedTelegramId) } : {})
         }));
         setEmpResults((prev: any[]) => [res.employer, ...prev]);
         setEmpTotal((prev: number) => prev + 1);
@@ -706,7 +706,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
       }
       setData((prev: any) => ({
         ...prev,
-        users: prev.users.map((u: any) => u.id === banUserModal.id ? { ...u, is_banned: !banUserModal.is_banned } : u)
+        ...(prev.users ? { users: prev.users.map((u: any) => u.id === banUserModal.id ? { ...u, is_banned: !banUserModal.is_banned } : u) } : {})
       }));
       setBanUserModal(null);
       setUserActionPassword("");
@@ -729,7 +729,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
       if (res.success) {
         setData((prev: any) => ({
           ...prev,
-          users: prev.users.filter((u: any) => u.id !== deleteUserModal.id)
+          ...(prev.users ? { users: prev.users.filter((u: any) => u.id !== deleteUserModal.id) } : {})
         }));
         setDeleteUserModal(null);
         setUserActionPassword("");
@@ -777,12 +777,11 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
       const res = await approveSpecialRequest(approveReqModal, userActionPassword);
       if (res.success) {
         setData((prev: any) => {
-          const updatedRequests = prev.specialRequests?.filter((r: any) => r.userId !== approveReqModal) || [];
-          const updatedUsers = prev.users.map((u: any) => u.id === approveReqModal ? { ...u, role: "job_seeker" } : u);
+          const updatedUsers = prev.users ? prev.users.map((u: any) => u.id === approveReqModal ? { ...u, role: "job_seeker" } : u) : undefined;
           return {
             ...prev,
-            specialRequests: updatedRequests,
-            users: updatedUsers
+            ...(updatedUsers ? { users: updatedUsers } : {}),
+            specialRequests: prev.specialRequests?.filter((r: any) => r.userId !== approveReqModal) || []
           };
         });
         setApproveReqModal(null);
