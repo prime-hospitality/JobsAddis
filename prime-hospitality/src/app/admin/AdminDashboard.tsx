@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { approveEmployer, rejectEmployer, toggleUserBan, toggleJobStatus, logoutAdmin, addEmployer, deleteEmployer, updateEmployer, adminUpdateEmployerLogo, deleteUser, approveSpecialRequest, getPricingConfig, updatePricingConfig, getLoggedInAdmin, createSubAdmin, updateSubAdminPermissions, deleteSubAdmin, listSubAdmins } from "./actions";
+import { approveEmployer, rejectEmployer, toggleUserBan, toggleJobStatus, logoutAdmin, addEmployer, deleteEmployer, updateEmployer, adminUpdateEmployerLogo, deleteUser, approveSpecialRequest, getPricingConfig, updatePricingConfig, getLoggedInAdmin, createSubAdmin, updateSubAdminPermissions, deleteSubAdmin, listSubAdmins, searchUsers } from "./actions";
 import type { AdminPermissions, SubAdmin } from "./actions";
 import { Trash2, Pencil, Image as ImageIcon, Menu, X, LayoutDashboard, Briefcase, FileText, Users, LogOut, Settings, CreditCard, CheckCircle, BookOpen, User, Building2, Hourglass } from "lucide-react";
 import { supabase } from "@/lib/supabase";
@@ -316,6 +316,30 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
   const [seekerSubTab, setSeekerSubTab] = useState<SeekerSubTab>("user-config");
   const [userSearchName, setUserSearchName] = useState("");
   const [userSearchPhone, setUserSearchPhone] = useState("");
+
+  const [userResults, setUserResults] = useState<any[]>([]);
+  const [userTotal, setUserTotal] = useState(0);
+  const [userPage, setUserPage] = useState(1);
+  const [userLoading, setUserLoading] = useState(false);
+  const userPageSize = 25;
+
+  useEffect(() => {
+    if (activeTab === "configuration" && configSubTab === "users" && seekerSubTab === "user-config") {
+      const handler = setTimeout(async () => {
+        setUserLoading(true);
+        try {
+          const res = await searchUsers(userSearchName, userSearchPhone, userPage, userPageSize);
+          setUserResults(res.users);
+          setUserTotal(res.total);
+        } catch (e) {
+          console.error(e);
+        } finally {
+          setUserLoading(false);
+        }
+      }, 300);
+      return () => clearTimeout(handler);
+    }
+  }, [activeTab, configSubTab, seekerSubTab, userSearchName, userSearchPhone, userPage]);
 
   // Sync active tab to sessionStorage so refresh restores the same tab
   useEffect(() => {
@@ -722,8 +746,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                     <div className="max-h-80 overflow-y-auto">
                       {data.specialRequests && data.specialRequests.length > 0 ? (
                         data.specialRequests.map((req: any) => {
-                          const userObj = data.users?.find((u: any) => u.id === req.userId);
-                          const name = userObj?.profiles?.full_name || "Unknown Name";
+                          const name = req.name || "Unknown Name";
                           return (
                             <div key={req.userId} className="p-4 border-b border-gray-50 hover:bg-[#f2f2f7] transition-colors last:border-b-0">
                               <div className="flex items-start gap-3">
@@ -801,8 +824,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                     <div className="max-h-80 overflow-y-auto">
                       {data.specialRequests && data.specialRequests.length > 0 ? (
                         data.specialRequests.map((req: any) => {
-                          const userObj = data.users?.find((u: any) => u.id === req.userId);
-                          const name = userObj?.profiles?.full_name || "Unknown Name";
+                          const name = req.name || "Unknown Name";
                           return (
                             <div key={req.userId} className="p-4 border-b border-gray-50 hover:bg-[#f2f2f7] transition-colors last:border-b-0">
                               <div className="flex items-start gap-3">
@@ -889,7 +911,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
           {activeTab === "overview" && (() => {
             const employers: any[] = data.employers;
             const jobs: any[] = data.jobs;
-            const users: any[] = data.users;
+            const userCount: number = data.userCount;
 
             const daysAgo = (n: number) => { const d = new Date(); d.setDate(d.getDate() - n); return d; };
             const cutoff = daysAgo(Number(overviewDuration));
@@ -968,7 +990,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     {[
                       { label: "Total Employers", value: employers.length, icon: <Building2 className="w-6 h-6 sm:w-7 sm:h-7 lg:w-8 lg:h-8" color="#6366f1" strokeWidth={1.5} />, color: "#6366f1" },
-                      { label: "Active Job Seekers", value: users.length, icon: <Users className="w-6 h-6 sm:w-7 sm:h-7 lg:w-8 lg:h-8" color="#1c1c1e" strokeWidth={1.5} />, color: "#1c1c1e" },
+                      { label: "Active Job Seekers", value: userCount, icon: <Users className="w-6 h-6 sm:w-7 sm:h-7 lg:w-8 lg:h-8" color="#1c1c1e" strokeWidth={1.5} />, color: "#1c1c1e" },
                       { label: "Pending Moderation", value: jobs.filter(j => j.status === "pending").length, icon: <Hourglass className="w-6 h-6 sm:w-7 sm:h-7 lg:w-8 lg:h-8" color="#f59e0b" strokeWidth={1.5} />, color: "#f59e0b" },
                       { label: "Total Job Posts", value: jobs.length, icon: <Briefcase className="w-6 h-6 sm:w-7 sm:h-7 lg:w-8 lg:h-8" color="#10b981" strokeWidth={1.5} />, color: "#10b981" },
                     ].map(stat => (
@@ -1284,14 +1306,8 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
 
                   {/* ---- USER CONFIGURATION TAB ---- */}
                   {seekerSubTab === "user-config" && (() => {
-                    const filteredUsers = data.users.filter((u: any) => {
-                      const nameMatch = !userSearchName || (u.profiles?.full_name || "").toLowerCase().includes(userSearchName.toLowerCase());
-                      const phoneMatch = !userSearchPhone || (u.profiles?.phone_number || "").toLowerCase().includes(userSearchPhone.toLowerCase());
-                      return nameMatch && phoneMatch;
-                    });
-
                     return (
-                      <div>
+                      <div className="flex flex-col h-full">
                         {/* Special Requests Banner */}
                         {data.specialRequests && data.specialRequests.length > 0 && (
                           <div style={{ padding: "14px 20px", background: "#fffbeb", borderBottom: "1px solid #fde68a" }}>
@@ -1301,8 +1317,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                             </h3>
                             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                               {data.specialRequests.map((req: any) => {
-                                const userObj = data.users.find((u: any) => u.id === req.userId);
-                                const name = userObj?.profiles?.full_name || "Unknown Name";
+                                const name = req.name || "Unknown Name";
                                 return (
                                   <div key={req.userId} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "#fff", padding: "10px 14px", borderRadius: 8, border: "1px solid #fde68a" }}>
                                     <div>
@@ -1357,102 +1372,81 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
 
                         {/* Result count */}
                         <div className="px-5 py-2 bg-[#f2f2f7] border-b border-[#e5e5ea]">
-                          <p className="text-xs text-[#8e8e93] font-medium">
-                            {filteredUsers.length === data.users.length
-                              ? `${data.users.length} total job seekers`
-                              : `${filteredUsers.length} of ${data.users.length} job seekers`}
-                          </p>
+                          <div className="text-xs text-[#8e8e93] mt-2 text-right">
+                              {userTotal} total job seeker{userTotal !== 1 ? 's' : ''}
+                            </div>
                         </div>
 
                         {/* Desktop Table */}
-                        <div className="hidden md:block w-full overflow-x-auto">
-                          <table className="w-full text-left border-collapse">
-                            <thead>
-                              <tr className="bg-[#f2f2f7] border-b border-[#c6c6c8]">
-                                <th style={{ padding: "12px 20px", color: "#8e8e93", fontSize: 12, textTransform: "uppercase" }}>Name</th>
-                                <th style={{ padding: "12px 20px", color: "#8e8e93", fontSize: 12, textTransform: "uppercase" }}>Phone Number</th>
-                                <th style={{ padding: "12px 20px", color: "#8e8e93", fontSize: 12, textTransform: "uppercase" }}>Telegram ID</th>
-                                <th style={{ padding: "12px 20px", color: "#8e8e93", fontSize: 12, textTransform: "uppercase" }}>Role</th>
-                                <th style={{ padding: "12px 20px", color: "#8e8e93", fontSize: 12, textTransform: "uppercase", textAlign: "right" }}>Actions</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {filteredUsers.map((item: any) => (
-                                <tr key={item.id} style={{ borderBottom: "1px solid #f3f4f6" }} className="hover:bg-[#f2f2f7] transition-colors">
-                                  <td style={{ padding: "14px 20px", fontWeight: 500 }}>
-                                    {item.profiles?.full_name || "Unonboarded"}
-                                    {item.is_banned && <span style={{ color: "red", marginLeft: 6, fontSize: 12 }}>(Banned)</span>}
-                                  </td>
-                                  <td style={{ padding: "14px 20px", color: "#8e8e93" }}>
-                                    {item.profiles?.phone_number || <span className="text-[#c6c6c8]">—</span>}
-                                  </td>
-                                  <td style={{ padding: "14px 20px", color: "#8e8e93" }}>{item.telegram_id}</td>
-                                  <td style={{ padding: "14px 20px", textTransform: "capitalize", color: "#8e8e93" }}>{item.role}</td>
-                                  <td style={{ padding: "14px 20px", textAlign: "right" }}>
-                                    <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+                        <div className="flex-1 overflow-y-auto min-h-0 bg-[#f2f2f7]">
+                          <div className="p-4 md:p-6 pb-20">
+                            {userLoading ? (
+                              <div className="text-center py-10 text-[#aeaeb2] text-sm">Loading users...</div>
+                            ) : userResults.length === 0 ? (
+                              <div className="text-center py-10 text-[#aeaeb2] text-sm">No users found.</div>
+                            ) : (
+                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                {userResults.map((u: any) => (
+                                  <div key={u.id} className="bg-white p-4 rounded-xl border border-[#c6c6c8] shadow-sm flex flex-col gap-3">
+                                    <div className="flex justify-between items-start">
+                                      <div>
+                                        <h4 className="font-semibold text-[#1c1c1e] m-0">
+                                          {u.profiles?.full_name || "Unonboarded"}
+                                          {u.is_banned && <span className="text-red-500 text-xs ml-2">(Banned)</span>}
+                                        </h4>
+                                        <p className="text-xs text-[#8e8e93] m-0 mt-1">{u.profiles?.phone_number || "No phone"}</p>
+                                        <p className="text-xs text-[#aeaeb2] m-0 mt-0.5 font-mono">TG: {u.telegram_id}</p>
+                                      </div>
+                                      <span className="text-xs font-medium text-[#8e8e93] bg-[#e5e5ea] border border-[#c6c6c8] px-2 py-1 rounded-md capitalize">{u.role}</span>
+                                    </div>
+                                    <div className="flex justify-end gap-2 pt-3 border-t border-[#e5e5ea]">
                                       <button
                                         disabled={!!loading}
-                                        onClick={() => { setBanUserModal({ id: item.id, name: item.profiles?.full_name || "Unonboarded", is_banned: item.is_banned }); setUserActionPassword(""); setUserActionError(""); }}
-                                        style={{ background: item.is_banned ? "#10b981" : "#ef4444", color: "#fff", border: "none", padding: "6px 12px", borderRadius: 6, cursor: "pointer", fontSize: 12 }}
+                                        onClick={() => { setBanUserModal({ id: u.id, name: u.profiles?.full_name || "Unonboarded", is_banned: u.is_banned }); setUserActionPassword(""); setUserActionError(""); }}
+                                        style={{ background: u.is_banned ? "#10b981" : "#ef4444" }}
+                                        className="text-white border-none px-3 py-1.5 rounded-lg text-xs font-medium"
                                       >
-                                        {item.is_banned ? "Unban" : "Ban"}
+                                        {u.is_banned ? "Unban" : "Ban"}
                                       </button>
                                       <button
                                         disabled={!!loading}
-                                        onClick={() => { setDeleteUserModal({ id: item.id, name: item.profiles?.full_name || "Unonboarded" }); setUserActionPassword(""); setUserActionError(""); }}
-                                        style={{ background: "transparent", color: "#ef4444", border: "none", padding: "6px", borderRadius: 6, cursor: "pointer", display: "flex", alignItems: "center" }}
-                                        title="Delete User"
+                                        onClick={() => { setDeleteUserModal({ id: u.id, name: u.profiles?.full_name || "Unonboarded" }); setUserActionPassword(""); setUserActionError(""); }}
+                                        className="bg-transparent text-red-500 p-1.5 cursor-pointer flex items-center"
                                       >
                                         <Trash2 size={16} />
                                       </button>
                                     </div>
-                                  </td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                          {filteredUsers.length === 0 && (
-                            <div style={{ padding: 40, textAlign: "center", color: "#8e8e93" }}>No users match your search.</div>
-                          )}
-                        </div>
-
-                        {/* Mobile Cards */}
-                        <div className="md:hidden flex flex-col p-4 bg-[#f2f2f7]/50 gap-3">
-                          {filteredUsers.map((item: any) => (
-                            <div key={item.id} className="bg-white p-4 rounded-xl border border-[#c6c6c8] shadow-sm flex flex-col gap-3">
-                              <div className="flex justify-between items-start">
-                                <div>
-                                  <h4 className="font-semibold text-[#1c1c1e] m-0">
-                                    {item.profiles?.full_name || "Unonboarded"}
-                                    {item.is_banned && <span className="text-red-500 text-xs ml-2">(Banned)</span>}
-                                  </h4>
-                                  <p className="text-xs text-[#8e8e93] m-0 mt-1">{item.profiles?.phone_number || "No phone"}</p>
-                                  <p className="text-xs text-[#aeaeb2] m-0 mt-0.5 font-mono">TG: {item.telegram_id}</p>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                            
+                            {/* Pagination Controls */}
+                            {userTotal > 0 && (
+                              <div className="flex justify-between items-center mt-6 pt-4 border-t border-[#e5e5ea]">
+                                <span className="text-sm text-[#8e8e93]">
+                                  Showing {(userPage - 1) * userPageSize + 1} to {Math.min(userPage * userPageSize, userTotal)} of {userTotal} users
+                                </span>
+                                <div className="flex gap-2">
+                                  <button
+                                    disabled={userPage === 1 || userLoading}
+                                    onClick={() => setUserPage(p => p - 1)}
+                                    className="px-3 py-1.5 rounded-lg border border-[#c6c6c8] bg-white text-sm font-medium text-[#1c1c1e] disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#f2f2f7]"
+                                  >
+                                    Previous
+                                  </button>
+                                  <button
+                                    disabled={userPage * userPageSize >= userTotal || userLoading}
+                                    onClick={() => setUserPage(p => p + 1)}
+                                    className="px-3 py-1.5 rounded-lg border border-[#c6c6c8] bg-white text-sm font-medium text-[#1c1c1e] disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#f2f2f7]"
+                                  >
+                                    Next
+                                  </button>
                                 </div>
-                                <span className="text-xs font-medium text-[#8e8e93] bg-[#e5e5ea] border border-[#c6c6c8] px-2 py-1 rounded-md capitalize">{item.role}</span>
                               </div>
-                              <div className="flex justify-end gap-2 pt-3 border-t border-[#e5e5ea]">
-                                <button
-                                  disabled={!!loading}
-                                  onClick={() => { setBanUserModal({ id: item.id, name: item.profiles?.full_name || "Unonboarded", is_banned: item.is_banned }); setUserActionPassword(""); setUserActionError(""); }}
-                                  style={{ background: item.is_banned ? "#10b981" : "#ef4444" }}
-                                  className="text-white border-none px-3 py-1.5 rounded-lg text-xs font-medium"
-                                >
-                                  {item.is_banned ? "Unban" : "Ban"}
-                                </button>
-                                <button
-                                  disabled={!!loading}
-                                  onClick={() => { setDeleteUserModal({ id: item.id, name: item.profiles?.full_name || "Unonboarded" }); setUserActionPassword(""); setUserActionError(""); }}
-                                  className="bg-transparent text-red-500 p-1.5 cursor-pointer flex items-center"
-                                >
-                                  <Trash2 size={16} />
-                                </button>
-                              </div>
-                            </div>
-                          ))}
-                          {filteredUsers.length === 0 && (
-                            <div className="text-center py-10 text-[#aeaeb2] text-sm">No users match your search.</div>
-                          )}
+                            )}
+
+                          </div>
                         </div>
                       </div>
                     );

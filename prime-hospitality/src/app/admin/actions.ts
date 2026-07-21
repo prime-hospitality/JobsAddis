@@ -165,12 +165,11 @@ export async function getAdminData() {
     .select("*, employers(business_name)")
     .order("created_at", { ascending: false });
 
-  // Fetch all job seekers (excluding employers and admins)
-  const { data: users } = await getSupabase()
+  // Fetch total job seekers count for overview stats
+  const { count: userCount } = await getSupabase()
     .from("users")
-    .select("*, profiles(full_name, phone_number)")
-    .eq("role", "job_seeker")
-    .order("created_at", { ascending: false });
+    .select("*", { count: 'exact', head: true })
+    .eq("role", "job_seeker");
 
   const supabase = getSupabase();
   const { data: uCfg } = await supabase.from("app_config").select("value").eq("key", "admin_username").single();
@@ -180,7 +179,20 @@ export async function getAdminData() {
   const { data: srCfg } = await supabase.from("app_config").select("value").eq("key", "special_requests").maybeSingle();
   let specialRequests = [];
   try {
-    if (srCfg?.value) specialRequests = JSON.parse(srCfg.value);
+    if (srCfg?.value) {
+      specialRequests = JSON.parse(srCfg.value);
+      // Fetch names for these users since we no longer send the full users array
+      if (specialRequests.length > 0) {
+        const userIds = specialRequests.map((r: any) => r.userId);
+        const { data: reqUsers } = await supabase.from("profiles").select("id, full_name").in("id", userIds);
+        if (reqUsers) {
+          specialRequests = specialRequests.map((req: any) => {
+            const match = reqUsers.find(u => u.id === req.userId);
+            return { ...req, name: match?.full_name || "Unknown Name" };
+          });
+        }
+      }
+    }
   } catch (e) {}
   
   // Fetch pricing config
@@ -198,12 +210,45 @@ export async function getAdminData() {
   return {
     employers: employers ?? [],
     jobs: jobs ?? [],
-    users: users ?? [],
+    userCount: userCount ?? 0,
     adminUsername,
     specialRequests,
     loggedInAdmin: admin,
     pricingConfig: pricingConfig || null,
     subAdmins
+  };
+}
+
+export async function searchUsers(queryName: string, queryPhone: string, page: number = 1, pageSize: number = 25) {
+  const admin = await getLoggedInAdmin();
+  if (!admin) throw new Error("Unauthorized");
+
+  let query = getSupabase()
+    .from("users")
+    .select("*, profiles!inner(full_name, phone_number)", { count: "exact" })
+    .eq("role", "job_seeker");
+
+  if (queryName) {
+    query = query.ilike("profiles.full_name", `%${queryName}%`);
+  }
+  if (queryPhone) {
+    query = query.ilike("profiles.phone_number", `%${queryPhone}%`);
+  }
+
+  const from = (page - 1) * pageSize;
+  const to = from + pageSize - 1;
+
+  const { data, count, error } = await query
+    .order("created_at", { ascending: false })
+    .range(from, to);
+
+  if (error) throw new Error(error.message);
+
+  return {
+    users: data || [],
+    total: count || 0,
+    page,
+    pageSize
   };
 }
 
@@ -827,3 +872,28 @@ export async function updatePricingConfig(config: any) {
   return { success: true };
 }
 
+export async function getProfessionCounts() {
+  await requirePermission("manageUsers");
+  
+  const supabase = getSupabase();
+  const { data, error } = await supabase.from("profiles").select("selected_categories");
+  
+  if (error) throw new Error(error.message);
+
+  const counts: Record<string, number> = {};
+  if (data) {
+    for (const row of data) {
+      if (Array.isArray(row.selected_categories)) {
+        for (const cat of row.selected_categories) {
+          if (cat) {
+            counts[cat] = (counts[cat] || 0) + 1;
+          }
+        }
+      }
+    }
+  }
+
+  return Object.entries(counts)
+    .map(([name, count]) => ({ name, count }))
+    .sort((a, b) => b.count - a.count);
+}
