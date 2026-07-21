@@ -130,13 +130,14 @@ function CustomInput(props: any) {
   );
 }
 
-function CustomSelect({ value, onChange, options, placeholder, className = "", searchable = false }: { value: string, onChange: (v: string) => void, options: {value: string | number, label: string}[], placeholder: string, className?: string, searchable?: boolean }) {
+function CustomSelect({ value, onChange, options, placeholder, className = "", searchable = false, maxDisplay }: { value: string, onChange: (v: string) => void, options: {value: string | number, label: string}[], placeholder: string, className?: string, searchable?: boolean, maxDisplay?: number }) {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState("");
   const selected = options.find(o => String(o.value) === String(value));
   const filteredOptions = searchable && search.trim()
     ? options.filter(o => o.label.toLowerCase().includes(search.toLowerCase()))
     : options;
+  const displayedOptions = maxDisplay ? filteredOptions.slice(0, maxDisplay) : filteredOptions;
 
   const handleOpen = () => {
     setIsOpen(!isOpen);
@@ -175,9 +176,9 @@ function CustomSelect({ value, onChange, options, placeholder, className = "", s
               </div>
             )}
             <div className="max-h-52 overflow-y-auto py-1">
-              {filteredOptions.length === 0 ? (
+              {displayedOptions.length === 0 ? (
                 <p className="px-4 py-3 text-xs text-[#aeaeb2] font-medium">No employers found</p>
-              ) : filteredOptions.map((opt) => (
+              ) : displayedOptions.map((opt) => (
                 <button
                   key={opt.value}
                   type="button"
@@ -1069,6 +1070,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                           options={employers.map(emp => ({ value: emp.id, label: emp.business_name }))}
                           className="flex-1 min-w-0 sm:w-48"
                           searchable
+                          maxDisplay={5}
                         />
                         <CustomSelect
                           value={overviewDuration}
