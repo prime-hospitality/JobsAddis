@@ -2670,38 +2670,45 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
 
       {/* Authorization Number Success Modal */}
       {authNumberResult && (
-        <div style={{ position: "fixed", inset: 0, backdropFilter: "blur(8px)", background: "rgba(15,23,42,0.6)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 300, padding: "0 16px" }}>
-          <div style={{ background: "#fff", borderRadius: 24, padding: 36, width: "100%", maxWidth: 420, boxShadow: "0 25px 60px rgba(0,0,0,0.25)", textAlign: "center" }}>
-            <div style={{ width: 64, height: 64, borderRadius: "50%", background: "linear-gradient(135deg, #059669, #047857)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px", boxShadow: "0 8px 24px rgba(5,150,105,0.3)" }}>
-              <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+        <div style={{ position: "fixed", inset: 0, backdropFilter: "blur(4px)", background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 300, padding: "0 16px" }}>
+          <div style={{ background: "#fff", borderRadius: 12, padding: 32, width: "100%", maxWidth: 400, border: "1px solid #e5e7eb", textAlign: "center" }}>
+            <div style={{ width: 48, height: 48, borderRadius: 8, background: "#ecfdf5", color: "#059669", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px", border: "1px solid #d1fae5" }}>
+              <CheckCircle size={24} strokeWidth={2.5} />
             </div>
-            <h3 style={{ margin: "0 0 6px 0", fontSize: 22, fontWeight: 800, color: "#1c1c1e" }}>Employer Registered! 🎉</h3>
-            <p style={{ margin: "0 0 24px 0", fontSize: 14, color: "#64748b" }}><strong>{authNumberResult.name}</strong> has been successfully added to the platform.</p>
+            <h3 style={{ margin: "0 0 8px 0", fontSize: 20, fontWeight: 700, color: "#111827" }}>Employer Registered</h3>
+            <p style={{ margin: "0 0 24px 0", fontSize: 14, color: "#4b5563" }}><strong>{authNumberResult.name}</strong> has been successfully added to the platform.</p>
             
-            <div style={{ background: "linear-gradient(135deg, #1c1c1e, #2c2c2e)", borderRadius: 16, padding: "20px 24px", marginBottom: 20 }}>
-              <p style={{ margin: "0 0 8px 0", fontSize: 11, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.1em", fontWeight: 600 }}>Authorization Code</p>
-              <div style={{ fontSize: 42, fontWeight: 900, color: "#38bdf8", letterSpacing: "0.3em", fontFamily: "monospace" }}>{authNumberResult.number}</div>
-              <p style={{ margin: "8px 0 0 0", fontSize: 11, color: "#64748b" }}>Share this code with the employer</p>
+            <div style={{ background: "#f9fafb", border: "1px solid #e5e7eb", borderRadius: 8, padding: "24px", marginBottom: 16 }}>
+              <p style={{ margin: "0 0 12px 0", fontSize: 12, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.05em", fontWeight: 600 }}>Authorization Code</p>
+              <div style={{ fontSize: 36, fontWeight: 800, color: "#111827", letterSpacing: "0.2em", fontFamily: "monospace" }}>{authNumberResult.number}</div>
+              <p style={{ margin: "12px 0 0 0", fontSize: 12, color: "#6b7280" }}>Share this code with the employer</p>
             </div>
 
-            <div style={{ background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 10, padding: "10px 14px", marginBottom: 24, textAlign: "left" }}>
-              <p style={{ margin: 0, fontSize: 12, color: "#92400e" }}>⚠️ This code will not be shown again. Please save or send it to the employer immediately.</p>
+            <div style={{ background: "#fff7ed", border: "1px solid #ffedd5", borderRadius: 8, padding: "12px 16px", marginBottom: 24, textAlign: "left", display: "flex", gap: "12px", alignItems: "flex-start" }}>
+              <div style={{ color: "#ea580c", marginTop: "2px" }}>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+              </div>
+              <p style={{ margin: 0, fontSize: 13, color: "#9a3412", lineHeight: 1.4 }}>This code will not be shown again. Please save or send it to the employer immediately.</p>
             </div>
 
-            <div style={{ display: "flex", gap: 10 }}>
+            <div style={{ display: "flex", gap: 12 }}>
               <button
                 onClick={() => { 
                   navigator.clipboard.writeText(authNumberResult.number); 
                   setCopied(true);
                   setTimeout(() => setCopied(false), 2000);
                 }}
-                style={{ flex: 1, padding: "12px", borderRadius: 10, border: "1.5px solid #e2e8f0", background: copied ? "#dcfce3" : "#f8fafc", color: copied ? "#166534" : "#1c1c1e", fontSize: 14, fontWeight: 700, cursor: "pointer", transition: "all 0.2s" }}
+                style={{ flex: 1, padding: "10px", borderRadius: 8, border: "1px solid #e5e7eb", background: copied ? "#f0fdf4" : "#fff", color: copied ? "#166534" : "#374151", fontSize: 14, fontWeight: 600, cursor: "pointer", transition: "all 0.2s", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}
               >
-                {copied ? "✅ Copied!" : "📋 Copy Code"}
+                {copied ? (
+                  <><Check size={16} /> Copied</>
+                ) : (
+                  <><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg> Copy Code</>
+                )}
               </button>
               <button
                 onClick={() => setAuthNumberResult(null)}
-                style={{ flex: 1, padding: "12px", borderRadius: 10, border: "none", background: "linear-gradient(135deg, #1c1c1e, #2c2c2e)", color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer" }}
+                style={{ flex: 1, padding: "10px", borderRadius: 8, border: "none", background: "#111827", color: "#fff", fontSize: 14, fontWeight: 600, cursor: "pointer" }}
               >
                 Done
               </button>
