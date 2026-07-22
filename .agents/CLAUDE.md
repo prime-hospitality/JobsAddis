@@ -1,4 +1,4 @@
-# AGENTS.md — Design & Build Rules
+# CLAUDE.md — Design & Build Rules
 
 These rules apply to every website or web app built in this project. Read this
 file before writing any UI code, and re-check it before marking a task done.
