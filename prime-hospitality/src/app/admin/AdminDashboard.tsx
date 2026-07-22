@@ -296,7 +296,7 @@ function PackageDropdown({ packages, selectedId, onSelect }: { packages: any[], 
                     <span style={{ padding: "4px 8px", background: "#e5e5ea", borderRadius: 100, fontSize: 11, fontWeight: 600, color: "#3a3a3c" }}>
                       {pkg.duration_days} Days
                     </span>
-                    <span style={{ fontSize: 13, fontWeight: 700, color: "#1c1c1e" }}>{pkg.price} ETB</span>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: "#1c1c1e" }}>{Number(pkg.price).toLocaleString("en-US")} ETB</span>
                   </div>
                 </button>
               ))}
@@ -2301,7 +2301,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                                   <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#e5e5ea] text-[#3a3a3c] tracking-wide">{pkg.duration_days} Days</span>
                                 </div>
                                 <div className="text-right flex items-center gap-2">
-                                  <span className="text-base font-black text-[#1c1c1e]">ETB {pkg.price}</span>
+                                  <span className="text-base font-black text-[#1c1c1e]">ETB {Number(pkg.price).toLocaleString("en-US")}</span>
                                   {isEditingPricing && (
                                     <div className="flex items-center gap-1 ml-2">
                                       <button
@@ -2722,7 +2722,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                       <option value="">No Package (Free / Manual Later)</option>
                       {packages.map((pkg) => (
                         <option key={pkg.id} value={pkg.id}>
-                          {pkg.name} — {pkg.duration_days} Days ({pkg.price} ETB)
+                          {pkg.name} — {pkg.duration_days} Days ({Number(pkg.price).toLocaleString("en-US")} ETB)
                         </option>
                       ))}
                     </select>

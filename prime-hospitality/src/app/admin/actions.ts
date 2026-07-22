@@ -1411,7 +1411,7 @@ export async function getPackagePerformanceReport() {
         packageId: pkg.id,
         name: pkg.name,
         activeSubscriptions: activeCount,
-        currentActiveValue: activeCount * pkg.price,
+        currentActiveValue: activeCount * Number(pkg.price),
       };
     })
     .sort((a, b) => b.activeSubscriptions - a.activeSubscriptions);

@@ -63,8 +63,8 @@ async function getPackages(): Promise<PackageRow[]> {
   }
 }
 
-function formatEtb(n: number) {
-  return n.toLocaleString("en-US");
+function formatEtb(n: number | string) {
+  return Number(n).toLocaleString("en-US");
 }
 
 // Shared brand accent — matches the employer dashboard/billing palette (sky-700 + slate neutrals)
