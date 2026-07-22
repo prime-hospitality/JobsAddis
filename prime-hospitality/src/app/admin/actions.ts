@@ -809,6 +809,15 @@ export async function updateEmployer(employerId: string, businessName: string, b
   return { success: true, employer: data };
 }
 
+export async function updateEmployerAutoPublish(employerId: string, autoPublish: boolean) {
+  await requirePermission("manageEmployers");
+
+  const { error } = await getSupabase().from("employers").update({ auto_publish: autoPublish }).eq("id", employerId);
+  if (error) throw error;
+  await logActivity(autoPublish ? "enable_auto_publish" : "disable_auto_publish", employerId);
+  return { success: true };
+}
+
 export async function deleteEmployer(employerId: string, passwordAttempt: string) {
   const admin = await getLoggedInAdmin();
   if (!admin) return { success: false, error: "Unauthorized" };

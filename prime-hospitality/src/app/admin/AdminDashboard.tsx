@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { toggleUserBan, toggleJobStatus, scheduleJobPost, repostJob, logoutAdmin, addEmployer, deleteEmployer, updateEmployer, adminUpdateEmployerLogo, deleteUser, approveSpecialRequest, getPricingConfig, updatePricingConfig, getLoggedInAdmin, createSubAdmin, updateSubAdminPermissions, deleteSubAdmin, listSubAdmins, searchUsers, getProfessionCounts, searchEmployers, getPackages, getBusinessTypes, addBusinessType } from "./actions";
+import { toggleUserBan, toggleJobStatus, scheduleJobPost, repostJob, logoutAdmin, addEmployer, deleteEmployer, updateEmployer, updateEmployerAutoPublish, adminUpdateEmployerLogo, deleteUser, approveSpecialRequest, getPricingConfig, updatePricingConfig, getLoggedInAdmin, createSubAdmin, updateSubAdminPermissions, deleteSubAdmin, listSubAdmins, searchUsers, getProfessionCounts, searchEmployers, getPackages, getBusinessTypes, addBusinessType } from "./actions";
 import type { AdminPermissions, SubAdmin } from "./actions";
 import { Trash2, Pencil, Image as ImageIcon, Menu, X, LayoutDashboard, Briefcase, FileText, Users, LogOut, Settings, CreditCard, CheckCircle, BookOpen, User, Building2, Hourglass, ChevronDown, Check, Plus, Megaphone, History, BarChart3 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -512,6 +512,8 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
   const [editLoading, setEditLoading] = useState(false);
   const [editLogoFile, setEditLogoFile] = useState<File | null>(null);
   const [editError, setEditError] = useState("");
+  const [settingsTab, setSettingsTab] = useState<"edit" | "publishing">("edit");
+  const [autoPublishSaving, setAutoPublishSaving] = useState(false);
 
   const [pricingState, setPricingState] = useState({
     threeDays: "1,983.75",
@@ -760,6 +762,25 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
       setEditError(err.message || "Failed to update employer");
     } finally {
       setEditLoading(false);
+    }
+  };
+
+  const handleToggleAutoPublish = async () => {
+    if (!editModal) return;
+    const current = data.employers.find((emp: any) => emp.id === editModal.id);
+    const nextValue = !current?.auto_publish;
+    setAutoPublishSaving(true);
+    try {
+      const res = await updateEmployerAutoPublish(editModal.id, nextValue);
+      if (res.success) {
+        setData((prev: any) => ({
+          ...prev,
+          employers: prev.employers.map((emp: any) => emp.id === editModal.id ? { ...emp, auto_publish: nextValue } : emp)
+        }));
+        setEmpResults((prev: any[]) => prev.map((emp: any) => emp.id === editModal.id ? { ...emp, auto_publish: nextValue } : emp));
+      }
+    } finally {
+      setAutoPublishSaving(false);
     }
   };
 
@@ -1943,7 +1964,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                       </td>
                       <td style={{ padding: "16px 24px", textAlign: "right", display: "flex", gap: 8, justifyContent: "flex-end", alignItems: "center" }}>
                         <button
-                          onClick={() => { setEditModal({ id: item.id, name: item.business_name, type: item.business_type || "", postLimit: item.daily_post_limit ?? 3 }); setEditName(item.business_name); setEditType(item.business_type || ""); setEditPostLimit(item.daily_post_limit ?? 3); setEditPackageId(item.active_package_id || ""); setEditExtendDays(0); setEditLogoFile(null); setEditError(""); }}
+                          onClick={() => { setEditModal({ id: item.id, name: item.business_name, type: item.business_type || "", postLimit: item.daily_post_limit ?? 3 }); setEditName(item.business_name); setEditType(item.business_type || ""); setEditPostLimit(item.daily_post_limit ?? 3); setEditPackageId(item.active_package_id || ""); setEditExtendDays(0); setEditLogoFile(null); setEditError(""); setSettingsTab("edit"); }}
                           style={{ background: "transparent", border: "none", cursor: "pointer", color: "#6b7280", padding: "6px", borderRadius: 6, display: "flex", alignItems: "center", justifyContent: "center" }}
                           title="Employer settings"
                         >
@@ -2038,7 +2059,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                   </div>
                   <div className="flex gap-2 justify-end mt-2 pt-3 border-t border-[#e5e5ea]">
                     <button
-                      onClick={() => { setEditModal({ id: item.id, name: item.business_name, type: item.business_type || "", postLimit: item.daily_post_limit ?? 3 }); setEditName(item.business_name); setEditType(item.business_type || ""); setEditPostLimit(item.daily_post_limit ?? 3); setEditPackageId(item.active_package_id || ""); setEditExtendDays(0); setEditLogoFile(null); setEditError(""); }}
+                      onClick={() => { setEditModal({ id: item.id, name: item.business_name, type: item.business_type || "", postLimit: item.daily_post_limit ?? 3 }); setEditName(item.business_name); setEditType(item.business_type || ""); setEditPostLimit(item.daily_post_limit ?? 3); setEditPackageId(item.active_package_id || ""); setEditExtendDays(0); setEditLogoFile(null); setEditError(""); setSettingsTab("edit"); }}
                       className="bg-[#f3f4f6] text-[#374151] border-none px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5"
                     >
                       <Gear size={14} /> Settings
@@ -2469,132 +2490,208 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
       {/* Employer Settings Modal */}
       {editModal && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 10000, padding: "0 16px" }}>
-          <div style={{ background: "#fff", borderRadius: 12, padding: 24, width: "100%", maxWidth: 420, maxHeight: "90vh", overflowY: "auto", boxShadow: "0 20px 25px -5px rgba(0,0,0,0.1)" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-              <Gear size={18} color="#111827" />
-              <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: "#111827" }}>Employer Settings</h3>
+          <div style={{ background: "#fff", borderRadius: 14, padding: 28, width: "100%", maxWidth: 560, maxHeight: "90vh", overflowY: "auto", boxShadow: "0 20px 25px -5px rgba(0,0,0,0.1)" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
+              <Gear size={22} color="#111827" />
+              <h3 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: "#111827" }}>Employer Settings</h3>
             </div>
-            <p style={{ margin: "0 0 16px 0", fontSize: 13, color: "#8e8e93" }}>{editModal.name}</p>
-            <div style={{ display: "flex", gap: 4, borderBottom: "1px solid #e5e7eb", marginBottom: 20 }}>
-              <div style={{ padding: "8px 4px", fontSize: 13, fontWeight: 600, color: "#111827", borderBottom: "2px solid #111827", marginBottom: -1 }}>
+            <p style={{ margin: "0 0 20px 0", fontSize: 14, color: "#8e8e93" }}>{editModal.name}</p>
+
+            <div style={{ display: "flex", gap: 8, borderBottom: "1px solid #e5e7eb", marginBottom: 24 }}>
+              <button
+                type="button"
+                onClick={() => setSettingsTab("edit")}
+                style={{
+                  padding: "12px 20px", fontSize: 15, fontWeight: 600, cursor: "pointer",
+                  background: "transparent", border: "none",
+                  color: settingsTab === "edit" ? "#111827" : "#9ca3af",
+                  borderBottom: settingsTab === "edit" ? "3px solid #111827" : "3px solid transparent",
+                  marginBottom: -1,
+                }}
+              >
                 Edit Employer
-              </div>
+              </button>
+              <button
+                type="button"
+                onClick={() => setSettingsTab("publishing")}
+                style={{
+                  padding: "12px 20px", fontSize: 15, fontWeight: 600, cursor: "pointer",
+                  background: "transparent", border: "none",
+                  color: settingsTab === "publishing" ? "#111827" : "#9ca3af",
+                  borderBottom: settingsTab === "publishing" ? "3px solid #111827" : "3px solid transparent",
+                  marginBottom: -1,
+                }}
+              >
+                Auto-Publish
+              </button>
             </div>
-            <p style={{ margin: "-12px 0 20px 0", fontSize: 13, color: "#8e8e93" }}>Update business details and daily job post limit.</p>
-            <form onSubmit={handleEditEmployer} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-              <div>
-                <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#1c1c1e", marginBottom: 6 }}>Business Name</label>
-                <input
-                  type="text"
-                  value={editName}
-                  onChange={e => setEditName(e.target.value)}
-                  required
-                  style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid #d1d5db", fontSize: 14, boxSizing: "border-box" }}
-                />
-              </div>
-              <div>
-                <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#1c1c1e", marginBottom: 6 }}>Business Type</label>
-                <BusinessTypeSelect
-                  value={editType}
-                  onChange={setEditType}
-                  businessTypes={businessTypes}
-                  onAddType={async (name) => {
-                    const created = await addBusinessType(name);
-                    setBusinessTypes(prev => prev.some(t => t.id === created.id) ? prev : [...prev, created]);
-                    setEditType(created.name);
-                  }}
-                />
-              </div>
-              
-              {/* Logo Upload */}
-              <div>
-                <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#1c1c1e", marginBottom: 6 }}>Business Profile Photo (Logo)</label>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={e => setEditLogoFile(e.target.files?.[0] || null)}
-                  style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: "1px dashed #d1d5db", fontSize: 13, boxSizing: "border-box", background: "#f9fafb" }}
-                />
-                {editLogoFile && <p style={{ fontSize: 12, color: "#059669", marginTop: 4 }}>Selected: {editLogoFile.name}</p>}
-              </div>
-
-              {/* Subscription Package */}
-              <div>
-                <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#1c1c1e", marginBottom: 6 }}>Subscription Package</label>
-                <select
-                  value={editPackageId}
-                  onChange={e => setEditPackageId(e.target.value)}
-                  style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid #d1d5db", fontSize: 14, boxSizing: "border-box" }}
-                >
-                  <option value="">No Package (Free / Manual Later)</option>
-                  {packages.map((pkg) => (
-                    <option key={pkg.id} value={pkg.id}>
-                      {pkg.name} — {pkg.duration_days} Days ({pkg.price} ETB)
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Extend Days */}
-              {editPackageId && (
-                <div>
-                  <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#1c1c1e", marginBottom: 6 }}>Extend Package Duration (Days)</label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={editExtendDays}
-                    onChange={e => setEditExtendDays(parseInt(e.target.value) || 0)}
-                    style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid #d1d5db", fontSize: 14, boxSizing: "border-box" }}
-                  />
-                </div>
-              )}
-
-              {/* Daily Post Limit */}
-              <div>
-                <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#1c1c1e", marginBottom: 8 }}>Daily Job Post Limit</label>
-                <div style={{ display: "flex", gap: 8 }}>
-                  {POST_LIMIT_OPTIONS.map(opt => (
-                    <button
-                      key={opt.value}
-                      type="button"
-                      onClick={() => setEditPostLimit(opt.value)}
-                      style={{
-                        flex: 1,
-                        padding: "10px 6px",
-                        borderRadius: 8,
-                        border: editPostLimit === opt.value ? "2px solid #1c1c1e" : "1px solid #d1d5db",
-                        background: editPostLimit === opt.value ? "#f1f5f9" : "#f9fafb",
-                        cursor: "pointer",
-                        textAlign: "center",
-                        transition: "all 0.15s",
+            {settingsTab === "edit" && (
+              <>
+                <p style={{ margin: "-12px 0 20px 0", fontSize: 13, color: "#8e8e93" }}>Update business details and daily job post limit.</p>
+                <form onSubmit={handleEditEmployer} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                  <div>
+                    <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#1c1c1e", marginBottom: 6 }}>Business Name</label>
+                    <input
+                      type="text"
+                      value={editName}
+                      onChange={e => setEditName(e.target.value)}
+                      required
+                      style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid #d1d5db", fontSize: 14, boxSizing: "border-box" }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#1c1c1e", marginBottom: 6 }}>Business Type</label>
+                    <BusinessTypeSelect
+                      value={editType}
+                      onChange={setEditType}
+                      businessTypes={businessTypes}
+                      onAddType={async (name) => {
+                        const created = await addBusinessType(name);
+                        setBusinessTypes(prev => prev.some(t => t.id === created.id) ? prev : [...prev, created]);
+                        setEditType(created.name);
                       }}
+                    />
+                  </div>
+
+                  {/* Logo Upload */}
+                  <div>
+                    <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#1c1c1e", marginBottom: 6 }}>Business Profile Photo (Logo)</label>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={e => setEditLogoFile(e.target.files?.[0] || null)}
+                      style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: "1px dashed #d1d5db", fontSize: 13, boxSizing: "border-box", background: "#f9fafb" }}
+                    />
+                    {editLogoFile && <p style={{ fontSize: 12, color: "#059669", marginTop: 4 }}>Selected: {editLogoFile.name}</p>}
+                  </div>
+
+                  {/* Subscription Package */}
+                  <div>
+                    <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#1c1c1e", marginBottom: 6 }}>Subscription Package</label>
+                    <select
+                      value={editPackageId}
+                      onChange={e => setEditPackageId(e.target.value)}
+                      style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid #d1d5db", fontSize: 14, boxSizing: "border-box" }}
                     >
-                      <div style={{ fontSize: 15, fontWeight: 700, color: editPostLimit === opt.value ? "#1c1c1e" : "#374151" }}>{opt.label}</div>
-                      <div style={{ fontSize: 11, color: editPostLimit === opt.value ? "#1c1c1e" : "#9ca3af", marginTop: 2 }}>{opt.description}</div>
+                      <option value="">No Package (Free / Manual Later)</option>
+                      {packages.map((pkg) => (
+                        <option key={pkg.id} value={pkg.id}>
+                          {pkg.name} — {pkg.duration_days} Days ({pkg.price} ETB)
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Extend Days */}
+                  {editPackageId && (
+                    <div>
+                      <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#1c1c1e", marginBottom: 6 }}>Extend Package Duration (Days)</label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={editExtendDays}
+                        onChange={e => setEditExtendDays(parseInt(e.target.value) || 0)}
+                        style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid #d1d5db", fontSize: 14, boxSizing: "border-box" }}
+                      />
+                    </div>
+                  )}
+
+                  {/* Daily Post Limit */}
+                  <div>
+                    <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#1c1c1e", marginBottom: 8 }}>Daily Job Post Limit</label>
+                    <div style={{ display: "flex", gap: 8 }}>
+                      {POST_LIMIT_OPTIONS.map(opt => (
+                        <button
+                          key={opt.value}
+                          type="button"
+                          onClick={() => setEditPostLimit(opt.value)}
+                          style={{
+                            flex: 1,
+                            padding: "10px 6px",
+                            borderRadius: 8,
+                            border: editPostLimit === opt.value ? "2px solid #1c1c1e" : "1px solid #d1d5db",
+                            background: editPostLimit === opt.value ? "#f1f5f9" : "#f9fafb",
+                            cursor: "pointer",
+                            textAlign: "center",
+                            transition: "all 0.15s",
+                          }}
+                        >
+                          <div style={{ fontSize: 15, fontWeight: 700, color: editPostLimit === opt.value ? "#1c1c1e" : "#374151" }}>{opt.label}</div>
+                          <div style={{ fontSize: 11, color: editPostLimit === opt.value ? "#1c1c1e" : "#9ca3af", marginTop: 2 }}>{opt.description}</div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  {editError && <p style={{ color: "#dc2626", margin: 0, fontSize: 13 }}>{editError}</p>}
+                  <div style={{ display: "flex", gap: 12, justifyContent: "flex-end", marginTop: 8 }}>
+                    <button
+                      type="button"
+                      onClick={() => setEditModal(null)}
+                      disabled={editLoading}
+                      style={{ background: "#f3f4f6", color: "#1c1c1e", border: "none", padding: "8px 16px", borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: "pointer" }}
+                    >
+                      Cancel
                     </button>
-                  ))}
+                    <button
+                      type="submit"
+                      disabled={editLoading || !editName.trim()}
+                      style={{ background: "#1c1c1e", color: "#fff", border: "none", padding: "8px 16px", borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 8 }}
+                    >
+                      <Pencil size={14} />
+                      {editLoading ? "Saving..." : "Save Changes"}
+                    </button>
+                  </div>
+                </form>
+              </>
+            )}
+
+            {settingsTab === "publishing" && (() => {
+              const currentEmployer = data.employers.find((emp: any) => emp.id === editModal.id);
+              const isAutoPublish = !!currentEmployer?.auto_publish;
+              return (
+                <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                  <p style={{ margin: 0, fontSize: 13, color: "#8e8e93", lineHeight: 1.5 }}>
+                    By default, an employer's job posts go through moderation review before going live.
+                    Turn this on for trusted employers so their posts publish instantly instead, skipping review.
+                  </p>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 18px", borderRadius: 12, border: "1px solid #e5e7eb", background: "#f9fafb" }}>
+                    <div>
+                      <div style={{ fontSize: 15, fontWeight: 700, color: "#111827" }}>Post without review</div>
+                      <div style={{ fontSize: 12, color: "#8e8e93", marginTop: 2 }}>
+                        {isAutoPublish ? "New job posts go live instantly." : "New job posts require admin review."}
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleToggleAutoPublish}
+                      disabled={autoPublishSaving}
+                      style={{
+                        width: 48, height: 28, borderRadius: 999, border: "none", cursor: autoPublishSaving ? "default" : "pointer",
+                        background: isAutoPublish ? "#059669" : "#d1d5db",
+                        position: "relative", padding: 0, flexShrink: 0, opacity: autoPublishSaving ? 0.6 : 1,
+                        transition: "background 0.15s",
+                      }}
+                      title={isAutoPublish ? "Turn off auto-publish" : "Turn on auto-publish"}
+                    >
+                      <span style={{
+                        position: "absolute", top: 3, left: isAutoPublish ? 23 : 3,
+                        width: 22, height: 22, borderRadius: "50%", background: "#fff",
+                        boxShadow: "0 1px 3px rgba(0,0,0,0.2)", transition: "left 0.15s",
+                      }} />
+                    </button>
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 8 }}>
+                    <button
+                      type="button"
+                      onClick={() => setEditModal(null)}
+                      style={{ background: "#f3f4f6", color: "#1c1c1e", border: "none", padding: "8px 16px", borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: "pointer" }}
+                    >
+                      Close
+                    </button>
+                  </div>
                 </div>
-              </div>
-              {editError && <p style={{ color: "#dc2626", margin: 0, fontSize: 13 }}>{editError}</p>}
-              <div style={{ display: "flex", gap: 12, justifyContent: "flex-end", marginTop: 8 }}>
-                <button
-                  type="button"
-                  onClick={() => setEditModal(null)}
-                  disabled={editLoading}
-                  style={{ background: "#f3f4f6", color: "#1c1c1e", border: "none", padding: "8px 16px", borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: "pointer" }}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={editLoading || !editName.trim()}
-                  style={{ background: "#1c1c1e", color: "#fff", border: "none", padding: "8px 16px", borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 8 }}
-                >
-                  <Pencil size={14} />
-                  {editLoading ? "Saving..." : "Save Changes"}
-                </button>
-              </div>
-            </form>
+              );
+            })()}
           </div>
         </div>
       )}
