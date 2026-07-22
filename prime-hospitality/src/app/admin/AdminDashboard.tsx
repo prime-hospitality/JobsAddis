@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { toggleUserBan, toggleJobStatus, scheduleJobPost, repostJob, logoutAdmin, addEmployer, deleteEmployer, updateEmployer, adminUpdateEmployerLogo, deleteUser, approveSpecialRequest, getPricingConfig, updatePricingConfig, getLoggedInAdmin, createSubAdmin, updateSubAdminPermissions, deleteSubAdmin, listSubAdmins, searchUsers, getProfessionCounts, searchEmployers, getPackages } from "./actions";
+import { toggleUserBan, toggleJobStatus, scheduleJobPost, repostJob, logoutAdmin, addEmployer, deleteEmployer, updateEmployer, adminUpdateEmployerLogo, deleteUser, approveSpecialRequest, getPricingConfig, updatePricingConfig, getLoggedInAdmin, createSubAdmin, updateSubAdminPermissions, deleteSubAdmin, listSubAdmins, searchUsers, getProfessionCounts, searchEmployers, getPackages, getBusinessTypes, addBusinessType } from "./actions";
 import type { AdminPermissions, SubAdmin } from "./actions";
-import { Trash2, Pencil, Image as ImageIcon, Menu, X, LayoutDashboard, Briefcase, FileText, Users, LogOut, Settings, CreditCard, CheckCircle, BookOpen, User, Building2, Hourglass, ChevronDown, Check, Megaphone, History, BarChart3 } from "lucide-react";
+import { Trash2, Pencil, Image as ImageIcon, Menu, X, LayoutDashboard, Briefcase, FileText, Users, LogOut, Settings, CreditCard, CheckCircle, BookOpen, User, Building2, Hourglass, ChevronDown, Check, Plus, Megaphone, History, BarChart3 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Timer, Gear } from "@phosphor-icons/react";
 import { supabase } from "@/lib/supabase";
@@ -308,6 +308,146 @@ function PackageDropdown({ packages, selectedId, onSelect }: { packages: any[], 
   );
 }
 
+function BusinessTypeSelect({ value, onChange, businessTypes, onAddType }: { value: string, onChange: (name: string) => void, businessTypes: { id: string, name: string }[], onAddType: (name: string) => Promise<void> }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [showOtherInput, setShowOtherInput] = useState(false);
+  const [otherValue, setOtherValue] = useState("");
+  const [adding, setAdding] = useState(false);
+  const [addError, setAddError] = useState("");
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const handleSubmitOther = async () => {
+    const trimmed = otherValue.trim();
+    if (!trimmed) return;
+    setAdding(true);
+    setAddError("");
+    try {
+      await onAddType(trimmed);
+      setShowOtherInput(false);
+      setOtherValue("");
+    } catch (e: any) {
+      setAddError(e.message || "Failed to add business type");
+    } finally {
+      setAdding(false);
+    }
+  };
+
+  return (
+    <div>
+      <div ref={dropdownRef} style={{ position: "relative", width: "100%" }}>
+        <button
+          type="button"
+          onClick={() => setIsOpen(!isOpen)}
+          style={{
+            width: "100%", padding: "12px 14px", display: "flex", alignItems: "center", justifyContent: "space-between",
+            background: "#f8fafc", border: isOpen ? "1.5px solid #007aff" : "1.5px solid #e2e8f0", cursor: "pointer",
+            borderRadius: 10, outline: "none", boxShadow: isOpen ? "0 0 0 3px rgba(0,122,255,0.12)" : "none", transition: "border-color 0.2s, box-shadow 0.2s", boxSizing: "border-box"
+          }}
+        >
+          <span style={{ color: value ? "#1c1c1e" : "#8e8e93", fontSize: 14, fontWeight: 500 }}>
+            {value || "Select business type"}
+          </span>
+          <ChevronDown size={16} color="#8e8e93" style={{ transform: isOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }} />
+        </button>
+
+        <AnimatePresence>
+          {isOpen && (
+            <motion.div
+              initial={{ opacity: 0, y: -5, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -5, scale: 0.98 }}
+              transition={{ duration: 0.15, ease: "easeOut" }}
+              style={{
+                position: "absolute", top: "calc(100% + 6px)", left: 0, right: 0, zIndex: 50,
+                background: "#ffffff", borderRadius: 12, border: "1px solid #e5e5ea",
+                boxShadow: "0 10px 25px rgba(0,0,0,0.08)", overflow: "hidden"
+              }}
+            >
+              <div style={{ maxHeight: 240, overflowY: "auto", padding: 6 }}>
+                {businessTypes.map(bt => (
+                  <button
+                    key={bt.id}
+                    type="button"
+                    onClick={() => { onChange(bt.name); setIsOpen(false); }}
+                    style={{
+                      width: "100%", display: "flex", alignItems: "center", padding: "10px 12px", gap: 10,
+                      background: value === bt.name ? "#f2f2f7" : "transparent", border: "none", borderRadius: 8, cursor: "pointer",
+                      textAlign: "left", marginTop: 2
+                    }}
+                    onMouseEnter={(e) => { if (value !== bt.name) e.currentTarget.style.background = "#f2f2f7" }}
+                    onMouseLeave={(e) => { if (value !== bt.name) e.currentTarget.style.background = "transparent" }}
+                  >
+                    <div style={{ width: 16, display: "flex", justifyContent: "center", flexShrink: 0 }}>
+                      {value === bt.name && <Check size={16} color="#007aff" />}
+                    </div>
+                    <span style={{ fontSize: 14, fontWeight: 500, color: "#1c1c1e" }}>{bt.name}</span>
+                  </button>
+                ))}
+                <div style={{ height: 1, background: "#e5e5ea", margin: "6px 4px" }} />
+                <button
+                  type="button"
+                  onClick={() => { setIsOpen(false); setShowOtherInput(true); setOtherValue(""); setAddError(""); }}
+                  style={{
+                    width: "100%", display: "flex", alignItems: "center", padding: "10px 12px", gap: 10,
+                    background: "transparent", border: "none", borderRadius: 8, cursor: "pointer", textAlign: "left"
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = "#f2f2f7" }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = "transparent" }}
+                >
+                  <div style={{ width: 16, display: "flex", justifyContent: "center", flexShrink: 0 }}>
+                    <Plus size={14} color="#007aff" />
+                  </div>
+                  <span style={{ fontSize: 14, fontWeight: 500, color: "#007aff" }}>Other</span>
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
+      {showOtherInput && (
+        <div style={{ marginTop: 8, display: "flex", gap: 8 }}>
+          <input
+            autoFocus
+            type="text"
+            value={otherValue}
+            onChange={e => setOtherValue(e.target.value)}
+            onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); handleSubmitOther(); } }}
+            placeholder="e.g. Bakery, Lounge, NGO"
+            style={{ flex: 1, padding: "10px 12px", borderRadius: 10, border: "1.5px solid #e2e8f0", fontSize: 14, fontWeight: 500, color: "#1c1c1e", background: "#f8fafc", boxSizing: "border-box", outline: "none" }}
+          />
+          <button
+            type="button"
+            onClick={handleSubmitOther}
+            disabled={adding || !otherValue.trim()}
+            style={{ padding: "10px 14px", borderRadius: 10, border: "none", background: adding || !otherValue.trim() ? "#93c5fd" : "#007aff", color: "#fff", fontSize: 13, fontWeight: 700, cursor: adding || !otherValue.trim() ? "not-allowed" : "pointer" }}
+          >
+            {adding ? "Adding…" : "Add"}
+          </button>
+          <button
+            type="button"
+            onClick={() => { setShowOtherInput(false); setOtherValue(""); setAddError(""); }}
+            style={{ padding: "10px 14px", borderRadius: 10, border: "1.5px solid #e2e8f0", background: "#f8fafc", color: "#64748b", fontSize: 13, fontWeight: 600, cursor: "pointer" }}
+          >
+            Cancel
+          </button>
+        </div>
+      )}
+      {addError && <p style={{ margin: "6px 0 0 0", fontSize: 12, color: "#dc2626" }}>{addError}</p>}
+    </div>
+  );
+}
+
 type Tab = "overview" | "employers" | "jobs" | "configuration" | "monetization" | "reporting" | "settings";
 type ConfigSubTab = "users" | "content" | "broadcast" | "activity";
 type SeekerSubTab = "user-config" | "tab2" | "tab3" | "tab4";
@@ -345,6 +485,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
   const [newBusinessType, setNewBusinessType] = useState("");
   const [packages, setPackages] = useState<any[]>([]);
   const [selectedPackageId, setSelectedPackageId] = useState<string>("");
+  const [businessTypes, setBusinessTypes] = useState<{ id: string, name: string }[]>([]);
   const [formLoading, setFormLoading] = useState(false);
   const [formError, setFormError] = useState("");
   const [authNumberResult, setAuthNumberResult] = useState<{ name: string; number: string } | null>(null);
@@ -518,6 +659,20 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
         }
       };
       fetchPkgs();
+    }
+  }, [activeTab, empSubTab]);
+
+  useEffect(() => {
+    if (activeTab === "employers" && empSubTab === "emp_config") {
+      const fetchTypes = async () => {
+        try {
+          const res = await getBusinessTypes();
+          setBusinessTypes(res);
+        } catch (e) {
+          console.error(e);
+        }
+      };
+      fetchTypes();
     }
   }, [activeTab, empSubTab]);
 
@@ -1433,13 +1588,15 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                     </div>
                     <div>
                       <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#1c1c1e", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.05em" }}>Business Type</label>
-                      <input
-                        type="text"
+                      <BusinessTypeSelect
                         value={newBusinessType}
-                        onChange={e => setNewBusinessType(e.target.value)}
-                        required
-                        placeholder="e.g. Hotel, Restaurant, NGO"
-                        style={{ width: "100%", padding: "12px 14px", borderRadius: 10, border: "1.5px solid #e2e8f0", fontSize: 14, fontWeight: 500, color: "#1c1c1e", background: "#f8fafc", boxSizing: "border-box", outline: "none" }}
+                        onChange={setNewBusinessType}
+                        businessTypes={businessTypes}
+                        onAddType={async (name) => {
+                          const created = await addBusinessType(name);
+                          setBusinessTypes(prev => prev.some(t => t.id === created.id) ? prev : [...prev, created]);
+                          setNewBusinessType(created.name);
+                        }}
                       />
                     </div>
                     <div>
@@ -2337,12 +2494,15 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
               </div>
               <div>
                 <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#1c1c1e", marginBottom: 6 }}>Business Type</label>
-                <input
-                  type="text"
+                <BusinessTypeSelect
                   value={editType}
-                  onChange={e => setEditType(e.target.value)}
-                  placeholder="e.g. Hotel"
-                  style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid #d1d5db", fontSize: 14, boxSizing: "border-box" }}
+                  onChange={setEditType}
+                  businessTypes={businessTypes}
+                  onAddType={async (name) => {
+                    const created = await addBusinessType(name);
+                    setBusinessTypes(prev => prev.some(t => t.id === created.id) ? prev : [...prev, created]);
+                    setEditType(created.name);
+                  }}
                 />
               </div>
               

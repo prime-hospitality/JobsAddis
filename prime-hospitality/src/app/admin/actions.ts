@@ -1127,6 +1127,40 @@ export async function getPackages() {
   return data || [];
 }
 
+export async function getBusinessTypes() {
+  await requirePermission("manageEmployers");
+  const { data, error } = await getSupabase()
+    .from("business_types")
+    .select("*")
+    .order("created_at", { ascending: true });
+
+  if (error) throw new Error(error.message);
+  return data || [];
+}
+
+export async function addBusinessType(name: string) {
+  await requirePermission("manageEmployers");
+  const trimmed = name.trim();
+  if (!trimmed) throw new Error("Business type name cannot be empty.");
+
+  const supabase = getSupabase();
+  const { data: existing, error: existingErr } = await supabase
+    .from("business_types")
+    .select("*")
+    .ilike("name", trimmed)
+    .maybeSingle();
+  if (existingErr) throw new Error(existingErr.message);
+  if (existing) return existing;
+
+  const { data, error } = await supabase
+    .from("business_types")
+    .insert({ name: trimmed })
+    .select("*")
+    .single();
+  if (error) throw new Error(error.message);
+  return data;
+}
+
 // ── Broadcast ────────────────────────────────────────────────────────────────
 
 export async function sendBroadcast(target: "all" | "job_seeker" | "employer", message: string) {
