@@ -35,7 +35,7 @@ async function getPricingConfig() {
     if (data?.value) {
       const parsed = JSON.parse(data.value);
       const sanitized = Object.fromEntries(
-        Object.entries(parsed).map(([k, v]) => 
+        Object.entries(parsed).map(([k, v]) =>
           [k, typeof v === 'string' ? v.replace(/\$/g, '') : v]
         )
       );
@@ -45,6 +45,29 @@ async function getPricingConfig() {
     console.error("Failed to fetch pricing config:", e);
   }
   return DEFAULT_CONFIG;
+}
+
+// Shared brand accent — matches the employer dashboard/billing palette (sky-700 + slate neutrals)
+const BRAND = "#0284c7";
+const BRAND_SUBTLE = "#eff6ff";
+const INK = "#0f172a";
+
+const checkIcon = (stroke: string) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={stroke} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+);
+
+function FeatureRow({ label, price, dark }: { label: string; price?: string; dark?: boolean }) {
+  return (
+    <li style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 15, gap: 12, fontFamily: "'Inter', sans-serif", color: dark ? "#E2E8F0" : "#334155" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
+        <div style={{ background: dark ? "rgba(255,255,255,0.12)" : BRAND_SUBTLE, borderRadius: "50%", padding: 5, display: "flex", flexShrink: 0 }}>
+          {checkIcon(dark ? "#fff" : BRAND)}
+        </div>
+        <span>{label}</span>
+      </div>
+      {price && <span style={{ fontWeight: 700, color: dark ? "#fff" : INK, textAlign: "right", whiteSpace: "nowrap", flexShrink: 0 }}>{price}</span>}
+    </li>
+  );
 }
 
 export default async function PricingPage() {
@@ -70,24 +93,37 @@ export default async function PricingPage() {
     { label: 'Pin Your Vacancy', price: `${config.pinVacancy} ETB / Day` }
   ];
 
-  const checkIcon = (stroke: string) => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={stroke} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-  );
+  const extraServices = ['Screening & Hiring', 'Training', 'Cost & Operational Audit', 'Food Safety Audit', 'Menu Development', 'Monthly Financial Review', 'Hospitality Consultancy'];
+
+  const headingFont = "'Plus Jakarta Sans', 'Inter', sans-serif";
+  const bodyFont = "'Inter', sans-serif";
 
   return (
-    <div style={{ minHeight: "100vh", backgroundColor: "#F8FAFC", fontFamily: "'Inter', sans-serif" }}>
+    <div style={{ minHeight: "100vh", backgroundColor: "#F8FAFC", fontFamily: bodyFont }}>
+      <style>{`
+        @media (max-width: 640px) {
+          .pr-nav { padding: 16px 20px !important; }
+          .pr-hero { padding: 48px 20px 40px !important; }
+          .pr-hero h1 { font-size: 30px !important; }
+          .pr-cards-wrap { padding: 0 16px 32px !important; }
+          .pr-details-wrap { padding: 0 16px 56px !important; }
+          .pr-details-card { padding: 24px !important; }
+          .pr-card { padding: 28px 24px !important; }
+        }
+      `}</style>
+
       {/* Navigation */}
-      <nav style={{ padding: "24px 48px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #E2E8F0", backgroundColor: "#fff" }}>
-        <div style={{ fontSize: 20, fontWeight: 700, color: "#0F172A", display: "flex", alignItems: "center", gap: 10 }}>
-          <img src="/logo.png" alt="Prime Hospitality Logo" style={{ width: 36, height: 36, objectFit: "contain" }} />
-          <span style={{ letterSpacing: "-0.01em" }}>Prime Hospitality</span>
+      <nav className="pr-nav" style={{ padding: "22px 48px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #E2E8F0", backgroundColor: "#fff" }}>
+        <div style={{ fontSize: 19, fontWeight: 800, color: INK, display: "flex", alignItems: "center", gap: 10, fontFamily: headingFont, letterSpacing: "-0.01em" }}>
+          <img src="/logo.png" alt="Prime Hospitality Logo" style={{ width: 34, height: 34, objectFit: "contain" }} />
+          <span>Prime Hospitality</span>
         </div>
-        
+
         {isAuthenticated && (
-          <Link href="/emp/dashboard/billing" style={{ 
-            color: "#475569", 
-            textDecoration: "none", 
-            fontWeight: 600, 
+          <Link href="/emp/dashboard/billing" style={{
+            color: "#475569",
+            textDecoration: "none",
+            fontWeight: 600,
             fontSize: 14,
             display: "flex",
             alignItems: "center",
@@ -105,214 +141,174 @@ export default async function PricingPage() {
       </nav>
 
       {/* Hero */}
-      <div style={{ padding: "80px 24px 60px", textAlign: "center" }}>
-        <h1 style={{ fontSize: 42, fontWeight: 800, color: "#0F172A", marginBottom: 20, letterSpacing: "-0.03em" }}>
+      <div className="pr-hero" style={{ padding: "72px 24px 52px", textAlign: "center" }}>
+        <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "6px 14px", borderRadius: 100, background: BRAND_SUBTLE, marginBottom: 20 }}>
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={BRAND} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/></svg>
+          <span style={{ fontSize: 13, fontWeight: 700, color: BRAND, fontFamily: bodyFont }}>Prices in Ethiopian Birr (ETB)</span>
+        </div>
+        <h1 style={{ fontSize: 40, fontWeight: 800, color: INK, marginBottom: 16, letterSpacing: "-0.03em", fontFamily: headingFont }}>
           Thank You for Choosing JobsAddis
         </h1>
-        <p style={{ fontSize: 18, color: "#64748B", maxWidth: 600, margin: "0 auto", lineHeight: 1.6 }}>
-          Please Review Our Jobs Advertisement Packages Below &amp; Select The One That Fits Your Hiring Need.
+        <p style={{ fontSize: 17, color: "#64748B", maxWidth: 560, margin: "0 auto", lineHeight: 1.6, fontFamily: bodyFont }}>
+          Review our job advertisement packages below and select the one that fits your hiring need.
         </p>
       </div>
 
       {/* Pricing Cards Container */}
-      <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 24px 40px" }}>
-        
-        {/* Currency Badge UI */}
-        <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 24 }}>
-          <div style={{ 
-            display: "inline-flex", 
-            alignItems: "center", 
-            gap: 8, 
-            padding: "8px 16px", 
-            backgroundColor: "#fff", 
-            borderRadius: 20, 
-            border: "1px solid #E2E8F0",
-            boxShadow: "0 2px 4px rgba(0,0,0,0.02)"
-          }}>
-            <span style={{ fontSize: 16 }}>🇪🇹</span>
-            <span style={{ fontSize: 14, fontWeight: 600, color: "#475569" }}>Prices are in ETB</span>
-          </div>
-        </div>
-
-        <div style={{ 
-          display: "grid", 
-          gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", 
-          gap: 32,
+      <div className="pr-cards-wrap" style={{ maxWidth: 1200, margin: "0 auto", padding: "0 24px 44px" }}>
+        <div style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+          gap: 28,
           alignItems: "stretch"
         }}>
           {/* Long Term Memberships */}
-        <div style={{ 
-          backgroundColor: "#fff", 
-          borderRadius: 24, 
-          padding: 40, 
-          border: "1px solid #E2E8F0",
-          boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)",
-          display: "flex",
-          flexDirection: "column"
-        }}>
-          <h3 style={{ fontSize: 20, fontWeight: 700, color: "#0F172A", marginBottom: 8 }}>Long Term Memberships</h3>
-          <p style={{ fontSize: 15, color: "#64748B", marginBottom: 28, minHeight: 44, lineHeight: 1.5 }}>
-            Posted <strong>(5) Times Per Day</strong>. Best for frequent hiring.
-          </p>
-          <div style={{ marginBottom: 32, display: "flex", alignItems: "baseline", gap: 8 }}>
-            <span style={{ fontSize: 20, fontWeight: 600, color: "#64748B" }}>From</span>
-            <span style={{ fontSize: 36, fontWeight: 800, color: "#0F172A", letterSpacing: "-0.02em", whiteSpace: "nowrap" }}>
-              {config.sixMonths}
-            </span>
-            <span style={{ fontSize: 16, color: "#64748B", fontWeight: 500 }}>ETB</span>
-          </div>
-          
-          <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 16, flexGrow: 1 }}>
-            {premiumPackages.map((pkg, i) => (
-              <li key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 15, color: "#475569" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-                  <div style={{ backgroundColor: "#EFF6FF", borderRadius: "50%", padding: 4, display: "flex", minWidth: 22, minHeight: 22 }}>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-                  </div>
-                  <span>{pkg.label}</span>
-                </div>
-                <span style={{ fontWeight: 600, color: "#0F172A", textAlign: "right", whiteSpace: "nowrap" }}>{pkg.price}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        {/* Standard Packages (Middle, Dark, Popular) */}
-        <div style={{ 
-          backgroundColor: "#0F172A", 
-          borderRadius: 24, 
-          padding: "44px 40px", 
-          border: "1px solid #1E293B",
-          boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
-          position: "relative",
-          display: "flex",
-          flexDirection: "column"
-        }}>
-          <div style={{ 
-            position: "absolute", 
-            top: -14, 
-            left: "50%", 
-            transform: "translateX(-50%)", 
-            backgroundColor: "#0ea5e9", 
-            color: "#fff", 
-            padding: "6px 16px", 
-            borderRadius: 20, 
-            fontSize: 12, 
-            fontWeight: 700, 
-            letterSpacing: "0.05em",
-            textTransform: "uppercase",
-            boxShadow: "0 4px 6px -1px rgba(14, 165, 233, 0.4)"
+          <div className="pr-card" style={{
+            backgroundColor: "#fff",
+            borderRadius: 20,
+            padding: 36,
+            border: "1px solid #E2E8F0",
+            boxShadow: "0 1px 4px rgba(0,0,0,0.04)",
+            display: "flex",
+            flexDirection: "column"
           }}>
-            Most Popular
-          </div>
-          <h3 style={{ fontSize: 20, fontWeight: 700, color: "#fff", marginBottom: 8 }}>Standard Packages</h3>
-          <p style={{ fontSize: 15, color: "#94A3B8", marginBottom: 28, minHeight: 44, lineHeight: 1.5 }}>
-            Posted <strong>(3) Times Per Day</strong>.
-          </p>
-          <div style={{ marginBottom: 32, display: "flex", alignItems: "baseline", gap: 8 }}>
-            <span style={{ fontSize: 20, fontWeight: 600, color: "#94A3B8" }}>From</span>
-            <span style={{ fontSize: 36, fontWeight: 800, color: "#fff", letterSpacing: "-0.02em", whiteSpace: "nowrap" }}>
-              {config.threeDays}
-            </span>
-            <span style={{ fontSize: 16, color: "#94A3B8", fontWeight: 500 }}>ETB</span>
-          </div>
-          
-          <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 16, flexGrow: 1, marginBottom: 24 }}>
-            {standardPackages.map((pkg, i) => (
-              <li key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 15, color: "#E2E8F0" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-                  <div style={{ backgroundColor: "rgba(16, 185, 129, 0.2)", borderRadius: "50%", padding: 4, display: "flex", minWidth: 22, minHeight: 22 }}>
-                    {checkIcon("#10B981")}
-                  </div>
-                  <span>{pkg.label}</span>
-                </div>
-                <span style={{ fontWeight: 600, color: "#fff", textAlign: "right" }}>{pkg.price}</span>
-              </li>
-            ))}
-          </ul>
-          
-          <div style={{ backgroundColor: "rgba(255,255,255,0.05)", padding: 16, borderRadius: 12, marginTop: "auto" }}>
-            <p style={{ fontSize: 14, color: "#E2E8F0", lineHeight: 1.5, margin: 0 }}>
-              <span style={{ color: "#38BDF8", fontWeight: 600, marginRight: 6 }}>📌 Note:</span>
-              Any of the Package Doesn&apos;t Have a Position limitation. It Means, You can Post Multiple Positions Under Any of the Package.
+            <h3 style={{ fontSize: 19, fontWeight: 700, color: INK, marginBottom: 8, fontFamily: headingFont }}>Long Term Memberships</h3>
+            <p style={{ fontSize: 14, color: "#64748B", marginBottom: 26, minHeight: 40, lineHeight: 1.5 }}>
+              Posted <strong>(5) Times Per Day</strong>. Best for frequent hiring.
             </p>
-          </div>
-        </div>
+            <div style={{ marginBottom: 28, display: "flex", alignItems: "baseline", gap: 8 }}>
+              <span style={{ fontSize: 15, fontWeight: 600, color: "#94A3B8" }}>From</span>
+              <span style={{ fontSize: 32, fontWeight: 800, color: INK, letterSpacing: "-0.02em", whiteSpace: "nowrap", fontFamily: headingFont }}>
+                {config.sixMonths}
+              </span>
+              <span style={{ fontSize: 15, color: "#94A3B8", fontWeight: 500 }}>ETB</span>
+            </div>
 
-        {/* Add-ons Plan */}
-        <div style={{ 
-          backgroundColor: "#fff", 
-          borderRadius: 24, 
-          padding: 40, 
-          border: "1px solid #E2E8F0",
-          boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)",
-          display: "flex",
-          flexDirection: "column"
-        }}>
-          <h3 style={{ fontSize: 20, fontWeight: 700, color: "#0F172A", marginBottom: 8 }}>Add-ons &amp; Consulting</h3>
-          <p style={{ fontSize: 15, color: "#64748B", marginBottom: 28, minHeight: 44, lineHeight: 1.5 }}>Extra services for your business in your preference.</p>
-          <div style={{ marginBottom: 32, display: "flex", alignItems: "baseline", gap: 8 }}>
-            <span style={{ fontSize: 36, fontWeight: 800, color: "#0F172A", letterSpacing: "-0.02em" }}>Custom</span>
+            <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 16, flexGrow: 1 }}>
+              {premiumPackages.map((pkg, i) => (
+                <FeatureRow key={i} label={pkg.label} price={pkg.price} />
+              ))}
+            </ul>
           </div>
-          
-          <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 16, flexGrow: 1 }}>
-            {addOns.map((addon, i) => (
-              <li key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 15, color: "#475569", paddingBottom: i < addOns.length - 1 ? 16 : 0, borderBottom: i < addOns.length - 1 ? "1px solid #E2E8F0" : "none" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-                  <div style={{ backgroundColor: "#EFF6FF", borderRadius: "50%", padding: 4, display: "flex", minWidth: 22, minHeight: 22 }}>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-                  </div>
-                  <span style={{ fontWeight: 500 }}>{addon.label}</span>
-                </div>
-                <span style={{ fontWeight: 600, color: "#0F172A", textAlign: "right" }}>{addon.price}</span>
-              </li>
-            ))}
-            
-            <div style={{ fontSize: 13, fontWeight: 600, color: "#64748B", textTransform: "uppercase", marginTop: 8, letterSpacing: "0.05em" }}>We Also Provide:</div>
-            {['Screening & Hiring', 'Training', 'Cost & Operational Audit', 'Food Safety Audit', 'Menu Development', 'Monthly Financial Review', 'Hospitality Consultancy'].map((feature, i) => (
-              <li key={`extra-${i}`} style={{ display: "flex", alignItems: "center", gap: 14, fontSize: 15, color: "#475569" }}>
-                <div style={{ backgroundColor: "#ECFDF5", borderRadius: "50%", padding: 4, display: "flex", minWidth: 22, minHeight: 22 }}>
-                  {checkIcon("#10B981")}
-                </div>
-                {feature}
-              </li>
-            ))}
-          </ul>
-        </div>
+
+          {/* Standard Packages (Middle, Dark, Popular) */}
+          <div className="pr-card" style={{
+            background: `linear-gradient(135deg, ${INK} 0%, #1e293b 100%)`,
+            borderRadius: 20,
+            padding: "40px 36px",
+            border: "1px solid #1E293B",
+            boxShadow: "0 20px 40px -12px rgba(15, 23, 42, 0.35)",
+            position: "relative",
+            display: "flex",
+            flexDirection: "column"
+          }}>
+            <div style={{
+              position: "absolute",
+              top: -13,
+              left: "50%",
+              transform: "translateX(-50%)",
+              backgroundColor: BRAND,
+              color: "#fff",
+              padding: "6px 16px",
+              borderRadius: 100,
+              fontSize: 11,
+              fontWeight: 700,
+              letterSpacing: "0.06em",
+              textTransform: "uppercase",
+              boxShadow: "0 4px 10px -2px rgba(2, 132, 199, 0.5)"
+            }}>
+              Most Popular
+            </div>
+            <h3 style={{ fontSize: 19, fontWeight: 700, color: "#fff", marginBottom: 8, fontFamily: headingFont }}>Standard Packages</h3>
+            <p style={{ fontSize: 14, color: "#94A3B8", marginBottom: 26, minHeight: 40, lineHeight: 1.5 }}>
+              Posted <strong>(3) Times Per Day</strong>.
+            </p>
+            <div style={{ marginBottom: 28, display: "flex", alignItems: "baseline", gap: 8 }}>
+              <span style={{ fontSize: 15, fontWeight: 600, color: "#94A3B8" }}>From</span>
+              <span style={{ fontSize: 32, fontWeight: 800, color: "#fff", letterSpacing: "-0.02em", whiteSpace: "nowrap", fontFamily: headingFont }}>
+                {config.threeDays}
+              </span>
+              <span style={{ fontSize: 15, color: "#94A3B8", fontWeight: 500 }}>ETB</span>
+            </div>
+
+            <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 16, flexGrow: 1, marginBottom: 24 }}>
+              {standardPackages.map((pkg, i) => (
+                <FeatureRow key={i} label={pkg.label} price={pkg.price} dark />
+              ))}
+            </ul>
+
+            <div style={{ backgroundColor: "rgba(255,255,255,0.06)", padding: 14, borderRadius: 12, marginTop: "auto", display: "flex", gap: 10, alignItems: "flex-start" }}>
+              <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#7dd3fc" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: 2 }}><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+              <p style={{ fontSize: 13, color: "#CBD5E1", lineHeight: 1.55, margin: 0 }}>
+                No package has a position limit — post as many roles as you need under any package.
+              </p>
+            </div>
+          </div>
+
+          {/* Add-ons Plan */}
+          <div className="pr-card" style={{
+            backgroundColor: "#fff",
+            borderRadius: 20,
+            padding: 36,
+            border: "1px solid #E2E8F0",
+            boxShadow: "0 1px 4px rgba(0,0,0,0.04)",
+            display: "flex",
+            flexDirection: "column"
+          }}>
+            <h3 style={{ fontSize: 19, fontWeight: 700, color: INK, marginBottom: 8, fontFamily: headingFont }}>Add-ons &amp; Consulting</h3>
+            <p style={{ fontSize: 14, color: "#64748B", marginBottom: 26, minHeight: 40, lineHeight: 1.5 }}>Extra services for your business, tailored to your needs.</p>
+            <div style={{ marginBottom: 28, display: "flex", alignItems: "baseline", gap: 8 }}>
+              <span style={{ fontSize: 32, fontWeight: 800, color: INK, letterSpacing: "-0.02em", fontFamily: headingFont }}>Custom</span>
+            </div>
+
+            <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 16, flexGrow: 1 }}>
+              {addOns.map((addon, i) => (
+                <React.Fragment key={i}>
+                  <FeatureRow label={addon.label} price={addon.price} />
+                  <div style={{ height: 1, background: "#F1F5F9" }} />
+                </React.Fragment>
+              ))}
+
+              <div style={{ fontSize: 12, fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.06em" }}>We Also Provide</div>
+              {extraServices.map((feature, i) => (
+                <FeatureRow key={`extra-${i}`} label={feature} />
+              ))}
+            </ul>
+          </div>
         </div>
       </div>
 
       {/* Details Section */}
-      <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 24px 80px" }}>
-        <div style={{ 
-          backgroundColor: "#fff", 
-          borderRadius: 24, 
-          padding: 40, 
+      <div className="pr-details-wrap" style={{ maxWidth: 1200, margin: "0 auto", padding: "0 24px 72px" }}>
+        <div className="pr-details-card" style={{
+          backgroundColor: "#fff",
+          borderRadius: 20,
+          padding: 36,
           border: "1px solid #E2E8F0",
           display: "flex",
           flexDirection: "column",
-          gap: 32,
-          boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.05)"
+          gap: 28,
+          boxShadow: "0 1px 4px rgba(0,0,0,0.04)"
         }}>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 40 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 36 }}>
             {/* Payment Details */}
             <div>
-              <h4 style={{ fontSize: 18, fontWeight: 700, color: "#0F172A", marginBottom: 16, display: "flex", alignItems: "center", gap: 8 }}>
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0ea5e9" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+              <h4 style={{ fontSize: 16, fontWeight: 700, color: INK, marginBottom: 16, display: "flex", alignItems: "center", gap: 8, fontFamily: headingFont }}>
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={BRAND} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
                 Payment Detail
               </h4>
               <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                 <div style={{ display: "flex", flexDirection: "column" }}>
-                  <span style={{ fontSize: 13, color: "#64748B", fontWeight: 500 }}>Company Name</span>
-                  <span style={{ fontSize: 16, color: "#0F172A", fontWeight: 600 }}>{config.companyName}</span>
+                  <span style={{ fontSize: 12, color: "#64748B", fontWeight: 600 }}>Company Name</span>
+                  <span style={{ fontSize: 15, color: INK, fontWeight: 600 }}>{config.companyName}</span>
                 </div>
                 <div style={{ display: "flex", flexDirection: "column" }}>
-                  <span style={{ fontSize: 13, color: "#64748B", fontWeight: 500 }}>Bank</span>
-                  <span style={{ fontSize: 16, color: "#0F172A", fontWeight: 600 }}>{config.bankName}</span>
+                  <span style={{ fontSize: 12, color: "#64748B", fontWeight: 600 }}>Bank</span>
+                  <span style={{ fontSize: 15, color: INK, fontWeight: 600 }}>{config.bankName}</span>
                 </div>
                 <div style={{ display: "flex", flexDirection: "column" }}>
-                  <span style={{ fontSize: 13, color: "#64748B", fontWeight: 500 }}>Account No</span>
-                  <span style={{ fontSize: 18, color: "#0284c7", fontWeight: 700, letterSpacing: "0.05em" }}>{config.accountNo}</span>
+                  <span style={{ fontSize: 12, color: "#64748B", fontWeight: 600 }}>Account No</span>
+                  <span style={{ fontSize: 17, color: BRAND, fontWeight: 700, letterSpacing: "0.03em" }}>{config.accountNo}</span>
                 </div>
               </div>
             </div>
@@ -320,39 +316,41 @@ export default async function PricingPage() {
             {/* Important Notes & Contact */}
             <div style={{ display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
               <div>
-                <h4 style={{ fontSize: 18, fontWeight: 700, color: "#0F172A", marginBottom: 16, display: "flex", alignItems: "center", gap: 8 }}>
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                <h4 style={{ fontSize: 16, fontWeight: 700, color: INK, marginBottom: 16, display: "flex", alignItems: "center", gap: 8, fontFamily: headingFont }}>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#d97706" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
                   Important Information
                 </h4>
                 <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 12 }}>
-                  <li style={{ display: "flex", alignItems: "flex-start", gap: 10, fontSize: 15, color: "#475569", lineHeight: 1.5 }}>
-                    <span style={{ marginTop: 2 }}>📍</span>
-                    <span>Posting Days for Any Package is Only <strong>Consecutive Days</strong> as of the Starting day.</span>
+                  <li style={{ display: "flex", alignItems: "flex-start", gap: 10, fontSize: 14, color: "#475569", lineHeight: 1.5 }}>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: 2 }}><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                    <span>Posting days for any package are <strong>consecutive days</strong> starting from the activation date.</span>
                   </li>
-                  <li style={{ display: "flex", alignItems: "flex-start", gap: 10, fontSize: 15, color: "#475569", lineHeight: 1.5 }}>
-                    <span style={{ marginTop: 2 }}>📌</span>
-                    <span>Call Us for Further Discussion regarding Consulting and Custom Services.</span>
+                  <li style={{ display: "flex", alignItems: "flex-start", gap: 10, fontSize: 14, color: "#475569", lineHeight: 1.5 }}>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: 2 }}><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+                    <span>Call us for further discussion regarding consulting and custom services.</span>
                   </li>
                 </ul>
               </div>
-              
+
               <div style={{ marginTop: 24, padding: "16px 20px", backgroundColor: "#F8FAFC", borderRadius: 12, border: "1px solid #E2E8F0" }}>
-                <div style={{ fontSize: 14, fontWeight: 600, color: "#64748B", marginBottom: 8 }}>Contact Us</div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: "#64748B", marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.05em" }}>Contact Us</div>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 16 }}>
-                  <a href="tel:+251904885295" style={{ display: "flex", alignItems: "center", gap: 8, color: "#0F172A", fontWeight: 600, textDecoration: "none", fontSize: 16 }}>
-                    <span>☎️</span> +251 90 488 5295
+                  <a href="tel:+251904885295" style={{ display: "flex", alignItems: "center", gap: 8, color: INK, fontWeight: 600, textDecoration: "none", fontSize: 15 }}>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={BRAND} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                    +251 90 488 5295
                   </a>
-                  <a href="tel:+251985661540" style={{ display: "flex", alignItems: "center", gap: 8, color: "#0F172A", fontWeight: 600, textDecoration: "none", fontSize: 16 }}>
-                    <span>☎️</span> +251 98 566 1540
+                  <a href="tel:+251985661540" style={{ display: "flex", alignItems: "center", gap: 8, color: INK, fontWeight: 600, textDecoration: "none", fontSize: 15 }}>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={BRAND} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                    +251 98 566 1540
                   </a>
                 </div>
               </div>
             </div>
           </div>
-          
-          <div style={{ borderTop: "1px solid #E2E8F0", paddingTop: 24, textAlign: "center", color: "#64748B", fontSize: 16 }}>
+
+          <div style={{ borderTop: "1px solid #E2E8F0", paddingTop: 24, textAlign: "center", color: "#64748B", fontSize: 15 }}>
             Thank you,<br/>
-            <span style={{ fontWeight: 700, color: "#0F172A", fontSize: 18, marginTop: 4, display: "inline-block" }}>JobsAddis</span>
+            <span style={{ fontWeight: 700, color: INK, fontSize: 17, marginTop: 4, display: "inline-block", fontFamily: headingFont }}>JobsAddis</span>
           </div>
         </div>
       </div>
