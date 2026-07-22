@@ -79,20 +79,36 @@ serve(async (req) => {
       
     if (warningError) throw warningError;
     
+    let expiringWarningsSent = 0;
+
     if (expiringJobs && expiringJobs.length > 0) {
-      // Create 'job_expiring' notifications (if not already sent recently)
-      // For simplicity, we just send it if they are in the window. (In a robust system, we might track if already sent).
+      // Create 'job_expiring' notifications, but only once per job -- skip if
+      // a job_expiring notification for this job_id was already sent.
       for (const job of expiringJobs) {
         const telegramId = (job.employers as any)?.users?.telegram_id;
-        if (telegramId) {
-          await supabase.from('notifications').insert({
-            user_telegram_id: telegramId,
-            company_name: "System",
-            job_title: job.title,
-            type: "job_expiring",
-            read: false
-          });
+        if (!telegramId) continue;
+
+        const { count: alreadySent, error: dupCheckError } = await supabase
+          .from('notifications')
+          .select('*', { count: 'exact', head: true })
+          .eq('job_id', job.id)
+          .eq('type', 'job_expiring');
+
+        if (dupCheckError) {
+          console.error(`Failed to check existing job_expiring notification for job ${job.id}`, dupCheckError);
+          continue;
         }
+        if (alreadySent && alreadySent > 0) continue;
+
+        await supabase.from('notifications').insert({
+          user_telegram_id: telegramId,
+          company_name: "System",
+          job_title: job.title,
+          type: "job_expiring",
+          job_id: job.id,
+          read: false
+        });
+        expiringWarningsSent++;
       }
     }
     
@@ -100,7 +116,7 @@ serve(async (req) => {
       success: true, 
       expiredEmployerJobsCount,
       expiredDeadlineCount,
-      warningsSent: expiringJobs?.length || 0 
+      warningsSent: expiringWarningsSent
     }), {
       headers: { "Content-Type": "application/json" },
       status: 200,

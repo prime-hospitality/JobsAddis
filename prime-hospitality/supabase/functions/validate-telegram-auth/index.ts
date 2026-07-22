@@ -426,7 +426,29 @@ serve(async (req: Request) => {
         throw insertError;
       }
 
-      // 7. Data Minimization: Return only success status, not the whole record
+      // 7. Notify the employer of the new applicant (best-effort, never blocks the response)
+      try {
+        const { data: jobRow } = await supabase
+          .from("jobs")
+          .select("title, employers(users(telegram_id))")
+          .eq("id", jobId)
+          .single();
+        const employerTelegramId = (jobRow?.employers as any)?.users?.telegram_id;
+        if (employerTelegramId) {
+          await supabase.from("notifications").insert({
+            user_telegram_id: employerTelegramId,
+            company_name: "System",
+            job_title: jobRow?.title || "",
+            type: "new_applicant",
+            job_id: jobId,
+            read: false,
+          });
+        }
+      } catch (notifyErr) {
+        console.error("Failed to notify employer of new applicant:", notifyErr);
+      }
+
+      // 8. Data Minimization: Return only success status, not the whole record
       return new Response(JSON.stringify({ success: true, message: "Application submitted successfully." }), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },

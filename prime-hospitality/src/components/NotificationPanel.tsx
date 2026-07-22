@@ -48,6 +48,11 @@ function NotificationIcon({ type }: { type: Notification["type"] }) {
       <Sparkles size={18} color="#6366F1" />
     </div>
   );
+  if (type === "broadcast") return (
+    <div style={{ ...base, background: "rgba(124,58,237,0.1)", border: "1px solid rgba(124,58,237,0.2)" }}>
+      <Bell size={18} color="#7C3AED" />
+    </div>
+  );
   return (
     <div style={{ ...base, background: "var(--surface-elevated)", border: "1px solid var(--border)" }}>
       <MessageCircle size={18} color="var(--text-secondary)" />
@@ -59,6 +64,7 @@ function notificationTitle(n: Notification): string {
   if (n.type === "shortlisted") return "You've been shortlisted! 🎉";
   if (n.type === "rejected") return "Application update";
   if (n.type === "vacancy_alert") return "New job match";
+  if (n.type === "broadcast") return "Announcement";
   return "New message";
 }
 
@@ -66,6 +72,7 @@ function notificationBody(n: Notification): string {
   if (n.type === "shortlisted") return `${n.company_name} shortlisted your application for ${n.job_title}.`;
   if (n.type === "rejected") return `${n.company_name} reviewed your application for ${n.job_title}.`;
   if (n.type === "vacancy_alert") return `${n.company_name} is hiring a ${n.job_title}.`;
+  if (n.type === "broadcast") return n.job_title;
   return `Update from ${n.company_name} regarding ${n.job_title}.`;
 }
 

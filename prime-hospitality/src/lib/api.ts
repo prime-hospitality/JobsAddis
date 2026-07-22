@@ -427,7 +427,7 @@ export interface Notification {
   user_telegram_id: number;
   company_name: string;
   job_title: string;
-  type: "shortlisted" | "rejected" | "message" | "vacancy_alert";
+  type: "shortlisted" | "rejected" | "message" | "vacancy_alert" | "broadcast";
   read: boolean;
   created_at: string;
   job_id?: string;

@@ -1,13 +1,16 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { approveEmployer, rejectEmployer, toggleUserBan, toggleJobStatus, scheduleJobPost, logoutAdmin, addEmployer, deleteEmployer, updateEmployer, adminUpdateEmployerLogo, deleteUser, approveSpecialRequest, getPricingConfig, updatePricingConfig, getLoggedInAdmin, createSubAdmin, updateSubAdminPermissions, deleteSubAdmin, listSubAdmins, searchUsers, getProfessionCounts, searchEmployers, getPackages } from "./actions";
+import { approveEmployer, rejectEmployer, toggleUserBan, toggleJobStatus, scheduleJobPost, repostJob, logoutAdmin, addEmployer, deleteEmployer, updateEmployer, adminUpdateEmployerLogo, deleteUser, approveSpecialRequest, getPricingConfig, updatePricingConfig, getLoggedInAdmin, createSubAdmin, updateSubAdminPermissions, deleteSubAdmin, listSubAdmins, searchUsers, getProfessionCounts, searchEmployers, getPackages } from "./actions";
 import type { AdminPermissions, SubAdmin } from "./actions";
-import { Trash2, Pencil, Image as ImageIcon, Menu, X, LayoutDashboard, Briefcase, FileText, Users, LogOut, Settings, CreditCard, CheckCircle, BookOpen, User, Building2, Hourglass, ChevronDown, Check } from "lucide-react";
+import { Trash2, Pencil, Image as ImageIcon, Menu, X, LayoutDashboard, Briefcase, FileText, Users, LogOut, Settings, CreditCard, CheckCircle, BookOpen, User, Building2, Hourglass, ChevronDown, Check, Megaphone, History, BarChart3 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Timer } from "@phosphor-icons/react";
 import { supabase } from "@/lib/supabase";
 import ContentManagementTab from "./ContentManagementTab";
+import BroadcastTab from "./BroadcastTab";
+import ActivityLogTab from "./ActivityLogTab";
+import ReportingTab from "./ReportingTab";
 
 // ── Draggable Floating Window ──────────────────────────────────────────────
 function FloatingWindow({
@@ -305,8 +308,8 @@ function PackageDropdown({ packages, selectedId, onSelect }: { packages: any[], 
   );
 }
 
-type Tab = "overview" | "employers" | "jobs" | "configuration" | "monetization" | "settings";
-type ConfigSubTab = "users" | "content";
+type Tab = "overview" | "employers" | "jobs" | "configuration" | "monetization" | "reporting" | "settings";
+type ConfigSubTab = "users" | "content" | "broadcast" | "activity";
 type SeekerSubTab = "user-config" | "tab2" | "tab3" | "tab4";
 type MonSubTab = "monetization" | "pricing";
 type EmpSubTab = "emp_config" | null;
@@ -314,7 +317,7 @@ type EmpConfigSubTab = "view_emp" | "add_emp" | null;
 
 export default function AdminDashboard({ initialData }: { initialData: any }) {
   const [data, setData] = useState(initialData);
-  const VALID_TABS: Tab[] = ["overview", "employers", "jobs", "configuration", "monetization", "settings"];
+  const VALID_TABS: Tab[] = ["overview", "employers", "jobs", "configuration", "monetization", "reporting", "settings"];
   const getInitialTab = (): Tab => {
     if (typeof window !== "undefined") {
       const stored = sessionStorage.getItem("adminActiveTab") as Tab;
@@ -405,6 +408,12 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
   const [scheduleTime, setScheduleTime] = useState("");
   const [scheduleLoading, setScheduleLoading] = useState(false);
   const [scheduleError, setScheduleError] = useState("");
+
+  // Job reposting state
+  const [repostModal, setRepostModal] = useState<{ id: string; title: string } | null>(null);
+  const [repostDeadline, setRepostDeadline] = useState("");
+  const [repostLoading, setRepostLoading] = useState(false);
+  const [repostError, setRepostError] = useState("");
 
   const handleSavePricing = async () => {
     if (!isEditingPricing) {
@@ -529,6 +538,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
     { id: "jobs", label: "Job Posting Moderation", icon: FileText, perm: "manageJobs" as keyof AdminPermissions },
     { id: "configuration", label: "Configuration", icon: Settings, perm: "manageConfiguration" as keyof AdminPermissions },
     { id: "monetization", label: "Monetization & Pricing", icon: CreditCard, perm: "manageConfiguration" as keyof AdminPermissions },
+    { id: "reporting", label: "Reporting & Analytics", icon: BarChart3, perm: "manageReports" as keyof AdminPermissions },
   ] as const;
 
   // For super admin show all; for sub-admin only tabs they have permission for
@@ -831,6 +841,29 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
       setScheduleError(err.message || "Failed to schedule publication");
     } finally {
       setScheduleLoading(false);
+    }
+  };
+
+  const handleRepostConfirm = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!repostModal || !repostDeadline) return;
+    setRepostLoading(true);
+    setRepostError("");
+    try {
+      const deadlineIso = new Date(repostDeadline).toISOString();
+      const res = await repostJob(repostModal.id, deadlineIso);
+      if (res?.newJobId) {
+        setData((prev: any) => ({
+          ...prev,
+          jobs: [...prev.jobs, { ...(prev.jobs.find((j: any) => j.id === repostModal.id) || {}), id: res.newJobId, status: "active", deadline: deadlineIso }]
+        }));
+      }
+      setRepostModal(null);
+      setRepostDeadline("");
+    } catch (err: any) {
+      setRepostError(err.message || "Failed to repost job");
+    } finally {
+      setRepostLoading(false);
     }
   };
 
@@ -1479,6 +1512,28 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                   >
                     <span className="flex items-center gap-2"><BookOpen size={15} /> Content Management</span>
                   </button>
+                  <button
+                    onClick={() => setConfigSubTab("broadcast")}
+                    className={`px-5 py-2.5 text-sm font-semibold rounded-t-lg border border-b-0 transition-all ${
+                      configSubTab === "broadcast"
+                        ? "bg-white border-[#c6c6c8] text-[#1c1c1e] shadow-sm -mb-px"
+                        : "bg-transparent border-transparent text-[#8e8e93] hover:text-[#1c1c1e]"
+                    }`}
+                    style={{ cursor: "pointer" }}
+                  >
+                    <span className="flex items-center gap-2"><Megaphone size={15} /> Broadcast</span>
+                  </button>
+                  <button
+                    onClick={() => setConfigSubTab("activity")}
+                    className={`px-5 py-2.5 text-sm font-semibold rounded-t-lg border border-b-0 transition-all ${
+                      configSubTab === "activity"
+                        ? "bg-white border-[#c6c6c8] text-[#1c1c1e] shadow-sm -mb-px"
+                        : "bg-transparent border-transparent text-[#8e8e93] hover:text-[#1c1c1e]"
+                    }`}
+                    style={{ cursor: "pointer" }}
+                  >
+                    <span className="flex items-center gap-2"><History size={15} /> Activity Log</span>
+                  </button>
                 </div>
               </div>
             )}
@@ -1823,6 +1878,9 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                         {item.status !== "closed" && (
                           <button disabled={!!loading} onClick={() => handleJobStatus(item.id, "closed")} style={{ background: "#dc2626", color: "#fff", border: "none", padding: "6px 12px", borderRadius: 6, cursor: "pointer", fontSize: 12 }}>Close Job</button>
                         )}
+                        {(item.status === "closed" || item.status === "expired") && (
+                          <button disabled={!!loading} onClick={() => { setRepostModal({ id: item.id, title: item.title }); setRepostDeadline(""); setRepostError(""); }} style={{ background: "#0f172a", color: "#fff", border: "none", padding: "6px 12px", borderRadius: 6, cursor: "pointer", fontSize: 12 }}>Repost</button>
+                        )}
                       </td>
                     </tr>
                   ))}
@@ -1924,6 +1982,9 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                     {item.status !== "closed" && (
                       <button disabled={!!loading} onClick={() => handleJobStatus(item.id, "closed")} className="bg-red-600 text-white border-none px-3 py-1.5 rounded-lg text-xs font-medium">Close Job</button>
                     )}
+                    {(item.status === "closed" || item.status === "expired") && (
+                      <button disabled={!!loading} onClick={() => { setRepostModal({ id: item.id, title: item.title }); setRepostDeadline(""); setRepostError(""); }} className="bg-[#0f172a] text-white border-none px-3 py-1.5 rounded-lg text-xs font-medium">Repost</button>
+                    )}
                   </div>
                 </div>
               ))}
@@ -1970,6 +2031,14 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
 
             {activeTab === "configuration" && configSubTab === "content" && (
               <ContentManagementTab />
+            )}
+
+            {activeTab === "configuration" && configSubTab === "broadcast" && (
+              <BroadcastTab />
+            )}
+
+            {activeTab === "configuration" && configSubTab === "activity" && (
+              <ActivityLogTab />
             )}
             
             {activeTab === "monetization" && (
@@ -2198,6 +2267,9 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                   </div>
                 )}
               </div>
+            )}
+            {activeTab === "reporting" && (
+              <ReportingTab />
             )}
             {activeTab === "jobs" && !selectedEmployerId && data.jobs.length === 0 && (
               <div style={{ padding: 40, textAlign: "center", color: "#8e8e93" }}>
@@ -2654,6 +2726,16 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                 </button>
               )}
 
+              {(viewingJob.status === "closed" || viewingJob.status === "expired") && (
+                <button
+                  onClick={() => { setRepostModal({ id: viewingJob.id, title: viewingJob.title }); setRepostDeadline(""); setRepostError(""); }}
+                  disabled={!!loading}
+                  style={{ background: "#0f172a", color: "#fff", border: "none", padding: "8px 16px", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer" }}
+                >
+                  Repost Job
+                </button>
+              )}
+
               <button
                 type="button"
                 onClick={() => setViewingJob(null)}
@@ -2666,7 +2748,48 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
         </div>
       )}
 
-
+      {/* Repost Job Modal */}
+      {repostModal && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 10000, padding: "0 16px" }}>
+          <div style={{ background: "#fff", borderRadius: 12, padding: 24, width: "100%", maxWidth: 400, boxShadow: "0 20px 25px -5px rgba(0,0,0,0.1)" }}>
+            <h3 style={{ margin: "0 0 8px 0", fontSize: 18, fontWeight: 700, color: "#111827" }}>Repost Job</h3>
+            <p style={{ margin: "0 0 20px 0", fontSize: 14, color: "#4b5563", lineHeight: 1.5 }}>
+              Repost <strong>{repostModal.title}</strong> as a new, active listing with a fresh deadline.
+            </p>
+            <form onSubmit={handleRepostConfirm} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              <div>
+                <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#1c1c1e", marginBottom: 6 }}>New Deadline</label>
+                <input
+                  type="date"
+                  value={repostDeadline}
+                  onChange={(e) => setRepostDeadline(e.target.value)}
+                  min={new Date().toISOString().split("T")[0]}
+                  required
+                  style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid #d1d5db", fontSize: 14, boxSizing: "border-box" }}
+                />
+              </div>
+              {repostError && <p style={{ color: "#dc2626", margin: 0, fontSize: 13 }}>{repostError}</p>}
+              <div style={{ display: "flex", gap: 12, justifyContent: "flex-end", marginTop: 8 }}>
+                <button
+                  type="button"
+                  onClick={() => setRepostModal(null)}
+                  disabled={repostLoading}
+                  style={{ background: "#f3f4f6", color: "#1c1c1e", border: "none", padding: "8px 16px", borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: "pointer" }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={repostLoading || !repostDeadline}
+                  style={{ background: "#0f172a", color: "#fff", border: "none", padding: "8px 16px", borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: (repostLoading || !repostDeadline) ? "not-allowed" : "pointer", opacity: (repostLoading || !repostDeadline) ? 0.5 : 1 }}
+                >
+                  {repostLoading ? "Reposting..." : "Repost Job"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Authorization Number Success Modal */}
       {authNumberResult && (
@@ -2804,6 +2927,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                     { key: "manageJobs", label: "Manage Jobs", desc: "Moderate job postings" },
                     { key: "manageUsers", label: "Manage Users", desc: "Ban and delete job seekers" },
                     { key: "manageConfiguration", label: "Manage Configuration", desc: "Edit FAQs, pricing, templates" },
+                    { key: "manageReports", label: "View Reports & Analytics", desc: "Access vacancy, growth, and package reports" },
                   ];
                   return (
                     <div key={admin.id} style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 14, overflow: "hidden" }}>

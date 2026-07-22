@@ -20,6 +20,9 @@ jobs:
           version: latest
 
       - name: Deploy Edge Functions
-        run: supabase functions deploy validate-telegram-auth --project-ref rrypxbkipixmuufzkdxp --use-api
+        run: |
+          for fn in validate-telegram-auth telegram-webhook send-telegram-notification shortlist-applicant job-expiration-cron; do
+            supabase functions deploy "$fn" --project-ref rrypxbkipixmuufzkdxp --use-api
+          done
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}

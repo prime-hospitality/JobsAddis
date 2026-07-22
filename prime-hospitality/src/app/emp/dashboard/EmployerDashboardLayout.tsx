@@ -278,6 +278,9 @@ export default function EmployerDashboardLayout({
                             } else if (notif.type === "subscription_expired") {
                               text = `Your subscription has expired. All active jobs have been hidden.`;
                               bg = notif.read ? "#fff" : "#fef2f2";
+                            } else if (notif.type === "broadcast") {
+                              text = notif.job_title;
+                              bg = notif.read ? "#fff" : "#f5f3ff";
                             } else {
                               text = `Someone applied to your "${notif.job_title}" position.`;
                               bg = notif.read ? "#fff" : "#eff6ff";

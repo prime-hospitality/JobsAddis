@@ -15,6 +15,7 @@ export type AdminPermissions = {
   manageJobs: boolean;
   manageUsers: boolean;
   manageConfiguration: boolean;
+  manageReports: boolean;
 };
 
 export type SubAdmin = {
@@ -47,7 +48,7 @@ export async function getLoggedInAdmin(): Promise<{ username: string; role: "sup
   const session = await getSession();
   if (!session) return null;
   if (session.role === "super_admin") {
-    return { username: session.username, role: "super_admin", permissions: { manageEmployers: true, manageJobs: true, manageUsers: true, manageConfiguration: true } };
+    return { username: session.username, role: "super_admin", permissions: { manageEmployers: true, manageJobs: true, manageUsers: true, manageConfiguration: true, manageReports: true } };
   }
   // Sub-admin: load permissions from DB
   const subs = await getSubAdmins();
@@ -60,6 +61,20 @@ async function requirePermission(perm: keyof AdminPermissions) {
   const admin = await getLoggedInAdmin();
   if (!admin) throw new Error("Unauthorized");
   if (!admin.permissions[perm]) throw new Error("Permission denied");
+}
+
+async function logActivity(action: string, target?: string, metadata?: Record<string, any>) {
+  try {
+    const admin = await getLoggedInAdmin();
+    await getSupabase().from("activity_log").insert({
+      actor: admin?.username || "system",
+      action,
+      target: target || null,
+      metadata: metadata || null,
+    });
+  } catch (err) {
+    console.error("Failed to write activity log:", err);
+  }
 }
 
 export async function loginAdmin(username: string, password: string) {
@@ -104,11 +119,12 @@ export async function createSubAdmin(username: string, password: string) {
     id: Date.now().toString(),
     username: username.trim(),
     password: password.trim(),
-    permissions: { manageEmployers: false, manageJobs: false, manageUsers: false, manageConfiguration: false },
+    permissions: { manageEmployers: false, manageJobs: false, manageUsers: false, manageConfiguration: false, manageReports: false },
     createdAt: new Date().toISOString(),
   };
 
   await saveSubAdmins([...subs, newSub]);
+  await logActivity("create_sub_admin", newSub.username);
   return { success: true, subAdmin: newSub };
 }
 
@@ -119,6 +135,8 @@ export async function updateSubAdminPermissions(id: string, permissions: AdminPe
   const subs = await getSubAdmins();
   const updated = subs.map((s) => s.id === id ? { ...s, permissions } : s);
   await saveSubAdmins(updated);
+  const target = subs.find((s) => s.id === id);
+  await logActivity("update_sub_admin_permissions", target?.username || id, { permissions });
   return { success: true };
 }
 
@@ -288,6 +306,7 @@ export async function approveEmployer(employerId: string) {
 
   const { error } = await getSupabase().from("employers").update({ status: "approved" }).eq("id", employerId);
   if (error) throw error;
+  await logActivity("approve_employer", employerId);
   return { success: true };
 }
 
@@ -296,6 +315,7 @@ export async function rejectEmployer(employerId: string) {
 
   const { error } = await getSupabase().from("employers").update({ status: "rejected" }).eq("id", employerId);
   if (error) throw error;
+  await logActivity("reject_employer", employerId);
   return { success: true };
 }
 
@@ -322,6 +342,7 @@ export async function toggleUserBan(userId: string, isBanned: boolean, passwordA
 
   const { error } = await getSupabase().from("users").update({ is_banned: isBanned }).eq("id", userId);
   if (error) return { success: false, error: "Failed to update ban status" };
+  await logActivity(isBanned ? "ban_user" : "unban_user", userId);
   return { success: true };
 }
 
@@ -353,6 +374,7 @@ export async function deleteUser(userId: string, passwordAttempt: string) {
   // 2. Delete the user (this cascades to profiles, applications, employers, jobs)
   const { error } = await supabase.from("users").delete().eq("id", userId);
   if (error) return { success: false, error: "Failed to delete user" };
+  await logActivity("delete_user", userId);
 
   // 3. Delete CV from storage if it exists
   if (profile?.cv_url) {
@@ -381,7 +403,35 @@ export async function toggleJobStatus(jobId: string, status: "active" | "closed"
 
   const { error } = await getSupabase().from("jobs").update({ status }).eq("id", jobId);
   if (error) throw error;
+  await logActivity("change_job_status", jobId, { status });
   return { success: true };
+}
+
+export async function repostJob(jobId: string, newDeadline: string) {
+  await requirePermission("manageJobs");
+
+  const supabase = getSupabase();
+  const { data: original, error: fetchError } = await supabase
+    .from("jobs")
+    .select("employer_id, title, category, location, neighborhood, job_type, salary_min, salary_max, currency, description, full_description, requirements, quantity")
+    .eq("id", jobId)
+    .single();
+
+  if (fetchError || !original) throw fetchError || new Error("Job not found");
+
+  const { data: reposted, error: insertError } = await supabase
+    .from("jobs")
+    .insert({
+      ...original,
+      deadline: newDeadline,
+      status: "active",
+    })
+    .select("id")
+    .single();
+
+  if (insertError) throw insertError;
+  await logActivity("repost_job", jobId, { newJobId: reposted?.id, newDeadline });
+  return { success: true, newJobId: reposted?.id };
 }
 
 export async function scheduleJobPost(jobId: string, scheduledAt: string) {
@@ -771,6 +821,9 @@ export async function updateEmployer(employerId: string, businessName: string, b
     .single();
 
   if (error) throw error;
+  if (packageId !== undefined) {
+    await logActivity("assign_package", employerId, { packageId, extendDays });
+  }
   return { success: true, employer: data };
 }
 
@@ -795,7 +848,8 @@ export async function deleteEmployer(employerId: string, passwordAttempt: string
   // 2. Delete the employer
   const { error } = await supabase.from("employers").delete().eq("id", employerId);
   if (error) return { success: false, error: "Database error: Failed to delete" };
-  
+  await logActivity("delete_employer", employerId);
+
   // 3. Delete logo from storage if it exists
   if (employer?.logo_url) {
     const parts = employer.logo_url.split("/logos/");
@@ -1086,7 +1140,201 @@ export async function getPackages() {
     .from("packages")
     .select("*")
     .order("price", { ascending: true });
-    
+
   if (error) throw new Error(error.message);
   return data || [];
+}
+
+// ── Broadcast ────────────────────────────────────────────────────────────────
+
+export async function sendBroadcast(target: "all" | "job_seeker" | "employer", message: string) {
+  await requirePermission("manageConfiguration");
+  if (!message.trim()) throw new Error("Broadcast message cannot be empty.");
+
+  const supabase = getSupabase();
+  let query = supabase.from("users").select("telegram_id");
+  if (target !== "all") {
+    query = query.eq("role", target);
+  }
+  const { data: users, error } = await query;
+  if (error) throw error;
+  if (!users || users.length === 0) return { success: true, sentCount: 0 };
+
+  const rows = users.map((u: any) => ({
+    user_telegram_id: u.telegram_id,
+    company_name: "Announcement",
+    job_title: message.trim(),
+    type: "broadcast",
+    read: false,
+  }));
+
+  const { error: insertError } = await supabase.from("notifications").insert(rows);
+  if (insertError) throw insertError;
+
+  await logActivity("send_broadcast", target, { message: message.trim(), sentCount: rows.length });
+  return { success: true, sentCount: rows.length };
+}
+
+export async function getRecentBroadcasts(limit: number = 20) {
+  await requirePermission("manageConfiguration");
+  const { data, error } = await getSupabase()
+    .from("notifications")
+    .select("job_title, created_at")
+    .eq("type", "broadcast")
+    .order("created_at", { ascending: false })
+    .limit(200);
+
+  if (error) throw error;
+
+  // De-duplicate rows that were fanned out to many recipients from the same send.
+  const seen = new Set<string>();
+  const unique: { message: string; created_at: string }[] = [];
+  for (const row of data || []) {
+    const key = `${row.job_title}__${row.created_at}`;
+    if (!seen.has(key)) {
+      seen.add(key);
+      unique.push({ message: row.job_title, created_at: row.created_at });
+    }
+    if (unique.length >= limit) break;
+  }
+  return unique;
+}
+
+// ── Activity Log ─────────────────────────────────────────────────────────────
+
+export async function getActivityLog(page: number = 1, pageSize: number = 25) {
+  await requirePermission("manageConfiguration");
+  const supabase = getSupabase();
+  const from = (page - 1) * pageSize;
+  const to = from + pageSize - 1;
+
+  const { data, error, count } = await supabase
+    .from("activity_log")
+    .select("*", { count: "exact" })
+    .order("created_at", { ascending: false })
+    .range(from, to);
+
+  if (error) throw error;
+  return { rows: data || [], total: count || 0 };
+}
+
+// ── Reporting & Analytics ─────────────────────────────────────────────────────
+
+function bucketByDay(rows: { created_at: string }[], days: number) {
+  const buckets: Record<string, number> = {};
+  const today = new Date();
+  for (let i = days - 1; i >= 0; i--) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
+    buckets[d.toISOString().split("T")[0]] = 0;
+  }
+  for (const row of rows) {
+    const day = row.created_at.split("T")[0];
+    if (day in buckets) buckets[day]++;
+  }
+  return Object.entries(buckets).map(([date, count]) => ({ date, count }));
+}
+
+export async function getVacancyReport(days: number = 30) {
+  await requirePermission("manageReports");
+  const supabase = getSupabase();
+  const since = new Date();
+  since.setDate(since.getDate() - days);
+
+  const { data: jobs, error } = await supabase
+    .from("jobs")
+    .select("status, category, created_at")
+    .gte("created_at", since.toISOString());
+  if (error) throw error;
+
+  const byStatus: Record<string, number> = {};
+  const byCategory: Record<string, number> = {};
+  for (const job of jobs || []) {
+    byStatus[job.status] = (byStatus[job.status] || 0) + 1;
+    byCategory[job.category] = (byCategory[job.category] || 0) + 1;
+  }
+
+  return {
+    totalJobs: jobs?.length || 0,
+    byStatus: Object.entries(byStatus).map(([status, count]) => ({ status, count })),
+    byCategory: Object.entries(byCategory).map(([category, count]) => ({ category, count })).sort((a, b) => b.count - a.count),
+    postsPerDay: bucketByDay(jobs || [], days),
+  };
+}
+
+export async function getApplicationReport(days: number = 30) {
+  await requirePermission("manageReports");
+  const supabase = getSupabase();
+  const since = new Date();
+  since.setDate(since.getDate() - days);
+
+  const { data: applications, error } = await supabase
+    .from("applications")
+    .select("job_id, status, created_at")
+    .gte("created_at", since.toISOString());
+  if (error) throw error;
+
+  const perJob: Record<string, number> = {};
+  for (const app of applications || []) {
+    perJob[app.job_id] = (perJob[app.job_id] || 0) + 1;
+  }
+  const jobCount = Object.keys(perJob).length;
+  const avgPerJob = jobCount > 0 ? (applications || []).length / jobCount : 0;
+
+  return {
+    totalApplications: applications?.length || 0,
+    applicationsPerDay: bucketByDay(applications || [], days),
+    averageApplicationsPerJob: Math.round(avgPerJob * 10) / 10,
+  };
+}
+
+export async function getUserGrowthReport(days: number = 30) {
+  await requirePermission("manageReports");
+  const supabase = getSupabase();
+  const since = new Date();
+  since.setDate(since.getDate() - days);
+
+  const { data: users, error } = await supabase
+    .from("users")
+    .select("role, created_at")
+    .gte("created_at", since.toISOString());
+  if (error) throw error;
+
+  const seekers = (users || []).filter((u) => u.role === "job_seeker");
+  const employers = (users || []).filter((u) => u.role === "employer");
+
+  return {
+    totalSignups: users?.length || 0,
+    jobSeekerSignups: seekers.length,
+    employerSignups: employers.length,
+    signupsPerDay: bucketByDay(users || [], days),
+  };
+}
+
+export async function getPackagePerformanceReport() {
+  await requirePermission("manageReports");
+  const supabase = getSupabase();
+
+  const { data: packages, error: pkgError } = await supabase.from("packages").select("id, name, price");
+  if (pkgError) throw pkgError;
+
+  const { data: employers, error: empError } = await supabase
+    .from("employers")
+    .select("active_package_id, package_expires_at");
+  if (empError) throw empError;
+
+  const now = new Date();
+  const active = (employers || []).filter((e) => e.active_package_id && e.package_expires_at && new Date(e.package_expires_at) > now);
+
+  return (packages || [])
+    .map((pkg) => {
+      const activeCount = active.filter((e) => e.active_package_id === pkg.id).length;
+      return {
+        packageId: pkg.id,
+        name: pkg.name,
+        activeSubscriptions: activeCount,
+        currentActiveValue: activeCount * pkg.price,
+      };
+    })
+    .sort((a, b) => b.activeSubscriptions - a.activeSubscriptions);
 }
