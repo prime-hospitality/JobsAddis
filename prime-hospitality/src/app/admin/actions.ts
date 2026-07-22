@@ -301,24 +301,6 @@ export async function searchEmployers(queryBusinessName: string = "", page: numb
   };
 }
 
-export async function approveEmployer(employerId: string) {
-  await requirePermission("manageEmployers");
-
-  const { error } = await getSupabase().from("employers").update({ status: "approved" }).eq("id", employerId);
-  if (error) throw error;
-  await logActivity("approve_employer", employerId);
-  return { success: true };
-}
-
-export async function rejectEmployer(employerId: string) {
-  await requirePermission("manageEmployers");
-
-  const { error } = await getSupabase().from("employers").update({ status: "rejected" }).eq("id", employerId);
-  if (error) throw error;
-  await logActivity("reject_employer", employerId);
-  return { success: true };
-}
-
 export async function adminUpdateEmployerLogo(employerId: string, logoUrl: string) {
   await requirePermission("manageEmployers");
 

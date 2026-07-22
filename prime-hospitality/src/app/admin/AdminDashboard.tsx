@@ -1,11 +1,11 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { approveEmployer, rejectEmployer, toggleUserBan, toggleJobStatus, scheduleJobPost, repostJob, logoutAdmin, addEmployer, deleteEmployer, updateEmployer, adminUpdateEmployerLogo, deleteUser, approveSpecialRequest, getPricingConfig, updatePricingConfig, getLoggedInAdmin, createSubAdmin, updateSubAdminPermissions, deleteSubAdmin, listSubAdmins, searchUsers, getProfessionCounts, searchEmployers, getPackages } from "./actions";
+import { toggleUserBan, toggleJobStatus, scheduleJobPost, repostJob, logoutAdmin, addEmployer, deleteEmployer, updateEmployer, adminUpdateEmployerLogo, deleteUser, approveSpecialRequest, getPricingConfig, updatePricingConfig, getLoggedInAdmin, createSubAdmin, updateSubAdminPermissions, deleteSubAdmin, listSubAdmins, searchUsers, getProfessionCounts, searchEmployers, getPackages } from "./actions";
 import type { AdminPermissions, SubAdmin } from "./actions";
 import { Trash2, Pencil, Image as ImageIcon, Menu, X, LayoutDashboard, Briefcase, FileText, Users, LogOut, Settings, CreditCard, CheckCircle, BookOpen, User, Building2, Hourglass, ChevronDown, Check, Megaphone, History, BarChart3 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Timer } from "@phosphor-icons/react";
+import { Timer, Gear } from "@phosphor-icons/react";
 import { supabase } from "@/lib/supabase";
 import ContentManagementTab from "./ContentManagementTab";
 import BroadcastTab from "./BroadcastTab";
@@ -672,34 +672,6 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
       setFormError(err.message || "Failed to add employer");
     } finally {
       setFormLoading(false);
-    }
-  };
-
-  const handleApprove = async (id: string) => {
-    setLoading(`approve-${id}`);
-    try {
-      await approveEmployer(id);
-      setData((prev: any) => ({
-        ...prev,
-        employers: prev.employers.map((e: any) => e.id === id ? { ...e, status: "approved" } : e)
-      }));
-      setEmpResults((prev: any[]) => prev.map((e: any) => e.id === id ? { ...e, status: "approved" } : e));
-    } finally {
-      setLoading(null);
-    }
-  };
-
-  const handleReject = async (id: string) => {
-    setLoading(`reject-${id}`);
-    try {
-      await rejectEmployer(id);
-      setData((prev: any) => ({
-        ...prev,
-        employers: prev.employers.map((e: any) => e.id === id ? { ...e, status: "rejected" } : e)
-      }));
-      setEmpResults((prev: any[]) => prev.map((e: any) => e.id === id ? { ...e, status: "rejected" } : e));
-    } finally {
-      setLoading(null);
     }
   };
 
@@ -1792,16 +1764,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                   {activeTab === "employers" && empSubTab === "emp_config" && empConfigSubTab === "view_emp" && empResults.map((item: any) => (
                     <tr key={item.id} style={{ borderBottom: "1px solid #f3f4f6" }}>
                       <td style={{ padding: "16px 24px", fontWeight: 500 }}>
-                        <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-                          {item.business_name}
-                          <button
-                            onClick={() => { setEditModal({ id: item.id, name: item.business_name, type: item.business_type || "", postLimit: item.daily_post_limit ?? 3 }); setEditName(item.business_name); setEditType(item.business_type || ""); setEditPostLimit(item.daily_post_limit ?? 3); setEditPackageId(item.active_package_id || ""); setEditExtendDays(0); setEditLogoFile(null); setEditError(""); }}
-                            style={{ background: "transparent", border: "none", cursor: "pointer", color: "#9ca3af", padding: "4px", borderRadius: 6, display: "flex", alignItems: "center", justifyContent: "center" }}
-                            title="Edit employer"
-                          >
-                            <Pencil size={13} />
-                          </button>
-                        </span>
+                        {item.business_name}
                       </td>
                       <td style={{ padding: "16px 24px", color: "#8e8e93" }}>{item.users?.telegram_id || "—"}</td>
                       <td style={{ padding: "16px 24px" }}>
@@ -1822,15 +1785,16 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                         }}>{item.status}</span>
                       </td>
                       <td style={{ padding: "16px 24px", textAlign: "right", display: "flex", gap: 8, justifyContent: "flex-end", alignItems: "center" }}>
-                        {item.status !== "approved" && (
-                          <button disabled={!!loading} onClick={() => handleApprove(item.id)} style={{ background: "#059669", color: "#fff", border: "none", padding: "6px 12px", borderRadius: 6, cursor: "pointer", fontSize: 12 }}>Approve</button>
-                        )}
-                        {item.status !== "rejected" && (
-                          <button disabled={!!loading} onClick={() => handleReject(item.id)} style={{ background: "#dc2626", color: "#fff", border: "none", padding: "6px 12px", borderRadius: 6, cursor: "pointer", fontSize: 12 }}>Reject</button>
-                        )}
-                        <button 
-                          disabled={!!loading} 
-                          onClick={() => { setDeleteModal({ id: item.id, name: item.business_name }); setAdminPassword(""); setDeleteError(""); }} 
+                        <button
+                          onClick={() => { setEditModal({ id: item.id, name: item.business_name, type: item.business_type || "", postLimit: item.daily_post_limit ?? 3 }); setEditName(item.business_name); setEditType(item.business_type || ""); setEditPostLimit(item.daily_post_limit ?? 3); setEditPackageId(item.active_package_id || ""); setEditExtendDays(0); setEditLogoFile(null); setEditError(""); }}
+                          style={{ background: "transparent", border: "none", cursor: "pointer", color: "#6b7280", padding: "6px", borderRadius: 6, display: "flex", alignItems: "center", justifyContent: "center" }}
+                          title="Employer settings"
+                        >
+                          <Gear size={16} />
+                        </button>
+                        <button
+                          disabled={!!loading}
+                          onClick={() => { setDeleteModal({ id: item.id, name: item.business_name }); setAdminPassword(""); setDeleteError(""); }}
                           style={{ background: "transparent", color: "#ef4444", border: "none", padding: "6px", borderRadius: 6, cursor: "pointer", display: "flex", alignItems: "center" }}
                           title="Delete Employer"
                         >
@@ -1896,16 +1860,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                 <div key={item.id} className="bg-white p-4 rounded-xl border border-[#c6c6c8] shadow-sm flex flex-col gap-3 mb-3">
                   <div className="flex justify-between items-start">
                     <div>
-                      <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-                        <h4 className="font-semibold text-[#1c1c1e] m-0">{item.business_name}</h4>
-                        <button
-                          onClick={() => { setEditModal({ id: item.id, name: item.business_name, type: item.business_type || "", postLimit: item.daily_post_limit ?? 3 }); setEditName(item.business_name); setEditType(item.business_type || ""); setEditPostLimit(item.daily_post_limit ?? 3); setEditPackageId(item.active_package_id || ""); setEditExtendDays(0); setEditLogoFile(null); setEditError(""); }}
-                          style={{ background: "transparent", border: "none", cursor: "pointer", color: "#9ca3af", padding: "2px", display: "flex", alignItems: "center" }}
-                          title="Edit employer"
-                        >
-                          <Pencil size={13} />
-                        </button>
-                      </span>
+                      <h4 className="font-semibold text-[#1c1c1e] m-0">{item.business_name}</h4>
                       <p className="text-xs text-[#8e8e93] m-0 mt-1 font-mono">ID: {item.users?.telegram_id || "—"}</p>
                     </div>
                     <div className="flex flex-col items-end gap-1">
@@ -1925,15 +1880,15 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                     </div>
                   </div>
                   <div className="flex gap-2 justify-end mt-2 pt-3 border-t border-[#e5e5ea]">
-                    {item.status !== "approved" && (
-                      <button disabled={!!loading} onClick={() => handleApprove(item.id)} className="bg-emerald-600 text-white border-none px-3 py-1.5 rounded-lg text-xs font-medium">Approve</button>
-                    )}
-                    {item.status !== "rejected" && (
-                      <button disabled={!!loading} onClick={() => handleReject(item.id)} className="bg-red-600 text-white border-none px-3 py-1.5 rounded-lg text-xs font-medium">Reject</button>
-                    )}
-                    <button 
-                      disabled={!!loading} 
-                      onClick={() => { setDeleteModal({ id: item.id, name: item.business_name }); setAdminPassword(""); setDeleteError(""); }} 
+                    <button
+                      onClick={() => { setEditModal({ id: item.id, name: item.business_name, type: item.business_type || "", postLimit: item.daily_post_limit ?? 3 }); setEditName(item.business_name); setEditType(item.business_type || ""); setEditPostLimit(item.daily_post_limit ?? 3); setEditPackageId(item.active_package_id || ""); setEditExtendDays(0); setEditLogoFile(null); setEditError(""); }}
+                      className="bg-[#f3f4f6] text-[#374151] border-none px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5"
+                    >
+                      <Gear size={14} /> Settings
+                    </button>
+                    <button
+                      disabled={!!loading}
+                      onClick={() => { setDeleteModal({ id: item.id, name: item.business_name }); setAdminPassword(""); setDeleteError(""); }}
                       className="bg-transparent text-red-500 p-1.5 cursor-pointer ml-1 flex items-center"
                     >
                       <Trash2 size={16} />
@@ -2354,12 +2309,21 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
         </div>
       )}
 
-      {/* Edit Employer Modal */}
+      {/* Employer Settings Modal */}
       {editModal && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 10000, padding: "0 16px" }}>
           <div style={{ background: "#fff", borderRadius: 12, padding: 24, width: "100%", maxWidth: 420, maxHeight: "90vh", overflowY: "auto", boxShadow: "0 20px 25px -5px rgba(0,0,0,0.1)" }}>
-            <h3 style={{ margin: "0 0 4px 0", fontSize: 18, fontWeight: 700, color: "#111827" }}>Edit Employer</h3>
-            <p style={{ margin: "0 0 20px 0", fontSize: 13, color: "#8e8e93" }}>Update business details and daily job post limit.</p>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+              <Gear size={18} color="#111827" />
+              <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: "#111827" }}>Employer Settings</h3>
+            </div>
+            <p style={{ margin: "0 0 16px 0", fontSize: 13, color: "#8e8e93" }}>{editModal.name}</p>
+            <div style={{ display: "flex", gap: 4, borderBottom: "1px solid #e5e7eb", marginBottom: 20 }}>
+              <div style={{ padding: "8px 4px", fontSize: 13, fontWeight: 600, color: "#111827", borderBottom: "2px solid #111827", marginBottom: -1 }}>
+                Edit Employer
+              </div>
+            </div>
+            <p style={{ margin: "-12px 0 20px 0", fontSize: 13, color: "#8e8e93" }}>Update business details and daily job post limit.</p>
             <form onSubmit={handleEditEmployer} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
               <div>
                 <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#1c1c1e", marginBottom: 6 }}>Business Name</label>
@@ -2917,7 +2881,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
               <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
                 {subAdmins.map((admin) => {
                   const PERMS: { key: keyof AdminPermissions; label: string; desc: string }[] = [
-                    { key: "manageEmployers", label: "Manage Employers", desc: "Approve, reject, edit employers" },
+                    { key: "manageEmployers", label: "Manage Employers", desc: "Edit and delete employers" },
                     { key: "manageJobs", label: "Manage Jobs", desc: "Moderate job postings" },
                     { key: "manageUsers", label: "Manage Users", desc: "Ban and delete job seekers" },
                     { key: "manageConfiguration", label: "Manage Configuration", desc: "Edit FAQs, pricing, templates" },
