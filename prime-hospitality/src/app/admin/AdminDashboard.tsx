@@ -308,12 +308,10 @@ function PackageDropdown({ packages, selectedId, onSelect }: { packages: any[], 
   );
 }
 
-function BusinessTypeSelect({ value, onChange, businessTypes, onAddType }: { value: string, onChange: (name: string) => void, businessTypes: { id: string, name: string }[], onAddType: (name: string) => Promise<void> }) {
+function BusinessTypeSelect({ value, onChange, businessTypes, onAddType }: { value: string, onChange: (name: string) => void, businessTypes: { id: string, name: string }[], onAddType: (name: string) => void }) {
   const [isOpen, setIsOpen] = useState(false);
   const [showOtherInput, setShowOtherInput] = useState(false);
   const [otherValue, setOtherValue] = useState("");
-  const [adding, setAdding] = useState(false);
-  const [addError, setAddError] = useState("");
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -326,20 +324,12 @@ function BusinessTypeSelect({ value, onChange, businessTypes, onAddType }: { val
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const handleSubmitOther = async () => {
+  const handleSubmitOther = () => {
     const trimmed = otherValue.trim();
     if (!trimmed) return;
-    setAdding(true);
-    setAddError("");
-    try {
-      await onAddType(trimmed);
-      setShowOtherInput(false);
-      setOtherValue("");
-    } catch (e: any) {
-      setAddError(e.message || "Failed to add business type");
-    } finally {
-      setAdding(false);
-    }
+    onAddType(trimmed);
+    setShowOtherInput(false);
+    setOtherValue("");
   };
 
   return (
@@ -396,7 +386,7 @@ function BusinessTypeSelect({ value, onChange, businessTypes, onAddType }: { val
                 <div style={{ height: 1, background: "#e5e5ea", margin: "6px 4px" }} />
                 <button
                   type="button"
-                  onClick={() => { setIsOpen(false); setShowOtherInput(true); setOtherValue(""); setAddError(""); }}
+                  onClick={() => { setIsOpen(false); setShowOtherInput(true); setOtherValue(""); }}
                   style={{
                     width: "100%", display: "flex", alignItems: "center", padding: "10px 12px", gap: 10,
                     background: "transparent", border: "none", borderRadius: 8, cursor: "pointer", textAlign: "left"
@@ -429,21 +419,20 @@ function BusinessTypeSelect({ value, onChange, businessTypes, onAddType }: { val
           <button
             type="button"
             onClick={handleSubmitOther}
-            disabled={adding || !otherValue.trim()}
-            style={{ padding: "10px 14px", borderRadius: 10, border: "none", background: adding || !otherValue.trim() ? "#93c5fd" : "#007aff", color: "#fff", fontSize: 13, fontWeight: 700, cursor: adding || !otherValue.trim() ? "not-allowed" : "pointer" }}
+            disabled={!otherValue.trim()}
+            style={{ padding: "10px 14px", borderRadius: 10, border: "none", background: !otherValue.trim() ? "#93c5fd" : "#007aff", color: "#fff", fontSize: 13, fontWeight: 700, cursor: !otherValue.trim() ? "not-allowed" : "pointer" }}
           >
-            {adding ? "Adding…" : "Add"}
+            Add
           </button>
           <button
             type="button"
-            onClick={() => { setShowOtherInput(false); setOtherValue(""); setAddError(""); }}
+            onClick={() => { setShowOtherInput(false); setOtherValue(""); }}
             style={{ padding: "10px 14px", borderRadius: 10, border: "1.5px solid #e2e8f0", background: "#f8fafc", color: "#64748b", fontSize: 13, fontWeight: 600, cursor: "pointer" }}
           >
             Cancel
           </button>
         </div>
       )}
-      {addError && <p style={{ margin: "6px 0 0 0", fontSize: 12, color: "#dc2626" }}>{addError}</p>}
     </div>
   );
 }
@@ -722,6 +711,16 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
     setEditLoading(true);
     setEditError("");
     try {
+      const pendingType = businessTypes.find(t => t.name === editType && t.id.startsWith("pending-"));
+      if (pendingType) {
+        try {
+          const created = await addBusinessType(pendingType.name);
+          setBusinessTypes(prev => prev.map(t => t.id === pendingType.id ? created : t));
+        } catch (_) {
+          // Best-effort: employer's business_type is stored as text regardless of the lookup table.
+        }
+      }
+
       const res = await updateEmployer(editModal.id, editName, editType, editPostLimit, editPackageId || null, editExtendDays);
       
       let logoUrl = null;
@@ -826,6 +825,16 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
       const parsedTelegramId = parseInt(trimmedTgId, 10);
       if (isNaN(parsedTelegramId)) {
         throw new Error("Invalid Telegram ID");
+      }
+
+      const pendingType = businessTypes.find(t => t.name === newBusinessType && t.id.startsWith("pending-"));
+      if (pendingType) {
+        try {
+          const created = await addBusinessType(pendingType.name);
+          setBusinessTypes(prev => prev.map(t => t.id === pendingType.id ? created : t));
+        } catch (_) {
+          // Best-effort: employer's business_type is stored as text regardless of the lookup table.
+        }
       }
 
       const res = await addEmployer(parsedTelegramId, newBusinessName, newBusinessType, selectedPackageId || null);
@@ -1613,10 +1622,9 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                         value={newBusinessType}
                         onChange={setNewBusinessType}
                         businessTypes={businessTypes}
-                        onAddType={async (name) => {
-                          const created = await addBusinessType(name);
-                          setBusinessTypes(prev => prev.some(t => t.id === created.id) ? prev : [...prev, created]);
-                          setNewBusinessType(created.name);
+                        onAddType={(name) => {
+                          setBusinessTypes(prev => prev.some(t => t.name.toLowerCase() === name.toLowerCase()) ? prev : [...prev, { id: `pending-${name}`, name }]);
+                          setNewBusinessType(name);
                         }}
                       />
                     </div>
@@ -2545,10 +2553,9 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                       value={editType}
                       onChange={setEditType}
                       businessTypes={businessTypes}
-                      onAddType={async (name) => {
-                        const created = await addBusinessType(name);
-                        setBusinessTypes(prev => prev.some(t => t.id === created.id) ? prev : [...prev, created]);
-                        setEditType(created.name);
+                      onAddType={(name) => {
+                        setBusinessTypes(prev => prev.some(t => t.name.toLowerCase() === name.toLowerCase()) ? prev : [...prev, { id: `pending-${name}`, name }]);
+                        setEditType(name);
                       }}
                     />
                   </div>
