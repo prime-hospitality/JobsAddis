@@ -1244,6 +1244,7 @@ export async function getVacancyReport(days: number = 30) {
   const { data: jobs, error } = await supabase
     .from("jobs")
     .select("status, category, created_at")
+    .eq("status", "active")
     .gte("created_at", since.toISOString());
   if (error) throw error;
 
@@ -1297,6 +1298,7 @@ export async function getUserGrowthReport(days: number = 30) {
   const { data: users, error } = await supabase
     .from("users")
     .select("role, created_at")
+    .in("role", ["job_seeker", "employer"])
     .gte("created_at", since.toISOString());
   if (error) throw error;
 

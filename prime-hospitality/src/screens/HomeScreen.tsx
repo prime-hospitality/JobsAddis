@@ -185,8 +185,8 @@ export default function HomeScreen({ onJobSelect, onSearchPress, onBellPress, un
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 0 }}>
                 <div
                   style={{
-                    width: 40,
-                    height: 40,
+                    width: 48,
+                    height: 48,
                     borderRadius: "50%",
                     overflow: "hidden",
                     display: "flex",
@@ -202,8 +202,8 @@ export default function HomeScreen({ onJobSelect, onSearchPress, onBellPress, un
                     src="/addis_jobs_logo.png" 
                     alt="JobsAdis Logo" 
                     style={{ 
-                      width: "75%", 
-                      height: "75%", 
+                      width: "85%", 
+                      height: "85%", 
                       objectFit: "contain",
                     }} 
                   />
