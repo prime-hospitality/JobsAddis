@@ -1136,6 +1136,57 @@ export async function getPackages() {
   return data || [];
 }
 
+export async function upsertPackage(
+  id: string | null,
+  name: string,
+  duration_days: number,
+  price: number,
+  category: "standard" | "premium"
+) {
+  await requirePermission("manageConfiguration");
+
+  const trimmedName = name.trim();
+  if (!trimmedName) throw new Error("Package name is required.");
+  if (!Number.isFinite(duration_days) || duration_days <= 0) throw new Error("Duration must be a positive number of days.");
+  if (!Number.isFinite(price) || price < 0) throw new Error("Price must be zero or a positive number.");
+  if (category !== "standard" && category !== "premium") throw new Error("Invalid package category.");
+
+  const supabase = getSupabase();
+  const row = { name: trimmedName, duration_days, price, category };
+
+  if (id) {
+    const { error } = await supabase.from("packages").update(row).eq("id", id);
+    if (error) throw new Error(error.message);
+    await logActivity("update_package", trimmedName, row);
+  } else {
+    const { error } = await supabase.from("packages").insert(row);
+    if (error) throw new Error(error.message);
+    await logActivity("create_package", trimmedName, row);
+  }
+
+  return { success: true };
+}
+
+export async function deletePackage(id: string) {
+  await requirePermission("manageConfiguration");
+
+  const supabase = getSupabase();
+  const { count, error: countError } = await supabase
+    .from("employers")
+    .select("id", { count: "exact", head: true })
+    .eq("active_package_id", id);
+  if (countError) throw new Error(countError.message);
+  if (count && count > 0) {
+    throw new Error(`Cannot delete: ${count} employer${count === 1 ? " is" : "s are"} currently assigned this package.`);
+  }
+
+  const { error } = await supabase.from("packages").delete().eq("id", id);
+  if (error) throw new Error(error.message);
+  await logActivity("delete_package", id);
+
+  return { success: true };
+}
+
 export async function getBusinessTypes() {
   await requirePermission("manageEmployers");
   const { data, error } = await getSupabase()

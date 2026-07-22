@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { toggleUserBan, toggleJobStatus, scheduleJobPost, repostJob, logoutAdmin, addEmployer, deleteEmployer, updateEmployer, updateEmployerAutoPublish, adminUpdateEmployerLogo, deleteUser, approveSpecialRequest, getPricingConfig, updatePricingConfig, getLoggedInAdmin, createSubAdmin, updateSubAdminPermissions, deleteSubAdmin, listSubAdmins, searchUsers, getProfessionCounts, searchEmployers, getPackages, getBusinessTypes, addBusinessType } from "./actions";
+import { toggleUserBan, toggleJobStatus, scheduleJobPost, repostJob, logoutAdmin, addEmployer, deleteEmployer, updateEmployer, updateEmployerAutoPublish, adminUpdateEmployerLogo, deleteUser, approveSpecialRequest, getPricingConfig, updatePricingConfig, getLoggedInAdmin, createSubAdmin, updateSubAdminPermissions, deleteSubAdmin, listSubAdmins, searchUsers, getProfessionCounts, searchEmployers, getPackages, upsertPackage, deletePackage, getBusinessTypes, addBusinessType } from "./actions";
 import type { AdminPermissions, SubAdmin } from "./actions";
 import { Trash2, Pencil, Image as ImageIcon, Menu, X, LayoutDashboard, Briefcase, FileText, Users, LogOut, Settings, CreditCard, CheckCircle, BookOpen, User, Building2, Hourglass, ChevronDown, Check, Plus, Megaphone, History, BarChart3 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -505,14 +505,6 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
   const [autoPublishSaving, setAutoPublishSaving] = useState(false);
 
   const [pricingState, setPricingState] = useState({
-    threeDays: "1,983.75",
-    fiveDays: "2,645.00",
-    oneWeek: "3,306.25",
-    twoWeeks: "5,290.00",
-    oneMonth: "7,273.75",
-    threeMonths: "16,531.25",
-    sixMonths: "25,127.50",
-    oneYear: "46,287.50",
     pinVacancy: "1,000",
     companyName: "Prime Hospitality Business Group PLC",
     bankName: "Awash Bank",
@@ -521,6 +513,12 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
   });
   const [isEditingPricing, setIsEditingPricing] = useState(false);
   const [pricingSaving, setPricingSaving] = useState(false);
+  const [packageModal, setPackageModal] = useState<{ id?: string; name: string; duration_days: string; price: string; category: "standard" | "premium" } | null>(null);
+  const [packageModalSaving, setPackageModalSaving] = useState(false);
+  const [packageModalError, setPackageModalError] = useState("");
+  const [deletePackageModal, setDeletePackageModal] = useState<{ id: string; name: string } | null>(null);
+  const [deletePackageError, setDeletePackageError] = useState("");
+  const [deletePackageLoading, setDeletePackageLoading] = useState(false);
 
   // Sub-admin management state
   const [loggedInAdmin, setLoggedInAdmin] = useState<{ username: string; role: "super_admin" | "sub_admin"; permissions: AdminPermissions } | null>(initialData?.loggedInAdmin || null);
@@ -564,6 +562,48 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
       setIsEditingPricing(false);
     }
   };
+
+  const refreshPackages = async () => {
+    try {
+      const res = await getPackages();
+      setPackages(res);
+    } catch (e) {
+      console.error("Failed to refresh packages:", e);
+    }
+  };
+
+  const handleSavePackage = async () => {
+    if (!packageModal) return;
+    const duration = parseInt(packageModal.duration_days, 10);
+    const price = parseFloat(packageModal.price);
+    setPackageModalError("");
+    setPackageModalSaving(true);
+    try {
+      await upsertPackage(packageModal.id ?? null, packageModal.name, duration, price, packageModal.category);
+      setPackageModal(null);
+      await refreshPackages();
+    } catch (e) {
+      setPackageModalError(e instanceof Error ? e.message : "Failed to save package.");
+    } finally {
+      setPackageModalSaving(false);
+    }
+  };
+
+  const handleDeletePackage = async () => {
+    if (!deletePackageModal) return;
+    setDeletePackageError("");
+    setDeletePackageLoading(true);
+    try {
+      await deletePackage(deletePackageModal.id);
+      setDeletePackageModal(null);
+      await refreshPackages();
+    } catch (e) {
+      setDeletePackageError(e instanceof Error ? e.message : "Failed to delete package.");
+    } finally {
+      setDeletePackageLoading(false);
+    }
+  };
+
   const [viewingJob, setViewingJob] = useState<any | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [overviewEmployerId, setOverviewEmployerId] = useState<string>("");
@@ -640,7 +680,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
   }, [activeTab, empSubTab, empConfigSubTab, empViewSearch, empPage]);
 
   useEffect(() => {
-    if (activeTab === "employers" && empSubTab === "emp_config") {
+    if ((activeTab === "employers" && empSubTab === "emp_config") || (activeTab === "monetization" && monSubTab === "pricing")) {
       const fetchPkgs = async () => {
         try {
           const res = await getPackages();
@@ -651,7 +691,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
       };
       fetchPkgs();
     }
-  }, [activeTab, empSubTab]);
+  }, [activeTab, empSubTab, monSubTab]);
 
   useEffect(() => {
     if (activeTab === "employers" && empSubTab === "emp_config") {
@@ -2232,90 +2272,72 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                       </button>
                     </div>
 
-                    {/* 3 Posts/Day Packages */}
-                    <div className="bg-white rounded-xl border border-[#c6c6c8] shadow-sm overflow-hidden">
-                      <div className="flex items-center gap-3 px-6 py-4 border-b border-[#e5e5ea] bg-[#f2f2f7]/60">
-                        <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-[#1c1c1e] text-white text-xs font-black">3×</div>
-                        <div>
-                          <p className="text-sm font-bold text-[#1c1c1e]">Standard Packages</p>
-                          <p className="text-xs text-[#8e8e93] font-medium">Posted 3 times per day</p>
-                        </div>
-                      </div>
-                      <div className="divide-y divide-[#f1f5f9]">
-                        {[
-                          { label: "Three Days", key: "threeDays", tag: null },
-                          { label: "Five Days", key: "fiveDays", tag: null },
-                          { label: "One Week", key: "oneWeek", tag: "Popular" },
-                          { label: "Two Weeks", key: "twoWeeks", tag: null },
-                          { label: "One Month", key: "oneMonth", tag: null },
-                          { label: "Three Months", key: "threeMonths", tag: "Best Value" },
-                        ].map(pkg => (
-                          <div key={pkg.label} className="flex items-center justify-between px-6 py-4 hover:bg-[#f8fafc] transition-colors">
-                            <div className="flex items-center gap-3">
-                              <div className="w-2 h-2 rounded-full bg-[#1c1c1e] flex-shrink-0" />
-                              <span className="text-sm font-semibold text-[#1c1c1e]">{pkg.label} Package</span>
-                              {pkg.tag && (
-                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#1c1c1e] text-white tracking-wide">{pkg.tag}</span>
-                              )}
-                            </div>
-                            <div className="text-right flex items-center gap-2">
-                              {isEditingPricing ? (
-                                <div className="flex items-center">
-                                  <span className="text-sm text-[#8e8e93] mr-2">ETB</span>
-                                  <input
-                                    type="text"
-                                    value={pricingState[pkg.key as keyof typeof pricingState]}
-                                    onChange={(e) => setPricingState({...pricingState, [pkg.key]: e.target.value})}
-                                    className="w-24 px-2 py-1 border border-[#c6c6c8] rounded text-sm text-[#1c1c1e] focus:outline-none focus:border-[#007aff]"
-                                  />
-                                </div>
-                              ) : (
-                                <span className="text-base font-black text-[#1c1c1e]">ETB {pricingState[pkg.key as keyof typeof pricingState]}</span>
-                              )}
+                    {/* Package tiers, sourced live from the `packages` table — the same table
+                        used to assign a package to an employer and to compute their billing
+                        dashboard, so there is exactly one place prices/durations live. */}
+                    {([
+                      { category: "standard" as const, badge: "3×", title: "Standard Packages", subtitle: "Posted 3 times per day" },
+                      { category: "premium" as const, badge: "5×", title: "Premium Memberships", subtitle: "Posted 5 times per day" },
+                    ]).map(section => {
+                      const rows = packages.filter(p => (p.category || "standard") === section.category);
+                      return (
+                        <div key={section.category} className="bg-white rounded-xl border border-[#c6c6c8] shadow-sm overflow-hidden">
+                          <div className="flex items-center gap-3 px-6 py-4 border-b border-[#e5e5ea] bg-[#f2f2f7]/60">
+                            <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-[#1c1c1e] text-white text-xs font-black">{section.badge}</div>
+                            <div>
+                              <p className="text-sm font-bold text-[#1c1c1e]">{section.title}</p>
+                              <p className="text-xs text-[#8e8e93] font-medium">{section.subtitle}</p>
                             </div>
                           </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* 5 Posts/Day Packages */}
-                    <div className="bg-white rounded-xl border border-[#c6c6c8] shadow-sm overflow-hidden">
-                      <div className="flex items-center gap-3 px-6 py-4 border-b border-[#e5e5ea] bg-[#f2f2f7]/60">
-                        <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-[#1c1c1e] text-white text-xs font-black">5×</div>
-                        <div>
-                          <p className="text-sm font-bold text-[#1c1c1e]">Premium Memberships</p>
-                          <p className="text-xs text-[#8e8e93] font-medium">Posted 5 times per day</p>
-                        </div>
-                      </div>
-                      <div className="divide-y divide-[#f1f5f9]">
-                        {[
-                          { label: "Six Months Membership", key: "sixMonths" },
-                          { label: "One Year Membership", key: "oneYear" },
-                        ].map(pkg => (
-                          <div key={pkg.label} className="flex items-center justify-between px-6 py-4 hover:bg-[#f8fafc] transition-colors">
-                            <div className="flex items-center gap-3">
-                              <div className="w-2 h-2 rounded-full bg-[#1c1c1e] flex-shrink-0" />
-                              <span className="text-sm font-semibold text-[#1c1c1e]">{pkg.label}</span>
-                            </div>
-                            <div className="text-right flex items-center gap-2">
-                              {isEditingPricing ? (
-                                <div className="flex items-center">
-                                  <span className="text-sm text-[#8e8e93] mr-2">ETB</span>
-                                  <input
-                                    type="text"
-                                    value={pricingState[pkg.key as keyof typeof pricingState]}
-                                    onChange={(e) => setPricingState({...pricingState, [pkg.key]: e.target.value})}
-                                    className="w-24 px-2 py-1 border border-[#c6c6c8] rounded text-sm text-[#1c1c1e] focus:outline-none focus:border-[#007aff]"
-                                  />
+                          <div className="divide-y divide-[#f1f5f9]">
+                            {rows.length === 0 && (
+                              <div className="px-6 py-5 text-sm text-[#8e8e93]">No packages in this category yet.</div>
+                            )}
+                            {rows.map(pkg => (
+                              <div key={pkg.id} className="flex items-center justify-between px-6 py-4 hover:bg-[#f8fafc] transition-colors">
+                                <div className="flex items-center gap-3">
+                                  <div className="w-2 h-2 rounded-full bg-[#1c1c1e] flex-shrink-0" />
+                                  <span className="text-sm font-semibold text-[#1c1c1e]">{pkg.name}</span>
+                                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#e5e5ea] text-[#3a3a3c] tracking-wide">{pkg.duration_days} Days</span>
                                 </div>
-                              ) : (
-                                <span className="text-base font-black text-[#1c1c1e]">ETB {pricingState[pkg.key as keyof typeof pricingState]}</span>
-                              )}
-                            </div>
+                                <div className="text-right flex items-center gap-2">
+                                  <span className="text-base font-black text-[#1c1c1e]">ETB {pkg.price}</span>
+                                  {isEditingPricing && (
+                                    <div className="flex items-center gap-1 ml-2">
+                                      <button
+                                        type="button"
+                                        onClick={() => setPackageModal({ id: pkg.id, name: pkg.name, duration_days: String(pkg.duration_days), price: String(pkg.price), category: section.category })}
+                                        className="p-1.5 rounded-md hover:bg-[#e5e5ea] text-[#3a3a3c]"
+                                        title="Edit package"
+                                      >
+                                        <Pencil size={14} />
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => { setDeletePackageError(""); setDeletePackageModal({ id: pkg.id, name: pkg.name }); }}
+                                        className="p-1.5 rounded-md hover:bg-[#fee2e2] text-[#dc2626]"
+                                        title="Delete package"
+                                      >
+                                        <Trash2 size={14} />
+                                      </button>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
                           </div>
-                        ))}
-                      </div>
-                    </div>
+                          {isEditingPricing && (
+                            <button
+                              type="button"
+                              onClick={() => setPackageModal({ name: "", duration_days: "", price: "", category: section.category })}
+                              className="w-full flex items-center justify-center gap-2 px-6 py-3 text-sm font-semibold text-[#007aff] hover:bg-[#f2f2f7] border-t border-[#f1f5f9]"
+                            >
+                              <Plus size={15} /> Add Package
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })}
 
                     {/* Pin Vacancy */}
                     <div className="bg-white rounded-xl border border-[#c6c6c8] shadow-sm">
@@ -2462,6 +2484,123 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ADD / EDIT PACKAGE MODAL */}
+      {packageModal && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 10000, padding: "0 16px" }}>
+          <div style={{ background: "#fff", borderRadius: 12, padding: 24, width: "100%", maxWidth: 400, boxShadow: "0 20px 25px -5px rgba(0,0,0,0.1)" }}>
+            <h3 style={{ margin: "0 0 16px 0", fontSize: 18, fontWeight: 700, color: "#111827" }}>{packageModal.id ? "Edit Package" : "Add Package"}</h3>
+            <form onSubmit={(e) => { e.preventDefault(); handleSavePackage(); }} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              <div>
+                <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#1c1c1e", marginBottom: 6 }}>Package Name</label>
+                <input
+                  type="text"
+                  required
+                  value={packageModal.name}
+                  onChange={(e) => setPackageModal({ ...packageModal, name: e.target.value })}
+                  placeholder="e.g. Ten Days Package"
+                  style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid #d1d5db", fontSize: 14, boxSizing: "border-box" }}
+                />
+              </div>
+              <div style={{ display: "flex", gap: 12 }}>
+                <div style={{ flex: 1 }}>
+                  <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#1c1c1e", marginBottom: 6 }}>Duration (Days)</label>
+                  <input
+                    type="number"
+                    min="1"
+                    required
+                    value={packageModal.duration_days}
+                    onChange={(e) => setPackageModal({ ...packageModal, duration_days: e.target.value })}
+                    style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid #d1d5db", fontSize: 14, boxSizing: "border-box" }}
+                  />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#1c1c1e", marginBottom: 6 }}>Price (ETB)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    required
+                    value={packageModal.price}
+                    onChange={(e) => setPackageModal({ ...packageModal, price: e.target.value })}
+                    style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid #d1d5db", fontSize: 14, boxSizing: "border-box" }}
+                  />
+                </div>
+              </div>
+              <div>
+                <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#1c1c1e", marginBottom: 6 }}>Category</label>
+                <div style={{ display: "flex", gap: 8 }}>
+                  {(["standard", "premium"] as const).map(cat => (
+                    <button
+                      key={cat}
+                      type="button"
+                      onClick={() => setPackageModal({ ...packageModal, category: cat })}
+                      style={{
+                        flex: 1, padding: "10px 6px", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer",
+                        border: packageModal.category === cat ? "2px solid #1c1c1e" : "1px solid #d1d5db",
+                        background: packageModal.category === cat ? "#1c1c1e" : "#fff",
+                        color: packageModal.category === cat ? "#fff" : "#1c1c1e",
+                      }}
+                    >
+                      {cat === "standard" ? "Standard (3×/day)" : "Premium (5×/day)"}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              {packageModalError && <p style={{ color: "#dc2626", margin: 0, fontSize: 13 }}>{packageModalError}</p>}
+              <div style={{ display: "flex", gap: 12, justifyContent: "flex-end", marginTop: 8 }}>
+                <button
+                  type="button"
+                  onClick={() => setPackageModal(null)}
+                  disabled={packageModalSaving}
+                  style={{ background: "#f3f4f6", color: "#1c1c1e", border: "none", padding: "8px 16px", borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: "pointer" }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={packageModalSaving}
+                  style={{ background: "#007aff", color: "#fff", border: "none", padding: "8px 16px", borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: packageModalSaving ? "wait" : "pointer", opacity: packageModalSaving ? 0.7 : 1 }}
+                >
+                  {packageModalSaving ? "Saving..." : packageModal.id ? "Save Changes" : "Add Package"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* DELETE PACKAGE MODAL */}
+      {deletePackageModal && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 10000, padding: "0 16px" }}>
+          <div style={{ background: "#fff", borderRadius: 12, padding: 24, width: "100%", maxWidth: 400, boxShadow: "0 20px 25px -5px rgba(0,0,0,0.1)" }}>
+            <h3 style={{ margin: "0 0 16px 0", fontSize: 18, fontWeight: 700, color: "#111827" }}>Delete Package</h3>
+            <p style={{ margin: "0 0 20px 0", fontSize: 14, color: "#4b5563", lineHeight: 1.5 }}>
+              Are you sure you want to delete <strong>{deletePackageModal.name}</strong>? This cannot be undone.
+            </p>
+            {deletePackageError && <p style={{ color: "#dc2626", margin: "0 0 16px 0", fontSize: 13 }}>{deletePackageError}</p>}
+            <div style={{ display: "flex", gap: 12, justifyContent: "flex-end" }}>
+              <button
+                type="button"
+                onClick={() => setDeletePackageModal(null)}
+                disabled={deletePackageLoading}
+                style={{ background: "#f3f4f6", color: "#1c1c1e", border: "none", padding: "8px 16px", borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: "pointer" }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleDeletePackage}
+                disabled={deletePackageLoading}
+                style={{ background: "#dc2626", color: "#fff", border: "none", padding: "8px 16px", borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: deletePackageLoading ? "not-allowed" : "pointer", opacity: deletePackageLoading ? 0.5 : 1, display: "flex", alignItems: "center", gap: 8 }}
+              >
+                <Trash2 size={16} />
+                {deletePackageLoading ? "Deleting..." : "Delete Package"}
+              </button>
+            </div>
           </div>
         </div>
       )}

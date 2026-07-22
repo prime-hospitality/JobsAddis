@@ -5,27 +5,26 @@ import { createClient } from "@supabase/supabase-js";
 
 // Default config matching the flat structure from AdminDashboard
 const DEFAULT_CONFIG = {
-  threeDays: "1,983.75",
-  fiveDays: "2,645.00",
-  oneWeek: "3,306.25",
-  twoWeeks: "5,290.00",
-  oneMonth: "7,273.75",
-  threeMonths: "16,531.25",
-  sixMonths: "25,127.50",
-  oneYear: "46,287.50",
   pinVacancy: "1,000",
   companyName: "Prime Hospitality Business Group PLC",
   bankName: "Awash Bank",
   accountNo: "013041457659800"
 };
 
+type PackageRow = { id: string; name: string; duration_days: number; price: number; category: "standard" | "premium" };
+
+function getSupabaseAdmin() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
+  if (!supabaseUrl || !supabaseServiceKey) return null;
+  return createClient(supabaseUrl, supabaseServiceKey);
+}
+
 async function getPricingConfig() {
   try {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
-    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
-    if (!supabaseUrl || !supabaseServiceKey) return DEFAULT_CONFIG;
+    const supabase = getSupabaseAdmin();
+    if (!supabase) return DEFAULT_CONFIG;
 
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
     const { data } = await supabase
       .from("app_config")
       .select("value")
@@ -45,6 +44,27 @@ async function getPricingConfig() {
     console.error("Failed to fetch pricing config:", e);
   }
   return DEFAULT_CONFIG;
+}
+
+async function getPackages(): Promise<PackageRow[]> {
+  try {
+    const supabase = getSupabaseAdmin();
+    if (!supabase) return [];
+
+    const { data } = await supabase
+      .from("packages")
+      .select("id, name, duration_days, price, category")
+      .order("price", { ascending: true });
+
+    return data || [];
+  } catch (e) {
+    console.error("Failed to fetch packages:", e);
+    return [];
+  }
+}
+
+function formatEtb(n: number) {
+  return n.toLocaleString("en-US");
 }
 
 // Shared brand accent — matches the employer dashboard/billing palette (sky-700 + slate neutrals)
@@ -73,21 +93,16 @@ function FeatureRow({ label, price, dark }: { label: string; price?: string; dar
 export default async function PricingPage() {
   const sessionCookie = (await cookies()).get("employer_session");
   const isAuthenticated = !!sessionCookie?.value;
-  const config = await getPricingConfig();
+  const [config, allPackages] = await Promise.all([getPricingConfig(), getPackages()]);
 
-  const standardPackages = [
-    { label: 'Three Days Package', price: `${config.threeDays} ETB` },
-    { label: 'Five Days Package', price: `${config.fiveDays} ETB` },
-    { label: 'One Week Package', price: `${config.oneWeek} ETB` },
-    { label: 'Two Weeks Package', price: `${config.twoWeeks} ETB` },
-    { label: 'One Month Package', price: `${config.oneMonth} ETB` },
-    { label: "Three Month's Package", price: `${config.threeMonths} ETB` },
-  ];
+  const standardPackageRows = allPackages.filter(p => (p.category || "standard") === "standard");
+  const premiumPackageRows = allPackages.filter(p => p.category === "premium");
 
-  const premiumPackages = [
-    { label: "Six Month's Membership", price: `${config.sixMonths} ETB` },
-    { label: 'One Year Membership', price: `${config.oneYear} ETB` },
-  ];
+  const standardPackages = standardPackageRows.map(p => ({ label: p.name, price: `${formatEtb(p.price)} ETB` }));
+  const premiumPackages = premiumPackageRows.map(p => ({ label: p.name, price: `${formatEtb(p.price)} ETB` }));
+
+  const standardFrom = standardPackageRows.length ? formatEtb(Math.min(...standardPackageRows.map(p => p.price))) : "—";
+  const premiumFrom = premiumPackageRows.length ? formatEtb(Math.min(...premiumPackageRows.map(p => p.price))) : "—";
 
   const addOns = [
     { label: 'Pin Your Vacancy', price: `${config.pinVacancy} ETB / Day` }
@@ -179,7 +194,7 @@ export default async function PricingPage() {
             <div style={{ marginBottom: 28, display: "flex", alignItems: "baseline", gap: 8 }}>
               <span style={{ fontSize: 15, fontWeight: 600, color: "#94A3B8" }}>From</span>
               <span style={{ fontSize: 32, fontWeight: 800, color: INK, letterSpacing: "-0.02em", whiteSpace: "nowrap", fontFamily: headingFont }}>
-                {config.sixMonths}
+                {premiumFrom}
               </span>
               <span style={{ fontSize: 15, color: "#94A3B8", fontWeight: 500 }}>ETB</span>
             </div>
@@ -226,7 +241,7 @@ export default async function PricingPage() {
             <div style={{ marginBottom: 28, display: "flex", alignItems: "baseline", gap: 8 }}>
               <span style={{ fontSize: 15, fontWeight: 600, color: "#94A3B8" }}>From</span>
               <span style={{ fontSize: 32, fontWeight: 800, color: "#fff", letterSpacing: "-0.02em", whiteSpace: "nowrap", fontFamily: headingFont }}>
-                {config.threeDays}
+                {standardFrom}
               </span>
               <span style={{ fontSize: 15, color: "#94A3B8", fontWeight: 500 }}>ETB</span>
             </div>
