@@ -1,8 +1,7 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import {
-  getEmployerPostingData,
   upsertEmployerVacancyTemplate,
   deleteEmployerVacancyTemplate,
   checkEmployerTemplateStatus,
@@ -11,33 +10,19 @@ import {
 } from "./actions";
 import VacancyFormModal from "./VacancyFormModal";
 import { VacancyFormState, emptyVacancyForm, templateRowToForm } from "./vacancyShared";
-import { Plus, Trash2, Pencil, Briefcase, MapPin, Clock, CheckCircle2, Users, Send, Loader2, AlertTriangle, RefreshCw } from "lucide-react";
+import { MetaChip, salaryLabel } from "./postingUI";
+import { Plus, Trash2, Pencil, Briefcase, MapPin, Users, Send, Loader2, AlertTriangle, RefreshCw, Eye, FileStack, CheckCircle2 } from "lucide-react";
 import { Timer } from "@phosphor-icons/react";
 import JobDetailScreen from "@/screens/JobDetailScreen";
 import { Job } from "@/data/jobs";
+import type { PostingData } from "./ManageJobPostingsTab";
 
-export default function VacancyTemplateTab() {
-  const [templates, setTemplates] = useState<any[]>([]);
-  const [businessName, setBusinessName] = useState("Your Company");
-  const [logoUrl, setLogoUrl] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+function initials(name: string) {
+  return name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase() || "•";
+}
 
-  const loadData = async () => {
-    setLoading(true);
-    try {
-      const res = await getEmployerPostingData();
-      setTemplates(res.templates);
-      setBusinessName(res.businessName || "Your Company");
-      setLogoUrl(res.logoUrl || null);
-    } catch (e) {
-      console.error(e);
-    }
-    setLoading(false);
-  };
-
-  useEffect(() => {
-    loadData();
-  }, []);
+export default function VacancyTemplateTab({ data, loading, reload }: { data: PostingData; loading: boolean; reload: () => Promise<void>; }) {
+  const { templates, businessName, logoUrl } = data;
 
   // Template form modal state
   const [formModal, setFormModal] = useState<VacancyFormState | null>(null);
@@ -49,12 +34,9 @@ export default function VacancyTemplateTab() {
     setTemplateSaving(true);
     try {
       const res = await upsertEmployerVacancyTemplate(formModal);
-      if (!res.success) {
-        setErrorModal(res.error || "Failed to save template.");
-        return;
-      }
+      if (!res.success) { setErrorModal(res.error || "Failed to save template."); return; }
       setFormModal(null);
-      loadData();
+      await reload();
     } finally {
       setTemplateSaving(false);
     }
@@ -66,11 +48,47 @@ export default function VacancyTemplateTab() {
     if (!deleteConfirmId) return;
     await deleteEmployerVacancyTemplate(deleteConfirmId);
     setDeleteConfirmId(null);
-    loadData();
+    await reload();
   };
 
   // Preview mockup
   const [viewingTemplateJob, setViewingTemplateJob] = useState<Job | null>(null);
+
+  const openPreview = (tpl: any) => {
+    const formatList = (txt: string) => txt.split("\n").filter((l) => l.trim()).map((l) => (l.trim().match(/^[-•*]/) ? l : `• ${l.trim()}`)).join("\n");
+    let desc = tpl.description_template || "";
+    if (tpl.responsibilities_template) desc += "\n\nResponsibilities:\n" + formatList(tpl.responsibilities_template);
+    if (tpl.requirements_template) desc += "\n\nRequirements:\n" + formatList(tpl.requirements_template);
+    if (tpl.benefits_template) desc += "\n\nBenefits:\n" + formatList(tpl.benefits_template);
+
+    setViewingTemplateJob({
+      id: tpl.id,
+      businessName,
+      businessLogo: "🏢",
+      logoUrl: logoUrl || undefined,
+      businessType: "Employer",
+      title: tpl.title || "Untitled",
+      category: tpl.job_category || "Other",
+      location: tpl.location || "Addis Ababa",
+      neighborhood: tpl.location || "Addis Ababa",
+      jobType: (tpl.employment_type as any) || "Full Time",
+      salaryMin: tpl.salary_type === "company_scale" ? -2 : tpl.salary_type === "negotiable" ? -1 : (tpl.salary_min ?? -1),
+      salaryMax: tpl.salary_type === "company_scale" ? -2 : tpl.salary_type === "negotiable" ? -1 : (tpl.salary_max ?? -1),
+      currency: tpl.salary_currency || "ETB",
+      postedAt: new Date().toISOString(),
+      description: desc,
+      fullDescription: desc,
+      requirements: {
+        experience: (tpl.experience_required as any) || "Entry Level",
+        education: tpl.education_requirements || "",
+        languages: [],
+        locationPreference: null,
+      },
+      deadline: tpl.deadline || new Date().toISOString(),
+      qualificationsMet: true,
+      locationMismatch: false,
+    });
+  };
 
   // Post / confirm-post
   const [postingTemplateId, setPostingTemplateId] = useState<string | null>(null);
@@ -84,12 +102,10 @@ export default function VacancyTemplateTab() {
     setPostingTemplateId(templateId);
     try {
       const res = await postJobFromEmployerTemplate(templateId);
-      if (!res.success) {
-        setErrorModal("Failed to post job: " + res.error);
-        return;
-      }
+      if (!res.success) { setErrorModal("Failed to post job: " + res.error); return; }
       setPostedTemplateId(templateId);
       setTimeout(() => setPostedTemplateId(null), 3000);
+      await reload();
     } catch (err) {
       setErrorModal("Failed to post job: " + (err instanceof Error ? err.message : "Unknown error"));
     } finally {
@@ -112,15 +128,13 @@ export default function VacancyTemplateTab() {
     try {
       const scheduledIso = new Date(`${scheduleDate}T${scheduleTime}`).toISOString();
       const res = await scheduleJobFromEmployerTemplate(scheduleTemplateModal.id, scheduledIso);
-      if (!res.success) {
-        setScheduleError(res.error || "Failed to schedule publication");
-        return;
-      }
+      if (!res.success) { setScheduleError(res.error || "Failed to schedule publication"); return; }
       setScheduleTemplateModal(null);
       setScheduleDate("");
       setScheduleTime("");
       setPostedTemplateId(scheduleTemplateModal.id);
       setTimeout(() => setPostedTemplateId(null), 4000);
+      await reload();
     } catch (err: any) {
       setScheduleError(err.message || "Failed to schedule publication");
     } finally {
@@ -128,202 +142,119 @@ export default function VacancyTemplateTab() {
     }
   };
 
-  if (loading) {
-    return <div className="p-8 text-center text-[#8e8e93]">Loading your templates...</div>;
-  }
-
   return (
     <div>
-      <div className="flex justify-between items-center mb-6">
+      {/* Header */}
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, marginBottom: 18, flexWrap: "wrap" }}>
         <div>
-          <h3 className="text-lg font-bold text-black">Your Vacancy Templates</h3>
-          <p className="text-sm text-[#8e8e93] mt-0.5">Save reusable job templates and post them whenever a role opens up.</p>
+          <h2 style={{ fontSize: 18, fontWeight: 800, color: "#0f172a", margin: 0, letterSpacing: "-.02em" }}>Your Vacancy Templates</h2>
+          <p style={{ fontSize: 13, color: "#64748b", margin: "5px 0 0 0" }}>Save reusable job templates and post them the moment a role opens up.</p>
         </div>
-        <button
-          onClick={() => setFormModal(emptyVacancyForm())}
-          className="bg-[#0284c7] text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-[#0369a1] transition-colors flex items-center gap-2"
-        >
+        <button className="mjp-btn-primary" onClick={() => setFormModal(emptyVacancyForm())}>
           <Plus size={16} /> Add Template
         </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {templates.map((tpl) => {
-          const salaryMin = tpl.salary_min ?? 0;
-          const salaryMax = tpl.salary_max ?? 0;
-          const salaryLabelText =
-            tpl.salary_type === "company_scale" ? "Per Company Scale" :
-            tpl.salary_type === "negotiable" ? "Negotiable" :
-            salaryMin > 0
-              ? `ETB ${salaryMin >= 1000 ? (salaryMin / 1000).toFixed(0) + "k" : salaryMin}${salaryMax && salaryMax !== salaryMin ? "–" + (salaryMax >= 1000 ? (salaryMax / 1000).toFixed(0) + "k" : salaryMax) : ""}/mo`
-              : "Salary TBD";
-          return (
-            <div
-              key={tpl.id}
-              onClick={() => {
-                const formatList = (txt: string) => txt.split("\n").filter((l) => l.trim()).map((l) => (l.trim().match(/^[-•*]/) ? l : `• ${l.trim()}`)).join("\n");
-                let desc = tpl.description_template || "";
-                if (tpl.responsibilities_template) desc += "\n\nResponsibilities:\n" + formatList(tpl.responsibilities_template);
-                if (tpl.requirements_template) desc += "\n\nRequirements:\n" + formatList(tpl.requirements_template);
-                if (tpl.benefits_template) desc += "\n\nBenefits:\n" + formatList(tpl.benefits_template);
-
-                setViewingTemplateJob({
-                  id: tpl.id,
-                  businessName,
-                  businessLogo: "🏢",
-                  logoUrl: logoUrl || undefined,
-                  businessType: "Employer",
-                  title: tpl.title || "Untitled",
-                  category: tpl.job_category || "Other",
-                  location: tpl.location || "Addis Ababa",
-                  neighborhood: tpl.location || "Addis Ababa",
-                  jobType: (tpl.employment_type as any) || "Full Time",
-                  salaryMin: tpl.salary_type === "company_scale" ? -2 : tpl.salary_type === "negotiable" ? -1 : (tpl.salary_min ?? -1),
-                  salaryMax: tpl.salary_type === "company_scale" ? -2 : tpl.salary_type === "negotiable" ? -1 : (tpl.salary_max ?? -1),
-                  currency: tpl.salary_currency || "ETB",
-                  postedAt: new Date().toISOString(),
-                  description: desc,
-                  fullDescription: desc,
-                  requirements: {
-                    experience: (tpl.experience_required as any) || "Entry Level",
-                    education: tpl.education_requirements || "",
-                    languages: [],
-                    locationPreference: null,
-                  },
-                  deadline: tpl.deadline || new Date().toISOString(),
-                  qualificationsMet: true,
-                  locationMismatch: false,
-                });
-              }}
-              style={{ background: "var(--card, #2c2c2e)", borderRadius: 16, padding: 16, marginBottom: 0, border: "1px solid var(--border, rgba(255,255,255,0.08))", boxShadow: "0 2px 12px rgba(0,0,0,0.18)", cursor: "pointer" }}
-            >
-              {/* Header row */}
-              <div style={{ display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 12 }}>
-                <div style={{ width: 48, height: 48, borderRadius: 12, background: "var(--brand-subtle, rgba(14,165,233,0.12))", border: "1px solid var(--border, rgba(255,255,255,0.08))", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden" }}>
-                  {logoUrl ? (
-                    <img src={logoUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                  ) : (
-                    <Briefcase size={20} color="#38bdf8" />
-                  )}
+      {loading ? (
+        <div style={{ textAlign: "center", color: "#94a3b8", padding: "56px 0", fontSize: 14 }}>Loading your templates…</div>
+      ) : templates.length === 0 ? (
+        <div className="mjp-empty">
+          <div style={{ width: 56, height: 56, borderRadius: 16, background: "#eff6ff", color: "#0284c7", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
+            <FileStack size={26} strokeWidth={1.75} />
+          </div>
+          <h4 style={{ fontSize: 16, fontWeight: 700, color: "#0f172a", marginBottom: 6 }}>No templates yet</h4>
+          <p style={{ fontSize: 13.5, color: "#64748b", margin: "0 0 20px 0" }}>Create a template once, then post it again and again in one click.</p>
+          <button className="mjp-btn-primary" style={{ margin: "0 auto" }} onClick={() => setFormModal(emptyVacancyForm())}>
+            <Plus size={16} /> Add Template
+          </button>
+        </div>
+      ) : (
+        <div className="mjp-grid">
+          {templates.map((tpl) => (
+            <div key={tpl.id} className="mjp-card clickable" onClick={() => openPreview(tpl)}>
+              <div className="mjp-card-accent" style={{ background: "#0284c7" }} />
+              <div style={{ padding: 18, display: "flex", flexDirection: "column", gap: 12, flex: 1 }}>
+                {/* Top: logo + title + actions */}
+                <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
+                  <div className="mjp-logo">
+                    {logoUrl ? <img src={logoUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : initials(businessName)}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p className="mjp-eyebrow">{tpl.job_category || "Template"}</p>
+                    <h3 className="mjp-title" style={{ overflow: "hidden", textOverflow: "ellipsis", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>{tpl.title}</h3>
+                  </div>
+                  <div style={{ display: "flex", gap: 6, flexShrink: 0 }} onClick={(e) => e.stopPropagation()}>
+                    <button className="mjp-iconbtn edit" title="Edit template" onClick={() => setFormModal(templateRowToForm(tpl))}>
+                      <Pencil size={15} />
+                    </button>
+                    <button className="mjp-iconbtn danger" title="Delete template" onClick={() => setDeleteConfirmId(tpl.id)}>
+                      <Trash2 size={15} />
+                    </button>
+                  </div>
                 </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <p style={{ fontSize: 12, color: "var(--text-secondary, #94a3b8)", marginBottom: 2, fontWeight: 500, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                    {tpl.job_category || "Template"}
-                  </p>
-                  <h3 style={{ fontSize: 16, fontWeight: 700, color: "var(--text-primary, #f1f5f9)", lineHeight: 1.2, marginBottom: 4 }}>
-                    {tpl.title}
-                  </h3>
-                  <span style={{ fontSize: 11, color: "var(--text-muted, #64748b)", display: "flex", alignItems: "center", gap: 3 }}>
-                    <Clock size={10} />
-                    Template
+
+                {/* Description */}
+                <p style={{ fontSize: 13, color: "#64748b", lineHeight: 1.5, margin: 0, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", minHeight: 39 }}>
+                  {tpl.description_template || "No description provided."}
+                </p>
+
+                {/* Meta chips */}
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                  <MetaChip variant="salary">
+                    {salaryLabel(
+                      tpl.salary_type === "negotiable" ? -1 : tpl.salary_type === "company_scale" ? -2 : tpl.salary_min,
+                      tpl.salary_type === "negotiable" ? -1 : tpl.salary_type === "company_scale" ? -2 : tpl.salary_max,
+                    )}
+                  </MetaChip>
+                  <MetaChip icon={<Briefcase size={11} />}>{tpl.employment_type || "Full Time"}</MetaChip>
+                  {tpl.location && <MetaChip icon={<MapPin size={11} />}>{tpl.location}</MetaChip>}
+                  {tpl.quantity > 1 && <MetaChip icon={<Users size={11} />}>{tpl.quantity} openings</MetaChip>}
+                </div>
+
+                <div style={{ flex: 1 }} />
+                <div style={{ height: 1, background: "#f1f5f9" }} />
+
+                {/* Preview hint + actions */}
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+                  <span style={{ fontSize: 11.5, color: "#94a3b8", display: "inline-flex", alignItems: "center", gap: 5 }}>
+                    <Eye size={12} /> Click to preview
                   </span>
                 </div>
-                <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
+
+                <div style={{ display: "flex", gap: 8 }} onClick={(e) => e.stopPropagation()}>
                   <button
-                    onClick={(e) => { e.stopPropagation(); setFormModal(templateRowToForm(tpl)); }}
-                    style={{ padding: "6px", borderRadius: 8, background: "rgba(14,165,233,0.12)", border: "1px solid rgba(14,165,233,0.2)", color: "#38bdf8", cursor: "pointer", display: "flex", alignItems: "center" }}
+                    className={`mjp-btn-post${postedTemplateId === tpl.id ? " posted" : ""}`}
+                    disabled={postingTemplateId === tpl.id}
+                    onClick={async () => {
+                      if (postingTemplateId) return;
+                      setPostingTemplateId(tpl.id);
+                      try {
+                        const status = await checkEmployerTemplateStatus(tpl.id);
+                        setConfirmPostData({ templateId: tpl.id, status: (status?.status as "same" | "changed" | "new") || "new", lastPosted: status?.lastPosted });
+                      } catch (err) {
+                        setErrorModal("Failed to check status: " + (err instanceof Error ? err.message : "Unknown error"));
+                      } finally {
+                        setPostingTemplateId(null);
+                      }
+                    }}
                   >
-                    <Pencil size={14} />
+                    {postingTemplateId === tpl.id ? (
+                      <><Loader2 size={14} className="mjp-spin" /> Posting…</>
+                    ) : postedTemplateId === tpl.id ? (
+                      <><CheckCircle2 size={14} /> Posted!</>
+                    ) : (
+                      <><Send size={14} /> Post Now</>
+                    )}
                   </button>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); setDeleteConfirmId(tpl.id); }}
-                    style={{ padding: "6px", borderRadius: 8, background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.2)", color: "#f87171", cursor: "pointer", display: "flex", alignItems: "center" }}
-                  >
-                    <Trash2 size={14} />
+                  <button className="mjp-btn-icon-ghost" title="Schedule publication" onClick={() => setScheduleTemplateModal({ id: tpl.id, title: tpl.title })}>
+                    <Timer size={16} weight="bold" />
                   </button>
                 </div>
-              </div>
-
-              <p style={{ fontSize: 13, color: "var(--text-secondary, #94a3b8)", lineHeight: 1.5, marginBottom: 12, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
-                {tpl.description_template || "No description provided."}
-              </p>
-
-              <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                <span className="badge badge-brand">{salaryLabelText}</span>
-                <span className="badge badge-navy" style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                  <Briefcase size={9} />{tpl.employment_type || "Full Time"}
-                </span>
-                {tpl.location && (
-                  <span className="badge badge-navy" style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                    <MapPin size={9} />{tpl.location}
-                  </span>
-                )}
-                {tpl.quantity > 1 && (
-                  <span className="badge badge-navy" style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                    <Users size={9} />{tpl.quantity} openings
-                  </span>
-                )}
-              </div>
-
-              <div style={{ display: "flex", gap: 8, marginTop: 12, width: "100%" }} onClick={(e) => e.stopPropagation()}>
-                <button
-                  onClick={async (e) => {
-                    e.stopPropagation();
-                    if (postingTemplateId) return;
-                    setPostingTemplateId(tpl.id);
-                    try {
-                      const status = await checkEmployerTemplateStatus(tpl.id);
-                      setConfirmPostData({ templateId: tpl.id, status: (status?.status as "same" | "changed" | "new") || "new", lastPosted: status?.lastPosted });
-                    } catch (err) {
-                      setErrorModal("Failed to check status: " + (err instanceof Error ? err.message : "Unknown error"));
-                    } finally {
-                      setPostingTemplateId(null);
-                    }
-                  }}
-                  style={{
-                    flex: 1,
-                    padding: "9px 12px",
-                    borderRadius: 10,
-                    border: postedTemplateId === tpl.id ? "1px solid rgba(34,197,94,0.4)" : "1px solid rgba(34,197,94,0.25)",
-                    background: postedTemplateId === tpl.id ? "rgba(34,197,94,0.15)" : "rgba(34,197,94,0.08)",
-                    color: postedTemplateId === tpl.id ? "#16a34a" : "#22c55e",
-                    fontWeight: 600,
-                    fontSize: 13,
-                    cursor: postingTemplateId === tpl.id ? "not-allowed" : "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: 6,
-                    transition: "all 0.2s",
-                    opacity: postingTemplateId && postingTemplateId !== tpl.id ? 0.5 : 1,
-                  }}
-                >
-                  {postingTemplateId === tpl.id ? (
-                    <><Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} /> Posting...</>
-                  ) : postedTemplateId === tpl.id ? (
-                    <><CheckCircle2 size={14} /> Posted Successfully!</>
-                  ) : (
-                    <><Send size={14} /> Post</>
-                  )}
-                </button>
-
-                <button
-                  type="button"
-                  title="Scheduled Publication"
-                  onClick={(e) => { e.stopPropagation(); setScheduleTemplateModal({ id: tpl.id, title: tpl.title }); }}
-                  style={{
-                    padding: "9px 12px",
-                    borderRadius: 10,
-                    border: "1px solid rgba(2,132,199,0.3)",
-                    background: "rgba(2,132,199,0.1)",
-                    color: "#0284c7",
-                    fontWeight: 600,
-                    fontSize: 13,
-                    cursor: "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    transition: "all 0.2s",
-                  }}
-                >
-                  <Timer size={16} weight="bold" />
-                </button>
               </div>
             </div>
-          );
-        })}
-        {templates.length === 0 && <p className="text-center text-[#8e8e93] py-8 col-span-full">No templates yet. Click &quot;Add Template&quot; to create one.</p>}
-      </div>
+          ))}
+        </div>
+      )}
 
       {formModal && (
         <VacancyFormModal
@@ -408,8 +339,8 @@ export default function VacancyTemplateTab() {
               <div className="flex gap-4 mb-2">
                 <div className={`p-3 rounded-full flex-shrink-0 h-12 w-12 flex items-center justify-center ${
                   confirmPostData.status === "same" ? "bg-amber-100 text-amber-600" :
-                  confirmPostData.status === "changed" ? "bg-blue-100 text-blue-600" :
-                  "bg-green-100 text-green-600"
+                  confirmPostData.status === "changed" ? "bg-sky-100 text-sky-600" :
+                  "bg-sky-100 text-sky-600"
                 }`}>
                   {confirmPostData.status === "same" ? <AlertTriangle size={24} /> :
                    confirmPostData.status === "changed" ? <RefreshCw size={24} /> :
@@ -436,9 +367,7 @@ export default function VacancyTemplateTab() {
               <button
                 onClick={handleConfirmPost}
                 className={`px-4 py-2 text-sm font-semibold text-white rounded-lg transition-colors shadow-sm flex items-center gap-2 ${
-                  confirmPostData.status === "same" ? "bg-amber-500 hover:bg-amber-600" :
-                  confirmPostData.status === "changed" ? "bg-blue-600 hover:bg-blue-700" :
-                  "bg-green-600 hover:bg-green-700"
+                  confirmPostData.status === "same" ? "bg-amber-500 hover:bg-amber-600" : "bg-sky-600 hover:bg-sky-700"
                 }`}
               >
                 <Send size={16} />
@@ -503,7 +432,7 @@ export default function VacancyTemplateTab() {
                   disabled={scheduleLoading}
                   style={{ flex: 1, padding: "10px", background: "#0284c7", border: "none", borderRadius: 8, color: "#fff", fontSize: 14, fontWeight: 600, cursor: scheduleLoading ? "not-allowed" : "pointer" }}
                 >
-                  {scheduleLoading ? "Scheduling..." : "Set Schedule"}
+                  {scheduleLoading ? "Scheduling…" : "Set Schedule"}
                 </button>
               </div>
             </form>

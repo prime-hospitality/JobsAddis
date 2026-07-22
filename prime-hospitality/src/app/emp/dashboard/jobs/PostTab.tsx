@@ -1,62 +1,30 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import { Plus, Pencil, MapPin, Briefcase, Users, Clock, AlertTriangle, CheckCircle2 } from "lucide-react";
-import { getEmployerPostingData, createEmployerJob, updateEmployerJobPost } from "./actions";
+import React, { useState } from "react";
+import { Plus, Pencil, MapPin, Briefcase, Users, Clock, CalendarClock, AlertTriangle, CheckCircle2, Radio, Hourglass, ListChecks } from "lucide-react";
+import { createEmployerJob, updateEmployerJobPost } from "./actions";
 import VacancyFormModal from "./VacancyFormModal";
 import { VacancyFormState, emptyVacancyForm, jobRowToForm } from "./vacancyShared";
+import { StatusPill, MetaChip, Stat, STATUS_META, salaryLabel } from "./postingUI";
+import type { PostingData } from "./ManageJobPostingsTab";
 
-function salaryLabel(job: any) {
-  const fmt = (n: number) => (n >= 1000 ? `${(n / 1000).toFixed(0)}k` : String(n));
-  if (job.salary_min === -1) return "Negotiable";
-  if (job.salary_min === -2) return "Per Company Scale";
-  if (job.salary_min > 0) return `ETB ${fmt(job.salary_min)}${job.salary_max && job.salary_max !== job.salary_min ? "–" + fmt(job.salary_max) : ""}/mo`;
-  return "Salary TBD";
+function initials(name: string) {
+  return name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase() || "•";
 }
 
-const STATUS_STYLE: Record<string, { bg: string; color: string; label: string }> = {
-  active: { bg: "#dcfce7", color: "#166534", label: "Live" },
-  pending: { bg: "#fef3c7", color: "#92400e", label: "Under Review" },
-  scheduled: { bg: "#e0f2fe", color: "#0369a1", label: "Scheduled" },
-  closed: { bg: "#f1f5f9", color: "#475569", label: "Closed" },
-  expired: { bg: "#fee2e2", color: "#991b1b", label: "Expired" },
-  rejected: { bg: "#fee2e2", color: "#991b1b", label: "Rejected" },
-};
-
-export default function PostTab() {
-  const [jobs, setJobs] = useState<any[]>([]);
-  const [autoPublish, setAutoPublish] = useState(false);
-  const [dailyPostLimit, setDailyPostLimit] = useState(3);
-  const [loading, setLoading] = useState(true);
+export default function PostTab({ data, loading, reload }: { data: PostingData; loading: boolean; reload: () => Promise<void>; }) {
+  const { jobs, autoPublish, dailyPostLimit, businessName, logoUrl } = data;
 
   const [formModal, setFormModal] = useState<{ mode: "create" | "edit"; jobId?: string; value: VacancyFormState } | null>(null);
   const [saving, setSaving] = useState(false);
   const [errorModal, setErrorModal] = useState<string | null>(null);
   const [successNote, setSuccessNote] = useState<string | null>(null);
 
-  const loadData = async () => {
-    setLoading(true);
-    try {
-      const res = await getEmployerPostingData();
-      setJobs(res.jobs);
-      setAutoPublish(res.autoPublish);
-      setDailyPostLimit(res.dailyPostLimit);
-    } catch (e) {
-      console.error(e);
-    }
-    setLoading(false);
-  };
-
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  const postedToday = jobs.filter((j) => {
-    const created = new Date(j.created_at);
-    const start = new Date();
-    start.setHours(0, 0, 0, 0);
-    return created >= start;
-  }).length;
+  const startOfToday = () => { const d = new Date(); d.setHours(0, 0, 0, 0); return d; };
+  const postedToday = jobs.filter((j) => new Date(j.created_at) >= startOfToday()).length;
+  const liveCount = jobs.filter((j) => j.status === "active").length;
+  const reviewCount = jobs.filter((j) => j.status === "pending").length;
+  const limitReached = dailyPostLimit !== -1 && postedToday >= dailyPostLimit;
 
   const handleSubmit = async () => {
     if (!formModal) return;
@@ -64,23 +32,17 @@ export default function PostTab() {
     try {
       if (formModal.mode === "create") {
         const res = await createEmployerJob(formModal.value);
-        if (!res.success) {
-          setErrorModal(res.error || "Something went wrong.");
-          return;
-        }
+        if (!res.success) { setErrorModal(res.error || "Something went wrong."); return; }
         setFormModal(null);
         setSuccessNote(res.status === "active" ? "Job posted and is now live!" : "Job submitted — it will go live once reviewed.");
       } else {
         const res = await updateEmployerJobPost(formModal.jobId!, formModal.value);
-        if (!res.success) {
-          setErrorModal(res.error || "Something went wrong.");
-          return;
-        }
+        if (!res.success) { setErrorModal(res.error || "Something went wrong."); return; }
         setFormModal(null);
         setSuccessNote("Job updated successfully.");
       }
       setTimeout(() => setSuccessNote(null), 4000);
-      loadData();
+      await reload();
     } finally {
       setSaving(false);
     }
@@ -89,85 +51,102 @@ export default function PostTab() {
   return (
     <div>
       {/* Header */}
-      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, marginBottom: 20, flexWrap: "wrap" }}>
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, marginBottom: 18, flexWrap: "wrap" }}>
         <div>
-          <h3 style={{ fontSize: 17, fontWeight: 800, color: "#0f172a", margin: 0 }}>Your Job Postings</h3>
-          <p style={{ fontSize: 13, color: "#64748b", margin: "4px 0 0 0" }}>
-            {autoPublish ? "Your posts go live instantly." : "New posts require a quick review before going live."}
-            {dailyPostLimit !== -1 && <> · {postedToday}/{dailyPostLimit} posted today</>}
+          <h2 style={{ fontSize: 18, fontWeight: 800, color: "#0f172a", margin: 0, letterSpacing: "-.02em" }}>Your Job Postings</h2>
+          <p style={{ fontSize: 13, color: "#64748b", margin: "5px 0 0 0" }}>
+            {autoPublish ? "Your posts go live instantly." : "New posts get a quick review before going live."}
           </p>
         </div>
         <button
+          className="mjp-btn-primary"
           onClick={() => setFormModal({ mode: "create", value: emptyVacancyForm() })}
-          style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "#0284c7", color: "#fff", border: "none", padding: "10px 18px", borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: "pointer", boxShadow: "0 2px 8px rgba(2,132,199,0.25)" }}
+          disabled={limitReached}
+          title={limitReached ? "Daily posting limit reached" : "Post a new job"}
         >
           <Plus size={16} /> Post Now
         </button>
       </div>
 
+      {/* Stat strip */}
+      {!loading && (
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 12, marginBottom: 20 }}>
+          <Stat icon={<ListChecks size={18} />} value={jobs.length} label="Total Posts" tint="#0284c7" />
+          <Stat icon={<Radio size={18} />} value={liveCount} label="Live" tint="#059669" />
+          <Stat icon={<Hourglass size={18} />} value={reviewCount} label="Under Review" tint="#d97706" />
+          <Stat
+            icon={<CalendarClock size={18} />}
+            value={dailyPostLimit === -1 ? postedToday : `${postedToday}/${dailyPostLimit}`}
+            label="Posted Today"
+            tint="#7c3aed"
+          />
+        </div>
+      )}
+
       {successNote && (
-        <div style={{ display: "flex", alignItems: "center", gap: 8, background: "#f0fdf4", border: "1px solid #bbf7d0", color: "#166534", borderRadius: 10, padding: "10px 14px", fontSize: 13, fontWeight: 600, marginBottom: 16 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, background: "#ecfdf5", border: "1px solid #a7f3d0", color: "#047857", borderRadius: 10, padding: "11px 14px", fontSize: 13, fontWeight: 600, marginBottom: 16 }}>
           <CheckCircle2 size={16} /> {successNote}
         </div>
       )}
 
       {loading ? (
-        <div style={{ textAlign: "center", color: "#94a3b8", padding: "48px 0", fontSize: 14 }}>Loading your postings...</div>
+        <div style={{ textAlign: "center", color: "#94a3b8", padding: "56px 0", fontSize: 14 }}>Loading your postings…</div>
       ) : jobs.length === 0 ? (
-        <div style={{ background: "#fff", borderRadius: 14, border: "1px dashed #cbd5e1", padding: "48px 32px", textAlign: "center" }}>
-          <div style={{ color: "#94a3b8", display: "flex", justifyContent: "center", marginBottom: 16 }}>
-            <Briefcase size={44} strokeWidth={1.5} />
+        <div className="mjp-empty">
+          <div style={{ width: 56, height: 56, borderRadius: 16, background: "#eff6ff", color: "#0284c7", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
+            <Briefcase size={26} strokeWidth={1.75} />
           </div>
           <h4 style={{ fontSize: 16, fontWeight: 700, color: "#0f172a", marginBottom: 6 }}>No job postings yet</h4>
-          <p style={{ fontSize: 13, color: "#64748b", margin: 0 }}>Click &quot;Post Now&quot; to publish your first vacancy.</p>
+          <p style={{ fontSize: 13.5, color: "#64748b", margin: "0 0 20px 0" }}>Publish your first vacancy and it&apos;ll show up here.</p>
+          <button className="mjp-btn-primary" style={{ margin: "0 auto" }} onClick={() => setFormModal({ mode: "create", value: emptyVacancyForm() })} disabled={limitReached}>
+            <Plus size={16} /> Post Now
+          </button>
         </div>
       ) : (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 16 }}>
+        <div className="mjp-grid">
           {jobs.map((job) => {
-            const status = STATUS_STYLE[job.status] || STATUS_STYLE.pending;
+            const accent = (STATUS_META[job.status] || STATUS_META.pending).accent;
             return (
-              <div key={job.id} style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 14, padding: 18, boxShadow: "0 1px 4px rgba(0,0,0,0.04)", display: "flex", flexDirection: "column", gap: 10 }}>
-                <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
-                  <div style={{ minWidth: 0 }}>
-                    <p style={{ fontSize: 11, fontWeight: 600, color: "#94a3b8", margin: "0 0 2px 0", textTransform: "uppercase", letterSpacing: "0.04em" }}>{job.category || "Other"}</p>
-                    <h4 style={{ fontSize: 16, fontWeight: 800, color: "#0f172a", margin: 0, lineHeight: 1.25 }}>{job.title}</h4>
+              <div key={job.id} className="mjp-card">
+                <div className="mjp-card-accent" style={{ background: accent }} />
+                <div style={{ padding: 18, display: "flex", flexDirection: "column", gap: 12, flex: 1 }}>
+                  {/* Top: logo + title + status */}
+                  <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
+                    <div className="mjp-logo">
+                      {logoUrl ? <img src={logoUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : initials(businessName)}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p className="mjp-eyebrow">{job.category || "Other"}</p>
+                      <h3 className="mjp-title" style={{ overflow: "hidden", textOverflow: "ellipsis", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>{job.title}</h3>
+                    </div>
+                    <StatusPill status={job.status} />
                   </div>
-                  <button
-                    onClick={() => setFormModal({ mode: "edit", jobId: job.id, value: jobRowToForm(job) })}
-                    title="Edit job"
-                    style={{ flexShrink: 0, padding: 8, borderRadius: 8, background: "#eff6ff", border: "1px solid #bfdbfe", color: "#0284c7", cursor: "pointer", display: "flex", alignItems: "center" }}
-                  >
-                    <Pencil size={14} />
-                  </button>
+
+                  {/* Meta chips */}
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                    <MetaChip variant="salary">{salaryLabel(job.salary_min, job.salary_max)}</MetaChip>
+                    <MetaChip icon={<Briefcase size={11} />}>{job.job_type || "Full Time"}</MetaChip>
+                    {job.location && <MetaChip icon={<MapPin size={11} />}>{job.location}</MetaChip>}
+                    {job.quantity > 1 && <MetaChip icon={<Users size={11} />}>{job.quantity} openings</MetaChip>}
+                  </div>
+
+                  <div style={{ flex: 1 }} />
+                  <div style={{ height: 1, background: "#f1f5f9" }} />
+
+                  {/* Footer: dates + edit */}
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+                    <div style={{ fontSize: 11.5, color: "#94a3b8", display: "flex", alignItems: "center", gap: 5, minWidth: 0 }}>
+                      <Clock size={12} style={{ flexShrink: 0 }} />
+                      <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                        {new Date(job.created_at).toLocaleDateString()}
+                        {job.deadline && ` · ends ${new Date(job.deadline).toLocaleDateString()}`}
+                      </span>
+                    </div>
+                    <button className="mjp-iconbtn edit" title="Edit job" onClick={() => setFormModal({ mode: "edit", jobId: job.id, value: jobRowToForm(job) })}>
+                      <Pencil size={15} />
+                    </button>
+                  </div>
                 </div>
-
-                <span style={{ alignSelf: "flex-start", background: status.bg, color: status.color, fontSize: 11, fontWeight: 700, padding: "3px 10px", borderRadius: 999 }}>
-                  {status.label}
-                </span>
-
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                  <span style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "#f8fafc", border: "1px solid #e2e8f0", color: "#334155", fontSize: 11, fontWeight: 600, padding: "3px 9px", borderRadius: 999 }}>
-                    {salaryLabel(job)}
-                  </span>
-                  <span style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "#f8fafc", border: "1px solid #e2e8f0", color: "#334155", fontSize: 11, fontWeight: 600, padding: "3px 9px", borderRadius: 999 }}>
-                    <Briefcase size={10} /> {job.job_type || "Full Time"}
-                  </span>
-                  {job.location && (
-                    <span style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "#f8fafc", border: "1px solid #e2e8f0", color: "#334155", fontSize: 11, fontWeight: 600, padding: "3px 9px", borderRadius: 999 }}>
-                      <MapPin size={10} /> {job.location}
-                    </span>
-                  )}
-                  {job.quantity > 1 && (
-                    <span style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "#f8fafc", border: "1px solid #e2e8f0", color: "#334155", fontSize: 11, fontWeight: 600, padding: "3px 9px", borderRadius: 999 }}>
-                      <Users size={10} /> {job.quantity} openings
-                    </span>
-                  )}
-                </div>
-
-                <p style={{ fontSize: 12, color: "#94a3b8", margin: 0, display: "flex", alignItems: "center", gap: 4 }}>
-                  <Clock size={11} /> Posted {new Date(job.created_at).toLocaleDateString()}
-                  {job.deadline && <> · Deadline {new Date(job.deadline).toLocaleDateString()}</>}
-                </p>
               </div>
             );
           })}
@@ -202,10 +181,7 @@ export default function PostTab() {
               </div>
             </div>
             <div className="bg-[#f2f2f7] px-6 py-4 flex justify-end border-t border-[#e5e5ea]">
-              <button
-                onClick={() => setErrorModal(null)}
-                className="px-5 py-2 text-sm font-semibold text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors shadow-sm"
-              >
+              <button onClick={() => setErrorModal(null)} className="px-5 py-2 text-sm font-semibold text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors shadow-sm">
                 Got it
               </button>
             </div>
