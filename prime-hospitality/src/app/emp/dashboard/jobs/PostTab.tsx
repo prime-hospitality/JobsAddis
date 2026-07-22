@@ -78,7 +78,7 @@ export default function PostTab({ data, loading, reload }: { data: PostingData; 
             icon={<CalendarClock size={18} />}
             value={dailyPostLimit === -1 ? postedToday : `${postedToday}/${dailyPostLimit}`}
             label="Posted Today"
-            tint="#7c3aed"
+            tint="#0891b2"
           />
         </div>
       )}

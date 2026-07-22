@@ -1,9 +1,90 @@
 "use client";
 
 import React, { useState } from "react";
-import { Save, X, Briefcase, MapPin, CreditCard, Calendar, FileText, CheckCircle2 } from "lucide-react";
+import { Save, X, Briefcase, MapPin, CreditCard, ClipboardList, FileText } from "lucide-react";
 import { searchLocations } from "@/data/locations";
 import { VacancyFormState } from "./vacancyShared";
+
+const CHEVRON =
+  "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='m6 9 6 6 6-6'/></svg>\")";
+
+const STYLES = `
+  .vfm-overlay { position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center; padding: 16px; background: rgba(15,23,42,0.45); backdrop-filter: blur(4px); font-family: 'Inter', sans-serif; }
+  .vfm-modal { background: #fff; border: 1px solid #e6ebf2; border-radius: 20px; width: 100%; max-width: 900px; max-height: 92vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 24px 64px -18px rgba(15,23,42,0.4); }
+
+  .vfm-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 18px 22px; border-bottom: 1px solid #eef2f7; flex-shrink: 0; }
+  .vfm-header-l { display: flex; align-items: center; gap: 13px; min-width: 0; }
+  .vfm-header-ico { width: 42px; height: 42px; border-radius: 12px; background: linear-gradient(135deg, #0284c7, #0369a1); color: #fff; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 4px 12px -3px rgba(2,132,199,0.5); }
+  .vfm-title { font-size: 18px; font-weight: 800; color: #0f172a; letter-spacing: -.02em; margin: 0; line-height: 1.2; }
+  .vfm-sub { font-size: 12.5px; color: #64748b; margin: 2px 0 0 0; }
+  .vfm-close { width: 36px; height: 36px; border-radius: 9px; border: 1px solid #e2e8f0; background: #fff; color: #94a3b8; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all .15s ease; flex-shrink: 0; }
+  .vfm-close:hover { background: #f1f5f9; color: #0f172a; }
+
+  .vfm-body { flex: 1; overflow-y: auto; padding: 20px 22px; background: #f8fafc; }
+  .vfm-cols { display: grid; grid-template-columns: 1fr; gap: 16px; align-items: stretch; }
+  @media (min-width: 860px) { .vfm-cols { grid-template-columns: 340px 1fr; } }
+
+  .vfm-panel { background: #fff; border: 1px solid #e9eef4; border-radius: 14px; padding: 18px; display: flex; flex-direction: column; gap: 18px; }
+
+  .vfm-panel-title { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 800; color: #0f172a; letter-spacing: -.01em; padding-bottom: 12px; border-bottom: 1px solid #eef2f7; }
+
+  .vfm-sec { display: flex; flex-direction: column; gap: 12px; }
+  .vfm-sec-h { display: flex; align-items: center; gap: 7px; font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; }
+  .vfm-sec-h.blue { color: #0284c7; }
+  .vfm-sec-h.green { color: #059669; }
+  .vfm-divider { height: 1px; background: #eef2f7; }
+
+  .vfm-field { display: flex; flex-direction: column; gap: 6px; }
+  .vfm-row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .vfm-label { font-size: 12.5px; font-weight: 600; color: #334155; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .vfm-req { color: #ef4444; font-weight: 700; }
+
+  .vfm-input, .vfm-select, .vfm-textarea {
+    width: 100%; background: #fff; border: 1px solid #dbe3ec; border-radius: 10px;
+    padding: 10px 12px; font-size: 13.5px; color: #0f172a; font-family: inherit;
+    outline: none; transition: border-color .15s ease, box-shadow .15s ease;
+  }
+  .vfm-input::placeholder, .vfm-textarea::placeholder { color: #9aa7b8; }
+  .vfm-input:focus, .vfm-select:focus, .vfm-textarea:focus { border-color: #0284c7; box-shadow: 0 0 0 3px rgba(2,132,199,0.12); }
+  .vfm-select { appearance: none; -webkit-appearance: none; cursor: pointer; padding-right: 34px; background-image: ${CHEVRON}; background-repeat: no-repeat; background-position: right 11px center; }
+  .vfm-textarea { resize: none; line-height: 1.55; }
+
+  .vfm-input-icon { position: relative; }
+  .vfm-input-icon > .ico { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); color: #94a3b8; pointer-events: none; display: flex; }
+  .vfm-input-icon .vfm-input { padding-left: 34px; }
+
+  .vfm-money { position: relative; }
+  .vfm-money-cur { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 12px; font-weight: 600; color: #94a3b8; pointer-events: none; }
+  .vfm-money .vfm-input { padding-left: 44px; }
+
+  .vfm-seg { display: flex; background: #eef2f7; border: 1px solid #e4e9f0; border-radius: 10px; padding: 3px; gap: 3px; }
+  .vfm-seg-btn { flex: 1; border: none; background: transparent; color: #64748b; font-size: 12px; font-weight: 700; padding: 7px 8px; border-radius: 7px; cursor: pointer; transition: all .15s ease; font-family: inherit; white-space: nowrap; }
+  .vfm-seg-btn:hover:not(.active) { color: #334155; }
+  .vfm-seg-btn.active { background: #fff; color: #0284c7; box-shadow: 0 1px 2px rgba(16,24,40,0.14); }
+  .vfm-seg.inline { display: inline-flex; }
+  .vfm-seg.inline .vfm-seg-btn { flex: 0 0 auto; padding: 6px 14px; }
+
+  .vfm-hint { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: #94a3b8; background: #eef2f7; padding: 2px 8px; border-radius: 999px; flex-shrink: 0; }
+
+  .vfm-suggest { position: absolute; top: 100%; left: 0; right: 0; margin-top: 6px; background: #fff; border: 1px solid #e6ebf2; border-radius: 10px; box-shadow: 0 14px 34px -12px rgba(15,23,42,0.28); z-index: 60; max-height: 224px; overflow-y: auto; }
+  .vfm-suggest-item { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 9px 12px; border: none; border-bottom: 1px solid #f1f5f9; background: #fff; cursor: pointer; text-align: left; font-family: inherit; transition: background .12s ease; }
+  .vfm-suggest-item:last-child { border-bottom: none; }
+  .vfm-suggest-item:hover { background: #f0f9ff; }
+  .vfm-suggest-name { font-size: 13px; font-weight: 600; color: #0f172a; }
+  .vfm-suggest-meta { font-size: 11px; color: #94a3b8; background: #f1f5f9; padding: 1px 8px; border-radius: 999px; white-space: nowrap; }
+
+  .vfm-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 22px; border-top: 1px solid #eef2f7; background: #fff; flex-shrink: 0; }
+  .vfm-foot-note { font-size: 12px; color: #94a3b8; }
+  .vfm-actions { display: flex; gap: 10px; }
+  .vfm-btn-cancel { padding: 9px 18px; border: 1px solid #e2e8f0; background: #fff; color: #475569; font-size: 13.5px; font-weight: 600; border-radius: 10px; cursor: pointer; transition: all .15s ease; font-family: inherit; }
+  .vfm-btn-cancel:hover { background: #f8fafc; color: #0f172a; }
+  .vfm-btn-save { padding: 9px 22px; border: none; background: #0284c7; color: #fff; font-size: 13.5px; font-weight: 700; border-radius: 10px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; transition: background .15s ease; font-family: inherit; box-shadow: 0 1px 2px rgba(2,132,199,0.3); }
+  .vfm-btn-save:hover { background: #0369a1; }
+  .vfm-btn-save:disabled { opacity: .6; cursor: not-allowed; }
+
+  @keyframes vfm-spin { to { transform: rotate(360deg); } }
+  .vfm-spin { animation: vfm-spin 1s linear infinite; }
+`;
 
 export default function VacancyFormModal({
   value,
@@ -30,71 +111,61 @@ export default function VacancyFormModal({
   const set = (patch: Partial<VacancyFormState>) => onChange({ ...value, ...patch });
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 backdrop-blur-sm bg-gray-900/40 transition-all duration-300">
-      <div className="bg-white rounded-3xl w-full max-w-5xl shadow-[0_20px_60px_-15px_rgba(0,0,0,0.3)] max-h-[90vh] overflow-hidden flex flex-col border border-[#e5e5ea] ring-1 ring-black/5 animate-in fade-in zoom-in-95 duration-200">
+    <div className="vfm-overlay" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <style>{STYLES}</style>
+      <div className="vfm-modal">
 
-        {/* Modal Header */}
-        <div className="px-8 py-6 border-b border-[#e5e5ea] flex items-center justify-between bg-gradient-to-r from-gray-50/50 to-white">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#0284c7] to-[#0369a1] text-white flex items-center justify-center shadow-lg shadow-[#0284c7]/20">
-              <FileText size={24} strokeWidth={1.5} />
+        {/* Header */}
+        <div className="vfm-header">
+          <div className="vfm-header-l">
+            <div className="vfm-header-ico">
+              <FileText size={22} strokeWidth={1.75} />
             </div>
-            <div>
-              <h3 className="text-2xl font-bold text-black tracking-tight">{headerTitle}</h3>
-              <p className="text-sm text-[#8e8e93] font-medium mt-1">{headerSubtitle}</p>
+            <div style={{ minWidth: 0 }}>
+              <h3 className="vfm-title">{headerTitle}</h3>
+              <p className="vfm-sub">{headerSubtitle}</p>
             </div>
           </div>
-          <button
-            onClick={onClose}
-            className="p-2 text-[#aeaeb2] hover:text-[#1c1c1e] hover:bg-[#e5e5ea] rounded-full transition-colors"
-          >
-            <X size={24} />
+          <button className="vfm-close" onClick={onClose} aria-label="Close">
+            <X size={20} />
           </button>
         </div>
 
-        {/* Modal Body */}
-        <div className="flex-1 overflow-y-auto p-8 custom-scrollbar bg-[#f2f2f7]/30">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+        {/* Body */}
+        <div className="vfm-body">
+          <div className="vfm-cols">
 
-            {/* Left Column - Core Info */}
-            <div className="lg:col-span-5 space-y-8">
-              {/* Section: Basic Details */}
-              <div className="space-y-5">
-                <div className="flex items-center gap-2 text-[#0284c7] font-semibold text-sm uppercase tracking-wider mb-2">
-                  <Briefcase size={16} /> Basic Details
-                </div>
+            {/* Left panel — structured details */}
+            <div className="vfm-panel">
+              {/* Basic Details */}
+              <div className="vfm-sec">
+                <div className="vfm-sec-h blue"><Briefcase size={15} /> Basic Details</div>
 
-                <div>
-                  <label className="block text-sm font-semibold text-[#1c1c1e] mb-1.5 flex justify-between">
-                    Job Title <span style={{ color: "#ef4444" }}>*</span>
-                  </label>
+                <div className="vfm-field">
+                  <label className="vfm-label">Job Title <span className="vfm-req">*</span></label>
                   <input
+                    className="vfm-input"
                     type="text"
                     value={value.title}
                     onChange={(e) => set({ title: e.target.value })}
-                    className="w-full px-4 py-3 bg-white border border-[#c6c6c8] rounded-xl text-sm focus:ring-4 focus:ring-[#0284c7]/10 focus:border-[#0284c7] transition-all outline-none shadow-sm placeholder:text-[#aeaeb2]"
                     placeholder="e.g. Senior Bartender"
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-semibold text-[#1c1c1e] mb-1.5">Department</label>
+                <div className="vfm-row2">
+                  <div className="vfm-field">
+                    <label className="vfm-label">Department</label>
                     <input
+                      className="vfm-input"
                       type="text"
                       value={value.job_category}
                       onChange={(e) => set({ job_category: e.target.value })}
-                      className="w-full px-4 py-3 bg-white border border-[#c6c6c8] rounded-xl text-sm focus:ring-4 focus:ring-[#0284c7]/10 focus:border-[#0284c7] transition-all outline-none shadow-sm placeholder:text-[#aeaeb2]"
                       placeholder="e.g. Hospitality"
                     />
                   </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-[#1c1c1e] mb-1.5">Employment Type</label>
-                    <select
-                      value={value.employment_type}
-                      onChange={(e) => set({ employment_type: e.target.value })}
-                      className="w-full px-4 py-3 bg-white border border-[#c6c6c8] rounded-xl text-sm focus:ring-4 focus:ring-[#0284c7]/10 focus:border-[#0284c7] transition-all outline-none shadow-sm appearance-none cursor-pointer"
-                    >
+                  <div className="vfm-field">
+                    <label className="vfm-label">Employment Type</label>
+                    <select className="vfm-select" value={value.employment_type} onChange={(e) => set({ employment_type: e.target.value })}>
                       <option value="Full Time">Full Time</option>
                       <option value="Part Time">Part Time</option>
                       <option value="Contract">Contract</option>
@@ -104,34 +175,41 @@ export default function VacancyFormModal({
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-semibold text-[#1c1c1e] mb-1.5">Number of Required</label>
+                <div className="vfm-row2">
+                  <div className="vfm-field">
+                    <label className="vfm-label">No. of Openings</label>
                     <input
+                      className="vfm-input"
                       type="number"
                       min={1}
                       value={value.quantity}
                       onChange={(e) => set({ quantity: Math.max(1, Number(e.target.value)) })}
-                      className="w-full px-4 py-3 bg-white border border-[#c6c6c8] rounded-xl text-sm focus:ring-4 focus:ring-[#0284c7]/10 focus:border-[#0284c7] transition-all outline-none shadow-sm placeholder:text-[#aeaeb2]"
                       placeholder="1"
                     />
                   </div>
+                  <div className="vfm-field">
+                    <label className="vfm-label">Experience</label>
+                    <select className="vfm-select" value={value.experience_required} onChange={(e) => set({ experience_required: e.target.value })}>
+                      <option value="Entry level">Entry level</option>
+                      <option value="Junior">Junior</option>
+                      <option value="Intermediate">Intermediate</option>
+                      <option value="Senior">Senior</option>
+                      <option value="Expert">Expert</option>
+                    </select>
+                  </div>
                 </div>
 
-                <div className="relative">
-                  <label className="block text-sm font-semibold text-[#1c1c1e] mb-1.5">Place of Work</label>
-                  <div className="relative">
-                    <MapPin size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#aeaeb2]" />
+                <div className="vfm-field" style={{ position: "relative" }}>
+                  <label className="vfm-label">Place of Work</label>
+                  <div className="vfm-input-icon">
+                    <span className="ico"><MapPin size={16} /></span>
                     <input
+                      className="vfm-input"
                       type="text"
                       value={value.location}
-                      onChange={(e) => {
-                        set({ location: e.target.value });
-                        setLocationSuggestionsOpen(true);
-                      }}
-                      onFocus={() => setLocationSuggestionsOpen(true)}
+                      onChange={(e) => { set({ location: e.target.value }); setLocationSuggestionsOpen(true); }}
+                      onFocusCapture={() => setLocationSuggestionsOpen(true)}
                       onBlur={() => setTimeout(() => setLocationSuggestionsOpen(false), 200)}
-                      className="w-full pl-10 pr-4 py-3 bg-white border border-[#c6c6c8] rounded-xl text-sm focus:ring-4 focus:ring-[#0284c7]/10 focus:border-[#0284c7] transition-all outline-none shadow-sm placeholder:text-[#aeaeb2]"
                       placeholder="Search neighborhood or sub-city..."
                       autoComplete="off"
                     />
@@ -139,55 +217,53 @@ export default function VacancyFormModal({
                   {locationSuggestionsOpen && (() => {
                     const results = searchLocations(value.location).slice(0, 8);
                     return results.length > 0 ? (
-                      <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-[#e5e5ea] rounded-xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.15)] z-50 max-h-56 overflow-y-auto overflow-x-hidden">
+                      <div className="vfm-suggest">
                         {results.map((loc) => (
                           <button
                             key={loc.id}
                             type="button"
-                            onMouseDown={(e) => {
-                              e.preventDefault();
-                              set({ location: loc.name });
-                              setLocationSuggestionsOpen(false);
-                            }}
-                            className="w-full text-left px-4 py-3 hover:bg-[#f0f9ff] text-sm border-b border-gray-50 last:border-0 transition-colors group flex items-center justify-between"
+                            className="vfm-suggest-item"
+                            onMouseDown={(e) => { e.preventDefault(); set({ location: loc.name }); setLocationSuggestionsOpen(false); }}
                           >
-                            <div className="font-semibold text-[#1c1c1e] group-hover:text-[#0284c7] transition-colors">{loc.name}</div>
-                            <div className="text-[11px] font-medium text-[#aeaeb2] bg-[#f2f2f7] group-hover:bg-white px-2 py-0.5 rounded-full border border-[#e5e5ea] transition-colors">
-                              {loc.subCity} • {loc.type.charAt(0).toUpperCase() + loc.type.slice(1)}
-                            </div>
+                            <span className="vfm-suggest-name">{loc.name}</span>
+                            <span className="vfm-suggest-meta">{loc.subCity} • {loc.type.charAt(0).toUpperCase() + loc.type.slice(1)}</span>
                           </button>
                         ))}
                       </div>
                     ) : null;
                   })()}
                 </div>
+
+                <div className="vfm-field">
+                  <label className="vfm-label">Application Deadline</label>
+                  <input
+                    className="vfm-input"
+                    type="date"
+                    value={value.deadline}
+                    onChange={(e) => set({ deadline: e.target.value })}
+                  />
+                </div>
               </div>
 
-              <hr className="border-[#c6c6c8]/60" />
+              <div className="vfm-divider" />
 
-              {/* Section: Compensation */}
-              <div className="space-y-5">
-                <div className="flex items-center gap-2 text-[#059669] font-semibold text-sm uppercase tracking-wider mb-2">
-                  <CreditCard size={16} /> Compensation
-                </div>
+              {/* Compensation */}
+              <div className="vfm-sec">
+                <div className="vfm-sec-h green"><CreditCard size={15} /> Compensation</div>
 
-                <div>
-                  <label className="block text-sm font-semibold text-[#1c1c1e] mb-2">Salary Structure</label>
-                  <div className="flex p-1 bg-[#e5e5ea] rounded-xl border border-[#c6c6c8]/60">
+                <div className="vfm-field">
+                  <label className="vfm-label">Salary Structure</label>
+                  <div className="vfm-seg">
                     {[
-                      { value: "fixed", label: "Fixed Amount" },
+                      { value: "fixed", label: "Fixed" },
                       { value: "company_scale", label: "Company Scale" },
                       { value: "negotiable", label: "Negotiable" },
                     ].map((opt) => (
                       <button
                         key={opt.value}
                         type="button"
+                        className={`vfm-seg-btn${value.salary_type === opt.value ? " active" : ""}`}
                         onClick={() => set({ salary_type: opt.value })}
-                        className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all duration-200 ${
-                          value.salary_type === opt.value
-                            ? "bg-white text-black shadow-sm ring-1 ring-gray-200"
-                            : "text-[#8e8e93] hover:text-[#1c1c1e] hover:bg-[#f2f2f7]/50"
-                        }`}
                       >
                         {opt.label}
                       </button>
@@ -196,29 +272,29 @@ export default function VacancyFormModal({
                 </div>
 
                 {value.salary_type === "fixed" && (
-                  <div className="grid grid-cols-2 gap-4 animate-in slide-in-from-top-2 fade-in duration-200">
-                    <div>
-                      <label className="block text-sm font-semibold text-[#1c1c1e] mb-1.5">Minimum</label>
-                      <div className="relative">
-                        <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#aeaeb2] font-medium text-sm">ETB</span>
+                  <div className="vfm-row2">
+                    <div className="vfm-field">
+                      <label className="vfm-label">Minimum</label>
+                      <div className="vfm-money">
+                        <span className="vfm-money-cur">ETB</span>
                         <input
+                          className="vfm-input"
                           type="number"
                           value={value.salary_min || ""}
                           onChange={(e) => set({ salary_min: e.target.value ? Number(e.target.value) : null })}
-                          className="w-full pl-12 pr-4 py-3 bg-white border border-[#c6c6c8] rounded-xl text-sm focus:ring-4 focus:ring-[#059669]/10 focus:border-[#059669] transition-all outline-none shadow-sm"
                           placeholder="0"
                         />
                       </div>
                     </div>
-                    <div>
-                      <label className="block text-sm font-semibold text-[#1c1c1e] mb-1.5">Maximum</label>
-                      <div className="relative">
-                        <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#aeaeb2] font-medium text-sm">ETB</span>
+                    <div className="vfm-field">
+                      <label className="vfm-label">Maximum</label>
+                      <div className="vfm-money">
+                        <span className="vfm-money-cur">ETB</span>
                         <input
+                          className="vfm-input"
                           type="number"
                           value={value.salary_max || ""}
                           onChange={(e) => set({ salary_max: e.target.value ? Number(e.target.value) : null })}
-                          className="w-full pl-12 pr-4 py-3 bg-white border border-[#c6c6c8] rounded-xl text-sm focus:ring-4 focus:ring-[#059669]/10 focus:border-[#059669] transition-all outline-none shadow-sm"
                           placeholder="0"
                         />
                       </div>
@@ -226,157 +302,104 @@ export default function VacancyFormModal({
                   </div>
                 )}
               </div>
-
-              <hr className="border-[#c6c6c8]/60" />
-
-              {/* Section: Timeline & Exp */}
-              <div className="space-y-5">
-                <div className="flex items-center gap-2 text-[#0284c7] font-semibold text-sm uppercase tracking-wider mb-2">
-                  <Calendar size={16} /> Requirements
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-semibold text-[#1c1c1e] mb-1.5">Experience</label>
-                    <select
-                      value={value.experience_required}
-                      onChange={(e) => set({ experience_required: e.target.value })}
-                      className="w-full px-4 py-3 bg-white border border-[#c6c6c8] rounded-xl text-sm focus:ring-4 focus:ring-[#0284c7]/10 focus:border-[#0284c7] transition-all outline-none shadow-sm appearance-none cursor-pointer"
-                    >
-                      <option value="Entry level">Entry level</option>
-                      <option value="Junior">Junior</option>
-                      <option value="Intermediate">Intermediate</option>
-                      <option value="Senior">Senior</option>
-                      <option value="Expert">Expert</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-[#1c1c1e] mb-1.5">Deadline</label>
-                    <input
-                      type="date"
-                      value={value.deadline}
-                      onChange={(e) => set({ deadline: e.target.value })}
-                      className="w-full px-4 py-3 bg-white border border-[#c6c6c8] rounded-xl text-sm focus:ring-4 focus:ring-[#0284c7]/10 focus:border-[#0284c7] transition-all outline-none shadow-sm text-[#8e8e93]"
-                    />
-                  </div>
-                </div>
-              </div>
             </div>
 
-            {/* Right Column - Templates */}
-            <div className="lg:col-span-7 bg-white p-6 rounded-2xl border border-[#c6c6c8]/60 shadow-sm flex flex-col gap-5">
-              <div className="flex items-center gap-2 text-[#1c1c1e] font-bold text-base border-b border-[#e5e5ea] pb-3 mb-2">
-                Content Templates
+            {/* Right panel — content */}
+            <div className="vfm-panel">
+              <div className="vfm-panel-title"><ClipboardList size={17} color="#0284c7" /> Job Content</div>
+
+              <div className="vfm-field">
+                <label className="vfm-label">
+                  <span>Job Description <span className="vfm-req">*</span></span>
+                  <span className="vfm-hint">Main overview</span>
+                </label>
+                <textarea
+                  className="vfm-textarea"
+                  style={{ height: 112 }}
+                  value={value.description_template}
+                  onChange={(e) => set({ description_template: e.target.value })}
+                  placeholder="Provide a compelling overview of the role and what it entails..."
+                />
               </div>
 
-              <div className="flex-1 flex flex-col gap-5">
-                <div className="group">
-                  <label className="block text-sm font-semibold text-[#1c1c1e] mb-1.5 flex justify-between">
-                    Job Description <span style={{ color: "#ef4444" }}>*</span>
-                    <span className="text-[10px] font-bold text-[#aeaeb2] uppercase tracking-wider bg-[#e5e5ea] px-2 py-0.5 rounded-full group-focus-within:bg-[#0284c7] group-focus-within:text-white transition-colors">Main overview</span>
-                  </label>
+              <div className="vfm-field">
+                <label className="vfm-label">
+                  <span>Responsibilities</span>
+                  <span className="vfm-hint">Bulleted list</span>
+                </label>
+                <textarea
+                  className="vfm-textarea"
+                  style={{ height: 92 }}
+                  value={value.responsibilities_template}
+                  onChange={(e) => set({ responsibilities_template: e.target.value })}
+                  placeholder={"- Daily task one\n- Daily task two\n- Key deliverable..."}
+                />
+              </div>
+
+              <div className="vfm-field">
+                <div className="vfm-seg inline" style={{ alignSelf: "flex-start" }}>
+                  <button
+                    type="button"
+                    className={`vfm-seg-btn${requirementsTab === "skill" ? " active" : ""}`}
+                    onClick={() => setRequirementsTab("skill")}
+                  >
+                    Requirement Skills
+                  </button>
+                  <button
+                    type="button"
+                    className={`vfm-seg-btn${requirementsTab === "education" ? " active" : ""}`}
+                    onClick={() => setRequirementsTab("education")}
+                  >
+                    Education
+                  </button>
+                </div>
+                {requirementsTab === "skill" ? (
                   <textarea
-                    value={value.description_template}
-                    onChange={(e) => set({ description_template: e.target.value })}
-                    className="w-full px-4 py-3 bg-[#f2f2f7]/50 hover:bg-white border border-[#c6c6c8] rounded-xl text-sm h-32 resize-none focus:ring-4 focus:ring-[#0284c7]/10 focus:border-[#0284c7] transition-all outline-none leading-relaxed shadow-inner placeholder:text-[#c6c6c8]"
-                    placeholder="Provide a compelling overview of the role and what it entails..."
+                    className="vfm-textarea"
+                    style={{ height: 92 }}
+                    value={value.requirements_template}
+                    onChange={(e) => set({ requirements_template: e.target.value })}
+                    placeholder={"- Required skill one\n- Certification...\n- Years of experience..."}
                   />
-                </div>
-
-                <div className="group">
-                  <label className="block text-sm font-semibold text-[#1c1c1e] mb-1.5 flex justify-between">
-                    Responsibilities
-                    <span className="text-[10px] font-bold text-[#aeaeb2] uppercase tracking-wider bg-[#e5e5ea] px-2 py-0.5 rounded-full group-focus-within:bg-[#0284c7] group-focus-within:text-white transition-colors">Bulleted list</span>
-                  </label>
+                ) : (
                   <textarea
-                    value={value.responsibilities_template}
-                    onChange={(e) => set({ responsibilities_template: e.target.value })}
-                    className="w-full px-4 py-3 bg-[#f2f2f7]/50 hover:bg-white border border-[#c6c6c8] rounded-xl text-sm h-28 resize-none focus:ring-4 focus:ring-[#0284c7]/10 focus:border-[#0284c7] transition-all outline-none leading-relaxed shadow-inner placeholder:text-[#c6c6c8]"
-                    placeholder="- Daily task one&#10;- Daily task two&#10;- Key deliverable..."
+                    className="vfm-textarea"
+                    style={{ height: 92 }}
+                    value={value.education_requirements}
+                    onChange={(e) => set({ education_requirements: e.target.value })}
+                    placeholder={"- Bachelor's Degree in Hospitality Management\n- Vocational certificate in...\n- Minimum education level..."}
                   />
-                </div>
+                )}
+              </div>
 
-                <div className="group">
-                  {/* Toggle between Requirement skill & Education Requirements */}
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="flex p-0.5 bg-[#e5e5ea] rounded-lg border border-[#c6c6c8]/60">
-                      <button
-                        type="button"
-                        onClick={() => setRequirementsTab("skill")}
-                        className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all duration-200 ${
-                          requirementsTab === "skill"
-                            ? "bg-white text-black shadow-sm ring-1 ring-gray-200"
-                            : "text-[#8e8e93] hover:text-[#1c1c1e]"
-                        }`}
-                      >
-                        Requirement Skill
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setRequirementsTab("education")}
-                        className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all duration-200 ${
-                          requirementsTab === "education"
-                            ? "bg-white text-black shadow-sm ring-1 ring-gray-200"
-                            : "text-[#8e8e93] hover:text-[#1c1c1e]"
-                        }`}
-                      >
-                        Education Requirements
-                      </button>
-                    </div>
-                  </div>
-
-                  {requirementsTab === "skill" ? (
-                    <textarea
-                      value={value.requirements_template}
-                      onChange={(e) => set({ requirements_template: e.target.value })}
-                      className="w-full px-4 py-3 bg-[#f2f2f7]/50 hover:bg-white border border-[#c6c6c8] rounded-xl text-sm h-28 resize-none focus:ring-4 focus:ring-[#0284c7]/10 focus:border-[#0284c7] transition-all outline-none leading-relaxed shadow-inner placeholder:text-[#c6c6c8]"
-                      placeholder="- Required skill one&#10;- Certification...&#10;- Years of experience..."
-                    />
-                  ) : (
-                    <textarea
-                      value={value.education_requirements}
-                      onChange={(e) => set({ education_requirements: e.target.value })}
-                      className="w-full px-4 py-3 bg-[#f2f2f7]/50 hover:bg-white border border-[#c6c6c8] rounded-xl text-sm h-28 resize-none focus:ring-4 focus:ring-[#0284c7]/10 focus:border-[#0284c7] transition-all outline-none leading-relaxed shadow-inner placeholder:text-[#c6c6c8]"
-                      placeholder="- Bachelor's Degree in Hospitality Management&#10;- Vocational certificate in...&#10;- Minimum education level..."
-                    />
-                  )}
-                </div>
-
-                <div className="group">
-                  <label className="block text-sm font-semibold text-[#1c1c1e] mb-1.5">Benefits</label>
-                  <textarea
-                    value={value.benefits_template}
-                    onChange={(e) => set({ benefits_template: e.target.value })}
-                    className="w-full px-4 py-3 bg-[#f2f2f7]/50 hover:bg-white border border-[#c6c6c8] rounded-xl text-sm h-28 resize-none focus:ring-4 focus:ring-[#0284c7]/10 focus:border-[#0284c7] transition-all outline-none leading-relaxed shadow-inner placeholder:text-[#c6c6c8]"
-                    placeholder="- Paid time off&#10;- Health insurance..."
-                  />
-                </div>
+              <div className="vfm-field">
+                <label className="vfm-label">Benefits</label>
+                <textarea
+                  className="vfm-textarea"
+                  style={{ height: 92 }}
+                  value={value.benefits_template}
+                  onChange={(e) => set({ benefits_template: e.target.value })}
+                  placeholder={"- Paid time off\n- Health insurance..."}
+                />
               </div>
             </div>
           </div>
         </div>
 
-        {/* Modal Footer */}
-        <div className="px-8 py-5 border-t border-[#e5e5ea] bg-[#f2f2f7]/80 flex items-center justify-between">
-          <div className="text-sm text-[#8e8e93] flex items-center gap-2">
-            <CheckCircle2 size={16} className="text-green-500" /> Auto-saves standard fields securely.
-          </div>
-          <div className="flex gap-3">
-            <button
-              onClick={onClose}
-              className="px-6 py-2.5 text-sm font-bold text-[#8e8e93] bg-white border border-[#c6c6c8] hover:bg-[#f2f2f7] hover:text-black rounded-xl transition-all shadow-sm"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={onSubmit}
-              disabled={saving}
-              className="px-8 py-2.5 text-sm font-bold text-white bg-gradient-to-b from-[#0ea5e9] to-[#0284c7] hover:from-[#38bdf8] hover:to-[#0369a1] rounded-xl transition-all shadow-md shadow-[#0284c7]/30 ring-1 ring-inset ring-white/20 flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
-            >
+        {/* Footer */}
+        <div className="vfm-footer">
+          <span className="vfm-foot-note">Fields marked <span className="vfm-req">*</span> are required.</span>
+          <div className="vfm-actions">
+            <button className="vfm-btn-cancel" onClick={onClose}>Cancel</button>
+            <button className="vfm-btn-save" onClick={onSubmit} disabled={saving}>
               {saving ? (
-                <svg className="animate-spin" width={16} height={16} viewBox="0 0 24 24" fill="none">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
-                </svg>
+                <>
+                  <svg className="vfm-spin" width={16} height={16} viewBox="0 0 24 24" fill="none">
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" opacity="0.25" />
+                    <path fill="currentColor" opacity="0.75" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                  </svg>
+                  Saving...
+                </>
               ) : (
                 <><Save size={16} /> {saveLabel}</>
               )}
