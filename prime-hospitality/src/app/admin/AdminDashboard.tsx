@@ -2078,23 +2078,17 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                   <div className="space-y-6">
 
                     {/* Header */}
-                    <div className="bg-[#1c1c1e] rounded-xl p-6 text-white flex items-center justify-between flex-wrap gap-4">
+                    <div className="bg-white rounded-xl border border-[#c6c6c8] shadow-sm p-6 flex items-center justify-between flex-wrap gap-4">
                       <div>
-                        <h3 className="text-xl font-bold tracking-tight mb-1">Employer Pricing Packages</h3>
-                        <p className="text-[#94a3b8] text-sm">All prices are in Ethiopian Birr (ETB). No position limitations on any package.</p>
+                        <h3 className="text-lg font-bold text-[#1c1c1e] mb-1">Employer Pricing Packages</h3>
+                        <p className="text-sm text-[#8e8e93]">All prices are in Ethiopian Birr (ETB). No position limitations on any package.</p>
                       </div>
-                      <div className="flex items-center gap-4">
-                        <button
-                          onClick={handleSavePricing}
-                          className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${isEditingPricing ? 'bg-[#059669] text-white' : 'bg-white/10 text-white hover:bg-white/20'} border border-white/20`}
-                        >
-                          {pricingSaving ? "Saving..." : isEditingPricing ? "Save Changes" : "Edit Pricing"}
-                        </button>
-                        <div className="flex items-center gap-2 bg-white/10 rounded-lg px-4 py-2 text-sm font-semibold text-white border border-white/20 hidden sm:flex">
-                          <CreditCard className="w-4 h-4" />
-                          ETB — Ethiopian Birr
-                        </div>
-                      </div>
+                      <button
+                        onClick={handleSavePricing}
+                        className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all border ${isEditingPricing ? 'bg-[#1c1c1e] text-white border-[#1c1c1e]' : 'bg-white text-[#1c1c1e] border-[#c6c6c8] hover:bg-[#f2f2f7]'}`}
+                      >
+                        {pricingSaving ? "Saving..." : isEditingPricing ? "Save Changes" : "Edit Pricing"}
+                      </button>
                     </div>
 
                     {/* 3 Posts/Day Packages */}
@@ -2127,9 +2121,9 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                               {isEditingPricing ? (
                                 <div className="flex items-center">
                                   <span className="text-sm text-[#8e8e93] mr-2">ETB</span>
-                                  <input 
-                                    type="text" 
-                                    value={pricingState[pkg.key as keyof typeof pricingState]} 
+                                  <input
+                                    type="text"
+                                    value={pricingState[pkg.key as keyof typeof pricingState]}
                                     onChange={(e) => setPricingState({...pricingState, [pkg.key]: e.target.value})}
                                     className="w-24 px-2 py-1 border border-[#c6c6c8] rounded text-sm text-[#1c1c1e] focus:outline-none focus:border-[#007aff]"
                                   />
@@ -2146,7 +2140,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                     {/* 5 Posts/Day Packages */}
                     <div className="bg-white rounded-xl border border-[#c6c6c8] shadow-sm overflow-hidden">
                       <div className="flex items-center gap-3 px-6 py-4 border-b border-[#e5e5ea] bg-[#f2f2f7]/60">
-                        <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-[#059669] text-white text-xs font-black">5×</div>
+                        <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-[#1c1c1e] text-white text-xs font-black">5×</div>
                         <div>
                           <p className="text-sm font-bold text-[#1c1c1e]">Premium Memberships</p>
                           <p className="text-xs text-[#8e8e93] font-medium">Posted 5 times per day</p>
@@ -2159,22 +2153,22 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                         ].map(pkg => (
                           <div key={pkg.label} className="flex items-center justify-between px-6 py-4 hover:bg-[#f8fafc] transition-colors">
                             <div className="flex items-center gap-3">
-                              <div className="w-2 h-2 rounded-full bg-[#059669] flex-shrink-0" />
+                              <div className="w-2 h-2 rounded-full bg-[#1c1c1e] flex-shrink-0" />
                               <span className="text-sm font-semibold text-[#1c1c1e]">{pkg.label}</span>
                             </div>
                             <div className="text-right flex items-center gap-2">
                               {isEditingPricing ? (
                                 <div className="flex items-center">
                                   <span className="text-sm text-[#8e8e93] mr-2">ETB</span>
-                                  <input 
-                                    type="text" 
-                                    value={pricingState[pkg.key as keyof typeof pricingState]} 
+                                  <input
+                                    type="text"
+                                    value={pricingState[pkg.key as keyof typeof pricingState]}
                                     onChange={(e) => setPricingState({...pricingState, [pkg.key]: e.target.value})}
-                                    className="w-24 px-2 py-1 border border-[#c6c6c8] rounded text-sm text-[#059669] focus:outline-none focus:border-[#059669]"
+                                    className="w-24 px-2 py-1 border border-[#c6c6c8] rounded text-sm text-[#1c1c1e] focus:outline-none focus:border-[#007aff]"
                                   />
                                 </div>
                               ) : (
-                                <span className="text-base font-black text-[#059669]">ETB {pricingState[pkg.key as keyof typeof pricingState]}</span>
+                                <span className="text-base font-black text-[#1c1c1e]">ETB {pricingState[pkg.key as keyof typeof pricingState]}</span>
                               )}
                             </div>
                           </div>
@@ -2186,7 +2180,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                     <div className="bg-white rounded-xl border border-[#c6c6c8] shadow-sm">
                       <div className="flex items-center justify-between px-6 py-4">
                         <div className="flex items-center gap-3">
-                          <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-[#f59e0b] text-white">
+                          <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-[#1c1c1e] text-white">
                             <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"/></svg>
                           </div>
                           <div>
@@ -2198,16 +2192,16 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                           {isEditingPricing ? (
                             <div className="flex items-center">
                               <span className="text-sm text-[#8e8e93] mr-2">ETB</span>
-                              <input 
-                                type="text" 
-                                value={pricingState.pinVacancy} 
+                              <input
+                                type="text"
+                                value={pricingState.pinVacancy}
                                 onChange={(e) => setPricingState({...pricingState, pinVacancy: e.target.value})}
-                                className="w-20 px-2 py-1 border border-[#c6c6c8] rounded text-sm text-[#f59e0b] focus:outline-none focus:border-[#f59e0b]"
+                                className="w-20 px-2 py-1 border border-[#c6c6c8] rounded text-sm text-[#1c1c1e] focus:outline-none focus:border-[#007aff]"
                               />
                               <span className="text-sm text-[#8e8e93] ml-2">/ day</span>
                             </div>
                           ) : (
-                            <span className="text-base font-black text-[#f59e0b]">ETB {pricingState.pinVacancy} / day</span>
+                            <span className="text-base font-black text-[#1c1c1e]">ETB {pricingState.pinVacancy} / day</span>
                           )}
                         </div>
                       </div>
@@ -2215,21 +2209,21 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
 
                     {/* Notes */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div className="bg-[#eff6ff] border border-[#bfdbfe] rounded-xl p-4">
+                      <div className="bg-[#f2f2f7] border border-[#e5e5ea] rounded-xl p-4">
                         <div className="flex items-start gap-3">
-                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0284c7" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0 mt-0.5"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1c1c1e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0 mt-0.5"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
                           <div>
-                            <p className="text-xs font-bold text-[#0369a1] mb-1">No Position Limit</p>
-                            <p className="text-xs text-[#0284c7] leading-relaxed">Any package allows posting multiple positions. There is no cap on the number of roles per package.</p>
+                            <p className="text-xs font-bold text-[#1c1c1e] mb-1">No Position Limit</p>
+                            <p className="text-xs text-[#8e8e93] leading-relaxed">Any package allows posting multiple positions. There is no cap on the number of roles per package.</p>
                           </div>
                         </div>
                       </div>
-                      <div className="bg-[#fff7ed] border border-[#fed7aa] rounded-xl p-4">
+                      <div className="bg-[#f2f2f7] border border-[#e5e5ea] rounded-xl p-4">
                         <div className="flex items-start gap-3">
-                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ea580c" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0 mt-0.5"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1c1c1e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0 mt-0.5"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
                           <div>
-                            <p className="text-xs font-bold text-[#c2410c] mb-1">Consecutive Days Only</p>
-                            <p className="text-xs text-[#ea580c] leading-relaxed">Posting days are only consecutive days starting from the package activation date.</p>
+                            <p className="text-xs font-bold text-[#1c1c1e] mb-1">Consecutive Days Only</p>
+                            <p className="text-xs text-[#8e8e93] leading-relaxed">Posting days are only consecutive days starting from the package activation date.</p>
                           </div>
                         </div>
                       </div>
