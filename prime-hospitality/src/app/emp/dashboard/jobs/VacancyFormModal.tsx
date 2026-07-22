@@ -231,7 +231,7 @@ export default function VacancyFormModal({
 
               {/* Section: Timeline & Exp */}
               <div className="space-y-5">
-                <div className="flex items-center gap-2 text-[#7c3aed] font-semibold text-sm uppercase tracking-wider mb-2">
+                <div className="flex items-center gap-2 text-[#0284c7] font-semibold text-sm uppercase tracking-wider mb-2">
                   <Calendar size={16} /> Requirements
                 </div>
                 <div className="grid grid-cols-2 gap-4">
@@ -240,7 +240,7 @@ export default function VacancyFormModal({
                     <select
                       value={value.experience_required}
                       onChange={(e) => set({ experience_required: e.target.value })}
-                      className="w-full px-4 py-3 bg-white border border-[#c6c6c8] rounded-xl text-sm focus:ring-4 focus:ring-[#7c3aed]/10 focus:border-[#7c3aed] transition-all outline-none shadow-sm appearance-none cursor-pointer"
+                      className="w-full px-4 py-3 bg-white border border-[#c6c6c8] rounded-xl text-sm focus:ring-4 focus:ring-[#0284c7]/10 focus:border-[#0284c7] transition-all outline-none shadow-sm appearance-none cursor-pointer"
                     >
                       <option value="Entry level">Entry level</option>
                       <option value="Junior">Junior</option>
@@ -255,7 +255,7 @@ export default function VacancyFormModal({
                       type="date"
                       value={value.deadline}
                       onChange={(e) => set({ deadline: e.target.value })}
-                      className="w-full px-4 py-3 bg-white border border-[#c6c6c8] rounded-xl text-sm focus:ring-4 focus:ring-[#7c3aed]/10 focus:border-[#7c3aed] transition-all outline-none shadow-sm text-[#8e8e93]"
+                      className="w-full px-4 py-3 bg-white border border-[#c6c6c8] rounded-xl text-sm focus:ring-4 focus:ring-[#0284c7]/10 focus:border-[#0284c7] transition-all outline-none shadow-sm text-[#8e8e93]"
                     />
                   </div>
                 </div>
@@ -335,7 +335,7 @@ export default function VacancyFormModal({
                     <textarea
                       value={value.education_requirements}
                       onChange={(e) => set({ education_requirements: e.target.value })}
-                      className="w-full px-4 py-3 bg-[#f2f2f7]/50 hover:bg-white border border-[#c6c6c8] rounded-xl text-sm h-28 resize-none focus:ring-4 focus:ring-[#7c3aed]/10 focus:border-[#7c3aed] transition-all outline-none leading-relaxed shadow-inner placeholder:text-[#c6c6c8]"
+                      className="w-full px-4 py-3 bg-[#f2f2f7]/50 hover:bg-white border border-[#c6c6c8] rounded-xl text-sm h-28 resize-none focus:ring-4 focus:ring-[#0284c7]/10 focus:border-[#0284c7] transition-all outline-none leading-relaxed shadow-inner placeholder:text-[#c6c6c8]"
                       placeholder="- Bachelor's Degree in Hospitality Management&#10;- Vocational certificate in...&#10;- Minimum education level..."
                     />
                   )}
