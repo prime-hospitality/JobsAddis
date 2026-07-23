@@ -38,6 +38,7 @@ const STYLES = `
   .vfm-row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
   .vfm-label { font-size: 12.5px; font-weight: 600; color: #334155; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
   .vfm-req { color: #ef4444; font-weight: 700; }
+  .vfm-error-text { font-size: 11.5px; font-weight: 600; color: #dc2626; margin: -2px 0 0; }
 
   .vfm-input, .vfm-select, .vfm-textarea {
     width: 100%; background: #fff; border: 1px solid #dbe3ec; border-radius: 10px;
@@ -46,6 +47,8 @@ const STYLES = `
   }
   .vfm-input::placeholder, .vfm-textarea::placeholder { color: #9aa7b8; }
   .vfm-input:focus, .vfm-select:focus, .vfm-textarea:focus { border-color: #0284c7; box-shadow: 0 0 0 3px rgba(2,132,199,0.12); }
+  .vfm-input.error, .vfm-textarea.error { border-color: #ef4444; }
+  .vfm-input.error:focus, .vfm-textarea.error:focus { box-shadow: 0 0 0 3px rgba(239,68,68,0.12); }
   .vfm-select { appearance: none; -webkit-appearance: none; cursor: pointer; padding-right: 34px; background-image: ${CHEVRON}; background-repeat: no-repeat; background-position: right 11px center; }
   .vfm-textarea { resize: none; line-height: 1.55; }
 
@@ -107,8 +110,26 @@ export default function VacancyFormModal({
 }) {
   const [requirementsTab, setRequirementsTab] = useState<"skill" | "education">("skill");
   const [locationSuggestionsOpen, setLocationSuggestionsOpen] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<{ title?: boolean; description_template?: boolean }>({});
 
-  const set = (patch: Partial<VacancyFormState>) => onChange({ ...value, ...patch });
+  const set = (patch: Partial<VacancyFormState>) => {
+    onChange({ ...value, ...patch });
+    setFieldErrors((prev) => {
+      const next = { ...prev };
+      for (const key of Object.keys(patch) as (keyof VacancyFormState)[]) {
+        if (key === "title" || key === "description_template") delete next[key];
+      }
+      return next;
+    });
+  };
+
+  const handleSave = () => {
+    const errors: typeof fieldErrors = {};
+    if (!value.title.trim()) errors.title = true;
+    if (!value.description_template.trim()) errors.description_template = true;
+    setFieldErrors(errors);
+    if (Object.keys(errors).length === 0) onSubmit();
+  };
 
   return (
     <div className="vfm-overlay" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
@@ -144,12 +165,13 @@ export default function VacancyFormModal({
                 <div className="vfm-field">
                   <label className="vfm-label">Job Title <span className="vfm-req">*</span></label>
                   <input
-                    className="vfm-input"
+                    className={`vfm-input${fieldErrors.title ? " error" : ""}`}
                     type="text"
                     value={value.title}
                     onChange={(e) => set({ title: e.target.value })}
                     placeholder="e.g. Senior Bartender"
                   />
+                  {fieldErrors.title && <p className="vfm-error-text">This field is required.</p>}
                 </div>
 
                 <div className="vfm-row2">
@@ -314,12 +336,13 @@ export default function VacancyFormModal({
                   <span className="vfm-hint">Main overview</span>
                 </label>
                 <textarea
-                  className="vfm-textarea"
+                  className={`vfm-textarea${fieldErrors.description_template ? " error" : ""}`}
                   style={{ height: 112 }}
                   value={value.description_template}
                   onChange={(e) => set({ description_template: e.target.value })}
                   placeholder="Provide a compelling overview of the role and what it entails..."
                 />
+                {fieldErrors.description_template && <p className="vfm-error-text">This field is required.</p>}
               </div>
 
               <div className="vfm-field">
@@ -391,7 +414,7 @@ export default function VacancyFormModal({
           <span className="vfm-foot-note">Fields marked <span className="vfm-req">*</span> are required.</span>
           <div className="vfm-actions">
             <button className="vfm-btn-cancel" onClick={onClose}>Cancel</button>
-            <button className="vfm-btn-save" onClick={onSubmit} disabled={saving}>
+            <button className="vfm-btn-save" onClick={handleSave} disabled={saving}>
               {saving ? (
                 <>
                   <svg className="vfm-spin" width={16} height={16} viewBox="0 0 24 24" fill="none">
