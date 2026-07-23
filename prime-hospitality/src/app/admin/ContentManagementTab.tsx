@@ -1214,19 +1214,23 @@ export default function ContentManagementTab() {
 
       {/* Error Modal */}
       {errorModal && (
-        <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm transition-all duration-300" onClick={() => setErrorModal(null)}>
-          <div className="bg-white rounded-3xl w-full max-w-sm shadow-[0_20px_60px_-15px_rgba(0,0,0,0.3)] overflow-hidden border border-[#e5e5ea] ring-1 ring-black/5 animate-in fade-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
-            <div className="px-7 pt-8 pb-6 text-center">
-              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-red-500 to-red-600 text-white flex items-center justify-center mx-auto shadow-lg shadow-red-500/25">
-                <AlertTriangle size={26} strokeWidth={1.75} />
+        <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm" onClick={() => setErrorModal(null)}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden animate-in fade-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+            <div className="p-6">
+              <div className="flex gap-4 items-start">
+                <div className="p-3 rounded-full flex-shrink-0 h-12 w-12 flex items-center justify-center bg-red-100 text-red-600">
+                  <AlertTriangle size={24} />
+                </div>
+                <div className="pt-1">
+                  <h3 className="text-lg font-bold text-black mb-1">Attention Needed</h3>
+                  <p className="text-sm text-[#8e8e93] leading-relaxed">{errorModal}</p>
+                </div>
               </div>
-              <h3 className="text-lg font-bold text-black tracking-tight mt-4">Attention Needed</h3>
-              <p className="text-sm text-[#8e8e93] leading-relaxed mt-1.5">{errorModal}</p>
             </div>
-            <div className="px-7 pb-7">
+            <div className="bg-[#f2f2f7] px-6 py-4 flex justify-end border-t border-[#e5e5ea]">
               <button
                 onClick={() => setErrorModal(null)}
-                className="w-full px-5 py-3 text-sm font-bold text-white bg-gradient-to-b from-red-500 to-red-600 hover:from-red-400 hover:to-red-600 rounded-xl transition-all shadow-md shadow-red-500/30 ring-1 ring-inset ring-white/20"
+                className="px-5 py-2 text-sm font-semibold text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors shadow-sm"
               >
                 Got it
               </button>
