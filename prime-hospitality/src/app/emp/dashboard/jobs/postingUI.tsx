@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { AlertTriangle } from "lucide-react";
 
 /**
  * Shared visual system for the "Manage Job Postings" section (Post + Vacancy
@@ -146,6 +147,40 @@ export const POSTING_STYLES = `
 
   @keyframes mjp-spin { to { transform: rotate(360deg); } }
   .mjp-spin { animation: mjp-spin 1s linear infinite; }
+
+  .mjp-alert-overlay {
+    position: fixed; inset: 0; z-index: 300;
+    display: flex; align-items: center; justify-content: center; padding: 16px;
+    background: rgba(15,23,42,0.46); backdrop-filter: blur(3px);
+  }
+  .mjp-alert-card {
+    background: #fff; width: 100%; max-width: 380px; border-radius: 18px;
+    border: 1px solid #e9eef4;
+    box-shadow: 0 24px 48px -16px rgba(15,23,42,0.28);
+    overflow: hidden;
+  }
+  .mjp-alert-body { padding: 28px 26px 22px; text-align: center; }
+  .mjp-alert-icon {
+    width: 52px; height: 52px; border-radius: 14px; margin: 0 auto;
+    display: flex; align-items: center; justify-content: center;
+    background: #fef2f2; border: 1px solid #fecaca; color: #dc2626;
+  }
+  .mjp-alert-title {
+    font-size: 16.5px; font-weight: 800; color: #0f172a;
+    letter-spacing: -.01em; margin: 14px 0 0;
+  }
+  .mjp-alert-message {
+    font-size: 13.5px; color: #64748b; line-height: 1.55; margin: 6px 0 0;
+  }
+  .mjp-alert-footer { padding: 0 22px 22px; }
+  .mjp-btn-danger {
+    width: 100%; display: inline-flex; align-items: center; justify-content: center;
+    background: #dc2626; color: #fff; border: none;
+    padding: 11px 16px; border-radius: 10px;
+    font-size: 13.5px; font-weight: 700; cursor: pointer;
+    transition: background .15s ease; box-shadow: 0 1px 2px rgba(220,38,38,0.25);
+  }
+  .mjp-btn-danger:hover { background: #b91c1c; }
 `;
 
 export function PostingStyles() {
@@ -190,6 +225,25 @@ export function Stat({ icon, value, label, tint }: { icon: React.ReactNode; valu
       <div>
         <div className="mjp-stat-val">{value}</div>
         <div className="mjp-stat-lbl">{label}</div>
+      </div>
+    </div>
+  );
+}
+
+export function AttentionModal({ message, onClose }: { message: string; onClose: () => void }) {
+  return (
+    <div className="mjp-alert-overlay" onClick={onClose}>
+      <div className="mjp-alert-card" onClick={(e) => e.stopPropagation()}>
+        <div className="mjp-alert-body">
+          <div className="mjp-alert-icon">
+            <AlertTriangle size={24} strokeWidth={1.75} />
+          </div>
+          <h3 className="mjp-alert-title">Attention Needed</h3>
+          <p className="mjp-alert-message">{message}</p>
+        </div>
+        <div className="mjp-alert-footer">
+          <button className="mjp-btn-danger" onClick={onClose}>Got it</button>
+        </div>
       </div>
     </div>
   );

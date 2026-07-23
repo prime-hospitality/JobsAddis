@@ -5,7 +5,7 @@ import { Plus, Pencil, MapPin, Briefcase, Users, Clock, CalendarClock, AlertTria
 import { createEmployerJob, updateEmployerJobPost } from "./actions";
 import VacancyFormModal from "./VacancyFormModal";
 import { VacancyFormState, emptyVacancyForm, jobRowToForm } from "./vacancyShared";
-import { StatusPill, MetaChip, Stat, STATUS_META, salaryLabel } from "./postingUI";
+import { StatusPill, MetaChip, Stat, STATUS_META, salaryLabel, AttentionModal } from "./postingUI";
 import type { PostingData } from "./ManageJobPostingsTab";
 
 function initials(name: string) {
@@ -166,28 +166,7 @@ export default function PostTab({ data, loading, reload }: { data: PostingData; 
         />
       )}
 
-      {errorModal && (
-        <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm" onClick={() => setErrorModal(null)}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden animate-in fade-in zoom-in-95 duration-200" onClick={(e) => e.stopPropagation()}>
-            <div className="p-6">
-              <div className="flex gap-4 items-start">
-                <div className="p-3 rounded-full flex-shrink-0 h-12 w-12 flex items-center justify-center bg-red-100 text-red-600">
-                  <AlertTriangle size={24} />
-                </div>
-                <div className="pt-1">
-                  <h3 className="text-lg font-bold text-black mb-1">Attention Needed</h3>
-                  <p className="text-sm text-[#8e8e93] leading-relaxed">{errorModal}</p>
-                </div>
-              </div>
-            </div>
-            <div className="bg-[#f2f2f7] px-6 py-4 flex justify-end border-t border-[#e5e5ea]">
-              <button onClick={() => setErrorModal(null)} className="px-5 py-2 text-sm font-semibold text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors shadow-sm">
-                Got it
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {errorModal && <AttentionModal message={errorModal} onClose={() => setErrorModal(null)} />}
     </div>
   );
 }
