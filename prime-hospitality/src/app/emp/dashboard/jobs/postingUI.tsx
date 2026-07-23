@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Trash2 } from "lucide-react";
 
 /**
  * Shared visual system for the "Manage Job Postings" section (Post + Vacancy
@@ -181,6 +181,16 @@ export const POSTING_STYLES = `
     transition: background .15s ease; box-shadow: 0 1px 2px rgba(220,38,38,0.25);
   }
   .mjp-btn-danger:hover { background: #b91c1c; }
+  .mjp-btn-danger:disabled, .mjp-btn-neutral:disabled { opacity: .6; cursor: not-allowed; }
+  .mjp-alert-footer.two { display: flex; gap: 10px; }
+  .mjp-btn-neutral {
+    flex: 1; display: inline-flex; align-items: center; justify-content: center;
+    background: #fff; color: #475569; border: 1px solid #e2e8f0;
+    padding: 11px 16px; border-radius: 10px;
+    font-size: 13.5px; font-weight: 600; cursor: pointer;
+    transition: all .15s ease; font-family: inherit;
+  }
+  .mjp-btn-neutral:hover { background: #f8fafc; color: #0f172a; }
 `;
 
 export function PostingStyles() {
@@ -243,6 +253,42 @@ export function AttentionModal({ message, onClose }: { message: string; onClose:
         </div>
         <div className="mjp-alert-footer">
           <button className="mjp-btn-danger" onClick={onClose}>Got it</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function ConfirmModal({
+  title,
+  message,
+  confirmLabel = "Delete",
+  loading = false,
+  onConfirm,
+  onCancel,
+}: {
+  title: string;
+  message: React.ReactNode;
+  confirmLabel?: string;
+  loading?: boolean;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  return (
+    <div className="mjp-alert-overlay" onClick={loading ? undefined : onCancel}>
+      <div className="mjp-alert-card" onClick={(e) => e.stopPropagation()}>
+        <div className="mjp-alert-body">
+          <div className="mjp-alert-icon">
+            <Trash2 size={24} strokeWidth={1.75} />
+          </div>
+          <h3 className="mjp-alert-title">{title}</h3>
+          <p className="mjp-alert-message">{message}</p>
+        </div>
+        <div className="mjp-alert-footer two">
+          <button className="mjp-btn-neutral" onClick={onCancel} disabled={loading}>Cancel</button>
+          <button className="mjp-btn-danger" style={{ flex: 1 }} onClick={onConfirm} disabled={loading}>
+            {loading ? "Deleting…" : confirmLabel}
+          </button>
         </div>
       </div>
     </div>

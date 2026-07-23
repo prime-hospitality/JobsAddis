@@ -1,11 +1,11 @@
 "use client";
 
 import React, { useState } from "react";
-import { Plus, Pencil, MapPin, Briefcase, Users, Clock, CalendarClock, AlertTriangle, CheckCircle2, Radio, Hourglass, ListChecks } from "lucide-react";
-import { createEmployerJob, updateEmployerJobPost } from "./actions";
+import { Plus, Pencil, Trash2, MapPin, Briefcase, Users, Clock, CalendarClock, CheckCircle2, Radio, Hourglass, ListChecks } from "lucide-react";
+import { createEmployerJob, updateEmployerJobPost, deleteEmployerJob } from "./actions";
 import VacancyFormModal from "./VacancyFormModal";
 import { VacancyFormState, emptyVacancyForm, jobRowToForm } from "./vacancyShared";
-import { StatusPill, MetaChip, Stat, STATUS_META, salaryLabel, AttentionModal } from "./postingUI";
+import { StatusPill, MetaChip, Stat, STATUS_META, salaryLabel, AttentionModal, ConfirmModal } from "./postingUI";
 import type { PostingData } from "./ManageJobPostingsTab";
 
 function initials(name: string) {
@@ -19,6 +19,23 @@ export default function PostTab({ data, loading, reload }: { data: PostingData; 
   const [saving, setSaving] = useState(false);
   const [errorModal, setErrorModal] = useState<string | null>(null);
   const [successNote, setSuccessNote] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; title: string } | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    try {
+      const res = await deleteEmployerJob(deleteTarget.id);
+      if (!res.success) { setDeleteTarget(null); setErrorModal(res.error || "Failed to delete job."); return; }
+      setDeleteTarget(null);
+      setSuccessNote("Job posting deleted.");
+      setTimeout(() => setSuccessNote(null), 4000);
+      await reload();
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   const startOfToday = () => { const d = new Date(); d.setHours(0, 0, 0, 0); return d; };
   const postedToday = jobs.filter((j) => new Date(j.created_at) >= startOfToday()).length;
@@ -137,7 +154,7 @@ export default function PostTab({ data, loading, reload }: { data: PostingData; 
                   <div style={{ flex: 1 }} />
                   <div style={{ height: 1, background: "#f1f5f9" }} />
 
-                  {/* Footer: dates + edit */}
+                  {/* Footer: dates + actions */}
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
                     {job.status === "scheduled" && job.scheduled_at ? (
                       <div style={{ fontSize: 11.5, color: "#0369a1", fontWeight: 600, display: "flex", alignItems: "center", gap: 5, minWidth: 0 }}>
@@ -155,9 +172,14 @@ export default function PostTab({ data, loading, reload }: { data: PostingData; 
                         </span>
                       </div>
                     )}
-                    <button className="mjp-iconbtn edit" title="Edit job" onClick={() => setFormModal({ mode: "edit", jobId: job.id, value: jobRowToForm(job) })}>
-                      <Pencil size={15} />
-                    </button>
+                    <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+                      <button className="mjp-iconbtn edit" title="Edit job" onClick={() => setFormModal({ mode: "edit", jobId: job.id, value: jobRowToForm(job) })}>
+                        <Pencil size={15} />
+                      </button>
+                      <button className="mjp-iconbtn danger" title="Delete job" onClick={() => setDeleteTarget({ id: job.id, title: job.title })}>
+                        <Trash2 size={15} />
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -176,6 +198,17 @@ export default function PostTab({ data, loading, reload }: { data: PostingData; 
           saveLabel={formModal.mode === "create" ? "Post Now" : "Save Changes"}
           headerTitle={formModal.mode === "create" ? "Post a New Job" : "Edit Job Posting"}
           headerSubtitle={formModal.mode === "create" ? "Fill in the details below to publish this vacancy." : "Update the details of this job posting."}
+        />
+      )}
+
+      {deleteTarget && (
+        <ConfirmModal
+          title="Delete this job posting?"
+          message={<><strong style={{ color: "#0f172a" }}>{deleteTarget.title}</strong> and any applications to it will be permanently removed. This can&apos;t be undone.</>}
+          confirmLabel="Delete Posting"
+          loading={deleting}
+          onConfirm={handleDelete}
+          onCancel={() => setDeleteTarget(null)}
         />
       )}
 

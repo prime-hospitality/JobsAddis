@@ -153,6 +153,19 @@ export async function updateEmployerJobPost(jobId: string, form: VacancyFormStat
   return { success: true };
 }
 
+export async function deleteEmployerJob(jobId: string): Promise<{ success: true } | { success: false; error: string }> {
+  const session = await requireEmployer();
+  if (!session) return { success: false, error: "Unauthorized" };
+
+  const supabase = getSupabase();
+  const { data: existing } = await supabase.from("jobs").select("id, employer_id").eq("id", jobId).maybeSingle();
+  if (!existing || existing.employer_id !== session.employerId) return { success: false, error: "Job not found" };
+
+  const { error } = await supabase.from("jobs").delete().eq("id", jobId).eq("employer_id", session.employerId);
+  if (error) return { success: false, error: error.message || "Failed to delete job" };
+  return { success: true };
+}
+
 export async function upsertEmployerVacancyTemplate(payload: VacancyFormState) {
   const session = await requireEmployer();
   if (!session) return { success: false, error: "Unauthorized" };
