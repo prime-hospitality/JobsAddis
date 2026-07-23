@@ -15,7 +15,8 @@ interface DashboardJob {
   title: string;
   category: string;
   neighborhood: string;
-  status: "pending" | "active" | "closed" | "rejected";
+  status: "pending" | "active" | "closed" | "rejected" | "scheduled";
+  scheduled_at?: string | null;
   created_at: string;
   deadline: string;
   application_count: number;
@@ -41,10 +42,11 @@ interface DashboardStats {
 }
 
 const JOB_STATUS_CONFIG = {
-  pending:  { label: "Under Review", color: "#F59E0B", bg: "rgba(245,158,11,0.08)",  border: "rgba(245,158,11,0.2)"  },
-  active:   { label: "Live",         color: "#4ADE80", bg: "rgba(74,222,128,0.08)",  border: "rgba(74,222,128,0.2)"  },
-  closed:   { label: "Closed",       color: "#8B9BBE", bg: "rgba(139,155,190,0.08)", border: "rgba(139,155,190,0.2)" },
-  rejected: { label: "Rejected",     color: "#FCA5A5", bg: "rgba(252,165,165,0.06)", border: "rgba(252,165,165,0.15)"},
+  pending:   { label: "Under Review", color: "#F59E0B", bg: "rgba(245,158,11,0.08)",  border: "rgba(245,158,11,0.2)"  },
+  active:    { label: "Live",         color: "#4ADE80", bg: "rgba(74,222,128,0.08)",  border: "rgba(74,222,128,0.2)"  },
+  closed:    { label: "Closed",       color: "#8B9BBE", bg: "rgba(139,155,190,0.08)", border: "rgba(139,155,190,0.2)" },
+  rejected:  { label: "Rejected",     color: "#FCA5A5", bg: "rgba(252,165,165,0.06)", border: "rgba(252,165,165,0.15)"},
+  scheduled: { label: "Scheduled",    color: "#60A5FA", bg: "rgba(96,165,250,0.08)",  border: "rgba(96,165,250,0.2)"  },
 };
 
 function timeAgo(dateStr: string): string {
@@ -817,9 +819,20 @@ export default function DashboardScreen({ onJobSelect }: { onJobSelect?: (jobId:
 
               {/* Jobs list */}
               <div>
-                <h2 style={{ fontSize: 15, fontWeight: 700, color: "var(--text-primary)", marginBottom: 12 }}>
-                  Your Job Listings
-                </h2>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+                  <span
+                    style={{
+                      fontSize: 12, fontWeight: 700, color: "var(--brand)",
+                      background: "var(--brand-subtle)", border: "1px solid rgba(14,165,233,0.25)",
+                      borderRadius: 100, padding: "5px 12px",
+                    }}
+                  >
+                    L.Jobs
+                  </span>
+                  <h2 style={{ fontSize: 15, fontWeight: 700, color: "var(--text-primary)" }}>
+                    Your Job Listings
+                  </h2>
+                </div>
 
                 {jobs.length === 0 ? (
                   <div
@@ -859,7 +872,10 @@ export default function DashboardScreen({ onJobSelect }: { onJobSelect?: (jobId:
                                 {job.title}
                               </p>
                               <p style={{ fontSize: 12, color: "var(--text-muted)" }}>
-                                {job.neighborhood} · {timeAgo(job.created_at)} {job.quantity && job.quantity > 1 ? `· ${job.quantity} openings` : ""}
+                                {job.status === "scheduled" && job.scheduled_at
+                                  ? `Publishes ${new Date(job.scheduled_at).toLocaleString()}`
+                                  : `${job.neighborhood} · ${timeAgo(job.created_at)}`}
+                                {job.quantity && job.quantity > 1 ? ` · ${job.quantity} openings` : ""}
                               </p>
                             </div>
                             <span

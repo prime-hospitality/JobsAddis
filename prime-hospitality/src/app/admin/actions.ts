@@ -637,6 +637,105 @@ export async function scheduleJobFromTemplate(templateId: string, scheduledAt: s
   return { success: true };
 }
 
+// ── Platform Job Management (Scheduled Posts / L.Jobs tabs) ──────────────────
+// These operate directly on jobs posted by the admin under the platform
+// employer (via postJobFromTemplate / scheduleJobFromTemplate above).
+
+export async function getPlatformJobs() {
+  const auth = (await cookies()).get("admin_session");
+  if (!auth?.value) throw new Error("Unauthorized");
+
+  const supabase = getSupabase();
+  const employerResult = await getPlatformEmployerId(supabase);
+  if ("error" in employerResult) return { scheduled: [], live: [] };
+
+  const { data: jobs, error } = await supabase
+    .from("jobs")
+    .select("*")
+    .eq("employer_id", employerResult.id)
+    .in("status", ["scheduled", "active"])
+    .order("created_at", { ascending: false });
+
+  if (error) throw error;
+
+  return {
+    scheduled: (jobs || []).filter((j: any) => j.status === "scheduled"),
+    live: (jobs || []).filter((j: any) => j.status === "active"),
+  };
+}
+
+export interface PlatformJobEditData {
+  title: string;
+  job_category: string;
+  location: string;
+  employment_type: string;
+  salary_type: string;
+  salary_min: number | null;
+  salary_max: number | null;
+  salary_currency: string;
+  description: string;
+  experience_required: string;
+  education_requirements: string;
+  deadline: string;
+  quantity: number;
+  scheduled_at?: string;
+}
+
+export async function updatePlatformJob(jobId: string, data: PlatformJobEditData) {
+  await requirePermission("manageJobs");
+  const supabase = getSupabase();
+
+  let salaryMin: number;
+  let salaryMax: number;
+  if (data.salary_type === "negotiable") {
+    salaryMin = -1; salaryMax = -1;
+  } else if (data.salary_type === "company_scale") {
+    salaryMin = -2; salaryMax = -2;
+  } else {
+    salaryMin = data.salary_min ?? 0;
+    salaryMax = data.salary_max ?? data.salary_min ?? 0;
+  }
+
+  const update: Record<string, unknown> = {
+    title: data.title,
+    category: data.job_category,
+    location: data.location,
+    neighborhood: data.location,
+    job_type: data.employment_type,
+    salary_min: salaryMin,
+    salary_max: salaryMax,
+    currency: data.salary_currency,
+    description: data.description,
+    full_description: data.description,
+    requirements: {
+      experience: data.experience_required,
+      education: data.education_requirements,
+      languages: [],
+      locationPreference: null,
+      workingHours: null,
+    },
+    deadline: data.deadline,
+    quantity: data.quantity,
+  };
+  if (data.scheduled_at) {
+    update.scheduled_at = data.scheduled_at;
+  }
+
+  const { error } = await supabase.from("jobs").update(update).eq("id", jobId);
+  if (error) throw error;
+  await logActivity("edit_platform_job", jobId, {});
+  return { success: true };
+}
+
+export async function deletePlatformJob(jobId: string) {
+  await requirePermission("manageJobs");
+  const supabase = getSupabase();
+  const { error } = await supabase.from("jobs").delete().eq("id", jobId);
+  if (error) throw error;
+  await logActivity("delete_platform_job", jobId, {});
+  return { success: true };
+}
+
 export async function addEmployer(telegramId: number, businessName: string, businessType: string, packageId: string | null = null) {
   await requirePermission("manageEmployers");
 

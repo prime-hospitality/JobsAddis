@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { getContentData, upsertFaq, deleteFaq, upsertVacancyTemplate, deleteVacancyTemplate, updateOnboardingConfig, postJobFromTemplate, checkTemplateStatus, scheduleJobFromTemplate } from "./actions";
+import { getContentData, upsertFaq, deleteFaq, upsertVacancyTemplate, deleteVacancyTemplate, updateOnboardingConfig, postJobFromTemplate, checkTemplateStatus, scheduleJobFromTemplate, getPlatformJobs, updatePlatformJob, deletePlatformJob, PlatformJobEditData } from "./actions";
 import { Plus, Save, Trash2, Pencil, X, Briefcase, MapPin, CreditCard, Calendar, FileText, CheckCircle2, Clock, Users, Send, Loader2, AlertTriangle, RefreshCw } from "lucide-react";
 import { Timer } from "@phosphor-icons/react";
 import { searchLocations } from "@/data/locations";
@@ -10,8 +10,9 @@ import { Job } from "@/data/jobs";
 
 
 export default function ContentManagementTab() {
-  const [activeSubTab, setActiveSubTab] = useState<"faqs" | "templates" | "onboarding">("faqs");
+  const [activeSubTab, setActiveSubTab] = useState<"faqs" | "templates" | "onboarding" | "scheduled" | "live">("faqs");
   const [data, setData] = useState<{ faqs: any[]; templates: any[]; onboardingConfig: any[] }>({ faqs: [], templates: [], onboardingConfig: [] });
+  const [platformJobs, setPlatformJobs] = useState<{ scheduled: any[]; live: any[] }>({ scheduled: [], live: [] });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -21,8 +22,9 @@ export default function ContentManagementTab() {
   const loadData = async () => {
     setLoading(true);
     try {
-      const res = await getContentData();
+      const [res, jobsRes] = await Promise.all([getContentData(), getPlatformJobs()]);
       setData(res);
+      setPlatformJobs(jobsRes);
     } catch (e) {
       console.error(e);
     }
@@ -31,7 +33,7 @@ export default function ContentManagementTab() {
 
   // Delete Confirm State
   const [deleteConfirmModal, setDeleteConfirmModal] = useState<
-    | { type: "faq" | "template"; id: string }
+    | { type: "faq" | "template" | "platformJob"; id: string }
     | { type: "arrayRemove"; configKey: string; itemIndex: number; itemLabel: string }
     | null
   >(null);
@@ -42,6 +44,8 @@ export default function ContentManagementTab() {
       await deleteFaq(deleteConfirmModal.id);
     } else if (deleteConfirmModal.type === "template") {
       await deleteVacancyTemplate(deleteConfirmModal.id);
+    } else if (deleteConfirmModal.type === "platformJob") {
+      await deletePlatformJob(deleteConfirmModal.id);
     } else if (deleteConfirmModal.type === "arrayRemove") {
       const { configKey, itemIndex } = deleteConfirmModal;
       let parsedArray: any[] = [];
@@ -147,6 +151,63 @@ export default function ContentManagementTab() {
       setScheduleLoading(false);
     }
   };
+  // Platform Job Edit (Scheduled Posts / L.Jobs tabs)
+  const [jobEditModal, setJobEditModal] = useState<
+    (PlatformJobEditData & { id: string; isScheduled: boolean; scheduleDate: string; scheduleTime: string }) | null
+  >(null);
+  const [jobEditSaving, setJobEditSaving] = useState(false);
+
+  const openJobEditModal = (job: any) => {
+    const isScheduled = job.status === "scheduled";
+    const scheduledDate = job.scheduled_at ? new Date(job.scheduled_at) : null;
+    setJobEditModal({
+      id: job.id,
+      title: job.title || "",
+      job_category: job.category || "Other",
+      location: job.location || "",
+      employment_type: job.job_type || "Full Time",
+      salary_type: job.salary_min === -1 ? "negotiable" : job.salary_min === -2 ? "company_scale" : "fixed",
+      salary_min: job.salary_min && job.salary_min > 0 ? job.salary_min : null,
+      salary_max: job.salary_max && job.salary_max > 0 ? job.salary_max : null,
+      salary_currency: job.currency || "ETB",
+      description: job.description || "",
+      experience_required: job.requirements?.experience || "Entry level",
+      education_requirements: job.requirements?.education || "",
+      deadline: job.deadline ? job.deadline.split("T")[0] : "",
+      quantity: job.quantity || 1,
+      isScheduled,
+      scheduleDate: scheduledDate ? scheduledDate.toISOString().split("T")[0] : "",
+      scheduleTime: scheduledDate ? scheduledDate.toISOString().split("T")[1].slice(0, 5) : "",
+    });
+  };
+
+  const handleSaveJobEdit = async () => {
+    if (!jobEditModal) return;
+    if (!jobEditModal.title.trim() || !jobEditModal.description.trim()) {
+      setErrorModal("Title and Description are required.");
+      return;
+    }
+    setJobEditSaving(true);
+    try {
+      const { id, isScheduled, scheduleDate, scheduleTime, ...editData } = jobEditModal;
+      const payload: PlatformJobEditData = { ...editData };
+      if (isScheduled && scheduleDate && scheduleTime) {
+        payload.scheduled_at = new Date(`${scheduleDate}T${scheduleTime}`).toISOString();
+      }
+      await updatePlatformJob(id, payload);
+      setJobEditModal(null);
+      loadData();
+    } catch (err) {
+      setErrorModal("Failed to save job: " + (err instanceof Error ? err.message : "Unknown error"));
+    } finally {
+      setJobEditSaving(false);
+    }
+  };
+
+  const handleDeletePlatformJob = (id: string) => {
+    setDeleteConfirmModal({ id, type: "platformJob" });
+  };
+
   const [locationSuggestionsOpen, setLocationSuggestionsOpen] = useState(false);
   const [templateSaving, setTemplateSaving] = useState(false);
   const [errorModal, setErrorModal] = useState<string | null>(null);
@@ -211,6 +272,18 @@ export default function ContentManagementTab() {
           className={`px-6 py-4 text-sm font-medium transition-colors ${activeSubTab === "templates" ? "text-[#0284c7] border-b-2 border-[#0284c7] bg-white" : "text-[#8e8e93] hover:text-[#1c1c1e]"}`}
         >
           Vacancy Templates
+        </button>
+        <button
+          onClick={() => setActiveSubTab("scheduled")}
+          className={`px-6 py-4 text-sm font-medium transition-colors ${activeSubTab === "scheduled" ? "text-[#0284c7] border-b-2 border-[#0284c7] bg-white" : "text-[#8e8e93] hover:text-[#1c1c1e]"}`}
+        >
+          Scheduled Posts
+        </button>
+        <button
+          onClick={() => setActiveSubTab("live")}
+          className={`px-6 py-4 text-sm font-medium transition-colors ${activeSubTab === "live" ? "text-[#0284c7] border-b-2 border-[#0284c7] bg-white" : "text-[#8e8e93] hover:text-[#1c1c1e]"}`}
+        >
+          L.Jobs
         </button>
         <button
           onClick={() => setActiveSubTab("onboarding")}
@@ -473,6 +546,116 @@ export default function ContentManagementTab() {
                 );
               })}
               {data.templates.length === 0 && <p className="text-center text-[#8e8e93] py-8 col-span-full">No templates found.</p>}
+            </div>
+          </div>
+        )}
+
+        {/* Scheduled Posts */}
+        {activeSubTab === "scheduled" && (
+          <div>
+            <div className="mb-6">
+              <h3 className="text-lg font-bold text-black">Scheduled Posts</h3>
+              <p className="text-sm text-[#8e8e93]">Jobs waiting to publish at their scheduled time. They move to L.Jobs automatically once live.</p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {platformJobs.scheduled.map((job) => {
+                const salaryLabel =
+                  job.salary_min === -2 ? "Per Company Scale" :
+                  job.salary_min === -1 ? "Negotiable" :
+                  job.salary_min > 0
+                    ? `${job.currency || "ETB"} ${job.salary_min >= 1000 ? (job.salary_min/1000).toFixed(0)+"k" : job.salary_min}${job.salary_max && job.salary_max !== job.salary_min ? "–"+(job.salary_max >= 1000 ? (job.salary_max/1000).toFixed(0)+"k" : job.salary_max) : ""}/mo`
+                    : "Salary TBD";
+                return (
+                  <div key={job.id} style={{ background: "var(--card, #2c2c2e)", borderRadius: 16, padding: 16, border: "1px solid var(--border, rgba(255,255,255,0.08))", boxShadow: "0 2px 12px rgba(0,0,0,0.18)" }}>
+                    <div style={{ display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 12 }}>
+                      <div style={{ width: 48, height: 48, borderRadius: 12, background: "var(--brand-subtle, rgba(14,165,233,0.12))", border: "1px solid var(--border, rgba(255,255,255,0.08))", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                        <img src="/addis_jobs_logo.png" alt="Addis Jobs Logo" style={{ width: "100%", height: "100%", objectFit: "contain", padding: 6 }} />
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <p style={{ fontSize: 12, color: "var(--text-secondary, #94a3b8)", marginBottom: 2, fontWeight: 500 }}>{job.category || "Job"}</p>
+                        <h3 style={{ fontSize: 16, fontWeight: 700, color: "var(--text-primary, #f1f5f9)", lineHeight: 1.2, marginBottom: 4 }}>{job.title}</h3>
+                        <span style={{ fontSize: 11, color: "#0284c7", display: "flex", alignItems: "center", gap: 3, fontWeight: 600 }}>
+                          <Timer size={10} weight="bold" />
+                          Publishes {job.scheduled_at ? new Date(job.scheduled_at).toLocaleString() : "soon"}
+                        </span>
+                      </div>
+                      <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
+                        <button onClick={() => openJobEditModal(job)} style={{ padding: "6px", borderRadius: 8, background: "rgba(14,165,233,0.12)", border: "1px solid rgba(14,165,233,0.2)", color: "#38bdf8", cursor: "pointer", display: "flex", alignItems: "center" }}>
+                          <Pencil size={14} />
+                        </button>
+                        <button onClick={() => handleDeletePlatformJob(job.id)} style={{ padding: "6px", borderRadius: 8, background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.2)", color: "#f87171", cursor: "pointer", display: "flex", alignItems: "center" }}>
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    </div>
+                    <p style={{ fontSize: 13, color: "var(--text-secondary, #94a3b8)", lineHeight: 1.5, marginBottom: 12, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                      {job.description || "No description provided."}
+                    </p>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                      <span className="badge badge-brand">{salaryLabel}</span>
+                      <span className="badge badge-navy" style={{ display: "flex", alignItems: "center", gap: 4 }}><Briefcase size={9} />{job.job_type || "Full Time"}</span>
+                      {job.location && <span className="badge badge-navy" style={{ display: "flex", alignItems: "center", gap: 4 }}><MapPin size={9} />{job.location}</span>}
+                      {job.quantity > 1 && <span className="badge badge-navy" style={{ display: "flex", alignItems: "center", gap: 4 }}><Users size={9} />{job.quantity} openings</span>}
+                    </div>
+                  </div>
+                );
+              })}
+              {platformJobs.scheduled.length === 0 && <p className="text-center text-[#8e8e93] py-8 col-span-full">No scheduled posts.</p>}
+            </div>
+          </div>
+        )}
+
+        {/* L.Jobs (Live Posts) */}
+        {activeSubTab === "live" && (
+          <div>
+            <div className="mb-6">
+              <h3 className="text-lg font-bold text-black">L.Jobs</h3>
+              <p className="text-sm text-[#8e8e93]">Jobs currently live on the main app, posted under the platform account.</p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {platformJobs.live.map((job) => {
+                const salaryLabel =
+                  job.salary_min === -2 ? "Per Company Scale" :
+                  job.salary_min === -1 ? "Negotiable" :
+                  job.salary_min > 0
+                    ? `${job.currency || "ETB"} ${job.salary_min >= 1000 ? (job.salary_min/1000).toFixed(0)+"k" : job.salary_min}${job.salary_max && job.salary_max !== job.salary_min ? "–"+(job.salary_max >= 1000 ? (job.salary_max/1000).toFixed(0)+"k" : job.salary_max) : ""}/mo`
+                    : "Salary TBD";
+                return (
+                  <div key={job.id} style={{ background: "var(--card, #2c2c2e)", borderRadius: 16, padding: 16, border: "1px solid var(--border, rgba(255,255,255,0.08))", boxShadow: "0 2px 12px rgba(0,0,0,0.18)" }}>
+                    <div style={{ display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 12 }}>
+                      <div style={{ width: 48, height: 48, borderRadius: 12, background: "var(--brand-subtle, rgba(14,165,233,0.12))", border: "1px solid var(--border, rgba(255,255,255,0.08))", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                        <img src="/addis_jobs_logo.png" alt="Addis Jobs Logo" style={{ width: "100%", height: "100%", objectFit: "contain", padding: 6 }} />
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <p style={{ fontSize: 12, color: "var(--text-secondary, #94a3b8)", marginBottom: 2, fontWeight: 500 }}>{job.category || "Job"}</p>
+                        <h3 style={{ fontSize: 16, fontWeight: 700, color: "var(--text-primary, #f1f5f9)", lineHeight: 1.2, marginBottom: 4 }}>{job.title}</h3>
+                        <span style={{ fontSize: 11, color: "#4ADE80", display: "flex", alignItems: "center", gap: 3, fontWeight: 600 }}>
+                          <CheckCircle2 size={10} />
+                          Live
+                        </span>
+                      </div>
+                      <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
+                        <button onClick={() => openJobEditModal(job)} style={{ padding: "6px", borderRadius: 8, background: "rgba(14,165,233,0.12)", border: "1px solid rgba(14,165,233,0.2)", color: "#38bdf8", cursor: "pointer", display: "flex", alignItems: "center" }}>
+                          <Pencil size={14} />
+                        </button>
+                        <button onClick={() => handleDeletePlatformJob(job.id)} style={{ padding: "6px", borderRadius: 8, background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.2)", color: "#f87171", cursor: "pointer", display: "flex", alignItems: "center" }}>
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    </div>
+                    <p style={{ fontSize: 13, color: "var(--text-secondary, #94a3b8)", lineHeight: 1.5, marginBottom: 12, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                      {job.description || "No description provided."}
+                    </p>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                      <span className="badge badge-brand">{salaryLabel}</span>
+                      <span className="badge badge-navy" style={{ display: "flex", alignItems: "center", gap: 4 }}><Briefcase size={9} />{job.job_type || "Full Time"}</span>
+                      {job.location && <span className="badge badge-navy" style={{ display: "flex", alignItems: "center", gap: 4 }}><MapPin size={9} />{job.location}</span>}
+                      {job.quantity > 1 && <span className="badge badge-navy" style={{ display: "flex", alignItems: "center", gap: 4 }}><Users size={9} />{job.quantity} openings</span>}
+                    </div>
+                  </div>
+                );
+              })}
+              {platformJobs.live.length === 0 && <p className="text-center text-[#8e8e93] py-8 col-span-full">No live posts.</p>}
             </div>
           </div>
         )}
@@ -1002,11 +1185,13 @@ export default function ContentManagementTab() {
               <Trash2 size={24} />
             </div>
             <h3 className="text-xl font-bold text-black mb-2">
-              {deleteConfirmModal.type === "faq" ? "Delete FAQ" : deleteConfirmModal.type === "template" ? "Delete Template" : "Remove Option"}
+              {deleteConfirmModal.type === "faq" ? "Delete FAQ" : deleteConfirmModal.type === "template" ? "Delete Template" : deleteConfirmModal.type === "platformJob" ? "Delete Job Post" : "Remove Option"}
             </h3>
             <p className="text-[#8e8e93] mb-6 text-sm">
               {deleteConfirmModal.type === "arrayRemove"
                 ? <>Are you sure you want to remove <strong>&ldquo;{deleteConfirmModal.itemLabel}&rdquo;</strong>? You still need to click <strong>Save Options</strong> for it to take effect.</>
+                : deleteConfirmModal.type === "platformJob"
+                ? <>Are you sure you want to delete this job post? Applicants and applications tied to it will be removed too. This action cannot be undone.</>
                 : <>Are you sure you want to delete this {deleteConfirmModal.type === "faq" ? "FAQ" : "template"}? This action cannot be undone.</>
               }
             </p>
@@ -1208,6 +1393,101 @@ export default function ContentManagementTab() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Job Edit Modal (Scheduled Posts / L.Jobs) */}
+      {jobEditModal && (
+        <div className="fixed inset-0 z-[300] flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)" }} onClick={() => !jobEditSaving && setJobEditModal(null)}>
+          <div className="bg-white rounded-2xl w-full max-w-lg shadow-xl max-h-[85vh] overflow-hidden flex flex-col" onClick={(e) => e.stopPropagation()}>
+            <div className="px-6 py-5 border-b border-[#e5e5ea] flex items-center justify-between">
+              <h3 className="text-lg font-bold text-black">{jobEditModal.isScheduled ? "Edit Scheduled Post" : "Edit Job Post"}</h3>
+              <button onClick={() => setJobEditModal(null)} className="p-2 text-[#aeaeb2] hover:text-[#1c1c1e] hover:bg-[#e5e5ea] rounded-full transition-colors"><X size={20} /></button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-[#1c1c1e] mb-1">Job Title</label>
+                <input type="text" value={jobEditModal.title} onChange={(e) => setJobEditModal({ ...jobEditModal, title: e.target.value })} className="w-full px-4 py-2.5 bg-[#f2f2f7] border border-[#c6c6c8] rounded-xl text-sm focus:ring-2 focus:ring-[#0284c7] outline-none" />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-[#1c1c1e] mb-1">Category</label>
+                  <input type="text" value={jobEditModal.job_category} onChange={(e) => setJobEditModal({ ...jobEditModal, job_category: e.target.value })} className="w-full px-4 py-2.5 bg-[#f2f2f7] border border-[#c6c6c8] rounded-xl text-sm focus:ring-2 focus:ring-[#0284c7] outline-none" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-[#1c1c1e] mb-1">Employment Type</label>
+                  <select value={jobEditModal.employment_type} onChange={(e) => setJobEditModal({ ...jobEditModal, employment_type: e.target.value })} className="w-full px-4 py-2.5 bg-[#f2f2f7] border border-[#c6c6c8] rounded-xl text-sm focus:ring-2 focus:ring-[#0284c7] outline-none">
+                    <option value="Full Time">Full Time</option>
+                    <option value="Part Time">Part Time</option>
+                    <option value="Contract">Contract</option>
+                    <option value="Internship">Internship</option>
+                    <option value="Freelance">Freelance</option>
+                  </select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-[#1c1c1e] mb-1">Location</label>
+                  <input type="text" value={jobEditModal.location} onChange={(e) => setJobEditModal({ ...jobEditModal, location: e.target.value })} className="w-full px-4 py-2.5 bg-[#f2f2f7] border border-[#c6c6c8] rounded-xl text-sm focus:ring-2 focus:ring-[#0284c7] outline-none" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-[#1c1c1e] mb-1">Openings</label>
+                  <input type="number" min={1} value={jobEditModal.quantity} onChange={(e) => setJobEditModal({ ...jobEditModal, quantity: Math.max(1, Number(e.target.value)) })} className="w-full px-4 py-2.5 bg-[#f2f2f7] border border-[#c6c6c8] rounded-xl text-sm focus:ring-2 focus:ring-[#0284c7] outline-none" />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-[#1c1c1e] mb-1">Salary</label>
+                <select value={jobEditModal.salary_type} onChange={(e) => setJobEditModal({ ...jobEditModal, salary_type: e.target.value })} className="w-full px-4 py-2.5 bg-[#f2f2f7] border border-[#c6c6c8] rounded-xl text-sm focus:ring-2 focus:ring-[#0284c7] outline-none mb-2">
+                  <option value="fixed">Fixed Amount</option>
+                  <option value="negotiable">Negotiable</option>
+                  <option value="company_scale">Per Company Scale</option>
+                </select>
+                {jobEditModal.salary_type === "fixed" && (
+                  <div className="grid grid-cols-3 gap-3">
+                    <input type="number" placeholder="Min" value={jobEditModal.salary_min ?? ""} onChange={(e) => setJobEditModal({ ...jobEditModal, salary_min: e.target.value ? Number(e.target.value) : null })} className="w-full px-4 py-2.5 bg-[#f2f2f7] border border-[#c6c6c8] rounded-xl text-sm focus:ring-2 focus:ring-[#0284c7] outline-none" />
+                    <input type="number" placeholder="Max" value={jobEditModal.salary_max ?? ""} onChange={(e) => setJobEditModal({ ...jobEditModal, salary_max: e.target.value ? Number(e.target.value) : null })} className="w-full px-4 py-2.5 bg-[#f2f2f7] border border-[#c6c6c8] rounded-xl text-sm focus:ring-2 focus:ring-[#0284c7] outline-none" />
+                    <input type="text" placeholder="Currency" value={jobEditModal.salary_currency} onChange={(e) => setJobEditModal({ ...jobEditModal, salary_currency: e.target.value })} className="w-full px-4 py-2.5 bg-[#f2f2f7] border border-[#c6c6c8] rounded-xl text-sm focus:ring-2 focus:ring-[#0284c7] outline-none" />
+                  </div>
+                )}
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-[#1c1c1e] mb-1">Experience</label>
+                  <input type="text" value={jobEditModal.experience_required} onChange={(e) => setJobEditModal({ ...jobEditModal, experience_required: e.target.value })} className="w-full px-4 py-2.5 bg-[#f2f2f7] border border-[#c6c6c8] rounded-xl text-sm focus:ring-2 focus:ring-[#0284c7] outline-none" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-[#1c1c1e] mb-1">Deadline</label>
+                  <input type="date" value={jobEditModal.deadline} onChange={(e) => setJobEditModal({ ...jobEditModal, deadline: e.target.value })} className="w-full px-4 py-2.5 bg-[#f2f2f7] border border-[#c6c6c8] rounded-xl text-sm focus:ring-2 focus:ring-[#0284c7] outline-none" />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-[#1c1c1e] mb-1">Education Requirements</label>
+                <input type="text" value={jobEditModal.education_requirements} onChange={(e) => setJobEditModal({ ...jobEditModal, education_requirements: e.target.value })} className="w-full px-4 py-2.5 bg-[#f2f2f7] border border-[#c6c6c8] rounded-xl text-sm focus:ring-2 focus:ring-[#0284c7] outline-none" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-[#1c1c1e] mb-1">Description</label>
+                <textarea value={jobEditModal.description} onChange={(e) => setJobEditModal({ ...jobEditModal, description: e.target.value })} className="w-full px-4 py-2.5 bg-[#f2f2f7] border border-[#c6c6c8] rounded-xl text-sm h-28 resize-none focus:ring-2 focus:ring-[#0284c7] outline-none" />
+              </div>
+              {jobEditModal.isScheduled && (
+                <div className="grid grid-cols-2 gap-4 pt-2 border-t border-[#e5e5ea]">
+                  <div>
+                    <label className="block text-sm font-medium text-[#1c1c1e] mb-1">Publish Date</label>
+                    <input type="date" value={jobEditModal.scheduleDate} onChange={(e) => setJobEditModal({ ...jobEditModal, scheduleDate: e.target.value })} className="w-full px-4 py-2.5 bg-[#f2f2f7] border border-[#c6c6c8] rounded-xl text-sm focus:ring-2 focus:ring-[#0284c7] outline-none" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-[#1c1c1e] mb-1">Publish Time</label>
+                    <input type="time" value={jobEditModal.scheduleTime} onChange={(e) => setJobEditModal({ ...jobEditModal, scheduleTime: e.target.value })} className="w-full px-4 py-2.5 bg-[#f2f2f7] border border-[#c6c6c8] rounded-xl text-sm focus:ring-2 focus:ring-[#0284c7] outline-none" />
+                  </div>
+                </div>
+              )}
+            </div>
+            <div className="flex justify-end gap-3 px-6 py-4 border-t border-[#e5e5ea] bg-[#f2f2f7]/50">
+              <button onClick={() => setJobEditModal(null)} className="px-5 py-2.5 text-sm font-medium text-[#8e8e93] hover:bg-[#e5e5ea] rounded-xl transition-colors">Cancel</button>
+              <button onClick={handleSaveJobEdit} disabled={jobEditSaving} className="px-5 py-2.5 text-sm font-medium text-white bg-[#0284c7] hover:bg-[#0369a1] rounded-xl transition-colors">
+                {jobEditSaving ? "Saving..." : "Save Changes"}
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -13,6 +13,18 @@ serve(async (req) => {
     const now = new Date().toISOString();
     console.log(`Starting job expiration sweep at ${now}`);
 
+    // 0. Publish Scheduled Posts
+    // Any job with status 'scheduled' whose scheduled_at has passed goes live.
+    const { data: publishedJobs, error: publishError } = await supabase
+      .from('jobs')
+      .update({ status: 'active' })
+      .eq('status', 'scheduled')
+      .lte('scheduled_at', now)
+      .select();
+
+    if (publishError) throw publishError;
+    const publishedCount = publishedJobs ? publishedJobs.length : 0;
+
     // 1. Find Expired Subscriptions
     // All employers whose package_expires_at has passed.
     const { data: expiredEmployers, error: empError } = await supabase
@@ -112,8 +124,9 @@ serve(async (req) => {
       }
     }
     
-    return new Response(JSON.stringify({ 
-      success: true, 
+    return new Response(JSON.stringify({
+      success: true,
+      publishedCount,
       expiredEmployerJobsCount,
       expiredDeadlineCount,
       warningsSent: expiringWarningsSent
