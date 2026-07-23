@@ -22,7 +22,7 @@ function initials(name: string) {
 }
 
 export default function VacancyTemplateTab({ data, loading, reload }: { data: PostingData; loading: boolean; reload: () => Promise<void>; }) {
-  const { templates, businessName, logoUrl } = data;
+  const { templates, businessName, logoUrl, autoPublish } = data;
 
   // Template form modal state
   const [formModal, setFormModal] = useState<VacancyFormState | null>(null);
@@ -136,8 +136,13 @@ export default function VacancyTemplateTab({ data, loading, reload }: { data: Po
       setScheduleDate("");
       setScheduleTime("");
       const when = new Date(scheduledIso);
-      setSuccessNote(`Scheduled — this job will publish on ${when.toLocaleDateString()} at ${when.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}. Find it under the Post tab, marked “Scheduled”.`);
-      setTimeout(() => setSuccessNote(null), 8000);
+      const whenLabel = `${when.toLocaleDateString()} at ${when.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`;
+      setSuccessNote(
+        autoPublish
+          ? `Scheduled — this job goes live automatically on ${whenLabel}. Find it under the Post tab, marked “Scheduled”.`
+          : `Scheduled — on ${whenLabel} this job is sent for review, then goes live once approved. Find it under the Post tab, marked “Scheduled”.`
+      );
+      setTimeout(() => setSuccessNote(null), 9000);
       await reload();
     } catch (err: any) {
       setScheduleError(err.message || "Failed to schedule publication");

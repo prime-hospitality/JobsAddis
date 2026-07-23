@@ -14,16 +14,36 @@ serve(async (req) => {
     console.log(`Starting job expiration sweep at ${now}`);
 
     // 0. Publish Scheduled Posts
-    // Any job with status 'scheduled' whose scheduled_at has passed goes live.
-    const { data: publishedJobs, error: publishError } = await supabase
+    // Any job whose scheduled_at has passed leaves the 'scheduled' state at its
+    // scheduled time. Where the owning employer is trusted to post without
+    // review (employers.auto_publish = true) it goes live ('active'); otherwise
+    // it enters moderation ('pending') so an admin reviews it before it shows.
+    const { data: dueJobs, error: dueError } = await supabase
       .from('jobs')
-      .update({ status: 'active' })
+      .select('id, employers(auto_publish)')
       .eq('status', 'scheduled')
-      .lte('scheduled_at', now)
-      .select();
+      .lte('scheduled_at', now);
 
-    if (publishError) throw publishError;
-    const publishedCount = publishedJobs ? publishedJobs.length : 0;
+    if (dueError) throw dueError;
+
+    const toActive: string[] = [];
+    const toPending: string[] = [];
+    for (const j of dueJobs ?? []) {
+      const emp = (j as any).employers;
+      const autoPublish = Array.isArray(emp) ? emp[0]?.auto_publish : emp?.auto_publish;
+      (autoPublish ? toActive : toPending).push((j as any).id);
+    }
+
+    if (toActive.length > 0) {
+      const { error } = await supabase.from('jobs').update({ status: 'active' }).in('id', toActive);
+      if (error) throw error;
+    }
+    if (toPending.length > 0) {
+      const { error } = await supabase.from('jobs').update({ status: 'pending' }).in('id', toPending);
+      if (error) throw error;
+    }
+    const publishedCount = toActive.length;
+    const sentToReviewCount = toPending.length;
 
     // 1. Find Expired Subscriptions
     // All employers whose package_expires_at has passed.
@@ -127,6 +147,7 @@ serve(async (req) => {
     return new Response(JSON.stringify({
       success: true,
       publishedCount,
+      sentToReviewCount,
       expiredEmployerJobsCount,
       expiredDeadlineCount,
       warningsSent: expiringWarningsSent
