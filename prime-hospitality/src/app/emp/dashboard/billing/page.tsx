@@ -79,7 +79,7 @@ export default async function BillingPage() {
           </h2>
           <p style={{ fontSize: 14, color: "rgba(255,255,255,0.7)", margin: "6px 0 0 0" }}>
             {activePackage
-              ? `${activePackage.duration_days} day plan${activePackage.price ? ` · ${activePackage.price} ETB` : ""}`
+              ? `${activePackage.duration_days} day plan${activePackage.price ? ` · ${Number(activePackage.price).toLocaleString("en-US")} ETB` : ""}`
               : "Upgrade to unlock job postings and applicant tracking."}
           </p>
         </div>
@@ -102,7 +102,7 @@ export default async function BillingPage() {
           </div>
           <div>
             <div style={{ fontSize: 11, fontWeight: 600, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 4 }}>Plan Price</div>
-            <div style={{ fontSize: 22, fontWeight: 900, color: "#0f172a", letterSpacing: "-0.02em", lineHeight: 1 }}>{activePackage?.price ? `${activePackage.price} ETB` : "Free"}</div>
+            <div style={{ fontSize: 22, fontWeight: 900, color: "#0f172a", letterSpacing: "-0.02em", lineHeight: 1 }}>{activePackage?.price ? `${Number(activePackage.price).toLocaleString("en-US")} ETB` : "Free"}</div>
           </div>
         </div>
 
