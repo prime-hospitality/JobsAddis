@@ -120,6 +120,9 @@ export default function VacancyTemplateTab({ data, loading, reload }: { data: Po
   const [scheduleLoading, setScheduleLoading] = useState(false);
   const [scheduleError, setScheduleError] = useState("");
 
+  // Top-of-section success banner (distinct from the card's "Posted!" flash)
+  const [successNote, setSuccessNote] = useState<string | null>(null);
+
   const handleScheduleConfirm = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!scheduleTemplateModal || !scheduleDate || !scheduleTime) return;
@@ -132,8 +135,9 @@ export default function VacancyTemplateTab({ data, loading, reload }: { data: Po
       setScheduleTemplateModal(null);
       setScheduleDate("");
       setScheduleTime("");
-      setPostedTemplateId(scheduleTemplateModal.id);
-      setTimeout(() => setPostedTemplateId(null), 4000);
+      const when = new Date(scheduledIso);
+      setSuccessNote(`Scheduled — this job will publish on ${when.toLocaleDateString()} at ${when.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}. Find it under the Post tab, marked “Scheduled”.`);
+      setTimeout(() => setSuccessNote(null), 8000);
       await reload();
     } catch (err: any) {
       setScheduleError(err.message || "Failed to schedule publication");
@@ -154,6 +158,12 @@ export default function VacancyTemplateTab({ data, loading, reload }: { data: Po
           <Plus size={16} /> Add Template
         </button>
       </div>
+
+      {successNote && (
+        <div style={{ display: "flex", alignItems: "center", gap: 8, background: "#f0f9ff", border: "1px solid #bae6fd", color: "#0369a1", borderRadius: 10, padding: "11px 14px", fontSize: 13, fontWeight: 600, marginBottom: 16 }}>
+          <Timer size={16} weight="bold" style={{ flexShrink: 0 }} /> {successNote}
+        </div>
+      )}
 
       {loading ? (
         <div style={{ textAlign: "center", color: "#94a3b8", padding: "56px 0", fontSize: 14 }}>Loading your templates…</div>

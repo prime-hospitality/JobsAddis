@@ -24,6 +24,7 @@ export default function PostTab({ data, loading, reload }: { data: PostingData; 
   const postedToday = jobs.filter((j) => new Date(j.created_at) >= startOfToday()).length;
   const liveCount = jobs.filter((j) => j.status === "active").length;
   const reviewCount = jobs.filter((j) => j.status === "pending").length;
+  const scheduledCount = jobs.filter((j) => j.status === "scheduled").length;
   const limitReached = dailyPostLimit !== -1 && postedToday >= dailyPostLimit;
 
   const handleSubmit = async () => {
@@ -74,8 +75,11 @@ export default function PostTab({ data, loading, reload }: { data: PostingData; 
           <Stat icon={<ListChecks size={18} />} value={jobs.length} label="Total Posts" tint="#0284c7" />
           <Stat icon={<Radio size={18} />} value={liveCount} label="Live" tint="#059669" />
           <Stat icon={<Hourglass size={18} />} value={reviewCount} label="Under Review" tint="#d97706" />
+          {scheduledCount > 0 && (
+            <Stat icon={<CalendarClock size={18} />} value={scheduledCount} label="Scheduled" tint="#0ea5e9" />
+          )}
           <Stat
-            icon={<CalendarClock size={18} />}
+            icon={<Clock size={18} />}
             value={dailyPostLimit === -1 ? postedToday : `${postedToday}/${dailyPostLimit}`}
             label="Posted Today"
             tint="#0891b2"
@@ -135,13 +139,22 @@ export default function PostTab({ data, loading, reload }: { data: PostingData; 
 
                   {/* Footer: dates + edit */}
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
-                    <div style={{ fontSize: 11.5, color: "#94a3b8", display: "flex", alignItems: "center", gap: 5, minWidth: 0 }}>
-                      <Clock size={12} style={{ flexShrink: 0 }} />
-                      <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                        {new Date(job.created_at).toLocaleDateString()}
-                        {job.deadline && ` · ends ${new Date(job.deadline).toLocaleDateString()}`}
-                      </span>
-                    </div>
+                    {job.status === "scheduled" && job.scheduled_at ? (
+                      <div style={{ fontSize: 11.5, color: "#0369a1", fontWeight: 600, display: "flex", alignItems: "center", gap: 5, minWidth: 0 }}>
+                        <CalendarClock size={12} style={{ flexShrink: 0 }} />
+                        <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                          Publishes {new Date(job.scheduled_at).toLocaleDateString()} at {new Date(job.scheduled_at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}
+                        </span>
+                      </div>
+                    ) : (
+                      <div style={{ fontSize: 11.5, color: "#94a3b8", display: "flex", alignItems: "center", gap: 5, minWidth: 0 }}>
+                        <Clock size={12} style={{ flexShrink: 0 }} />
+                        <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                          {new Date(job.created_at).toLocaleDateString()}
+                          {job.deadline && ` · ends ${new Date(job.deadline).toLocaleDateString()}`}
+                        </span>
+                      </div>
+                    )}
                     <button className="mjp-iconbtn edit" title="Edit job" onClick={() => setFormModal({ mode: "edit", jobId: job.id, value: jobRowToForm(job) })}>
                       <Pencil size={15} />
                     </button>
