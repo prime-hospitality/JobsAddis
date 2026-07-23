@@ -10,7 +10,7 @@ import {
 } from "./actions";
 import VacancyFormModal from "./VacancyFormModal";
 import { VacancyFormState, emptyVacancyForm, templateRowToForm } from "./vacancyShared";
-import { MetaChip, salaryLabel, AttentionModal } from "./postingUI";
+import { MetaChip, salaryLabel, AttentionModal, ConfirmModal } from "./postingUI";
 import { Plus, Trash2, Pencil, Briefcase, MapPin, Users, Send, Loader2, AlertTriangle, RefreshCw, Eye, FileStack, CheckCircle2 } from "lucide-react";
 import { Timer } from "@phosphor-icons/react";
 import JobDetailScreen from "@/screens/JobDetailScreen";
@@ -43,12 +43,21 @@ export default function VacancyTemplateTab({ data, loading, reload }: { data: Po
   };
 
   // Delete confirm
-  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; title: string } | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const executeDelete = async () => {
-    if (!deleteConfirmId) return;
-    await deleteEmployerVacancyTemplate(deleteConfirmId);
-    setDeleteConfirmId(null);
-    await reload();
+    if (!deleteTarget) return;
+    setDeleting(true);
+    try {
+      const res = await deleteEmployerVacancyTemplate(deleteTarget.id);
+      if (!res.success) { setDeleteTarget(null); setErrorModal(res.error || "Failed to delete template."); return; }
+      setDeleteTarget(null);
+      setSuccessNote("Template deleted.");
+      setTimeout(() => setSuccessNote(null), 4000);
+      await reload();
+    } finally {
+      setDeleting(false);
+    }
   };
 
   // Preview mockup
@@ -202,7 +211,7 @@ export default function VacancyTemplateTab({ data, loading, reload }: { data: Po
                     <button className="mjp-iconbtn edit" title="Edit template" onClick={() => setFormModal(templateRowToForm(tpl))}>
                       <Pencil size={15} />
                     </button>
-                    <button className="mjp-iconbtn danger" title="Delete template" onClick={() => setDeleteConfirmId(tpl.id)}>
+                    <button className="mjp-iconbtn danger" title="Delete template" onClick={() => setDeleteTarget({ id: tpl.id, title: tpl.title })}>
                       <Trash2 size={15} />
                     </button>
                   </div>
@@ -285,24 +294,15 @@ export default function VacancyTemplateTab({ data, loading, reload }: { data: Po
       )}
 
       {/* Delete confirm */}
-      {deleteConfirmId && (
-        <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl w-full max-w-sm p-6 shadow-xl text-center">
-            <div className="w-12 h-12 rounded-full bg-red-100 text-red-600 flex items-center justify-center mx-auto mb-4">
-              <Trash2 size={24} />
-            </div>
-            <h3 className="text-xl font-bold text-black mb-2">Delete Template</h3>
-            <p className="text-[#8e8e93] mb-6 text-sm">Are you sure you want to delete this template? This action cannot be undone.</p>
-            <div className="flex justify-center gap-3">
-              <button onClick={() => setDeleteConfirmId(null)} className="flex-1 px-4 py-2.5 text-sm font-medium text-[#1c1c1e] bg-[#e5e5ea] hover:bg-[#e5e5ea] rounded-xl transition-colors">
-                No, cancel
-              </button>
-              <button onClick={executeDelete} className="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-xl transition-colors">
-                Yes, delete
-              </button>
-            </div>
-          </div>
-        </div>
+      {deleteTarget && (
+        <ConfirmModal
+          title="Delete this template?"
+          message={<><strong style={{ color: "#0f172a" }}>{deleteTarget.title}</strong> will be permanently removed. This can&apos;t be undone.</>}
+          confirmLabel="Delete Template"
+          loading={deleting}
+          onConfirm={executeDelete}
+          onCancel={() => setDeleteTarget(null)}
+        />
       )}
 
       {/* Preview mockup */}
@@ -367,7 +367,7 @@ export default function VacancyTemplateTab({ data, loading, reload }: { data: Po
                      confirmPostData.status === "changed" ? "Post Updated Version?" :
                      "Confirm Post"}
                   </h3>
-                  <p className="text-sm text-[#8e8e93] leading-relaxed">
+                  <p className="text-sm text-slate-500 leading-relaxed">
                     {confirmPostData.status === "same" ? "Everything is the same as the last time you posted this. Are you sure you want to create a duplicate job post?" :
                      confirmPostData.status === "changed" ? `This template has been modified since it was last posted (on ${confirmPostData.lastPosted ? new Date(confirmPostData.lastPosted).toLocaleDateString() : "a while ago"}). Post the new version?` :
                      "Are you sure you want to post this template as a new job?"}
@@ -375,8 +375,8 @@ export default function VacancyTemplateTab({ data, loading, reload }: { data: Po
                 </div>
               </div>
             </div>
-            <div className="bg-[#f2f2f7] px-6 py-4 flex justify-end gap-3 border-t border-[#e5e5ea]">
-              <button onClick={() => setConfirmPostData(null)} className="px-4 py-2 text-sm font-semibold text-[#1c1c1e] bg-white border border-[#c6c6c8] rounded-lg hover:bg-[#f2f2f7] transition-colors">
+            <div className="bg-slate-50 px-6 py-4 flex justify-end gap-3 border-t border-slate-100">
+              <button onClick={() => setConfirmPostData(null)} className="px-4 py-2 text-sm font-semibold text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors">
                 Cancel
               </button>
               <button
