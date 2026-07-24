@@ -440,6 +440,161 @@ function BusinessTypeSelect({ value, onChange, businessTypes, onAddType }: { val
   );
 }
 
+// ── Employer Performance line chart ─────────────────────────────────────────
+// Two real series (daily post count, daily active count) plotted as trend
+// lines rather than bars — a sparse day-by-day post count reads as one
+// dominant spike as a bar chart; as a line it reads as a trend.
+const CHART_COLOR_POSTS = "#2a78d6";
+const CHART_COLOR_ACTIVE = "#1baf7a";
+
+function niceStep(max: number) {
+  if (max <= 5) return 1;
+  if (max <= 10) return 2;
+  if (max <= 25) return 5;
+  if (max <= 50) return 10;
+  return Math.ceil(max / 5 / 10) * 10;
+}
+
+function EmployerPerformanceChart({ data }: { data: { name: string; posts: number; active: number }[] }) {
+  const [hoverIdx, setHoverIdx] = useState<number | null>(null);
+  const svgRef = useRef<SVGSVGElement>(null);
+
+  const n = data.length;
+  const rawMax = Math.max(...data.map((d) => d.posts), 1);
+  const step = niceStep(rawMax);
+  const yMax = Math.max(step, Math.ceil((rawMax + 1) / step) * step);
+
+  const padLeft = 30;
+  const padRight = 16;
+  const padTop = 14;
+  const plotH = 140;
+  const axisBand = 26;
+  const totalH = padTop + plotH + axisBand;
+  const plotW = Math.max(n > 1 ? (n - 1) * 14 : 0, 420);
+  const totalW = padLeft + plotW + padRight;
+
+  const x = (i: number) => padLeft + (n > 1 ? (i * plotW) / (n - 1) : plotW / 2);
+  const y = (v: number) => padTop + plotH - (v / yMax) * plotH;
+
+  const linePath = (key: "posts" | "active") =>
+    data.map((d, i) => `${i === 0 ? "M" : "L"} ${x(i).toFixed(1)} ${y(d[key]).toFixed(1)}`).join(" ");
+
+  const ticks: number[] = [];
+  for (let v = 0; v <= yMax; v += step) ticks.push(v);
+
+  const labelEvery = Math.max(1, Math.ceil(n / 6));
+  const last = data[n - 1];
+
+  const handleMove = (e: React.PointerEvent<SVGSVGElement>) => {
+    const rect = svgRef.current?.getBoundingClientRect();
+    if (!rect || rect.width === 0) return;
+    const px = ((e.clientX - rect.left) / rect.width) * totalW;
+    const rel = (px - padLeft) / (plotW || 1);
+    const idx = Math.round(rel * (n - 1));
+    setHoverIdx(Math.max(0, Math.min(n - 1, idx)));
+  };
+
+  const hovered = hoverIdx !== null ? data[hoverIdx] : null;
+
+  return (
+    <div style={{ position: "relative" }}>
+      <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300">
+        <svg
+          ref={svgRef}
+          viewBox={`0 0 ${totalW} ${totalH}`}
+          width={totalW}
+          height={totalH}
+          style={{ display: "block", overflow: "visible" }}
+          onPointerMove={handleMove}
+          onPointerLeave={() => setHoverIdx(null)}
+        >
+          {/* Gridlines — hairline, recessive, clean numbers */}
+          {ticks.map((t) => (
+            <g key={t}>
+              <line x1={padLeft} x2={padLeft + plotW} y1={y(t)} y2={y(t)} stroke="#e1e0d9" strokeWidth={1} />
+              <text x={padLeft - 8} y={y(t)} textAnchor="end" dominantBaseline="middle" fontSize={10} fill="#898781">{t}</text>
+            </g>
+          ))}
+          <line x1={padLeft} x2={padLeft + plotW} y1={y(0)} y2={y(0)} stroke="#c3c2b7" strokeWidth={1} />
+
+          {/* Sparse x-axis date labels */}
+          {data.map((d, i) => (
+            (i % labelEvery === 0 || i === n - 1) ? (
+              <text key={i} x={x(i)} y={totalH - 6} textAnchor="middle" fontSize={10} fill="#898781">{d.name}</text>
+            ) : null
+          ))}
+
+          {/* Crosshair — finds the X on hover */}
+          {hovered && (
+            <line x1={x(hoverIdx!)} x2={x(hoverIdx!)} y1={padTop} y2={padTop + plotH} stroke="#c3c2b7" strokeWidth={1} />
+          )}
+
+          {/* Trend lines */}
+          <path d={linePath("posts")} fill="none" stroke={CHART_COLOR_POSTS} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
+          <path d={linePath("active")} fill="none" stroke={CHART_COLOR_ACTIVE} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
+
+          {/* End markers + direct value labels (text stays in ink, never the series color) */}
+          <circle cx={x(n - 1)} cy={y(last.posts)} r={4} fill={CHART_COLOR_POSTS} stroke="#fff" strokeWidth={2} />
+          <text x={x(n - 1) + 8} y={y(last.posts)} dominantBaseline="middle" fontSize={11} fontWeight={700} fill="#1c1c1e">{last.posts}</text>
+          <circle cx={x(n - 1)} cy={y(last.active)} r={4} fill={CHART_COLOR_ACTIVE} stroke="#fff" strokeWidth={2} />
+          <text x={x(n - 1) + 8} y={y(last.active)} dominantBaseline="middle" fontSize={11} fontWeight={700} fill="#1c1c1e">{last.active}</text>
+
+          {/* Hover markers */}
+          {hovered && (
+            <>
+              <circle cx={x(hoverIdx!)} cy={y(hovered.posts)} r={4} fill={CHART_COLOR_POSTS} stroke="#fff" strokeWidth={2} />
+              <circle cx={x(hoverIdx!)} cy={y(hovered.active)} r={4} fill={CHART_COLOR_ACTIVE} stroke="#fff" strokeWidth={2} />
+            </>
+          )}
+        </svg>
+      </div>
+
+      {/* Tooltip — every series, values lead */}
+      {hovered && (
+        <div
+          style={{
+            position: "absolute",
+            left: Math.min(Math.max((x(hoverIdx!) / totalW) * 100, 8), 92) + "%",
+            top: 0,
+            transform: "translate(-50%, calc(-100% - 8px))",
+            background: "#0b0b0b",
+            color: "#fff",
+            borderRadius: 8,
+            padding: "8px 10px",
+            fontSize: 12,
+            pointerEvents: "none",
+            whiteSpace: "nowrap",
+            boxShadow: "0 4px 12px rgba(0,0,0,0.25)",
+            zIndex: 10,
+          }}
+        >
+          <div style={{ fontWeight: 700, marginBottom: 4, color: "#fff" }}>{hovered.name}</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <span style={{ width: 10, height: 2, background: CHART_COLOR_POSTS, display: "inline-block", borderRadius: 1 }} />
+            <span style={{ color: "#c3c2b7" }}>Posts</span> <strong>{hovered.posts}</strong>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <span style={{ width: 10, height: 2, background: CHART_COLOR_ACTIVE, display: "inline-block", borderRadius: 1 }} />
+            <span style={{ color: "#c3c2b7" }}>Active</span> <strong>{hovered.active}</strong>
+          </div>
+        </div>
+      )}
+
+      {/* Legend — line keys, mirrors the mark */}
+      <div className="flex items-center gap-4 mt-2">
+        <div className="flex items-center gap-1.5">
+          <span style={{ width: 12, height: 2, background: CHART_COLOR_POSTS, display: "inline-block", borderRadius: 1 }} />
+          <span className="text-xs text-[#8e8e93]">Total Posts</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <span style={{ width: 12, height: 2, background: CHART_COLOR_ACTIVE, display: "inline-block", borderRadius: 1 }} />
+          <span className="text-xs text-[#8e8e93]">Active Jobs</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 type Tab = "overview" | "employers" | "jobs" | "configuration" | "monetization" | "reporting" | "settings";
 type ConfigSubTab = "users" | "content" | "broadcast" | "activity";
 type SeekerSubTab = "user-config" | "tab2" | "tab3" | "tab4";
@@ -1537,8 +1692,6 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
               }));
             })() : [];
 
-            const maxBar = Math.max(...perfData.map(d => d.posts), 1);
-
             // Activity feed — a real, employer-authored trail from activity_log
             // (written by the employer server actions, tagged metadata.source
             // = "employer"). Not derived from current `jobs` row state: that
@@ -1661,23 +1814,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                     ) : perfData.length === 0 || perfData.every(d => d.posts === 0) ? (
                       <div className="text-center py-12 text-[#aeaeb2] text-sm">No job activity in this period for the selected employer.</div>
                     ) : (
-                      <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300">
-                        <div className="flex items-end gap-4 min-w-max pb-4" style={{ minHeight: 180 }}>
-                          {perfData.map((d, i) => (
-                            <div key={i} className="flex flex-col items-center gap-1 group" style={{ width: 40 }}>
-                              <div className="flex items-end gap-1 w-full justify-center" style={{ height: 140 }}>
-                                <div title={`${d.posts} total posts on ${d.name}`} style={{ width: 12, height: `${Math.max((d.posts / maxBar) * 130, 4)}px`, background: "#6366f1", borderRadius: "4px 4px 0 0", transition: "height .4s" }} className="hover:bg-indigo-400 cursor-pointer" />
-                                <div title={`${d.active} active jobs on ${d.name}`} style={{ width: 12, height: `${Math.max((d.active / maxBar) * 130, 4)}px`, background: "#10b981", borderRadius: "4px 4px 0 0", transition: "height .4s" }} className="hover:bg-emerald-400 cursor-pointer" />
-                              </div>
-                              <p className="text-[10px] text-[#8e8e93] text-center leading-tight whitespace-nowrap mt-1 group-hover:text-[#1c1c1e] transition-colors">{d.name}</p>
-                            </div>
-                          ))}
-                        </div>
-                        <div className="flex items-center gap-4 mt-1">
-                          <div className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm inline-block" style={{ background: "#6366f1" }} /><span className="text-xs text-[#8e8e93]">Total Posts</span></div>
-                          <div className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm inline-block" style={{ background: "#10b981" }} /><span className="text-xs text-[#8e8e93]">Active Jobs</span></div>
-                        </div>
-                      </div>
+                      <EmployerPerformanceChart data={perfData} />
                     )}
                   </div>
 
