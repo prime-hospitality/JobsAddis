@@ -74,6 +74,8 @@ export const POSTING_STYLES = `
   .mjp-iconbtn.edit:hover { background: #eff6ff; border-color: #bfdbfe; color: #0284c7; }
   .mjp-iconbtn.danger { border-color: #e2e8f0; color: #94a3b8; }
   .mjp-iconbtn.danger:hover { background: #fef2f2; border-color: #fecaca; color: #ef4444; }
+  .mjp-iconbtn.repost { border-color: #e2e8f0; color: #64748b; }
+  .mjp-iconbtn.repost:hover { background: #ecfdf5; border-color: #a7f3d0; color: #059669; }
 
   .mjp-btn-primary {
     display: inline-flex; align-items: center; justify-content: center; gap: 7px;
@@ -144,6 +146,17 @@ export const POSTING_STYLES = `
     grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
     gap: 16px;
   }
+
+  .mjp-filter-select {
+    appearance: none; -webkit-appearance: none;
+    background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6' fill='none'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%2364748b' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 12px center;
+    border: 1px solid #e2e8f0; border-radius: 9px;
+    padding: 8px 32px 8px 12px;
+    font-size: 12.5px; font-weight: 600; color: #334155;
+    cursor: pointer; transition: border-color .15s ease; font-family: inherit;
+  }
+  .mjp-filter-select:hover { border-color: #cbd5e1; }
+  .mjp-filter-select:focus { outline: none; border-color: #93c5fd; }
 
   @keyframes mjp-spin { to { transform: rotate(360deg); } }
   .mjp-spin { animation: mjp-spin 1s linear infinite; }

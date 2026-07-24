@@ -182,6 +182,65 @@ export async function updateEmployerJobPost(jobId: string, form: VacancyFormStat
   return { success: true };
 }
 
+/** Repost button on an expired job card — requires a new (future) deadline,
+ *  is gated by the same daily posting limit as a fresh post, and re-runs the
+ *  employer's auto_publish routing (active if they have "post without
+ *  review", otherwise back to pending for admin review). Updates the
+ *  existing row in place rather than creating a new job. */
+export async function repostEmployerJob(jobId: string, form: VacancyFormState): Promise<{ success: true; status: "active" | "pending" } | { success: false; error: string }> {
+  const session = await requireEmployer();
+  if (!session) return { success: false, error: "Unauthorized" };
+
+  const validationError = validateVacancyForm(form);
+  if (validationError) return { success: false, error: validationError };
+
+  if (!form.deadline) return { success: false, error: "A new deadline is required to repost this job." };
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  if (new Date(form.deadline) < today) return { success: false, error: "The new deadline must be today or later." };
+
+  const supabase = getSupabase();
+  const { data: existing } = await supabase.from("jobs").select("id, employer_id, status, deadline").eq("id", jobId).maybeSingle();
+  if (!existing || existing.employer_id !== session.employerId) return { success: false, error: "Job not found" };
+  if (existing.status !== "expired") return { success: false, error: "Only expired jobs can be reposted." };
+
+  const rules = await getEmployerPublishingRules(supabase, session.employerId);
+  if (rules.dailyPostLimit !== -1) {
+    const postedToday = await getTodayPostCount(supabase, session.employerId);
+    if (postedToday >= rules.dailyPostLimit) {
+      return { success: false, error: `You've reached your daily posting limit of ${rules.dailyPostLimit} job${rules.dailyPostLimit === 1 ? "" : "s"}. Please try again tomorrow.` };
+    }
+  }
+
+  const description = buildJobDescription(form);
+  const { salary_min, salary_max } = resolveSalary(form);
+  const newStatus: "active" | "pending" = rules.autoPublish ? "active" : "pending";
+
+  const { error } = await supabase
+    .from("jobs")
+    .update({
+      title: form.title,
+      category: form.job_category,
+      location: form.location || "Addis Ababa",
+      neighborhood: form.location || "Addis Ababa",
+      job_type: form.employment_type || "Full Time",
+      salary_min,
+      salary_max,
+      currency: form.salary_currency || "ETB",
+      description,
+      full_description: description,
+      requirements: buildRequirementsJson(form),
+      deadline: form.deadline,
+      quantity: form.quantity || 1,
+      status: newStatus,
+    })
+    .eq("id", jobId);
+
+  if (error) return { success: false, error: error.message || "Failed to repost job" };
+  await logEmployerActivity(session, "employer_repost_job", form.title, { status: newStatus, previousDeadline: existing.deadline, newDeadline: form.deadline });
+  return { success: true, status: newStatus };
+}
+
 export async function deleteEmployerJob(jobId: string): Promise<{ success: true } | { success: false; error: string }> {
   const session = await requireEmployer();
   if (!session) return { success: false, error: "Unauthorized" };

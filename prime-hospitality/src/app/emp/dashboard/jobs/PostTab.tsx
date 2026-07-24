@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useState } from "react";
-import { Plus, Pencil, Trash2, MapPin, Briefcase, Users, Clock, CalendarClock, CheckCircle2, Radio, Hourglass, ListChecks } from "lucide-react";
-import { createEmployerJob, updateEmployerJobPost, deleteEmployerJob } from "./actions";
+import { Plus, Pencil, Trash2, MapPin, Briefcase, Users, Clock, CalendarClock, CheckCircle2, Radio, Hourglass, ListChecks, ListFilter, RotateCw } from "lucide-react";
+import { createEmployerJob, updateEmployerJobPost, deleteEmployerJob, repostEmployerJob } from "./actions";
 import VacancyFormModal from "./VacancyFormModal";
 import { VacancyFormState, emptyVacancyForm, jobRowToForm } from "./vacancyShared";
 import { StatusPill, MetaChip, Stat, STATUS_META, salaryLabel, AttentionModal, ConfirmModal } from "./postingUI";
@@ -15,12 +15,13 @@ function initials(name: string) {
 export default function PostTab({ data, loading, reload }: { data: PostingData; loading: boolean; reload: () => Promise<void>; }) {
   const { jobs, autoPublish, dailyPostLimit, businessName, logoUrl } = data;
 
-  const [formModal, setFormModal] = useState<{ mode: "create" | "edit"; jobId?: string; value: VacancyFormState } | null>(null);
+  const [formModal, setFormModal] = useState<{ mode: "create" | "edit" | "repost"; jobId?: string; value: VacancyFormState } | null>(null);
   const [saving, setSaving] = useState(false);
   const [errorModal, setErrorModal] = useState<string | null>(null);
   const [successNote, setSuccessNote] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; title: string } | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [statusFilter, setStatusFilter] = useState("all");
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
@@ -44,6 +45,16 @@ export default function PostTab({ data, loading, reload }: { data: PostingData; 
   const scheduledCount = jobs.filter((j) => j.status === "scheduled").length;
   const limitReached = dailyPostLimit !== -1 && postedToday >= dailyPostLimit;
 
+  const filteredJobs = statusFilter === "all" ? jobs : jobs.filter((j) => j.status === statusFilter);
+
+  const handleRepostClick = (job: any) => {
+    if (limitReached) {
+      setErrorModal(`You've reached your daily posting limit of ${dailyPostLimit} job${dailyPostLimit === 1 ? "" : "s"}. Please try again tomorrow.`);
+      return;
+    }
+    setFormModal({ mode: "repost", jobId: job.id, value: { ...jobRowToForm(job), deadline: "" } });
+  };
+
   const handleSubmit = async () => {
     if (!formModal) return;
     setSaving(true);
@@ -53,6 +64,11 @@ export default function PostTab({ data, loading, reload }: { data: PostingData; 
         if (!res.success) { setErrorModal(res.error || "Something went wrong."); return; }
         setFormModal(null);
         setSuccessNote(res.status === "active" ? "Job posted and is now live!" : "Job submitted — it will go live once reviewed.");
+      } else if (formModal.mode === "repost") {
+        const res = await repostEmployerJob(formModal.jobId!, formModal.value);
+        if (!res.success) { setErrorModal(res.error || "Something went wrong."); return; }
+        setFormModal(null);
+        setSuccessNote(res.status === "active" ? "Job reposted and is now live!" : "Job reposted — it will go live once reviewed.");
       } else {
         const res = await updateEmployerJobPost(formModal.jobId!, formModal.value);
         if (!res.success) { setErrorModal(res.error || "Something went wrong."); return; }
@@ -110,6 +126,26 @@ export default function PostTab({ data, loading, reload }: { data: PostingData; 
         </div>
       )}
 
+      {!loading && jobs.length > 0 && (
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 14 }}>
+          <p style={{ fontSize: 12.5, color: "#94a3b8", fontWeight: 600, margin: 0 }}>
+            Showing {filteredJobs.length} of {jobs.length} posting{jobs.length === 1 ? "" : "s"}
+          </p>
+          <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+            <ListFilter size={14} color="#94a3b8" />
+            <select className="mjp-filter-select" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+              <option value="all">All Statuses</option>
+              <option value="active">Live</option>
+              <option value="pending">Under Review</option>
+              <option value="scheduled">Scheduled</option>
+              <option value="closed">Closed</option>
+              <option value="expired">Expired</option>
+              <option value="rejected">Rejected</option>
+            </select>
+          </div>
+        </div>
+      )}
+
       {loading ? (
         <div style={{ textAlign: "center", color: "#94a3b8", padding: "56px 0", fontSize: 14 }}>Loading your postings…</div>
       ) : jobs.length === 0 ? (
@@ -123,9 +159,20 @@ export default function PostTab({ data, loading, reload }: { data: PostingData; 
             <Plus size={16} /> Post Now
           </button>
         </div>
+      ) : filteredJobs.length === 0 ? (
+        <div className="mjp-empty">
+          <div style={{ width: 56, height: 56, borderRadius: 16, background: "#f8fafc", color: "#94a3b8", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
+            <ListFilter size={24} strokeWidth={1.75} />
+          </div>
+          <h4 style={{ fontSize: 16, fontWeight: 700, color: "#0f172a", marginBottom: 6 }}>No postings match this filter</h4>
+          <p style={{ fontSize: 13.5, color: "#64748b", margin: "0 0 20px 0" }}>Try a different status, or clear the filter.</p>
+          <button className="mjp-btn-primary" style={{ margin: "0 auto" }} onClick={() => setStatusFilter("all")}>
+            Clear Filter
+          </button>
+        </div>
       ) : (
         <div className="mjp-grid">
-          {jobs.map((job) => {
+          {filteredJobs.map((job) => {
             const accent = (STATUS_META[job.status] || STATUS_META.pending).accent;
             return (
               <div key={job.id} className="mjp-card">
@@ -173,6 +220,11 @@ export default function PostTab({ data, loading, reload }: { data: PostingData; 
                       </div>
                     )}
                     <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+                      {job.status === "expired" && (
+                        <button className="mjp-iconbtn repost" title="Repost job" onClick={() => handleRepostClick(job)}>
+                          <RotateCw size={15} />
+                        </button>
+                      )}
                       <button className="mjp-iconbtn edit" title="Edit job" onClick={() => setFormModal({ mode: "edit", jobId: job.id, value: jobRowToForm(job) })}>
                         <Pencil size={15} />
                       </button>
@@ -195,9 +247,16 @@ export default function PostTab({ data, loading, reload }: { data: PostingData; 
           onClose={() => setFormModal(null)}
           onSubmit={handleSubmit}
           saving={saving}
-          saveLabel={formModal.mode === "create" ? "Post Now" : "Save Changes"}
-          headerTitle={formModal.mode === "create" ? "Post a New Job" : "Edit Job Posting"}
-          headerSubtitle={formModal.mode === "create" ? "Fill in the details below to publish this vacancy." : "Update the details of this job posting."}
+          requireDeadline={formModal.mode === "repost"}
+          saveLabel={formModal.mode === "create" ? "Post Now" : formModal.mode === "repost" ? "Repost Job" : "Save Changes"}
+          headerTitle={formModal.mode === "create" ? "Post a New Job" : formModal.mode === "repost" ? "Repost This Job" : "Edit Job Posting"}
+          headerSubtitle={
+            formModal.mode === "create"
+              ? "Fill in the details below to publish this vacancy."
+              : formModal.mode === "repost"
+              ? "This listing expired — set a new deadline to bring it back."
+              : "Update the details of this job posting."
+          }
         />
       )}
 

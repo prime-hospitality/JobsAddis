@@ -98,6 +98,7 @@ export default function VacancyFormModal({
   saveLabel,
   headerTitle,
   headerSubtitle,
+  requireDeadline,
 }: {
   value: VacancyFormState;
   onChange: (next: VacancyFormState) => void;
@@ -107,17 +108,18 @@ export default function VacancyFormModal({
   saveLabel: string;
   headerTitle: string;
   headerSubtitle: string;
+  requireDeadline?: boolean;
 }) {
   const [requirementsTab, setRequirementsTab] = useState<"skill" | "education">("skill");
   const [locationSuggestionsOpen, setLocationSuggestionsOpen] = useState(false);
-  const [fieldErrors, setFieldErrors] = useState<{ title?: boolean; description_template?: boolean }>({});
+  const [fieldErrors, setFieldErrors] = useState<{ title?: boolean; description_template?: boolean; deadline?: boolean }>({});
 
   const set = (patch: Partial<VacancyFormState>) => {
     onChange({ ...value, ...patch });
     setFieldErrors((prev) => {
       const next = { ...prev };
       for (const key of Object.keys(patch) as (keyof VacancyFormState)[]) {
-        if (key === "title" || key === "description_template") delete next[key];
+        if (key === "title" || key === "description_template" || key === "deadline") delete next[key];
       }
       return next;
     });
@@ -127,6 +129,11 @@ export default function VacancyFormModal({
     const errors: typeof fieldErrors = {};
     if (!value.title.trim()) errors.title = true;
     if (!value.description_template.trim()) errors.description_template = true;
+    if (requireDeadline) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      if (!value.deadline || new Date(value.deadline) < today) errors.deadline = true;
+    }
     setFieldErrors(errors);
     if (Object.keys(errors).length === 0) onSubmit();
   };
@@ -257,13 +264,21 @@ export default function VacancyFormModal({
                 </div>
 
                 <div className="vfm-field">
-                  <label className="vfm-label">Application Deadline</label>
+                  <label className="vfm-label">
+                    <span>Application Deadline {requireDeadline && <span className="vfm-req">*</span>}</span>
+                  </label>
                   <input
-                    className="vfm-input"
+                    className={`vfm-input${fieldErrors.deadline ? " error" : ""}`}
                     type="date"
                     value={value.deadline}
+                    min={requireDeadline ? new Date().toISOString().split("T")[0] : undefined}
                     onChange={(e) => set({ deadline: e.target.value })}
                   />
+                  {fieldErrors.deadline && (
+                    <p className="vfm-error-text">
+                      {!value.deadline ? "A new deadline is required to repost this job." : "Deadline must be today or later."}
+                    </p>
+                  )}
                 </div>
               </div>
 

@@ -1406,6 +1406,8 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                   return live ? { label: "Posted a new job — now live", dot: "#10b981" } : { label: "Posted a new job — pending review", dot: "#f59e0b" };
                 case "employer_post_from_template":
                   return live ? { label: "Posted a job from a template — now live", dot: "#10b981" } : { label: "Posted a job from a template — pending review", dot: "#f59e0b" };
+                case "employer_repost_job":
+                  return live ? { label: "Reposted an expired job — now live", dot: "#10b981" } : { label: "Reposted an expired job — pending review", dot: "#f59e0b" };
                 case "employer_schedule_post":
                   return { label: "Scheduled a job posting", dot: "#0ea5e9" };
                 case "employer_edit_job":
