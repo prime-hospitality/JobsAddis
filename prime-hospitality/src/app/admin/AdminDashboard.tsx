@@ -595,6 +595,36 @@ function EmployerPerformanceChart({ data }: { data: { name: string; posts: numbe
   );
 }
 
+// Default employer for the Overview → Employer Performance panel: whoever
+// posted the most jobs in the trailing 7 days (active-job count breaks ties).
+// Computed once from the server-rendered snapshot so a live data push mid-session
+// doesn't yank the admin's own selection back to the top performer.
+function computeTopPerformerId(employers: any[], jobs: any[]): string {
+  if (!employers || employers.length === 0) return "";
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - 7);
+
+  const scores = new Map<string, { posts: number; active: number }>();
+  for (const emp of employers) scores.set(emp.id, { posts: 0, active: 0 });
+  for (const j of jobs || []) {
+    const s = scores.get(j.employer_id);
+    if (!s || new Date(j.created_at) < cutoff) continue;
+    s.posts++;
+    if (j.status === "active") s.active++;
+  }
+
+  let best = employers[0];
+  let bestScore = scores.get(best.id)!;
+  for (const emp of employers) {
+    const score = scores.get(emp.id)!;
+    if (score.posts > bestScore.posts || (score.posts === bestScore.posts && score.active > bestScore.active)) {
+      best = emp;
+      bestScore = score;
+    }
+  }
+  return best.id;
+}
+
 type Tab = "overview" | "employers" | "jobs" | "configuration" | "monetization" | "reporting" | "settings";
 type ConfigSubTab = "users" | "content" | "broadcast" | "activity";
 type SeekerSubTab = "user-config" | "tab2" | "tab3" | "tab4";
@@ -764,8 +794,8 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
 
   const [viewingJob, setViewingJob] = useState<any | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [overviewEmployerId, setOverviewEmployerId] = useState<string>("");
-  const [overviewDuration, setOverviewDuration] = useState<"7" | "30" | "90">("30");
+  const [overviewEmployerId, setOverviewEmployerId] = useState<string>(() => computeTopPerformerId(initialData.employers, initialData.jobs));
+  const [overviewDuration, setOverviewDuration] = useState<"7" | "30" | "90">("7");
   const [activityDuration, setActivityDuration] = useState<"all" | "1" | "7" | "30">("all");
   const [employerSearch, setEmployerSearch] = useState("");
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
