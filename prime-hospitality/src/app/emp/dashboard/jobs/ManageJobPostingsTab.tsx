@@ -21,7 +21,7 @@ const EMPTY: PostingData = {
   jobs: [],
   templates: [],
   autoPublish: false,
-  dailyPostLimit: 3,
+  dailyPostLimit: 15,
   businessName: "Your Company",
   businessType: "",
   logoUrl: null,

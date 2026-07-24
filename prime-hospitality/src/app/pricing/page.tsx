@@ -189,7 +189,7 @@ export default async function PricingPage() {
           }}>
             <h3 style={{ fontSize: 19, fontWeight: 700, color: INK, marginBottom: 8, fontFamily: headingFont }}>Long Term Memberships</h3>
             <p style={{ fontSize: 14, color: "#64748B", marginBottom: 26, minHeight: 40, lineHeight: 1.5 }}>
-              Posted <strong>(5) Times Per Day</strong>. Best for frequent hiring.
+              Posted <strong>(30) Times Per Day</strong>. Best for frequent hiring.
             </p>
             <div style={{ marginBottom: 28, display: "flex", alignItems: "baseline", gap: 8 }}>
               <span style={{ fontSize: 15, fontWeight: 600, color: "#94A3B8" }}>From</span>
@@ -236,7 +236,7 @@ export default async function PricingPage() {
             </div>
             <h3 style={{ fontSize: 19, fontWeight: 700, color: "#fff", marginBottom: 8, fontFamily: headingFont }}>Standard Packages</h3>
             <p style={{ fontSize: 14, color: "#94A3B8", marginBottom: 26, minHeight: 40, lineHeight: 1.5 }}>
-              Posted <strong>(3) Times Per Day</strong>.
+              Posted <strong>(15) Times Per Day</strong>.
             </p>
             <div style={{ marginBottom: 28, display: "flex", alignItems: "baseline", gap: 8 }}>
               <span style={{ fontSize: 15, fontWeight: 600, color: "#94A3B8" }}>From</span>

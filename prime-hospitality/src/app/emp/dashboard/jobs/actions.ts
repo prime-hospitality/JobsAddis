@@ -16,7 +16,7 @@ async function getEmployerPublishingRules(supabase: ReturnType<typeof getSupabas
     .single();
   return {
     autoPublish: !!data?.auto_publish,
-    dailyPostLimit: data?.daily_post_limit ?? 3,
+    dailyPostLimit: data?.daily_post_limit ?? 15,
   };
 }
 

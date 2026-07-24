@@ -497,7 +497,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
   const [editModal, setEditModal] = useState<{ id: string; name: string; type: string; postLimit: number } | null>(null);
   const [editName, setEditName] = useState("");
   const [editType, setEditType] = useState("");
-  const [editPostLimit, setEditPostLimit] = useState<number>(3);
+  const [editPostLimit, setEditPostLimit] = useState<number>(15);
   const [editPackageId, setEditPackageId] = useState<string>("");
   const [editExtendDays, setEditExtendDays] = useState<number>(0);
   const [editLoading, setEditLoading] = useState(false);
@@ -747,9 +747,9 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
   });
 
   const POST_LIMIT_OPTIONS = [
-    { value: 3, label: "3 / day", description: "Basic" },
-    { value: 5, label: "5 / day", description: "Standard" },
-    { value: -1, label: "Unlimited", description: "Premium" },
+    { value: 15, label: "15 / day", description: "Standard" },
+    { value: 30, label: "30 / day", description: "Premium" },
+    { value: -1, label: "Unlimited", description: "Platform / Internal" },
   ];
 
   const getPostLimitLabel = (limit: number) => {
@@ -2152,11 +2152,11 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                       <td style={{ padding: "16px 24px" }}>
                         <span style={{
                           padding: "2px 8px", borderRadius: 100, fontSize: 12, fontWeight: 600,
-                          background: (item.daily_post_limit ?? 3) === -1 ? "#ede9fe" : "#f1f5f9",
-                          color: (item.daily_post_limit ?? 3) === -1 ? "#7c3aed" : "#1c1c1e",
-                          border: `1px solid ${(item.daily_post_limit ?? 3) === -1 ? "#ddd6fe" : "#bfdbfe"}`,
+                          background: (item.daily_post_limit ?? 15) === -1 ? "#ede9fe" : "#f1f5f9",
+                          color: (item.daily_post_limit ?? 15) === -1 ? "#7c3aed" : "#1c1c1e",
+                          border: `1px solid ${(item.daily_post_limit ?? 15) === -1 ? "#ddd6fe" : "#bfdbfe"}`,
                         }}>
-                          {getPostLimitLabel(item.daily_post_limit ?? 3)}
+                          {getPostLimitLabel(item.daily_post_limit ?? 15)}
                         </span>
                       </td>
                       <td style={{ padding: "16px 24px" }}>
@@ -2168,7 +2168,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                       </td>
                       <td style={{ padding: "16px 24px", textAlign: "right", display: "flex", gap: 8, justifyContent: "flex-end", alignItems: "center" }}>
                         <button
-                          onClick={() => { setEditModal({ id: item.id, name: item.business_name, type: item.business_type || "", postLimit: item.daily_post_limit ?? 3 }); setEditName(item.business_name); setEditType(item.business_type || ""); setEditPostLimit(item.daily_post_limit ?? 3); setEditPackageId(item.active_package_id || ""); setEditExtendDays(0); setEditLogoFile(null); setEditError(""); setSettingsTab("edit"); }}
+                          onClick={() => { setEditModal({ id: item.id, name: item.business_name, type: item.business_type || "", postLimit: item.daily_post_limit ?? 15 }); setEditName(item.business_name); setEditType(item.business_type || ""); setEditPostLimit(item.daily_post_limit ?? 15); setEditPackageId(item.active_package_id || ""); setEditExtendDays(0); setEditLogoFile(null); setEditError(""); setSettingsTab("edit"); }}
                           style={{ background: "transparent", border: "none", cursor: "pointer", color: "#6b7280", padding: "6px", borderRadius: 6, display: "flex", alignItems: "center", justifyContent: "center" }}
                           title="Employer settings"
                         >
@@ -2246,17 +2246,17 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                       }}>{item.status}</span>
                       <span style={{
                         padding: "2px 8px", borderRadius: 100, fontSize: 11, fontWeight: 600,
-                        background: (item.daily_post_limit ?? 3) === -1 ? "#ede9fe" : "#f1f5f9",
-                        color: (item.daily_post_limit ?? 3) === -1 ? "#7c3aed" : "#1c1c1e",
-                        border: `1px solid ${(item.daily_post_limit ?? 3) === -1 ? "#ddd6fe" : "#bfdbfe"}`,
+                        background: (item.daily_post_limit ?? 15) === -1 ? "#ede9fe" : "#f1f5f9",
+                        color: (item.daily_post_limit ?? 15) === -1 ? "#7c3aed" : "#1c1c1e",
+                        border: `1px solid ${(item.daily_post_limit ?? 15) === -1 ? "#ddd6fe" : "#bfdbfe"}`,
                       }}>
-                        {getPostLimitLabel(item.daily_post_limit ?? 3)}
+                        {getPostLimitLabel(item.daily_post_limit ?? 15)}
                       </span>
                     </div>
                   </div>
                   <div className="flex gap-2 justify-end mt-2 pt-3 border-t border-[#e5e5ea]">
                     <button
-                      onClick={() => { setEditModal({ id: item.id, name: item.business_name, type: item.business_type || "", postLimit: item.daily_post_limit ?? 3 }); setEditName(item.business_name); setEditType(item.business_type || ""); setEditPostLimit(item.daily_post_limit ?? 3); setEditPackageId(item.active_package_id || ""); setEditExtendDays(0); setEditLogoFile(null); setEditError(""); setSettingsTab("edit"); }}
+                      onClick={() => { setEditModal({ id: item.id, name: item.business_name, type: item.business_type || "", postLimit: item.daily_post_limit ?? 15 }); setEditName(item.business_name); setEditType(item.business_type || ""); setEditPostLimit(item.daily_post_limit ?? 15); setEditPackageId(item.active_package_id || ""); setEditExtendDays(0); setEditLogoFile(null); setEditError(""); setSettingsTab("edit"); }}
                       className="bg-[#f3f4f6] text-[#374151] border-none px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5"
                     >
                       <Gear size={14} /> Settings
@@ -2418,8 +2418,8 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                         used to assign a package to an employer and to compute their billing
                         dashboard, so there is exactly one place prices/durations live. */}
                     {([
-                      { category: "standard" as const, badge: "3×", title: "Standard Packages", subtitle: "Posted 3 times per day" },
-                      { category: "premium" as const, badge: "5×", title: "Premium Memberships", subtitle: "Posted 5 times per day" },
+                      { category: "standard" as const, badge: "15×", title: "Standard Packages", subtitle: "Posted 15 times per day" },
+                      { category: "premium" as const, badge: "30×", title: "Premium Memberships", subtitle: "Posted 30 times per day" },
                     ]).map(section => {
                       const rows = packages.filter(p => (p.category || "standard") === section.category);
                       return (
@@ -2755,7 +2755,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                         color: packageModal.category === cat ? "#fff" : "#1c1c1e",
                       }}
                     >
-                      {cat === "standard" ? "Standard (3×/day)" : "Premium (5×/day)"}
+                      {cat === "standard" ? "Standard (15×/day)" : "Premium (30×/day)"}
                     </button>
                   ))}
                 </div>

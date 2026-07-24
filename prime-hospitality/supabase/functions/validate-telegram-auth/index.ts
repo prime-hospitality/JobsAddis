@@ -851,7 +851,7 @@ serve(async (req: Request) => {
             id: employer.id,
             business_name: employer.business_name,
             status: employer.status,
-            daily_post_limit: employer.daily_post_limit ?? 3,
+            daily_post_limit: employer.daily_post_limit ?? 15,
             today_post_count: todayCount ?? 0,
             logo_url: employer.logo_url ?? null,
           },
@@ -924,7 +924,7 @@ serve(async (req: Request) => {
       }
 
       // Check daily post limit
-      const dailyLimit = employer.daily_post_limit ?? 3;
+      const dailyLimit = employer.daily_post_limit ?? 15;
       if (dailyLimit !== -1) {
         const todayStart = new Date();
         todayStart.setHours(0, 0, 0, 0);

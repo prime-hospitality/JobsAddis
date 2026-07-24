@@ -1007,7 +1007,7 @@ export async function updateEmployer(employerId: string, businessName: string, b
   await requirePermission("manageEmployers");
 
   if (!businessName.trim()) throw new Error("Business name cannot be empty.");
-  if (![3, 5, -1].includes(dailyPostLimit)) throw new Error("Invalid post limit value.");
+  if (![15, 30, -1].includes(dailyPostLimit)) throw new Error("Invalid post limit value.");
 
   const supabase = getSupabase();
   const updateFields: any = {
