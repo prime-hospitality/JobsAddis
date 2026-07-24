@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { toggleUserBan, toggleJobStatus, scheduleJobPost, repostJob, logoutAdmin, addEmployer, deleteEmployer, updateEmployer, updateEmployerAutoPublish, adminUpdateEmployerLogo, deleteUser, approveSpecialRequest, getPricingConfig, updatePricingConfig, getLoggedInAdmin, createSubAdmin, updateSubAdminPermissions, deleteSubAdmin, listSubAdmins, searchUsers, getProfessionCounts, searchEmployers, getPackages, upsertPackage, deletePackage, getBusinessTypes, addBusinessType } from "./actions";
+import { toggleUserBan, toggleJobStatus, scheduleJobPost, repostJob, approveScheduledJob, cancelScheduledJob, logoutAdmin, addEmployer, deleteEmployer, updateEmployer, updateEmployerAutoPublish, adminUpdateEmployerLogo, deleteUser, approveSpecialRequest, getPricingConfig, updatePricingConfig, getLoggedInAdmin, createSubAdmin, updateSubAdminPermissions, deleteSubAdmin, listSubAdmins, searchUsers, getProfessionCounts, searchEmployers, getPackages, upsertPackage, deletePackage, getBusinessTypes, addBusinessType } from "./actions";
 import type { AdminPermissions, SubAdmin } from "./actions";
 import { Trash2, Pencil, Image as ImageIcon, Menu, X, LayoutDashboard, Briefcase, FileText, Users, LogOut, Settings, CreditCard, CheckCircle, BookOpen, User, Building2, Hourglass, ChevronDown, Check, Plus, Megaphone, History, BarChart3 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -11,6 +11,7 @@ import ContentManagementTab from "./ContentManagementTab";
 import BroadcastTab from "./BroadcastTab";
 import ActivityLogTab from "./ActivityLogTab";
 import ReportingTab from "./ReportingTab";
+import { JobStatusBadge, JobActionButtons } from "./JobStatusActions";
 
 // ── Draggable Floating Window ──────────────────────────────────────────────
 function FloatingWindow({
@@ -1011,6 +1012,44 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
         ...prev,
         jobs: prev.jobs.map((j: any) => j.id === id ? { ...j, status } : j)
       }));
+      if (viewingJob?.id === id) {
+        setViewingJob((prev: any) => prev ? { ...prev, status } : null);
+      }
+    } finally {
+      setLoading(null);
+    }
+  };
+
+  // Pre-approves a still-waiting scheduled job so job-expiration-cron routes
+  // it straight to 'active' at its scheduled time instead of 'pending'.
+  const handleApproveScheduled = async (id: string) => {
+    setLoading(`job-${id}`);
+    try {
+      await approveScheduledJob(id);
+      setData((prev: any) => ({
+        ...prev,
+        jobs: prev.jobs.map((j: any) => j.id === id ? { ...j, pre_approved: true } : j)
+      }));
+      if (viewingJob?.id === id) {
+        setViewingJob((prev: any) => prev ? { ...prev, pre_approved: true } : null);
+      }
+    } finally {
+      setLoading(null);
+    }
+  };
+
+  // Cancels a scheduled job before it goes live -- closes it outright.
+  const handleCancelSchedule = async (id: string) => {
+    setLoading(`job-${id}`);
+    try {
+      await cancelScheduledJob(id);
+      setData((prev: any) => ({
+        ...prev,
+        jobs: prev.jobs.map((j: any) => j.id === id ? { ...j, status: "closed", scheduled_at: null, pre_approved: false } : j)
+      }));
+      if (viewingJob?.id === id) {
+        setViewingJob((prev: any) => prev ? { ...prev, status: "closed", scheduled_at: null, pre_approved: false } : null);
+      }
     } finally {
       setLoading(null);
     }
@@ -1048,12 +1087,13 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
     setRepostError("");
     try {
       const deadlineIso = new Date(repostDeadline).toISOString();
-      const res = await repostJob(repostModal.id, deadlineIso);
-      if (res?.newJobId) {
-        setData((prev: any) => ({
-          ...prev,
-          jobs: [...prev.jobs, { ...(prev.jobs.find((j: any) => j.id === repostModal.id) || {}), id: res.newJobId, status: "active", deadline: deadlineIso }]
-        }));
+      await repostJob(repostModal.id, deadlineIso);
+      setData((prev: any) => ({
+        ...prev,
+        jobs: prev.jobs.map((j: any) => j.id === repostModal.id ? { ...j, status: "active", deadline: deadlineIso, scheduled_at: null, pre_approved: false } : j)
+      }));
+      if (viewingJob?.id === repostModal.id) {
+        setViewingJob((prev: any) => prev ? { ...prev, status: "active", deadline: deadlineIso, scheduled_at: null, pre_approved: false } : null);
       }
       setRepostModal(null);
       setRepostDeadline("");
@@ -2085,27 +2125,20 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                     <tr key={item.id} onClick={() => setViewingJob(item)} style={{ borderBottom: "1px solid #f3f4f6", cursor: "pointer" }} className="hover:bg-[#f2f2f7] transition-colors">
                       <td style={{ padding: "16px 24px", fontWeight: 500 }}>{item.title}</td>
                       <td style={{ padding: "16px 24px" }}>
-                        <span style={{
-                          padding: "2px 8px", borderRadius: 100, fontSize: 12, fontWeight: 600,
-                          background: item.status === "active" ? "#d1fae5" : item.status === "closed" ? "#fee2e2" : "#fef3c7",
-                          color: item.status === "active" ? "#065f46" : item.status === "closed" ? "#991b1b" : "#92400e"
-                        }}>
-                          {item.status === "active" ? "active" : item.status === "closed" ? "closed" : "under review"}
-                        </span>
+                        <JobStatusBadge job={item} />
                       </td>
                       <td style={{ padding: "16px 24px", textAlign: "right", display: "flex", gap: 8, justifyContent: "flex-end", alignItems: "center" }} onClick={(e) => e.stopPropagation()}>
-                        {item.status === "active" && (
-                          <button disabled={!!loading} onClick={() => handleJobStatus(item.id, "pending")} style={{ background: "#f59e0b", color: "#fff", border: "none", padding: "6px 12px", borderRadius: 6, cursor: "pointer", fontSize: 12 }}>Pause</button>
-                        )}
-                        {item.status !== "active" && (
-                          <button disabled={!!loading} onClick={() => handleJobStatus(item.id, "active")} style={{ background: "#059669", color: "#fff", border: "none", padding: "6px 12px", borderRadius: 6, cursor: "pointer", fontSize: 12 }}>Set Active</button>
-                        )}
-                        {item.status !== "closed" && (
-                          <button disabled={!!loading} onClick={() => handleJobStatus(item.id, "closed")} style={{ background: "#dc2626", color: "#fff", border: "none", padding: "6px 12px", borderRadius: 6, cursor: "pointer", fontSize: 12 }}>Close Job</button>
-                        )}
-                        {(item.status === "closed" || item.status === "expired") && (
-                          <button disabled={!!loading} onClick={() => { setRepostModal({ id: item.id, title: item.title }); setRepostDeadline(""); setRepostError(""); }} style={{ background: "#0f172a", color: "#fff", border: "none", padding: "6px 12px", borderRadius: 6, cursor: "pointer", fontSize: 12 }}>Repost</button>
-                        )}
+                        <JobActionButtons
+                          job={item}
+                          loading={!!loading}
+                          onApprove={() => handleJobStatus(item.id, "active")}
+                          onReject={() => handleJobStatus(item.id, "closed")}
+                          onPause={() => handleJobStatus(item.id, "pending")}
+                          onClose={() => handleJobStatus(item.id, "closed")}
+                          onApproveScheduled={() => handleApproveScheduled(item.id)}
+                          onCancelSchedule={() => handleCancelSchedule(item.id)}
+                          onRepost={() => { setRepostModal({ id: item.id, title: item.title }); setRepostDeadline(""); setRepostError(""); }}
+                        />
                       </td>
                     </tr>
                   ))}
@@ -2180,27 +2213,20 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                 <div key={item.id} onClick={() => setViewingJob(item)} style={{ cursor: "pointer" }} className="bg-white p-4 rounded-xl border border-[#c6c6c8] shadow-sm flex flex-col gap-3 mb-3 hover:bg-[#f2f2f7] transition-colors">
                   <div className="flex justify-between items-start">
                     <h4 className="font-semibold text-[#1c1c1e] m-0">{item.title}</h4>
-                    <span style={{
-                      padding: "2px 8px", borderRadius: 100, fontSize: 11, fontWeight: 600,
-                      background: item.status === "active" ? "#d1fae5" : item.status === "closed" ? "#fee2e2" : "#fef3c7",
-                      color: item.status === "active" ? "#065f46" : item.status === "closed" ? "#991b1b" : "#92400e"
-                    }}>
-                      {item.status === "active" ? "active" : item.status === "closed" ? "closed" : "under review"}
-                    </span>
+                    <JobStatusBadge job={item} />
                   </div>
-                  <div className="flex gap-2 justify-end mt-2 pt-3 border-t border-[#e5e5ea]" onClick={(e) => e.stopPropagation()}>
-                    {item.status === "active" && (
-                      <button disabled={!!loading} onClick={() => handleJobStatus(item.id, "pending")} className="bg-amber-500 text-white border-none px-3 py-1.5 rounded-lg text-xs font-medium">Pause</button>
-                    )}
-                    {item.status !== "active" && (
-                      <button disabled={!!loading} onClick={() => handleJobStatus(item.id, "active")} className="bg-emerald-600 text-white border-none px-3 py-1.5 rounded-lg text-xs font-medium">Set Active</button>
-                    )}
-                    {item.status !== "closed" && (
-                      <button disabled={!!loading} onClick={() => handleJobStatus(item.id, "closed")} className="bg-red-600 text-white border-none px-3 py-1.5 rounded-lg text-xs font-medium">Close Job</button>
-                    )}
-                    {(item.status === "closed" || item.status === "expired") && (
-                      <button disabled={!!loading} onClick={() => { setRepostModal({ id: item.id, title: item.title }); setRepostDeadline(""); setRepostError(""); }} className="bg-[#0f172a] text-white border-none px-3 py-1.5 rounded-lg text-xs font-medium">Repost</button>
-                    )}
+                  <div className="flex gap-2 flex-wrap justify-end mt-2 pt-3 border-t border-[#e5e5ea]" onClick={(e) => e.stopPropagation()}>
+                    <JobActionButtons
+                      job={item}
+                      loading={!!loading}
+                      onApprove={() => handleJobStatus(item.id, "active")}
+                      onReject={() => handleJobStatus(item.id, "closed")}
+                      onPause={() => handleJobStatus(item.id, "pending")}
+                      onClose={() => handleJobStatus(item.id, "closed")}
+                      onApproveScheduled={() => handleApproveScheduled(item.id)}
+                      onCancelSchedule={() => handleCancelSchedule(item.id)}
+                      onRepost={() => { setRepostModal({ id: item.id, title: item.title }); setRepostDeadline(""); setRepostError(""); }}
+                    />
                   </div>
                 </div>
               ))}
@@ -3015,14 +3041,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
           <div style={{ background: "#fff", borderRadius: 12, padding: 24, width: "100%", maxWidth: 500, maxHeight: "90vh", overflowY: "auto", boxShadow: "0 20px 25px -5px rgba(0,0,0,0.1)" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 }}>
               <div>
-                <span style={{
-                  padding: "2px 8px", borderRadius: 100, fontSize: 11, fontWeight: 700,
-                  textTransform: "uppercase",
-                  background: viewingJob.status === "active" ? "#d1fae5" : viewingJob.status === "closed" ? "#fee2e2" : "#fef3c7",
-                  color: viewingJob.status === "active" ? "#065f46" : viewingJob.status === "closed" ? "#991b1b" : "#92400e"
-                }}>
-                  {viewingJob.status === "active" ? "Live (Active)" : viewingJob.status === "closed" ? "Closed" : "Under Review (Paused)"}
-                </span>
+                <JobStatusBadge job={viewingJob} />
                 <h3 style={{ margin: "8px 0 2px 0", fontSize: 20, fontWeight: 800, color: "#111827" }}>{viewingJob.title}</h3>
                 <p style={{ margin: 0, fontSize: 13, color: "#1c1c1e", fontWeight: 600 }}>
                   {Array.isArray(viewingJob.employers) ? viewingJob.employers[0]?.business_name : viewingJob.employers?.business_name || "Employer"}
@@ -3084,53 +3103,19 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
               </div>
             </div>
 
-            <div style={{ display: "flex", gap: 12, justifyContent: "flex-end", marginTop: 24, borderTop: "1px solid #e5e7eb", paddingTop: 16 }}>
-              {viewingJob.status === "active" ? (
-                <button
-                  onClick={async () => {
-                    await handleJobStatus(viewingJob.id, "pending");
-                    setViewingJob((prev: any) => prev ? { ...prev, status: "pending" } : null);
-                  }}
-                  disabled={!!loading}
-                  style={{ background: "#f59e0b", color: "#fff", border: "none", padding: "8px 16px", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer" }}
-                >
-                  Pause Job
-                </button>
-              ) : (
-                <button
-                  onClick={async () => {
-                    await handleJobStatus(viewingJob.id, "active");
-                    setViewingJob((prev: any) => prev ? { ...prev, status: "active" } : null);
-                  }}
-                  disabled={!!loading}
-                  style={{ background: "#059669", color: "#fff", border: "none", padding: "8px 16px", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer" }}
-                >
-                  Activate Job
-                </button>
-              )}
-
-              {viewingJob.status !== "closed" && (
-                <button
-                  onClick={async () => {
-                    await handleJobStatus(viewingJob.id, "closed");
-                    setViewingJob((prev: any) => prev ? { ...prev, status: "closed" } : null);
-                  }}
-                  disabled={!!loading}
-                  style={{ background: "#dc2626", color: "#fff", border: "none", padding: "8px 16px", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer" }}
-                >
-                  Close Job
-                </button>
-              )}
-
-              {(viewingJob.status === "closed" || viewingJob.status === "expired") && (
-                <button
-                  onClick={() => { setRepostModal({ id: viewingJob.id, title: viewingJob.title }); setRepostDeadline(""); setRepostError(""); }}
-                  disabled={!!loading}
-                  style={{ background: "#0f172a", color: "#fff", border: "none", padding: "8px 16px", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer" }}
-                >
-                  Repost Job
-                </button>
-              )}
+            <div style={{ display: "flex", gap: 12, flexWrap: "wrap", justifyContent: "flex-end", marginTop: 24, borderTop: "1px solid #e5e7eb", paddingTop: 16 }}>
+              <JobActionButtons
+                job={viewingJob}
+                loading={!!loading}
+                size="md"
+                onApprove={() => handleJobStatus(viewingJob.id, "active")}
+                onReject={() => handleJobStatus(viewingJob.id, "closed")}
+                onPause={() => handleJobStatus(viewingJob.id, "pending")}
+                onClose={() => handleJobStatus(viewingJob.id, "closed")}
+                onApproveScheduled={() => handleApproveScheduled(viewingJob.id)}
+                onCancelSchedule={() => handleCancelSchedule(viewingJob.id)}
+                onRepost={() => { setRepostModal({ id: viewingJob.id, title: viewingJob.title }); setRepostDeadline(""); setRepostError(""); }}
+              />
 
               <button
                 type="button"

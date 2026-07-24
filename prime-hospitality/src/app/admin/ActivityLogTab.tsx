@@ -13,6 +13,8 @@ const ACTION_LABELS: Record<string, string> = {
   delete_user: "Deleted user",
   change_job_status: "Changed job status",
   repost_job: "Reposted job",
+  pre_approve_scheduled_job: "Pre-approved scheduled job",
+  cancel_scheduled_job: "Cancelled scheduled job",
   assign_package: "Assigned package",
   create_sub_admin: "Created sub-admin",
   update_sub_admin_permissions: "Updated sub-admin permissions",

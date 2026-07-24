@@ -400,31 +400,33 @@ export async function toggleJobStatus(jobId: string, status: "active" | "closed"
   return { success: true };
 }
 
+/** Repost a closed/expired job -- updates the existing row in place (new
+ *  deadline, status back to 'active') rather than inserting a duplicate row,
+ *  so the job never leaves a stale ghost entry with its own action buttons
+ *  behind in the Jobs by Employer list. */
 export async function repostJob(jobId: string, newDeadline: string) {
   await requirePermission("manageJobs");
 
   const supabase = getSupabase();
-  const { data: original, error: fetchError } = await supabase
+  const { data: existing, error: fetchError } = await supabase
     .from("jobs")
-    .select("employer_id, title, category, location, neighborhood, job_type, salary_min, salary_max, currency, description, full_description, requirements, quantity")
+    .select("id, status")
     .eq("id", jobId)
     .single();
 
-  if (fetchError || !original) throw fetchError || new Error("Job not found");
+  if (fetchError || !existing) throw fetchError || new Error("Job not found");
+  if (existing.status !== "closed" && existing.status !== "expired") {
+    throw new Error("Only closed or expired jobs can be reposted.");
+  }
 
-  const { data: reposted, error: insertError } = await supabase
+  const { error } = await supabase
     .from("jobs")
-    .insert({
-      ...original,
-      deadline: newDeadline,
-      status: "active",
-    })
-    .select("id")
-    .single();
+    .update({ deadline: newDeadline, status: "active", scheduled_at: null, pre_approved: false })
+    .eq("id", jobId);
 
-  if (insertError) throw insertError;
-  await logActivity("repost_job", jobId, { newJobId: reposted?.id, newDeadline });
-  return { success: true, newJobId: reposted?.id };
+  if (error) throw error;
+  await logActivity("repost_job", jobId, { newDeadline });
+  return { success: true };
 }
 
 export async function scheduleJobPost(jobId: string, scheduledAt: string) {
@@ -446,6 +448,41 @@ export async function scheduleJobPost(jobId: string, scheduledAt: string) {
   return { success: true, scheduledAt };
 }
 
+/** Admin reviews a scheduled (non-auto-publish) job before its scheduled_at
+ *  time arrives. This does NOT publish it early -- it stays 'scheduled' and
+ *  still only goes live at the exact time the employer chose. It just tells
+ *  job-expiration-cron, once that time comes, to route it straight to
+ *  'active' instead of dropping it into 'pending' for someone to notice
+ *  later. */
+export async function approveScheduledJob(jobId: string) {
+  await requirePermission("manageJobs");
+
+  const supabase = getSupabase();
+  const { data: existing } = await supabase.from("jobs").select("id, status").eq("id", jobId).maybeSingle();
+  if (!existing || existing.status !== "scheduled") throw new Error("Only scheduled jobs can be pre-approved.");
+
+  const { error } = await supabase.from("jobs").update({ pre_approved: true }).eq("id", jobId);
+  if (error) throw error;
+  await logActivity("pre_approve_scheduled_job", jobId);
+  return { success: true };
+}
+
+/** Cancels a scheduled job before it goes live -- closes it outright (same
+ *  meaning as closing any other job) rather than leaving it dangling in a
+ *  half-scheduled state. The employer can Repost it later if they want to
+ *  try again with a fresh deadline. */
+export async function cancelScheduledJob(jobId: string) {
+  await requirePermission("manageJobs");
+
+  const supabase = getSupabase();
+  const { data: existing } = await supabase.from("jobs").select("id, status").eq("id", jobId).maybeSingle();
+  if (!existing || existing.status !== "scheduled") throw new Error("Only scheduled jobs can be cancelled.");
+
+  const { error } = await supabase.from("jobs").update({ status: "closed", scheduled_at: null, pre_approved: false }).eq("id", jobId);
+  if (error) throw error;
+  await logActivity("cancel_scheduled_job", jobId);
+  return { success: true };
+}
 
 export async function checkTemplateStatus(templateId: string) {
   const auth = (await cookies()).get("admin_session");

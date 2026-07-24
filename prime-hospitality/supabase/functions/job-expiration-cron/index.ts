@@ -15,12 +15,14 @@ serve(async (req) => {
 
     // 0. Publish Scheduled Posts
     // Any job whose scheduled_at has passed leaves the 'scheduled' state at its
-    // scheduled time. Where the owning employer is trusted to post without
-    // review (employers.auto_publish = true) it goes live ('active'); otherwise
-    // it enters moderation ('pending') so an admin reviews it before it shows.
+    // scheduled time. It goes live ('active') if either the owning employer is
+    // trusted to post without review (employers.auto_publish = true) OR an
+    // admin already pre-approved this specific job ahead of time
+    // (jobs.pre_approved = true) while it was still waiting to be published.
+    // Otherwise it enters moderation ('pending') so an admin reviews it now.
     const { data: dueJobs, error: dueError } = await supabase
       .from('jobs')
-      .select('id, employers(auto_publish)')
+      .select('id, pre_approved, employers(auto_publish)')
       .eq('status', 'scheduled')
       .lte('scheduled_at', now);
 
@@ -31,7 +33,7 @@ serve(async (req) => {
     for (const j of dueJobs ?? []) {
       const emp = (j as any).employers;
       const autoPublish = Array.isArray(emp) ? emp[0]?.auto_publish : emp?.auto_publish;
-      (autoPublish ? toActive : toPending).push((j as any).id);
+      (autoPublish || (j as any).pre_approved ? toActive : toPending).push((j as any).id);
     }
 
     if (toActive.length > 0) {
