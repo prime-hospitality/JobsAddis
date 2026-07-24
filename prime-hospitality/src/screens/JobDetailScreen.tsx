@@ -3,6 +3,7 @@
 import { motion, useReducedMotion, LazyMotion, domAnimation } from "framer-motion";
 import { ArrowLeft, MapPin, Wallet, Briefcase, Calendar, CheckCircle, AlertCircle, Clock, Users } from "lucide-react";
 import { Job } from "@/data/jobs";
+import EmployerAvatar from "@/components/EmployerAvatar";
 
 interface JobDetailScreenProps {
   job: Job;
@@ -189,30 +190,7 @@ export default function JobDetailScreen({ job, isEmployer, onBack, onApply }: Jo
               gap: 16,
             }}
           >
-            <div
-              style={{
-                width: 64,
-                height: 64,
-                borderRadius: 16,
-                background: "linear-gradient(135deg, rgba(5,150,105,0.15) 0%, rgba(5,150,105,0.05) 100%)",
-                border: "1px solid rgba(5,150,105,0.2)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontSize: 28,
-                flexShrink: 0,
-              }}
-            >
-              {job.logoUrl ? (
-                <img 
-                  src={job.logoUrl} 
-                  alt={`${job.businessName} logo`} 
-                  style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: 16 }} 
-                />
-              ) : (
-                job.businessLogo
-              )}
-            </div>
+            <EmployerAvatar name={job.businessName} logoUrl={job.logoUrl} size={64} radius={16} />
             <div>
               <h2
                 style={{

@@ -7,10 +7,7 @@ import VacancyFormModal from "./VacancyFormModal";
 import { VacancyFormState, emptyVacancyForm, jobRowToForm } from "./vacancyShared";
 import { StatusPill, MetaChip, Stat, STATUS_META, salaryLabel, AttentionModal, ConfirmModal } from "./postingUI";
 import type { PostingData } from "./ManageJobPostingsTab";
-
-function initials(name: string) {
-  return name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase() || "•";
-}
+import EmployerAvatar from "@/components/EmployerAvatar";
 
 export default function PostTab({ data, loading, reload }: { data: PostingData; loading: boolean; reload: () => Promise<void>; }) {
   const { jobs, autoPublish, dailyPostLimit, businessName, logoUrl } = data;
@@ -180,9 +177,7 @@ export default function PostTab({ data, loading, reload }: { data: PostingData; 
                 <div style={{ padding: 18, display: "flex", flexDirection: "column", gap: 12, flex: 1 }}>
                   {/* Top: logo + title + status */}
                   <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
-                    <div className="mjp-logo">
-                      {logoUrl ? <img src={logoUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : initials(businessName)}
-                    </div>
+                    <EmployerAvatar name={businessName} logoUrl={logoUrl} size={46} radius={12} />
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <p className="mjp-eyebrow">{job.category || "Other"}</p>
                       <h3 className="mjp-title" style={{ overflow: "hidden", textOverflow: "ellipsis", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>{job.title}</h3>

@@ -32,14 +32,6 @@ export const POSTING_STYLES = `
 
   .mjp-card-accent { height: 3px; flex-shrink: 0; }
 
-  .mjp-logo {
-    width: 46px; height: 46px; border-radius: 12px;
-    background: linear-gradient(135deg, #0284c7, #0369a1);
-    display: flex; align-items: center; justify-content: center;
-    color: #fff; flex-shrink: 0; overflow: hidden;
-    font-weight: 800; font-size: 15px; letter-spacing: -.02em;
-  }
-
   .mjp-eyebrow {
     font-size: 11px; font-weight: 700; color: #94a3b8;
     text-transform: uppercase; letter-spacing: .06em; margin: 0 0 3px 0;

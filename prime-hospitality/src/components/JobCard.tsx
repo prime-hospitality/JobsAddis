@@ -4,6 +4,7 @@ import React, { memo } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { MapPin, Clock, Briefcase, AlertTriangle } from "lucide-react";
 import { Job } from "@/data/jobs";
+import EmployerAvatar from "@/components/EmployerAvatar";
 
 interface JobCardProps {
   job: Job;
@@ -105,30 +106,7 @@ const JobCard = memo(function JobCard({ job, onClick, index, enableAnimations = 
           {/* Header row */}
           <div style={{ display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 12 }}>
             {/* Business logo */}
-            <div
-              style={{
-                width: 48,
-                height: 48,
-                borderRadius: 12,
-                background: "var(--brand-subtle)",
-                border: "1px solid var(--border)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontSize: 22,
-                flexShrink: 0,
-              }}
-            >
-              {job.logoUrl ? (
-                <img 
-                  src={job.logoUrl} 
-                  alt={`${job.businessName} logo`} 
-                  style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: 12 }} 
-                />
-              ) : (
-                job.businessLogo
-              )}
-            </div>
+            <EmployerAvatar name={job.businessName} logoUrl={job.logoUrl} size={48} radius={12} />
 
             {/* Business + title */}
             <div style={{ flex: 1, minWidth: 0 }}>
@@ -271,30 +249,7 @@ const JobCard = memo(function JobCard({ job, onClick, index, enableAnimations = 
         {/* Header row */}
         <div style={{ display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 12 }}>
           {/* Business logo */}
-          <div
-            style={{
-              width: 48,
-              height: 48,
-              borderRadius: 12,
-              background: "var(--brand-subtle)",
-              border: "1px solid var(--border)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: 22,
-              flexShrink: 0,
-            }}
-          >
-            {job.logoUrl ? (
-              <img 
-                src={job.logoUrl} 
-                alt={`${job.businessName} logo`} 
-                style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: 12 }} 
-              />
-            ) : (
-              job.businessLogo
-            )}
-          </div>
+          <EmployerAvatar name={job.businessName} logoUrl={job.logoUrl} size={48} radius={12} />
 
           {/* Business + title */}
           <div style={{ flex: 1, minWidth: 0 }}>

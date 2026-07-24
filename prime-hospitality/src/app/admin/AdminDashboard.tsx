@@ -1460,6 +1460,8 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                   return { label: "Updated a vacancy template", dot: "#6366f1" };
                 case "employer_delete_template":
                   return { label: "Deleted a vacancy template", dot: "#ef4444" };
+                case "employer_edit_profile":
+                  return { label: "Updated company profile", dot: "#0284c7" };
                 default:
                   return { label: action.replace(/^employer_/, "").replace(/_/g, " "), dot: "#6b7280" };
               }

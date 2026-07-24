@@ -16,10 +16,7 @@ import { Timer } from "@phosphor-icons/react";
 import JobDetailScreen from "@/screens/JobDetailScreen";
 import { Job } from "@/data/jobs";
 import type { PostingData } from "./ManageJobPostingsTab";
-
-function initials(name: string) {
-  return name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase() || "•";
-}
+import EmployerAvatar from "@/components/EmployerAvatar";
 
 export default function VacancyTemplateTab({ data, loading, reload }: { data: PostingData; loading: boolean; reload: () => Promise<void>; }) {
   const { templates, businessName, logoUrl, autoPublish } = data;
@@ -200,9 +197,7 @@ export default function VacancyTemplateTab({ data, loading, reload }: { data: Po
               <div style={{ padding: 18, display: "flex", flexDirection: "column", gap: 12, flex: 1 }}>
                 {/* Top: logo + title + actions */}
                 <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
-                  <div className="mjp-logo">
-                    {logoUrl ? <img src={logoUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : initials(businessName)}
-                  </div>
+                  <EmployerAvatar name={businessName} logoUrl={logoUrl} size={46} radius={12} />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <p className="mjp-eyebrow">{tpl.job_category || "Template"}</p>
                     <h3 className="mjp-title" style={{ overflow: "hidden", textOverflow: "ellipsis", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>{tpl.title}</h3>

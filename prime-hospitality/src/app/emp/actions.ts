@@ -163,6 +163,27 @@ export async function getEmployerSession() {
   }
 }
 
+/** Merges the given fields into the current employer_session cookie. Needed
+ *  whenever an employer edits data (name/type/logo) that's cached in the
+ *  session cookie itself rather than re-fetched from the DB per request —
+ *  e.g. the dashboard sidebar reads session.businessName/logoUrl directly. */
+export async function refreshEmployerSessionCookie(updates: {
+  businessName?: string;
+  businessType?: string;
+  logoUrl?: string | null;
+}) {
+  const session = await getEmployerSession();
+  if (!session) return;
+
+  const next = { ...session, ...updates };
+  (await cookies()).set("employer_session", JSON.stringify(next), {
+    maxAge: 60 * 60 * 8,
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+  });
+}
+
 /** Validate that the employer in the current session still exists in the DB.
  *  Returns { valid: true } or { valid: false, reason: "deleted" | "rejected" } */
 export async function validateEmployerSession() {

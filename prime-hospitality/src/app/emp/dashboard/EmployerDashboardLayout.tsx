@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { logoutEmployer, getEmployerNotifications, markNotificationAsRead } from "../actions";
+import EmployerAvatar from "@/components/EmployerAvatar";
 
 const navItems = [
   {
@@ -107,8 +108,6 @@ export default function EmployerDashboardLayout({
     router.push("/emp");
   };
 
-  const getInitials = (name: string) => name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
-
   return (
     <>
       <style>{`
@@ -181,13 +180,7 @@ export default function EmployerDashboardLayout({
           {/* Employer info chip */}
           <div style={{ padding: "12px 16px", borderBottom: "1px solid #f1f5f9" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10, background: "#f8fafc", borderRadius: 10, padding: "8px 10px", border: "1px solid #e2e8f0" }}>
-              {session?.logoUrl ? (
-                <img src={session.logoUrl} alt="" style={{ width: 32, height: 32, borderRadius: 8, objectFit: "cover", flexShrink: 0 }} />
-              ) : (
-                <div style={{ width: 32, height: 32, borderRadius: 8, background: "linear-gradient(135deg, #0284c7, #0369a1)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 800, color: "#fff", flexShrink: 0 }}>
-                  {getInitials(session?.businessName || "?")}
-                </div>
-              )}
+              <EmployerAvatar name={session?.businessName || "?"} logoUrl={session?.logoUrl} size={32} radius={8} fontSize={14} />
               <div style={{ minWidth: 0 }}>
                 <div style={{ fontSize: 12, fontWeight: 700, color: "#0f172a", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{session?.businessName}</div>
                 <div style={{ fontSize: 10, color: "#94a3b8", marginTop: 1 }}>{session?.businessType}</div>
@@ -326,13 +319,7 @@ export default function EmployerDashboardLayout({
                   onClick={() => setProfileOpen(!profileOpen)}
                   style={{ display: "flex", alignItems: "center", gap: 10, padding: "6px 10px 6px 6px", borderRadius: 10, border: "1px solid #e2e8f0", background: "#fff", cursor: "pointer", transition: "border-color 0.15s" }}
                 >
-                  {session?.logoUrl ? (
-                    <img src={session.logoUrl} alt="" style={{ width: 30, height: 30, borderRadius: 8, objectFit: "cover" }} />
-                  ) : (
-                    <div style={{ width: 30, height: 30, borderRadius: 8, background: "linear-gradient(135deg, #0284c7, #0369a1)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 800, color: "#fff" }}>
-                      {getInitials(session?.businessName || "?")}
-                    </div>
-                  )}
+                  <EmployerAvatar name={session?.businessName || "?"} logoUrl={session?.logoUrl} size={30} radius={8} fontSize={13} />
                   <div style={{ textAlign: "left" }}>
                     <div style={{ fontSize: 13, fontWeight: 700, color: "#0f172a", lineHeight: 1 }}>{session?.businessName || "Employer"}</div>
                     <div style={{ fontSize: 10, color: "#94a3b8", marginTop: 2 }}>{session?.businessType || "Company"}</div>

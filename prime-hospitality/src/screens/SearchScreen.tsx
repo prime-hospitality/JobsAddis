@@ -6,6 +6,7 @@ import { Search, X, SlidersHorizontal, MapPin, Clock, ChevronDown, CheckCircle, 
 import { supabase } from "@/lib/supabase";
 import { Job, JobCategory, JobType, ExperienceLevel, JOB_CATEGORIES } from "@/data/jobs";
 import { SupabaseJob, mapSupabaseJobToJob } from "@/hooks/useJobs";
+import EmployerAvatar from "@/components/EmployerAvatar";
 
 interface SearchScreenProps {
   onJobSelect: (job: Job) => void;
@@ -828,25 +829,7 @@ export default function SearchScreen({ onJobSelect, pageSize, enableAnimations =
                       >
                         <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
                           {/* Logo */}
-                          <div
-                            style={{
-                              width: 46, height: 46, borderRadius: 13,
-                              background: "var(--brand-subtle)",
-                              border: "1px solid var(--border)",
-                              display: "flex", alignItems: "center", justifyContent: "center",
-                              fontSize: 22, flexShrink: 0,
-                            }}
-                          >
-                            {job.logoUrl ? (
-                              <img 
-                                src={job.logoUrl} 
-                                alt={`${job.businessName} logo`} 
-                                style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: 13 }} 
-                              />
-                            ) : (
-                              job.businessLogo
-                            )}
-                          </div>
+                          <EmployerAvatar name={job.businessName} logoUrl={job.logoUrl} size={46} radius={13} />
 
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <p style={{ fontSize: 15, fontWeight: 700, color: "var(--text-primary)", marginBottom: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
@@ -885,25 +868,7 @@ export default function SearchScreen({ onJobSelect, pageSize, enableAnimations =
                     >
                       <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
                         {/* Logo */}
-                        <div
-                          style={{
-                            width: 46, height: 46, borderRadius: 13,
-                            background: "var(--brand-subtle)",
-                            border: "1px solid var(--border)",
-                            display: "flex", alignItems: "center", justifyContent: "center",
-                            fontSize: 22, flexShrink: 0,
-                          }}
-                        >
-                          {job.logoUrl ? (
-                            <img 
-                              src={job.logoUrl} 
-                              alt={`${job.businessName} logo`} 
-                              style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: 13 }} 
-                            />
-                          ) : (
-                            job.businessLogo
-                          )}
-                        </div>
+                        <EmployerAvatar name={job.businessName} logoUrl={job.logoUrl} size={46} radius={13} />
 
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <p style={{ fontSize: 15, fontWeight: 700, color: "var(--text-primary)", marginBottom: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>

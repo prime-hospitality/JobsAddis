@@ -4,6 +4,7 @@ import { useState } from "react";
 import { motion, useReducedMotion, LazyMotion, domAnimation } from "framer-motion";
 import { ArrowLeft, MapPin, User, Phone, Briefcase, AlertTriangle } from "lucide-react";
 import { Job } from "@/data/jobs";
+import EmployerAvatar from "@/components/EmployerAvatar";
 import { JobSeekerProfile } from "@/data/profile";
 import { useTelegram } from "@/hooks/useTelegram";
 import { submitApplication, ApiError } from "@/lib/api";
@@ -126,17 +127,7 @@ export default function ApplicationScreen({ job, profile, onBack, onSubmit }: Ap
               display: "flex", alignItems: "center", gap: 12, marginBottom: 24,
             }}
           >
-            <div style={{ fontSize: 24, width: 36, height: 36, display: "flex", alignItems: "center", justifyContent: "center" }}>
-              {job.logoUrl ? (
-                <img 
-                  src={job.logoUrl} 
-                  alt={`${job.businessName} logo`} 
-                  style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: 8 }} 
-                />
-              ) : (
-                job.businessLogo
-              )}
-            </div>
+            <EmployerAvatar name={job.businessName} logoUrl={job.logoUrl} size={36} radius={8} fontSize={16} />
             <div>
               <p style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)" }}>{job.title}</p>
               <p style={{ fontSize: 12, color: "var(--brand)" }}>{job.businessName} · {job.neighborhood}</p>
