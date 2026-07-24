@@ -128,8 +128,12 @@ export default function CompanyProfileTab() {
 
   const load = useCallback(async () => {
     try {
-      const profile = await getEmployerProfile();
-      applyProfile(profile);
+      const res = await getEmployerProfile();
+      if (!res.success) {
+        setErrorMsg(res.error);
+        return;
+      }
+      applyProfile(res.data);
     } catch (err: any) {
       setErrorMsg(err.message || "Failed to load company profile.");
     } finally {

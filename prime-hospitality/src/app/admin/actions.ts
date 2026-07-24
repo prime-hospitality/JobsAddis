@@ -552,6 +552,101 @@ async function getPlatformEmployerId(supabase: ReturnType<typeof getSupabase>): 
   return { error: "Platform employer not found. Please set the \"platform_employer_id\" key in app_config with the correct employer ID." };
 }
 
+export type PlatformProfileResult =
+  | { success: true; businessName: string; logoUrl: string | null }
+  | { success: false; error: string };
+
+/** The picture shown on any job posted from a (global) vacancy template —
+ *  those posts all share one "platform employer" identity rather than a
+ *  real business, so there's exactly one picture to manage here, shared
+ *  across whichever admin sets it. */
+export async function getPlatformEmployerProfile(): Promise<PlatformProfileResult> {
+  const admin = await getLoggedInAdmin();
+  if (!admin) return { success: false, error: "Unauthorized" };
+
+  const supabase = getSupabase();
+  const result = await getPlatformEmployerId(supabase);
+  if ("error" in result) return { success: false, error: result.error };
+
+  const { data, error } = await supabase
+    .from("employers")
+    .select("business_name, logo_url")
+    .eq("id", result.id)
+    .maybeSingle();
+
+  if (error || !data) {
+    console.error("getPlatformEmployerProfile failed:", error);
+    return { success: false, error: "Failed to load platform profile." };
+  }
+
+  return { success: true, businessName: data.business_name, logoUrl: data.logo_url || null };
+}
+
+export type UpdatePlatformLogoResult = { success: true; logoUrl: string | null } | { success: false; error: string };
+
+export async function updatePlatformEmployerLogo(formData: FormData): Promise<UpdatePlatformLogoResult> {
+  const admin = await getLoggedInAdmin();
+  if (!admin) return { success: false, error: "Unauthorized" };
+  if (!admin.permissions.manageEmployers) return { success: false, error: "Permission denied" };
+
+  const supabase = getSupabase();
+  const result = await getPlatformEmployerId(supabase);
+  if ("error" in result) return { success: false, error: result.error };
+  const platformEmployerId = result.id;
+
+  const { data: current, error: curErr } = await supabase
+    .from("employers")
+    .select("logo_url")
+    .eq("id", platformEmployerId)
+    .maybeSingle();
+  if (curErr) {
+    console.error("updatePlatformEmployerLogo lookup failed:", curErr);
+    return { success: false, error: "Failed to load current platform profile." };
+  }
+
+  const removeLogo = formData.get("removeLogo") === "true";
+  const logoFile = formData.get("logo");
+  let finalLogoUrl: string | null = current?.logo_url || null;
+
+  if (logoFile instanceof File && logoFile.size > 0) {
+    if (!logoFile.type.startsWith("image/")) return { success: false, error: "Photo must be an image file." };
+    if (logoFile.size > 5 * 1024 * 1024) return { success: false, error: "Photo must be smaller than 5MB." };
+
+    const fileExt = logoFile.name.split(".").pop() || "jpg";
+    const fileName = `${platformEmployerId}-${Date.now()}.${fileExt}`;
+    const { error: uploadError } = await supabase.storage.from("logos").upload(fileName, logoFile);
+    if (uploadError) return { success: false, error: "Failed to upload photo." };
+
+    const { data: publicUrlData } = supabase.storage.from("logos").getPublicUrl(fileName);
+    finalLogoUrl = publicUrlData.publicUrl;
+  } else if (removeLogo) {
+    finalLogoUrl = null;
+  }
+
+  const { error: updateError } = await supabase
+    .from("employers")
+    .update({ logo_url: finalLogoUrl })
+    .eq("id", platformEmployerId);
+  if (updateError) {
+    console.error("updatePlatformEmployerLogo update failed:", updateError);
+    return { success: false, error: "Failed to save photo." };
+  }
+
+  if (finalLogoUrl !== current?.logo_url && current?.logo_url) {
+    const oldPath = current.logo_url.split("/logos/")[1];
+    if (oldPath) {
+      try {
+        await supabase.storage.from("logos").remove([oldPath]);
+      } catch (err) {
+        console.error("Failed to remove old platform logo file:", err);
+      }
+    }
+  }
+
+  await logActivity("update_platform_profile_photo", platformEmployerId);
+  return { success: true, logoUrl: finalLogoUrl };
+}
+
 export async function postJobFromTemplate(templateId: string) {
   const auth = (await cookies()).get("admin_session");
   if (!auth?.value) return { success: false, error: "Unauthorized" };

@@ -12,13 +12,19 @@ export interface EmployerProfileData {
 }
 
 export type UpdateProfileResult = { success: true } | { success: false; error: string };
+export type GetProfileResult = { success: true; data: EmployerProfileData } | { success: false; error: string };
 
 const MAX_DESCRIPTION_LENGTH = 1000;
 const MAX_LOGO_BYTES = 5 * 1024 * 1024;
 
-export async function getEmployerProfile(): Promise<EmployerProfileData> {
+/** Returns a result object rather than throwing — Next.js redacts thrown
+ *  Server Action error messages in production builds down to a generic
+ *  "omitted in production" digest, so any real failure (e.g. a migration
+ *  that hasn't been applied yet) must be logged server-side and returned
+ *  as plain data instead, or the client never sees anything actionable. */
+export async function getEmployerProfile(): Promise<GetProfileResult> {
   const session = await requireEmployer();
-  if (!session) throw new Error("Unauthorized");
+  if (!session) return { success: false, error: "Unauthorized" };
 
   const supabase = getSupabase();
   const [employerRes, typesRes] = await Promise.all([
@@ -31,15 +37,19 @@ export async function getEmployerProfile(): Promise<EmployerProfileData> {
   ]);
 
   if (employerRes.error || !employerRes.data) {
-    throw new Error(employerRes.error?.message || "Employer not found");
+    console.error("getEmployerProfile failed:", employerRes.error);
+    return { success: false, error: employerRes.error?.message || "Employer not found" };
   }
 
   return {
-    businessName: employerRes.data.business_name,
-    businessType: employerRes.data.business_type,
-    description: employerRes.data.description || "",
-    logoUrl: employerRes.data.logo_url || null,
-    businessTypes: typesRes.data || [],
+    success: true,
+    data: {
+      businessName: employerRes.data.business_name,
+      businessType: employerRes.data.business_type,
+      description: employerRes.data.description || "",
+      logoUrl: employerRes.data.logo_url || null,
+      businessTypes: typesRes.data || [],
+    },
   };
 }
 

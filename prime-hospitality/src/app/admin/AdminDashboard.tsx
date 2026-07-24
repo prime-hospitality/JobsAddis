@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { toggleUserBan, toggleJobStatus, scheduleJobPost, repostJob, approveScheduledJob, cancelScheduledJob, logoutAdmin, addEmployer, deleteEmployer, updateEmployer, updateEmployerAutoPublish, adminUpdateEmployerLogo, deleteUser, approveSpecialRequest, getPricingConfig, updatePricingConfig, getLoggedInAdmin, createSubAdmin, updateSubAdminPermissions, deleteSubAdmin, listSubAdmins, searchUsers, getProfessionCounts, searchEmployers, getPackages, upsertPackage, deletePackage, getBusinessTypes, addBusinessType } from "./actions";
+import { toggleUserBan, toggleJobStatus, scheduleJobPost, repostJob, approveScheduledJob, cancelScheduledJob, logoutAdmin, addEmployer, deleteEmployer, updateEmployer, updateEmployerAutoPublish, adminUpdateEmployerLogo, deleteUser, approveSpecialRequest, getPricingConfig, updatePricingConfig, getLoggedInAdmin, createSubAdmin, updateSubAdminPermissions, deleteSubAdmin, listSubAdmins, searchUsers, getProfessionCounts, searchEmployers, getPackages, upsertPackage, deletePackage, getBusinessTypes, addBusinessType, getPlatformEmployerProfile, updatePlatformEmployerLogo } from "./actions";
 import type { AdminPermissions, SubAdmin } from "./actions";
 import { Trash2, Pencil, Image as ImageIcon, Menu, X, LayoutDashboard, Briefcase, FileText, Users, LogOut, Settings, CreditCard, CheckCircle, BookOpen, User, Building2, Hourglass, ChevronDown, Check, Plus, Megaphone, History, BarChart3 } from "lucide-react";
+import EmployerAvatar from "@/components/EmployerAvatar";
 import { motion, AnimatePresence } from "framer-motion";
 import { Timer, Gear } from "@phosphor-icons/react";
 import { supabase } from "@/lib/supabase";
@@ -613,6 +614,16 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
   const [employerSearch, setEmployerSearch] = useState("");
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [profileModalOpen, setProfileModalOpen] = useState(false);
+  const [profileModalLoading, setProfileModalLoading] = useState(false);
+  const [profileModalSaving, setProfileModalSaving] = useState(false);
+  const [profileModalError, setProfileModalError] = useState("");
+  const [platformBusinessName, setPlatformBusinessName] = useState("");
+  const [platformLogoUrl, setPlatformLogoUrl] = useState<string | null>(null);
+  const [platformLogoFile, setPlatformLogoFile] = useState<File | null>(null);
+  const [platformLogoPreview, setPlatformLogoPreview] = useState<string | null>(null);
+  const [platformRemoveLogo, setPlatformRemoveLogo] = useState(false);
+  const platformFileInputRef = useRef<HTMLInputElement>(null);
   const [showNotifications, setShowNotifications] = useState(false);
   const [seekerSubTab, setSeekerSubTab] = useState<SeekerSubTab>("user-config");
   const [userSearchName, setUserSearchName] = useState("");
@@ -802,6 +813,74 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
       setEditError(err.message || "Failed to update employer");
     } finally {
       setEditLoading(false);
+    }
+  };
+
+  const openProfileModal = async () => {
+    setProfileModalOpen(true);
+    setProfileModalLoading(true);
+    setProfileModalError("");
+    const res = await getPlatformEmployerProfile();
+    if (res.success) {
+      setPlatformBusinessName(res.businessName);
+      setPlatformLogoUrl(res.logoUrl);
+    } else {
+      setProfileModalError(res.error);
+    }
+    setProfileModalLoading(false);
+  };
+
+  const closeProfileModal = () => {
+    setProfileModalOpen(false);
+    if (platformLogoPreview) URL.revokeObjectURL(platformLogoPreview);
+    setPlatformLogoFile(null);
+    setPlatformLogoPreview(null);
+    setPlatformRemoveLogo(false);
+    setProfileModalError("");
+  };
+
+  const handlePlatformFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) { setProfileModalError("Please choose an image file."); return; }
+    if (file.size > 5 * 1024 * 1024) { setProfileModalError("Image must be smaller than 5MB."); return; }
+
+    setProfileModalError("");
+    setPlatformRemoveLogo(false);
+    if (platformLogoPreview) URL.revokeObjectURL(platformLogoPreview);
+    setPlatformLogoFile(file);
+    setPlatformLogoPreview(URL.createObjectURL(file));
+  };
+
+  const handleRemovePlatformLogo = () => {
+    if (platformLogoPreview) URL.revokeObjectURL(platformLogoPreview);
+    setPlatformLogoFile(null);
+    setPlatformLogoPreview(null);
+    setPlatformRemoveLogo(true);
+  };
+
+  const handleSavePlatformProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setProfileModalSaving(true);
+    setProfileModalError("");
+    try {
+      const formData = new FormData();
+      if (platformLogoFile) formData.set("logo", platformLogoFile);
+      if (platformRemoveLogo) formData.set("removeLogo", "true");
+
+      const res = await updatePlatformEmployerLogo(formData);
+      if (!res.success) { setProfileModalError(res.error); return; }
+
+      setPlatformLogoUrl(res.logoUrl);
+      if (platformLogoPreview) URL.revokeObjectURL(platformLogoPreview);
+      setPlatformLogoFile(null);
+      setPlatformLogoPreview(null);
+      setPlatformRemoveLogo(false);
+      setProfileModalOpen(false);
+    } finally {
+      setProfileModalSaving(false);
     }
   };
 
@@ -1364,8 +1443,8 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                         <Settings className="w-4 h-4" /> Settings
                       </button>
                     )}
-                    <button 
-                      onClick={() => setProfileMenuOpen(false)}
+                    <button
+                      onClick={() => { setProfileMenuOpen(false); openProfileModal(); }}
                       className="w-full text-left px-4 py-2.5 text-sm font-semibold text-[#1c1c1e] hover:bg-[#f2f2f7] hover:text-green-600 transition-colors flex items-center gap-2"
                     >
                       <User className="w-4 h-4" /> Profile
@@ -2506,6 +2585,74 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
           )}
         </main>
       </div>
+
+      {/* Admin Profile Modal — picture shown on jobs posted from vacancy templates */}
+      {profileModalOpen && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 10000, padding: "0 16px" }}>
+          <div style={{ background: "#fff", borderRadius: 12, padding: 24, width: "100%", maxWidth: 380, boxShadow: "0 20px 25px -5px rgba(0,0,0,0.1)" }}>
+            <h3 style={{ margin: "0 0 6px 0", fontSize: 18, fontWeight: 700, color: "#111827" }}>Posting Picture</h3>
+            <p style={{ margin: "0 0 20px 0", fontSize: 13, color: "#6b7280", lineHeight: 1.5 }}>
+              This is the picture job seekers see on any job posted from a vacancy template — shared
+              across all admins, since those posts all go out under one platform identity
+              {platformBusinessName ? ` ("${platformBusinessName}")` : ""}.
+            </p>
+
+            {profileModalLoading ? (
+              <p style={{ fontSize: 13, color: "#9ca3af", textAlign: "center", padding: "20px 0" }}>Loading…</p>
+            ) : (
+              <form onSubmit={handleSavePlatformProfile} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 14 }}>
+                <div style={{ cursor: "pointer" }} onClick={() => platformFileInputRef.current?.click()}>
+                  <EmployerAvatar
+                    name={platformBusinessName || "Platform"}
+                    logoUrl={platformRemoveLogo ? null : (platformLogoPreview || platformLogoUrl)}
+                    size={96}
+                    radius={20}
+                  />
+                </div>
+                <input ref={platformFileInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handlePlatformFileChange} />
+                <div style={{ display: "flex", gap: 14, alignItems: "center" }}>
+                  <button
+                    type="button"
+                    onClick={() => platformFileInputRef.current?.click()}
+                    style={{ background: "#f3f4f6", color: "#1c1c1e", border: "none", padding: "6px 14px", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer" }}
+                  >
+                    Choose Photo
+                  </button>
+                  {(platformLogoUrl || platformLogoPreview) && !platformRemoveLogo && (
+                    <button
+                      type="button"
+                      onClick={handleRemovePlatformLogo}
+                      style={{ background: "none", border: "none", color: "#ef4444", fontSize: 12.5, fontWeight: 600, cursor: "pointer" }}
+                    >
+                      Remove photo
+                    </button>
+                  )}
+                </div>
+
+                {profileModalError && <p style={{ color: "#dc2626", margin: 0, fontSize: 13, textAlign: "center" }}>{profileModalError}</p>}
+
+                <div style={{ display: "flex", gap: 12, justifyContent: "flex-end", marginTop: 8, width: "100%" }}>
+                  <button
+                    type="button"
+                    onClick={closeProfileModal}
+                    disabled={profileModalSaving}
+                    style={{ background: "#f3f4f6", color: "#1c1c1e", border: "none", padding: "8px 16px", borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: "pointer" }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={profileModalSaving}
+                    style={{ background: "#111827", color: "#fff", border: "none", padding: "8px 16px", borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: profileModalSaving ? "not-allowed" : "pointer", opacity: profileModalSaving ? 0.6 : 1 }}
+                  >
+                    {profileModalSaving ? "Saving…" : "Save"}
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Delete Employer Modal */}
       {deleteModal && (
