@@ -1704,7 +1704,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                   {activityFeed.length === 0 ? (
                     <div className="text-center py-10 text-[#aeaeb2] text-sm">No activity yet.</div>
                   ) : (
-                    <div className="divide-y divide-gray-100">
+                    <div className="divide-y divide-gray-100 max-h-[420px] overflow-y-auto pr-1">
                       {activityFeed.map((item) => (
                         <div key={item.id} className="flex items-start gap-3 py-3">
                           <div className="mt-0.5 flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center"
