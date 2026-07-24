@@ -1,17 +1,29 @@
 "use client";
 
-import React, { useState, useRef, useCallback, useEffect } from "react";
+import React, { useState, useRef, useEffect } from "react";
+import { CheckCircle2, AlertTriangle, Info } from "lucide-react";
 
-const VIEWPORT_SIZE = 260;
+const STAGE_SIZE = 300;
 const OUTPUT_SIZE = 512;
-const MIN_ZOOM = 1;
-const MAX_ZOOM = 3;
+const MIN_BOX = 32;
 
-/** Lets the user pan/zoom a picked image into a fixed square before it's
- *  uploaded anywhere, so every employer/platform picture is stored at one
- *  consistent 512x512 square — the app only ever displays these avatars in
- *  square (rounded) boxes, so a non-square or tiny source image would
- *  otherwise get an uncontrolled center-crop or look blurry when scaled up. */
+type Corner = "nw" | "ne" | "sw" | "se";
+type Box = { x: number; y: number; size: number };
+type DragState = { type: "move" | "resize"; corner?: Corner; startX: number; startY: number; startBox: Box };
+
+const HANDLE_STYLE: Record<Corner, React.CSSProperties> = {
+  nw: { left: -8, top: -8, cursor: "nwse-resize" },
+  se: { right: -8, bottom: -8, cursor: "nwse-resize" },
+  ne: { right: -8, top: -8, cursor: "nesw-resize" },
+  sw: { left: -8, bottom: -8, cursor: "nesw-resize" },
+};
+
+/** Lets the user draw a resizable, draggable square crop box directly over
+ *  the full image (rather than a zoom slider), and tells them live whether
+ *  their selection is sharp enough — every avatar slot in the app is a
+ *  fixed square box, so the exported crop is always a 512x512 PNG, but a
+ *  small selection dragged from a small source photo would silently get
+ *  upscaled and look blurry, which is what the quality readout warns about. */
 export default function AvatarCropModal({
   file,
   onCancel,
@@ -24,71 +36,127 @@ export default function AvatarCropModal({
   const [imgUrl] = useState(() => URL.createObjectURL(file));
   const [loaded, setLoaded] = useState(false);
   const [natural, setNatural] = useState({ width: 0, height: 0 });
-  const [baseScale, setBaseScale] = useState(1);
-  const [zoom, setZoom] = useState(1);
-  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const [box, setBox] = useState<Box>({ x: 0, y: 0, size: 0 });
   const [processing, setProcessing] = useState(false);
 
   const imgRef = useRef<HTMLImageElement>(null);
-  const dragRef = useRef<{ startX: number; startY: number; startPanX: number; startPanY: number } | null>(null);
+  const dragRef = useRef<DragState | null>(null);
 
   useEffect(() => {
     return () => URL.revokeObjectURL(imgUrl);
   }, [imgUrl]);
 
-  const clampPan = useCallback((nx: number, ny: number, z: number, bScale: number, w: number, h: number) => {
-    const dispW = w * bScale * z;
-    const dispH = h * bScale * z;
-    const maxX = Math.max(0, (dispW - VIEWPORT_SIZE) / 2);
-    const maxY = Math.max(0, (dispH - VIEWPORT_SIZE) / 2);
-    return { x: Math.min(maxX, Math.max(-maxX, nx)), y: Math.min(maxY, Math.max(-maxY, ny)) };
-  }, []);
+  const displayScale = natural.width && natural.height ? STAGE_SIZE / Math.max(natural.width, natural.height) : 0;
+  const imgDispW = natural.width * displayScale;
+  const imgDispH = natural.height * displayScale;
+  const imgOffsetX = (STAGE_SIZE - imgDispW) / 2;
+  const imgOffsetY = (STAGE_SIZE - imgDispH) / 2;
+  const maxBoxSize = Math.min(imgDispW, imgDispH);
+
+  const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
 
   const handleImageLoad = () => {
     const el = imgRef.current;
     if (!el) return;
     const w = el.naturalWidth;
     const h = el.naturalHeight;
-    const bScale = VIEWPORT_SIZE / Math.min(w, h);
+    const scale = STAGE_SIZE / Math.max(w, h);
+    const dispW = w * scale;
+    const dispH = h * scale;
+    const offX = (STAGE_SIZE - dispW) / 2;
+    const offY = (STAGE_SIZE - dispH) / 2;
+    const initSize = Math.min(dispW, dispH) * 0.9;
     setNatural({ width: w, height: h });
-    setBaseScale(bScale);
-    setZoom(1);
-    setPan({ x: 0, y: 0 });
+    setBox({ x: offX + (dispW - initSize) / 2, y: offY + (dispH - initSize) / 2, size: initSize });
     setLoaded(true);
   };
 
-  const handleZoomChange = (z: number) => {
-    setZoom(z);
-    setPan((prev) => clampPan(prev.x, prev.y, z, baseScale, natural.width, natural.height));
-  };
-
-  const handlePointerDown = (e: React.PointerEvent) => {
+  const handleBoxPointerDown = (e: React.PointerEvent) => {
     e.currentTarget.setPointerCapture(e.pointerId);
-    dragRef.current = { startX: e.clientX, startY: e.clientY, startPanX: pan.x, startPanY: pan.y };
+    dragRef.current = { type: "move", startX: e.clientX, startY: e.clientY, startBox: { ...box } };
   };
 
-  const handlePointerMove = (e: React.PointerEvent) => {
-    if (!dragRef.current) return;
-    const dx = e.clientX - dragRef.current.startX;
-    const dy = e.clientY - dragRef.current.startY;
-    setPan(clampPan(dragRef.current.startPanX + dx, dragRef.current.startPanY + dy, zoom, baseScale, natural.width, natural.height));
+  const handleBoxPointerMove = (e: React.PointerEvent) => {
+    const d = dragRef.current;
+    if (!d || d.type !== "move") return;
+    const dx = e.clientX - d.startX;
+    const dy = e.clientY - d.startY;
+    setBox({
+      size: d.startBox.size,
+      x: clamp(d.startBox.x + dx, imgOffsetX, imgOffsetX + imgDispW - d.startBox.size),
+      y: clamp(d.startBox.y + dy, imgOffsetY, imgOffsetY + imgDispH - d.startBox.size),
+    });
   };
 
-  const handlePointerUp = () => {
-    dragRef.current = null;
+  const endDrag = () => { dragRef.current = null; };
+
+  const handleHandlePointerDown = (e: React.PointerEvent, corner: Corner) => {
+    e.stopPropagation();
+    e.currentTarget.setPointerCapture(e.pointerId);
+    dragRef.current = { type: "resize", corner, startX: e.clientX, startY: e.clientY, startBox: { ...box } };
   };
+
+  const handleHandlePointerMove = (e: React.PointerEvent) => {
+    const d = dragRef.current;
+    if (!d || d.type !== "resize" || !d.corner) return;
+    const dx = e.clientX - d.startX;
+    const dy = e.clientY - d.startY;
+    const { x: bx, y: by, size: bs } = d.startBox;
+
+    let anchorX = bx;
+    let anchorY = by;
+    let deltaOutward = 0;
+    let maxAllowed = maxBoxSize;
+
+    switch (d.corner) {
+      case "se":
+        anchorX = bx; anchorY = by;
+        deltaOutward = (dx + dy) / 2;
+        maxAllowed = Math.min(maxAllowed, imgOffsetX + imgDispW - anchorX, imgOffsetY + imgDispH - anchorY);
+        break;
+      case "nw":
+        anchorX = bx + bs; anchorY = by + bs;
+        deltaOutward = -(dx + dy) / 2;
+        maxAllowed = Math.min(maxAllowed, anchorX - imgOffsetX, anchorY - imgOffsetY);
+        break;
+      case "ne":
+        anchorX = bx; anchorY = by + bs;
+        deltaOutward = (dx - dy) / 2;
+        maxAllowed = Math.min(maxAllowed, imgOffsetX + imgDispW - anchorX, anchorY - imgOffsetY);
+        break;
+      case "sw":
+        anchorX = bx + bs; anchorY = by;
+        deltaOutward = (dy - dx) / 2;
+        maxAllowed = Math.min(maxAllowed, anchorX - imgOffsetX, imgOffsetY + imgDispH - anchorY);
+        break;
+    }
+
+    const newSize = clamp(bs + deltaOutward, MIN_BOX, maxAllowed);
+    let newX = anchorX;
+    let newY = anchorY;
+    if (d.corner === "nw") { newX = anchorX - newSize; newY = anchorY - newSize; }
+    else if (d.corner === "ne") { newY = anchorY - newSize; }
+    else if (d.corner === "sw") { newX = anchorX - newSize; }
+
+    setBox({ x: newX, y: newY, size: newSize });
+  };
+
+  const naturalCropSize = displayScale > 0 ? box.size / displayScale : 0;
+  const quality: "good" | "okay" | "bad" = naturalCropSize >= OUTPUT_SIZE ? "good" : naturalCropSize >= OUTPUT_SIZE * 0.5 ? "okay" : "bad";
+  const qualityMeta = {
+    good: { label: "Good — sharp", color: "#059669", Icon: CheckCircle2 },
+    okay: { label: "A bit soft when enlarged", color: "#d97706", Icon: Info },
+    bad: { label: "Too small — will look blurry", color: "#dc2626", Icon: AlertTriangle },
+  }[quality];
 
   const handleConfirm = () => {
     const el = imgRef.current;
     if (!el || !loaded) return;
     setProcessing(true);
 
-    const dispScale = baseScale * zoom;
-    const imgLeft = (VIEWPORT_SIZE - natural.width * dispScale) / 2 + pan.x;
-    const imgTop = (VIEWPORT_SIZE - natural.height * dispScale) / 2 + pan.y;
-    const srcX = -imgLeft / dispScale;
-    const srcY = -imgTop / dispScale;
-    const srcSize = VIEWPORT_SIZE / dispScale;
+    const srcX = (box.x - imgOffsetX) / displayScale;
+    const srcY = (box.y - imgOffsetY) / displayScale;
+    const srcSize = box.size / displayScale;
 
     const canvas = document.createElement("canvas");
     canvas.width = OUTPUT_SIZE;
@@ -106,33 +174,24 @@ export default function AvatarCropModal({
     }, "image/png");
   };
 
-  const dispW = natural.width * baseScale * zoom;
-  const dispH = natural.height * baseScale * zoom;
-
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.6)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 20000, padding: 16 }}>
-      <div style={{ background: "#fff", borderRadius: 16, padding: 24, width: "100%", maxWidth: 340, boxShadow: "0 24px 48px -16px rgba(15,23,42,0.35)" }}>
+      <div style={{ background: "#fff", borderRadius: 16, padding: 24, width: "100%", maxWidth: 380, boxShadow: "0 24px 48px -16px rgba(15,23,42,0.35)" }}>
         <h3 style={{ margin: "0 0 4px", fontSize: 16, fontWeight: 700, color: "#0f172a" }}>Adjust Photo</h3>
         <p style={{ margin: "0 0 16px", fontSize: 12.5, color: "#64748b", lineHeight: 1.5 }}>
-          Drag to reposition, use the slider to zoom. It&apos;ll be saved as a 512×512 square.
+          Drag the box to reposition it, drag a corner to resize. It&apos;ll be saved as a square.
         </p>
 
         <div
           style={{
             position: "relative",
-            width: VIEWPORT_SIZE,
-            height: VIEWPORT_SIZE,
+            width: STAGE_SIZE,
+            height: STAGE_SIZE,
             margin: "0 auto",
-            borderRadius: 20,
+            borderRadius: 12,
             overflow: "hidden",
             background: "#0f172a",
-            touchAction: "none",
-            cursor: loaded ? "grab" : "default",
           }}
-          onPointerDown={handlePointerDown}
-          onPointerMove={handlePointerMove}
-          onPointerUp={handlePointerUp}
-          onPointerCancel={handlePointerUp}
         >
           <img
             ref={imgRef}
@@ -142,29 +201,64 @@ export default function AvatarCropModal({
             onLoad={handleImageLoad}
             style={{
               position: "absolute",
-              left: "50%",
-              top: "50%",
-              width: dispW || undefined,
-              height: dispH || undefined,
-              transform: `translate(calc(-50% + ${pan.x}px), calc(-50% + ${pan.y}px))`,
+              left: imgOffsetX,
+              top: imgOffsetY,
+              width: imgDispW || undefined,
+              height: imgDispH || undefined,
               opacity: loaded ? 1 : 0,
               userSelect: "none",
               pointerEvents: "none",
             }}
           />
-          <div style={{ position: "absolute", inset: 0, borderRadius: 20, boxShadow: "inset 0 0 0 2px rgba(255,255,255,0.5)", pointerEvents: "none" }} />
+
+          {loaded && (
+            <div
+              onPointerDown={handleBoxPointerDown}
+              onPointerMove={handleBoxPointerMove}
+              onPointerUp={endDrag}
+              onPointerCancel={endDrag}
+              style={{
+                position: "absolute",
+                left: box.x,
+                top: box.y,
+                width: box.size,
+                height: box.size,
+                boxShadow: "0 0 0 9999px rgba(15,23,42,0.55)",
+                border: "2px solid #fff",
+                borderRadius: 8,
+                cursor: "move",
+                touchAction: "none",
+              }}
+            >
+              {(Object.keys(HANDLE_STYLE) as Corner[]).map((corner) => (
+                <div
+                  key={corner}
+                  onPointerDown={(e) => handleHandlePointerDown(e, corner)}
+                  onPointerMove={handleHandlePointerMove}
+                  onPointerUp={endDrag}
+                  onPointerCancel={endDrag}
+                  style={{
+                    position: "absolute",
+                    width: 16,
+                    height: 16,
+                    background: "#fff",
+                    border: "2px solid #0284c7",
+                    borderRadius: "50%",
+                    touchAction: "none",
+                    ...HANDLE_STYLE[corner],
+                  }}
+                />
+              ))}
+            </div>
+          )}
         </div>
 
-        <input
-          type="range"
-          min={MIN_ZOOM}
-          max={MAX_ZOOM}
-          step={0.01}
-          value={zoom}
-          onChange={(e) => handleZoomChange(Number(e.target.value))}
-          disabled={!loaded}
-          style={{ width: "100%", marginTop: 16 }}
-        />
+        {loaded && (
+          <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 12, fontSize: 12.5, fontWeight: 600, color: qualityMeta.color }}>
+            <qualityMeta.Icon size={14} />
+            {qualityMeta.label} · {Math.round(naturalCropSize)}×{Math.round(naturalCropSize)}px
+          </div>
+        )}
 
         <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 18 }}>
           <button
