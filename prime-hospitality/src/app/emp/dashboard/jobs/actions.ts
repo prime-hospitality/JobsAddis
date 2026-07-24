@@ -21,6 +21,33 @@ async function requireEmployer() {
   return session as { employerId: string; telegramId: number; businessName: string; businessType: string; logoUrl?: string | null };
 }
 
+/** Records an employer-originated action to the shared activity_log table, so
+ *  the admin dashboard's "Employer Activity" panel has a real, actor-accurate
+ *  trail instead of inferring activity from current `jobs` row state (which
+ *  can't tell an employer's action from an admin's, loses the timestamp of
+ *  any status change, and vanishes entirely on delete). Reuses the existing
+ *  activity_log table (actor/action/target/metadata are all generic) — admin
+ *  actions tag `actor` with the admin username; this tags it with the
+ *  employer's business name and stamps metadata.source = "employer" so the
+ *  two trails stay cleanly distinguishable in the same table. */
+async function logEmployerActivity(
+  session: { employerId: string; businessName: string },
+  action: string,
+  target?: string | null,
+  metadata?: Record<string, any>
+) {
+  try {
+    await getSupabase().from("activity_log").insert({
+      actor: session.businessName,
+      action,
+      target: target || null,
+      metadata: { ...metadata, source: "employer", employerId: session.employerId },
+    });
+  } catch (err) {
+    console.error("Failed to write employer activity log:", err);
+  }
+}
+
 async function getEmployerPublishingRules(supabase: ReturnType<typeof getSupabase>, employerId: string) {
   const { data } = await supabase
     .from("employers")
@@ -112,6 +139,7 @@ export async function createEmployerJob(form: VacancyFormState): Promise<{ succe
   });
 
   if (error) return { success: false, error: error.message || "Failed to post job" };
+  await logEmployerActivity(session, "employer_post_job", form.title, { status: rules.autoPublish ? "active" : "pending" });
   return { success: true, status: rules.autoPublish ? "active" : "pending" };
 }
 
@@ -150,6 +178,7 @@ export async function updateEmployerJobPost(jobId: string, form: VacancyFormStat
     .eq("id", jobId);
 
   if (error) return { success: false, error: error.message || "Failed to update job" };
+  await logEmployerActivity(session, "employer_edit_job", form.title);
   return { success: true };
 }
 
@@ -158,11 +187,12 @@ export async function deleteEmployerJob(jobId: string): Promise<{ success: true 
   if (!session) return { success: false, error: "Unauthorized" };
 
   const supabase = getSupabase();
-  const { data: existing } = await supabase.from("jobs").select("id, employer_id").eq("id", jobId).maybeSingle();
+  const { data: existing } = await supabase.from("jobs").select("id, employer_id, title").eq("id", jobId).maybeSingle();
   if (!existing || existing.employer_id !== session.employerId) return { success: false, error: "Job not found" };
 
   const { error } = await supabase.from("jobs").delete().eq("id", jobId).eq("employer_id", session.employerId);
   if (error) return { success: false, error: error.message || "Failed to delete job" };
+  await logEmployerActivity(session, "employer_delete_job", existing.title);
   return { success: true };
 }
 
@@ -206,6 +236,7 @@ export async function upsertEmployerVacancyTemplate(payload: VacancyFormState) {
 
   const { error } = await supabase.from("employer_vacancy_templates").upsert(dbPayload);
   if (error) return { success: false, error: error.message || "Failed to save template" };
+  await logEmployerActivity(session, id ? "employer_edit_template" : "employer_create_template", data.title);
   return { success: true };
 }
 
@@ -214,8 +245,12 @@ export async function deleteEmployerVacancyTemplate(id: string) {
   if (!session) return { success: false, error: "Unauthorized" };
 
   const supabase = getSupabase();
+  const { data: existing } = await supabase.from("employer_vacancy_templates").select("id, employer_id, title").eq("id", id).maybeSingle();
+  if (!existing || existing.employer_id !== session.employerId) return { success: false, error: "Template not found" };
+
   const { error } = await supabase.from("employer_vacancy_templates").delete().eq("id", id).eq("employer_id", session.employerId);
   if (error) return { success: false, error: error.message };
+  await logEmployerActivity(session, "employer_delete_template", existing.title);
   return { success: true };
 }
 
@@ -293,6 +328,7 @@ export async function postJobFromEmployerTemplate(templateId: string) {
   });
 
   if (error) return { success: false, error: error.message || "Failed to post job" };
+  await logEmployerActivity(session, "employer_post_from_template", tpl.title, { status: rules.autoPublish ? "active" : "pending" });
   return { success: true };
 }
 
@@ -335,5 +371,6 @@ export async function scheduleJobFromEmployerTemplate(templateId: string, schedu
   });
 
   if (error) return { success: false, error: error.message || "Failed to schedule publication" };
+  await logEmployerActivity(session, "employer_schedule_post", tpl.title, { scheduledAt });
   return { success: true };
 }

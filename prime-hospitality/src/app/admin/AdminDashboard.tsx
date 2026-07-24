@@ -1388,20 +1388,55 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
 
             const maxBar = Math.max(...perfData.map(d => d.posts), 1);
 
-            // Activity feed - all employer job events merged
+            // Activity feed — a real, employer-authored trail from activity_log
+            // (written by the employer server actions, tagged metadata.source
+            // = "employer"). Not derived from current `jobs` row state: that
+            // approach couldn't tell an employer's action from an admin's
+            // (e.g. "Close Job" is admin-only, yet used to be shown as
+            // employer activity), always used the job's created_at even for
+            // later status changes, and lost all history the moment a job
+            // was deleted.
+            const employerActivityLog: any[] = data.employerActivityLog || [];
             const activityCutoff = activityDuration === "all" ? new Date(0) : daysAgo(Number(activityDuration));
-            const activityFeed = jobs
-              .filter(j => employers.some(e => e.id === j.employer_id) && new Date(j.created_at) >= activityCutoff)
-              .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+
+            const describeEmployerActivity = (action: string, meta: any): { label: string; dot: string } => {
+              const live = meta?.status === "active";
+              switch (action) {
+                case "employer_post_job":
+                  return live ? { label: "Posted a new job — now live", dot: "#10b981" } : { label: "Posted a new job — pending review", dot: "#f59e0b" };
+                case "employer_post_from_template":
+                  return live ? { label: "Posted a job from a template — now live", dot: "#10b981" } : { label: "Posted a job from a template — pending review", dot: "#f59e0b" };
+                case "employer_schedule_post":
+                  return { label: "Scheduled a job posting", dot: "#0ea5e9" };
+                case "employer_edit_job":
+                  return { label: "Edited a job posting", dot: "#0284c7" };
+                case "employer_delete_job":
+                  return { label: "Deleted a job posting", dot: "#ef4444" };
+                case "employer_create_template":
+                  return { label: "Created a vacancy template", dot: "#6366f1" };
+                case "employer_edit_template":
+                  return { label: "Updated a vacancy template", dot: "#6366f1" };
+                case "employer_delete_template":
+                  return { label: "Deleted a vacancy template", dot: "#ef4444" };
+                default:
+                  return { label: action.replace(/^employer_/, "").replace(/_/g, " "), dot: "#6b7280" };
+              }
+            };
+
+            const activityFeed = employerActivityLog
+              .filter(e => new Date(e.created_at) >= activityCutoff)
               .slice(0, 20)
-              .map(j => ({
-                id: j.id,
-                employer: j.employers?.business_name || "Unknown Employer",
-                action: j.status === "active" ? "Posted a new job" : j.status === "closed" ? "Closed a job posting" : "Submitted job for review",
-                detail: j.title,
-                status: j.status,
-                time: j.created_at,
-              }));
+              .map(e => {
+                const { label, dot } = describeEmployerActivity(e.action, e.metadata);
+                return {
+                  id: e.id,
+                  employer: e.actor || "Unknown Employer",
+                  action: label,
+                  detail: e.target || "",
+                  dot,
+                  time: e.created_at,
+                };
+              });
 
             const fmtTime = (iso: string) => {
               const d = new Date(iso);
@@ -1411,8 +1446,6 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
               if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
               return `${Math.floor(diff / 86400)}d ago`;
             };
-
-            const statusDot: Record<string, string> = { active: "#10b981", closed: "#ef4444", pending: "#f59e0b" };
 
             return (
               <div className="max-w-6xl mx-auto space-y-5">
@@ -1520,13 +1553,13 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                       {activityFeed.map((item) => (
                         <div key={item.id} className="flex items-start gap-3 py-3">
                           <div className="mt-0.5 flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center"
-                            style={{ background: (statusDot[item.status] || "#6b7280") + "20" }}
+                            style={{ background: item.dot + "20" }}
                           >
-                            <div className="w-3 h-3 rounded-full" style={{ background: statusDot[item.status] || "#6b7280" }} />
+                            <div className="w-3 h-3 rounded-full" style={{ background: item.dot }} />
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-semibold text-[#1c1c1e]">{item.employer}</p>
-                            <p className="text-sm text-[#8e8e93]">{item.action} — <span className="font-medium text-[#1c1c1e]">{item.detail}</span></p>
+                            <p className="text-sm text-[#8e8e93]">{item.action}{item.detail ? <> — <span className="font-medium text-[#1c1c1e]">{item.detail}</span></> : null}</p>
                           </div>
                           <span className="text-xs text-[#aeaeb2] whitespace-nowrap mt-1 flex-shrink-0">{fmtTime(item.time)}</span>
                         </div>

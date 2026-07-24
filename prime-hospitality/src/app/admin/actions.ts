@@ -183,6 +183,16 @@ export async function getAdminData() {
     .select("*, employers(business_name)")
     .order("created_at", { ascending: false });
 
+  // Fetch employer-originated activity (written by employer server actions,
+  // tagged metadata.source = "employer") for the Overview "Employer Activity"
+  // panel -- a real actor/time-accurate trail, not inferred from jobs rows.
+  const { data: employerActivityLog } = await getSupabase()
+    .from("activity_log")
+    .select("*")
+    .contains("metadata", { source: "employer" })
+    .order("created_at", { ascending: false })
+    .limit(200);
+
   // Fetch total job seekers count for overview stats
   const { count: userCount } = await getSupabase()
     .from("users")
@@ -228,6 +238,7 @@ export async function getAdminData() {
   return {
     employers: employers ?? [],
     jobs: jobs ?? [],
+    employerActivityLog: employerActivityLog ?? [],
     userCount: userCount ?? 0,
     adminUsername,
     specialRequests,
