@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Camera, CheckCircle2, AlertTriangle, Loader2 } from "lucide-react";
 import { getEmployerProfile, updateEmployerProfile, EmployerProfileData } from "./actions";
 import { monogramPalette, monogramLetter } from "@/components/EmployerAvatar";
+import AvatarCropModal from "@/components/AvatarCropModal";
 
 const MAX_DESCRIPTION_LENGTH = 1000;
 const MAX_LOGO_BYTES = 5 * 1024 * 1024;
@@ -107,6 +108,7 @@ export default function CompanyProfileTab() {
   const [logoPreviewUrl, setLogoPreviewUrl] = useState<string | null>(null);
   const [removeLogo, setRemoveLogo] = useState(false);
   const [avatarError, setAvatarError] = useState<string | null>(null);
+  const [cropFile, setCropFile] = useState<File | null>(null);
 
   const [saving, setSaving] = useState(false);
   const [successNote, setSuccessNote] = useState<string | null>(null);
@@ -172,10 +174,16 @@ export default function CompanyProfileTab() {
     }
 
     setAvatarError(null);
+    setCropFile(file);
+  };
+
+  const handleCropConfirm = (blob: Blob) => {
+    const croppedFile = new File([blob], "avatar.png", { type: "image/png" });
+    setCropFile(null);
     setRemoveLogo(false);
     if (logoPreviewUrl) URL.revokeObjectURL(logoPreviewUrl);
-    setLogoFile(file);
-    setLogoPreviewUrl(URL.createObjectURL(file));
+    setLogoFile(croppedFile);
+    setLogoPreviewUrl(URL.createObjectURL(croppedFile));
   };
 
   const handleRemovePhoto = () => {
@@ -342,6 +350,10 @@ export default function CompanyProfileTab() {
           </button>
         </div>
       </form>
+
+      {cropFile && (
+        <AvatarCropModal file={cropFile} onCancel={() => setCropFile(null)} onConfirm={handleCropConfirm} />
+      )}
     </div>
   );
 }

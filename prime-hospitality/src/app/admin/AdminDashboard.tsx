@@ -5,6 +5,7 @@ import { toggleUserBan, toggleJobStatus, scheduleJobPost, repostJob, approveSche
 import type { AdminPermissions, SubAdmin } from "./actions";
 import { Trash2, Pencil, Image as ImageIcon, Menu, X, LayoutDashboard, Briefcase, FileText, Users, LogOut, Settings, CreditCard, CheckCircle, BookOpen, User, Building2, Hourglass, ChevronDown, Check, Plus, Megaphone, History, BarChart3 } from "lucide-react";
 import EmployerAvatar from "@/components/EmployerAvatar";
+import AvatarCropModal from "@/components/AvatarCropModal";
 import { motion, AnimatePresence } from "framer-motion";
 import { Timer, Gear } from "@phosphor-icons/react";
 import { supabase } from "@/lib/supabase";
@@ -623,6 +624,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
   const [platformLogoFile, setPlatformLogoFile] = useState<File | null>(null);
   const [platformLogoPreview, setPlatformLogoPreview] = useState<string | null>(null);
   const [platformRemoveLogo, setPlatformRemoveLogo] = useState(false);
+  const [platformCropFile, setPlatformCropFile] = useState<File | null>(null);
   const platformFileInputRef = useRef<HTMLInputElement>(null);
   const [showNotifications, setShowNotifications] = useState(false);
   const [seekerSubTab, setSeekerSubTab] = useState<SeekerSubTab>("user-config");
@@ -836,6 +838,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
     setPlatformLogoFile(null);
     setPlatformLogoPreview(null);
     setPlatformRemoveLogo(false);
+    setPlatformCropFile(null);
     setProfileModalError("");
   };
 
@@ -848,10 +851,16 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
     if (file.size > 5 * 1024 * 1024) { setProfileModalError("Image must be smaller than 5MB."); return; }
 
     setProfileModalError("");
+    setPlatformCropFile(file);
+  };
+
+  const handlePlatformCropConfirm = (blob: Blob) => {
+    const croppedFile = new File([blob], "avatar.png", { type: "image/png" });
+    setPlatformCropFile(null);
     setPlatformRemoveLogo(false);
     if (platformLogoPreview) URL.revokeObjectURL(platformLogoPreview);
-    setPlatformLogoFile(file);
-    setPlatformLogoPreview(URL.createObjectURL(file));
+    setPlatformLogoFile(croppedFile);
+    setPlatformLogoPreview(URL.createObjectURL(croppedFile));
   };
 
   const handleRemovePlatformLogo = () => {
@@ -2652,6 +2661,10 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
             )}
           </div>
         </div>
+      )}
+
+      {platformCropFile && (
+        <AvatarCropModal file={platformCropFile} onCancel={() => setPlatformCropFile(null)} onConfirm={handlePlatformCropConfirm} />
       )}
 
       {/* Delete Employer Modal */}
