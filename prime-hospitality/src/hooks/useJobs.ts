@@ -182,7 +182,12 @@ export function useJobs(category?: string | null, limit?: number): UseJobsReturn
     fetchJobs(false);
   }, [fetchJobs]);
 
-  // ── Realtime: instantly remove deleted or non-active jobs ──────────────────
+  // ── Realtime: instantly reflect jobs coming online or going offline ────────
+  // A job can become visible in this feed either via INSERT (auto-published
+  // by its employer) or via UPDATE (admin approves a pending job, or a
+  // scheduled job publishes). Since the row payload doesn't include the
+  // joined `employers` columns this hook needs for display, we re-run the
+  // scoped query rather than trying to splice the raw row in by hand.
   useEffect(() => {
     const removeJob = (jobId: string) => {
       // Remove from all cache keys
@@ -191,6 +196,9 @@ export function useJobs(category?: string | null, limit?: number): UseJobsReturn
       });
       setJobs((prev) => prev.filter((j) => j.id !== jobId));
     };
+
+    const matchesThisFeed = (row: { category?: string }) =>
+      !category || row.category === category;
 
     const channel = supabase
       .channel(`jobs-realtime-${categoryKey}`)
@@ -204,12 +212,26 @@ export function useJobs(category?: string | null, limit?: number): UseJobsReturn
       )
       .on(
         "postgres_changes",
+        { event: "INSERT", schema: "public", table: "jobs" },
+        (payload) => {
+          const inserted = payload.new as { status: string; category: string };
+          if (inserted?.status === "active" && matchesThisFeed(inserted)) {
+            fetchJobs(true);
+          }
+        }
+      )
+      .on(
+        "postgres_changes",
         { event: "UPDATE", schema: "public", table: "jobs" },
         (payload) => {
-          const updated = payload.new as { id: string; status: string };
-          // If the job is no longer active, remove it from the feed instantly
-          if (updated?.id && updated.status !== "active") {
+          const updated = payload.new as { id: string; status: string; category: string };
+          if (!updated?.id) return;
+          if (updated.status !== "active") {
+            // No longer active (closed, expired, rejected, paused) — drop it
             removeJob(updated.id);
+          } else if (matchesThisFeed(updated)) {
+            // Newly approved/published, or an edit to an already-active job
+            fetchJobs(true);
           }
         }
       )
@@ -218,7 +240,7 @@ export function useJobs(category?: string | null, limit?: number): UseJobsReturn
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [categoryKey]);
+  }, [categoryKey, category, fetchJobs]);
 
   const refetch = useCallback(() => {
     return fetchJobs(true);

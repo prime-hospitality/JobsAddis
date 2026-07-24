@@ -247,8 +247,8 @@ export default function ApplicantManagementScreen({
     setTimeout(() => setToast(null), 3500);
   };
 
-  const loadApplicants = useCallback(async () => {
-    setIsLoading(true);
+  const loadApplicants = useCallback(async (opts?: { silent?: boolean }) => {
+    if (!opts?.silent) setIsLoading(true);
     setError(null);
     try {
       if (!initData) {
@@ -276,15 +276,24 @@ export default function ApplicantManagementScreen({
         setApplicants(result.applicants as unknown as Applicant[]);
       }
     } catch (e) {
-      setError("Could not load applicants. Try again.");
+      if (!opts?.silent) setError("Could not load applicants. Try again.");
     } finally {
-      setIsLoading(false);
+      if (!opts?.silent) setIsLoading(false);
       setLoaded(true);
     }
   }, [initData, jobId, user]);
 
   useEffect(() => {
     loadApplicants();
+  }, [loadApplicants]);
+
+  // Poll for new applicants while this screen stays open, so a fresh
+  // application shows up without leaving and re-opening the job.
+  useEffect(() => {
+    const interval = setInterval(() => {
+      loadApplicants({ silent: true });
+    }, 20000);
+    return () => clearInterval(interval);
   }, [loadApplicants]);
   const pending = applicants.filter((a) => a.status === "pending");
   const shortlisted = applicants.filter((a) => a.status === "shortlisted");
@@ -482,7 +491,7 @@ export default function ApplicantManagementScreen({
           {!isLoading && error && (
             <div style={{ textAlign: "center", padding: 40 }}>
               <p style={{ color: "#FCA5A5", fontSize: 14, marginBottom: 12 }}>{error}</p>
-              <button onClick={loadApplicants} style={{ fontSize: 13, fontWeight: 600, color: "var(--brand)", background: "none", border: "none", cursor: "pointer" }}>Try again</button>
+              <button onClick={() => loadApplicants()} style={{ fontSize: 13, fontWeight: 600, color: "var(--brand)", background: "none", border: "none", cursor: "pointer" }}>Try again</button>
             </div>
           )}
 

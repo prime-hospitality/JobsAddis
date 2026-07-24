@@ -28,8 +28,8 @@ export default function ActivityLogTab() {
   const [loading, setLoading] = useState(true);
   const pageSize = 25;
 
-  const load = async (p: number) => {
-    setLoading(true);
+  const load = async (p: number, opts?: { silent?: boolean }) => {
+    if (!opts?.silent) setLoading(true);
     try {
       const res = await getActivityLog(p, pageSize);
       setRows(res.rows);
@@ -37,11 +37,18 @@ export default function ActivityLogTab() {
     } catch (e) {
       console.error(e);
     }
-    setLoading(false);
+    if (!opts?.silent) setLoading(false);
   };
 
   useEffect(() => {
     load(page);
+  }, [page]);
+
+  // Keep the log live while this tab is open, not just on the page it was
+  // fetched for — otherwise new entries only appear after a full reload.
+  useEffect(() => {
+    const interval = setInterval(() => load(page, { silent: true }), 30000);
+    return () => clearInterval(interval);
   }, [page]);
 
   const totalPages = Math.max(1, Math.ceil(total / pageSize));

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { toggleUserBan, toggleJobStatus, scheduleJobPost, repostJob, approveScheduledJob, cancelScheduledJob, logoutAdmin, addEmployer, deleteEmployer, updateEmployer, updateEmployerAutoPublish, adminUpdateEmployerLogo, deleteUser, approveSpecialRequest, getPricingConfig, updatePricingConfig, getLoggedInAdmin, createSubAdmin, updateSubAdminPermissions, deleteSubAdmin, listSubAdmins, searchUsers, getProfessionCounts, searchEmployers, getPackages, upsertPackage, deletePackage, getBusinessTypes, addBusinessType, getPlatformEmployerProfile, updatePlatformEmployerLogo } from "./actions";
+import { toggleUserBan, toggleJobStatus, scheduleJobPost, repostJob, approveScheduledJob, cancelScheduledJob, logoutAdmin, addEmployer, deleteEmployer, updateEmployer, updateEmployerAutoPublish, adminUpdateEmployerLogo, deleteUser, approveSpecialRequest, getPricingConfig, updatePricingConfig, getLoggedInAdmin, createSubAdmin, updateSubAdminPermissions, deleteSubAdmin, listSubAdmins, searchUsers, getProfessionCounts, searchEmployers, getPackages, upsertPackage, deletePackage, getBusinessTypes, addBusinessType, getPlatformEmployerProfile, updatePlatformEmployerLogo, getAdminData } from "./actions";
 import type { AdminPermissions, SubAdmin } from "./actions";
 import { Trash2, Pencil, Image as ImageIcon, Menu, X, LayoutDashboard, Briefcase, FileText, Users, LogOut, Settings, CreditCard, CheckCircle, BookOpen, User, Building2, Hourglass, ChevronDown, Check, Plus, Megaphone, History, BarChart3 } from "lucide-react";
 import EmployerAvatar from "@/components/EmployerAvatar";
@@ -728,6 +728,29 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
       window.history.replaceState(null, "", window.location.pathname);
     }
   }, [activeTab]);
+
+  // `data` is otherwise only ever set once (server-rendered on page load) or
+  // patched locally right after this admin's own action. Anything that
+  // happens elsewhere — an employer posting a job, another sub-admin acting —
+  // was invisible until a full page reload. Poll the same data the initial
+  // page load fetches so jobs/employers/activity stay live in the background.
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      try {
+        const fresh = await getAdminData();
+        setData((prev: any) => ({
+          ...prev,
+          employers: fresh.employers,
+          jobs: fresh.jobs,
+          employerActivityLog: fresh.employerActivityLog,
+          userCount: fresh.userCount,
+        }));
+      } catch (e) {
+        // Silent — next tick will retry, no need to surface a background poll failure
+      }
+    }, 30000);
+    return () => clearInterval(interval);
+  }, []);
 
   const perms = loggedInAdmin?.permissions;
   const isSuperAdmin = loggedInAdmin?.role === "super_admin";
