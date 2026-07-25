@@ -119,6 +119,7 @@ export default function ContentManagementTab() {
       }
       setPostedTemplateId(templateId);
       setTimeout(() => setPostedTemplateId(null), 3000);
+      await loadData();
     } catch (err) {
       setErrorModal("Failed to post job: " + (err instanceof Error ? err.message : "Unknown error"));
     } finally {
@@ -148,6 +149,7 @@ export default function ContentManagementTab() {
       setScheduleTime("");
       setPostedTemplateId(scheduleTemplateModal.id);
       setTimeout(() => setPostedTemplateId(null), 4000);
+      await loadData();
     } catch (err: any) {
       setScheduleError(err.message || "Failed to schedule publication");
     } finally {

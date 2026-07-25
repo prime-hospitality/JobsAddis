@@ -31,6 +31,7 @@ export default function ManageJobPostingsTab() {
   const [activeSubTab, setActiveSubTab] = useState<"post" | "templates">("post");
   const [data, setData] = useState<PostingData>(EMPTY);
   const [loading, setLoading] = useState(true);
+  const [reloadError, setReloadError] = useState<string | null>(null);
 
   const reload = useCallback(async () => {
     try {
@@ -44,8 +45,10 @@ export default function ManageJobPostingsTab() {
         businessType: res.businessType || "",
         logoUrl: res.logoUrl || null,
       });
+      setReloadError(null);
     } catch (e) {
       console.error(e);
+      setReloadError("Couldn't refresh the latest data. Your change was saved, but this list may be out of date.");
     }
   }, []);
 
@@ -60,6 +63,42 @@ export default function ManageJobPostingsTab() {
   return (
     <div className="mjp-scope" style={{ maxWidth: 1200, margin: "0 auto", fontFamily: "'Inter', sans-serif" }}>
       <PostingStyles />
+
+      {reloadError && (
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 12,
+            padding: "10px 14px",
+            marginBottom: 16,
+            borderRadius: 10,
+            background: "#fffbeb",
+            border: "1px solid #fde68a",
+            color: "#b45309",
+            fontSize: 13,
+          }}
+        >
+          <span>{reloadError}</span>
+          <button
+            onClick={() => reload()}
+            style={{
+              flexShrink: 0,
+              background: "transparent",
+              border: "1px solid #fde68a",
+              borderRadius: 6,
+              padding: "4px 10px",
+              color: "#b45309",
+              fontSize: 13,
+              fontWeight: 600,
+              cursor: "pointer",
+            }}
+          >
+            Retry
+          </button>
+        </div>
+      )}
 
       {/* Segmented tab control */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12, marginBottom: 22 }}>
