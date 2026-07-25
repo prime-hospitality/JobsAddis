@@ -34,3 +34,22 @@ export function resumeStoragePath(cvUrl: string | null | undefined): string | nu
   if (cvUrl.startsWith("http://") || cvUrl.startsWith("https://")) return null;
   return cvUrl.replace(/^\/+/, "") || null;
 }
+
+/**
+ * What a browser will do with this CV. Uploads accept PDF and Word, and the
+ * original extension is kept in the stored filename, so the file itself never
+ * has to be fetched to tell.
+ *
+ * Browsers render a PDF in the tab but cannot display .doc/.docx — those
+ * download instead. Saying so on the button stops a working download from
+ * reading as a broken "View".
+ */
+export function cvOpensInBrowser(cvUrl: string | null | undefined): boolean {
+  const path = resumeStoragePath(cvUrl);
+  return path ? path.toLowerCase().endsWith(".pdf") : false;
+}
+
+/** Button text that matches what actually happens: "View CV" or "Download CV (Word)". */
+export function cvActionLabel(cvUrl: string | null | undefined): string {
+  return cvOpensInBrowser(cvUrl) ? "View CV" : "Download CV (Word)";
+}

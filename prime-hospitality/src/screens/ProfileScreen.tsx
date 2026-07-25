@@ -5,6 +5,7 @@ import { motion, LazyMotion, domAnimation, AnimatePresence } from "framer-motion
 import { Phone, MapPin, Briefcase, FileText, RefreshCw, CheckCircle, HelpCircle, ShieldCheck, Settings, AlertCircle, Upload, Loader2, Moon, Sun, X, Pencil, Lock, ChevronRight, ChevronLeft, ChevronDown, Users, Search } from "lucide-react";
 import { fetchProfile as fetchProfileApi, updatePhone, updateSecondaryPhone, fetchOwnCvUrl } from "@/lib/api";
 import { formatPhoneForDisplay, normalizePhoneNumber } from "@/lib/phone";
+import { cvOpensInBrowser } from "@/lib/cvStorage";
 import { useTelegram } from "@/hooks/useTelegram";
 import { useCvUpload } from "@/hooks/useCvUpload";
 import { supabase } from "@/lib/supabase";
@@ -1106,7 +1107,7 @@ export default function ProfileScreen() {
                         <>
                           <CheckCircle size={12} color="var(--success)" />
                           <span style={{ textDecoration: "underline", color: "#6366F1", cursor: "pointer" }} onClick={handleViewCv}>
-                            View CV
+                            {cvOpensInBrowser(profile.cv_url) ? "View CV" : "Download CV"}
                           </span>
                           <span style={{ color: "var(--text-muted)", fontSize: 11, marginLeft: 2, marginRight: 2 }}>|</span>
                           <span style={{ textDecoration: "underline", color: "var(--text-secondary)", cursor: "pointer" }} onClick={triggerCvUpload}>
