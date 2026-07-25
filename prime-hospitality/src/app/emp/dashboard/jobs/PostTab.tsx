@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import Link from "next/link";
 import { Plus, Pencil, Trash2, MapPin, Briefcase, Users, Clock, CalendarClock, CheckCircle2, Radio, Hourglass, ListChecks, ListFilter, RotateCw } from "lucide-react";
 import { createEmployerJob, updateEmployerJobPost, deleteEmployerJob, repostEmployerJob } from "./actions";
 import VacancyFormModal from "./VacancyFormModal";
@@ -201,7 +202,7 @@ export default function PostTab({ data, loading, reload }: { data: PostingData; 
                   </div>
 
                   {/* Applicants — links straight into the tracking page for this job. */}
-                  <a
+                  <Link
                     href={`/emp/dashboard/applicants?job=${job.id}`}
                     style={{
                       display: "inline-flex", alignItems: "center", gap: 6, alignSelf: "flex-start",
@@ -213,7 +214,7 @@ export default function PostTab({ data, loading, reload }: { data: PostingData; 
                     {(data.applicantCounts[job.id] ?? 0) === 0
                       ? "No applicants yet"
                       : `${data.applicantCounts[job.id]} applicant${data.applicantCounts[job.id] === 1 ? "" : "s"} →`}
-                  </a>
+                  </Link>
 
                   <div style={{ flex: 1 }} />
                   <div style={{ height: 1, background: "#f1f5f9" }} />

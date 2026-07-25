@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
+import Link from "next/link";
 
 async function getSession() {
   const sessionCookie = (await cookies()).get("employer_session");
@@ -103,13 +104,13 @@ export default async function EmployerDashboardPage() {
           </h2>
           <p style={{ fontSize: 14, color: "rgba(255,255,255,0.7)", margin: "6px 0 0 0" }}>Here&apos;s an overview of your recruitment activity</p>
         </div>
-        <a
+        <Link
           href="/emp/dashboard/jobs"
           style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.25)", borderRadius: 10, padding: "10px 18px", color: "#fff", fontSize: 14, fontWeight: 600, textDecoration: "none", backdropFilter: "blur(8px)", transition: "background 0.2s" }}
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14"/></svg>
           Post a Job
-        </a>
+        </Link>
       </div>
 
       {/* Stats Row */}
@@ -147,7 +148,7 @@ export default async function EmployerDashboardPage() {
         <div style={{ background: "#fff", borderRadius: 14, border: "1px solid #e2e8f0", overflow: "hidden", boxShadow: "0 1px 4px rgba(0,0,0,0.04)" }}>
           <div style={{ padding: "16px 20px", borderBottom: "1px solid #f1f5f9", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <h3 style={{ fontSize: 15, fontWeight: 700, color: "#0f172a", margin: 0 }}>Active Job Postings</h3>
-            <a href="/emp/dashboard/jobs" style={{ fontSize: 12, fontWeight: 600, color: "#0284c7", textDecoration: "none" }}>View all →</a>
+            <Link href="/emp/dashboard/jobs" style={{ fontSize: 12, fontWeight: 600, color: "#0284c7", textDecoration: "none" }}>View all →</Link>
           </div>
           {data.activeJobs.length === 0 ? (
             <div style={{ padding: "36px 20px", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center" }}>
@@ -155,9 +156,9 @@ export default async function EmployerDashboardPage() {
                 <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg>
               </div>
               <p style={{ fontSize: 14, color: "#94a3b8", fontWeight: 500 }}>No active job postings yet</p>
-              <a href="/emp/dashboard/jobs" style={{ display: "inline-flex", alignItems: "center", gap: 6, marginTop: 14, background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 8, padding: "8px 16px", fontSize: 13, fontWeight: 600, color: "#0284c7", textDecoration: "none" }}>
+              <Link href="/emp/dashboard/jobs" style={{ display: "inline-flex", alignItems: "center", gap: 6, marginTop: 14, background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 8, padding: "8px 16px", fontSize: 13, fontWeight: 600, color: "#0284c7", textDecoration: "none" }}>
                 Post your first job
-              </a>
+              </Link>
             </div>
           ) : (
             <div style={{ overflowX: "auto" }}>
@@ -189,7 +190,7 @@ export default async function EmployerDashboardPage() {
         <div style={{ background: "#fff", borderRadius: 14, border: "1px solid #e2e8f0", overflow: "hidden", boxShadow: "0 1px 4px rgba(0,0,0,0.04)" }}>
           <div style={{ padding: "16px 20px", borderBottom: "1px solid #f1f5f9", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <h3 style={{ fontSize: 15, fontWeight: 700, color: "#0f172a", margin: 0 }}>Incoming Applications</h3>
-            <a href="/emp/dashboard/applicants" style={{ fontSize: 12, fontWeight: 600, color: "#0284c7", textDecoration: "none" }}>View all →</a>
+            <Link href="/emp/dashboard/applicants" style={{ fontSize: 12, fontWeight: 600, color: "#0284c7", textDecoration: "none" }}>View all →</Link>
           </div>
           {data.recentApplications.length === 0 ? (
             <div style={{ padding: "36px 20px", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center" }}>
@@ -201,7 +202,7 @@ export default async function EmployerDashboardPage() {
           ) : (
             <div style={{ maxHeight: 320, overflowY: "auto" }}>
               {data.recentApplications.map((app: any) => (
-                <a key={app.id} href={`/emp/dashboard/applicants?job=${app.job_id}`} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", borderBottom: "1px solid #f8fafc", textDecoration: "none", color: "inherit" }}>
+                <Link key={app.id} href={`/emp/dashboard/applicants?job=${app.job_id}`} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", borderBottom: "1px solid #f8fafc", textDecoration: "none", color: "inherit" }}>
                   {/* Avatar */}
                   <div style={{ width: 34, height: 34, borderRadius: "50%", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 800, color: "#fff", flexShrink: 0 }}>
                     {(app.profiles?.full_name || "?").charAt(0).toUpperCase()}
@@ -218,7 +219,7 @@ export default async function EmployerDashboardPage() {
                     </span>
                     <span style={{ fontSize: 10, color: "#cbd5e1" }}>{fmtTime(app.created_at)}</span>
                   </div>
-                </a>
+                </Link>
               ))}
             </div>
           )}

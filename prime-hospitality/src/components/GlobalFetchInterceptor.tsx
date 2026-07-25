@@ -1,8 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { isSilentFetch } from "@/lib/silentFetch";
+import { isSilentFetch, isRouteNavigation } from "@/lib/silentFetch";
 // import { Loader2 } from "lucide-react"; // No longer needed
+
+/** Don't show the overlay for anything faster than this — it'd be a blink. */
+const SHOW_DELAY_MS = 300;
+/** Once shown, hold it this long. Otherwise a 320ms request strobes on/off. */
+const MIN_VISIBLE_MS = 400;
 
 export function GlobalFetchInterceptor() {
   const [isLoading, setIsLoading] = useState(false);
@@ -12,21 +17,53 @@ export function GlobalFetchInterceptor() {
 
     const originalFetch = window.fetch;
     let activeRequests = 0;
-    let timer: NodeJS.Timeout | null = null;
+    let showTimer: ReturnType<typeof setTimeout> | null = null;
+    let hideTimer: ReturnType<typeof setTimeout> | null = null;
+    let shownAt = 0;
+
+    const hide = () => {
+      if (showTimer) {
+        clearTimeout(showTimer);
+        showTimer = null;
+      }
+      // Never actually became visible — nothing to tear down.
+      if (!shownAt) return;
+
+      const remaining = MIN_VISIBLE_MS - (Date.now() - shownAt);
+      if (remaining <= 0) {
+        shownAt = 0;
+        setIsLoading(false);
+        return;
+      }
+      hideTimer = setTimeout(() => {
+        hideTimer = null;
+        shownAt = 0;
+        setIsLoading(false);
+      }, remaining);
+    };
 
     window.fetch = async (...args) => {
       // Background polls (dashboard/activity-log refresh) wrap themselves in
       // runSilently() so they don't flash this overlay on every tick.
-      const background = isSilentFetch();
+      const background = isSilentFetch() || isRouteNavigation(args[0], args[1]);
 
       if (!background) {
         activeRequests++;
 
-        // Delay loader to avoid flashing on very quick requests
         if (activeRequests === 1) {
-          timer = setTimeout(() => {
-            setIsLoading(true);
-          }, 300); // 300ms threshold
+          // A new request while we're waiting out MIN_VISIBLE_MS: keep the
+          // overlay up rather than hiding it just to show it again.
+          if (hideTimer) {
+            clearTimeout(hideTimer);
+            hideTimer = null;
+          }
+          if (!shownAt && !showTimer) {
+            showTimer = setTimeout(() => {
+              showTimer = null;
+              shownAt = Date.now();
+              setIsLoading(true);
+            }, SHOW_DELAY_MS);
+          }
         }
       }
 
@@ -36,10 +73,7 @@ export function GlobalFetchInterceptor() {
       } finally {
         if (!background) {
           activeRequests--;
-          if (activeRequests === 0) {
-            if (timer) clearTimeout(timer);
-            setIsLoading(false);
-          }
+          if (activeRequests === 0) hide();
         }
       }
     };
@@ -47,6 +81,8 @@ export function GlobalFetchInterceptor() {
     return () => {
       // Restore on unmount
       window.fetch = originalFetch;
+      if (showTimer) clearTimeout(showTimer);
+      if (hideTimer) clearTimeout(hideTimer);
     };
   }, []);
 
