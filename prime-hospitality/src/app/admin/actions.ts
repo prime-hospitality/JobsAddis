@@ -391,7 +391,7 @@ export async function deleteUser(userId: string, passwordAttempt: string) {
   return { success: true };
 }
 
-export async function toggleJobStatus(jobId: string, status: "active" | "closed" | "pending" | "scheduled") {
+export async function toggleJobStatus(jobId: string, status: "active" | "closed" | "pending" | "scheduled" | "rejected") {
   await requirePermission("manageJobs");
 
   const { error } = await getSupabase().from("jobs").update({ status }).eq("id", jobId);
@@ -790,21 +790,17 @@ export async function getPlatformJobs() {
 
   const supabase = getSupabase();
   const employerResult = await getPlatformEmployerId(supabase);
-  if ("error" in employerResult) return { scheduled: [], live: [] };
+  if ("error" in employerResult) return [];
 
   const { data: jobs, error } = await supabase
     .from("jobs")
     .select("*")
     .eq("employer_id", employerResult.id)
-    .in("status", ["scheduled", "active"])
     .order("created_at", { ascending: false });
 
   if (error) throw error;
 
-  return {
-    scheduled: (jobs || []).filter((j: any) => j.status === "scheduled"),
-    live: (jobs || []).filter((j: any) => j.status === "active"),
-  };
+  return jobs || [];
 }
 
 export interface PlatformJobEditData {
@@ -824,20 +820,17 @@ export interface PlatformJobEditData {
   scheduled_at?: string;
 }
 
+function resolvePlatformJobSalary(data: Pick<PlatformJobEditData, "salary_type" | "salary_min" | "salary_max">): { salaryMin: number; salaryMax: number } {
+  if (data.salary_type === "negotiable") return { salaryMin: -1, salaryMax: -1 };
+  if (data.salary_type === "company_scale") return { salaryMin: -2, salaryMax: -2 };
+  return { salaryMin: data.salary_min ?? 0, salaryMax: data.salary_max ?? data.salary_min ?? 0 };
+}
+
 export async function updatePlatformJob(jobId: string, data: PlatformJobEditData) {
   await requirePermission("manageJobs");
   const supabase = getSupabase();
 
-  let salaryMin: number;
-  let salaryMax: number;
-  if (data.salary_type === "negotiable") {
-    salaryMin = -1; salaryMax = -1;
-  } else if (data.salary_type === "company_scale") {
-    salaryMin = -2; salaryMax = -2;
-  } else {
-    salaryMin = data.salary_min ?? 0;
-    salaryMax = data.salary_max ?? data.salary_min ?? 0;
-  }
+  const { salaryMin, salaryMax } = resolvePlatformJobSalary(data);
 
   const update: Record<string, unknown> = {
     title: data.title,
@@ -868,6 +861,56 @@ export async function updatePlatformJob(jobId: string, data: PlatformJobEditData
   if (error) throw error;
   await logActivity("edit_platform_job", jobId, {});
   return { success: true };
+}
+
+/** Reposts an expired platform job: requires a new deadline, rebuilds the
+ *  listing fields, and republishes it to 'active' or 'pending' depending on
+ *  whether the platform employer auto-publishes -- mirrors the employer-side
+ *  repost flow (repostEmployerJob). */
+export async function repostPlatformJob(jobId: string, data: PlatformJobEditData): Promise<{ success: true; status: "active" | "pending" } | { success: false; error: string }> {
+  await requirePermission("manageJobs");
+  const supabase = getSupabase();
+
+  const { data: existing } = await supabase.from("jobs").select("id, employer_id, status").eq("id", jobId).maybeSingle();
+  if (!existing) return { success: false, error: "Job not found" };
+  if (existing.status !== "expired") return { success: false, error: "Only expired jobs can be reposted." };
+
+  if (!data.deadline) return { success: false, error: "A new deadline is required to repost this job." };
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  if (new Date(data.deadline) < today) return { success: false, error: "The new deadline must be today or later." };
+
+  const { data: employer } = await supabase.from("employers").select("auto_publish").eq("id", existing.employer_id).maybeSingle();
+  const newStatus: "active" | "pending" = employer?.auto_publish ? "active" : "pending";
+
+  const { salaryMin, salaryMax } = resolvePlatformJobSalary(data);
+
+  const { error } = await supabase.from("jobs").update({
+    title: data.title,
+    category: data.job_category,
+    location: data.location,
+    neighborhood: data.location,
+    job_type: data.employment_type,
+    salary_min: salaryMin,
+    salary_max: salaryMax,
+    currency: data.salary_currency,
+    description: data.description,
+    full_description: data.description,
+    requirements: {
+      experience: data.experience_required,
+      education: data.education_requirements,
+      languages: [],
+      locationPreference: null,
+      workingHours: null,
+    },
+    deadline: data.deadline,
+    quantity: data.quantity,
+    status: newStatus,
+  }).eq("id", jobId);
+
+  if (error) return { success: false, error: error.message || "Failed to repost job" };
+  await logActivity("repost_platform_job", jobId, { status: newStatus });
+  return { success: true, status: newStatus };
 }
 
 export async function deletePlatformJob(jobId: string) {
@@ -1071,15 +1114,20 @@ export async function deleteEmployer(employerId: string, passwordAttempt: string
   if (passwordAttempt !== storedPassword) return { success: false, error: "Incorrect admin password" };
 
 
-  // 1. Fetch employer to get the logo URL before deletion
+  // 1. Fetch employer to get the logo URL and linked user_id before deletion
   const { data: employer } = await supabase
     .from("employers")
-    .select("logo_url")
+    .select("logo_url, user_id")
     .eq("id", employerId)
     .single();
 
-  // 2. Delete the employer
-  const { error } = await supabase.from("employers").delete().eq("id", employerId);
+  // 2. Delete the linked users row -- this cascades to delete the employers
+  // row (and in turn its jobs/applications/templates) via ON DELETE CASCADE,
+  // so the Telegram ID is freed up to onboard as a brand-new user rather than
+  // being permanently stuck as a phantom "employer" with no employer row.
+  const { error } = employer?.user_id
+    ? await supabase.from("users").delete().eq("id", employer.user_id)
+    : await supabase.from("employers").delete().eq("id", employerId);
   if (error) return { success: false, error: "Database error: Failed to delete" };
   await logActivity("delete_employer", employerId);
 

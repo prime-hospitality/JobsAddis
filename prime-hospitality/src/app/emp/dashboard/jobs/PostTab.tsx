@@ -172,7 +172,11 @@ export default function PostTab({ data, loading, reload }: { data: PostingData; 
           {filteredJobs.map((job) => {
             const accent = (STATUS_META[job.status] || STATUS_META.pending).accent;
             return (
-              <div key={job.id} className="mjp-card">
+              <div
+                key={job.id}
+                className="mjp-card"
+                title={job.status === "rejected" ? "Your job post has been rejected. Contact the JobsAddis Support team for details." : undefined}
+              >
                 <div className="mjp-card-accent" style={{ background: accent }} />
                 <div style={{ padding: 18, display: "flex", flexDirection: "column", gap: 12, flex: 1 }}>
                   {/* Top: logo + title + status */}

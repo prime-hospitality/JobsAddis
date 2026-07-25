@@ -217,7 +217,11 @@ export const STATUS_META: Record<string, StatusMeta> = {
 export function StatusPill({ status }: { status: string }) {
   const m = STATUS_META[status] || STATUS_META.pending;
   return (
-    <span className="mjp-status" style={{ background: m.bg, color: m.text, borderColor: m.border }}>
+    <span
+      className="mjp-status"
+      style={{ background: m.bg, color: m.text, borderColor: m.border }}
+      title={status === "rejected" ? "Your job post has been rejected. Contact the JobsAddis Support team for details." : undefined}
+    >
       <span className="dot" style={{ background: m.dot }} />
       {m.label}
     </span>

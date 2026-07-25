@@ -1300,7 +1300,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
     }
   };
 
-  const handleJobStatus = async (id: string, status: "active" | "closed" | "pending" | "scheduled") => {
+  const handleJobStatus = async (id: string, status: "active" | "closed" | "pending" | "scheduled" | "rejected") => {
     setLoading(`job-${id}`);
     try {
       await toggleJobStatus(id, status);
@@ -2412,7 +2412,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                           job={item}
                           loading={!!loading}
                           onApprove={() => handleJobStatus(item.id, "active")}
-                          onReject={() => handleJobStatus(item.id, "closed")}
+                          onReject={() => handleJobStatus(item.id, "rejected")}
                           onPause={() => handleJobStatus(item.id, "pending")}
                           onClose={() => handleJobStatus(item.id, "closed")}
                           onApproveScheduled={() => handleApproveScheduled(item.id)}
@@ -2500,7 +2500,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                       job={item}
                       loading={!!loading}
                       onApprove={() => handleJobStatus(item.id, "active")}
-                      onReject={() => handleJobStatus(item.id, "closed")}
+                      onReject={() => handleJobStatus(item.id, "rejected")}
                       onPause={() => handleJobStatus(item.id, "pending")}
                       onClose={() => handleJobStatus(item.id, "closed")}
                       onApproveScheduled={() => handleApproveScheduled(item.id)}
@@ -3461,7 +3461,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
                 loading={!!loading}
                 size="md"
                 onApprove={() => handleJobStatus(viewingJob.id, "active")}
-                onReject={() => handleJobStatus(viewingJob.id, "closed")}
+                onReject={() => handleJobStatus(viewingJob.id, "rejected")}
                 onPause={() => handleJobStatus(viewingJob.id, "pending")}
                 onClose={() => handleJobStatus(viewingJob.id, "closed")}
                 onApproveScheduled={() => handleApproveScheduled(viewingJob.id)}
