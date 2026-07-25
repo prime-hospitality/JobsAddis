@@ -145,10 +145,43 @@ async function loadOwnedApplication(
   };
 }
 
+/**
+ * How long a shortlist notification sits invisible before the seeker can see it.
+ * An employer who shortlists by mistake and clicks back within this window
+ * retracts it before anyone is told.
+ */
+const SHORTLIST_NOTICE_DELAY_MINUTES = 5;
+
+/** The seeker's shortlist notification for this job, and whether they can see it yet. */
+async function findShortlistNotice(
+  supabase: ReturnType<typeof getSupabase>,
+  telegramId: number,
+  jobId: string
+): Promise<{ id: string; delivered: boolean } | null> {
+  const { data } = await supabase
+    .from("notifications")
+    .select("id, deliver_after")
+    .eq("user_telegram_id", telegramId)
+    .eq("job_id", jobId)
+    .eq("type", "shortlisted")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (!data) return null;
+  const deliverAfter = (data as any).deliver_after as string | null;
+  return {
+    id: (data as any).id as string,
+    // No delay set (legacy rows) means it went out immediately.
+    delivered: !deliverAfter || new Date(deliverAfter) <= new Date(),
+  };
+}
+
 export async function setApplicationStatus(
   applicationId: string,
-  status: ApplicationStatus
-): Promise<{ success: boolean; error?: string }> {
+  status: ApplicationStatus,
+  options?: { confirmed?: boolean }
+): Promise<{ success: boolean; error?: string; needsConfirmation?: boolean }> {
   const session = await requireEmployer();
   if (!session) return { success: false, error: "Unauthorized" };
   if (!VALID_STATUSES.includes(status)) return { success: false, error: "Invalid status." };
@@ -157,6 +190,20 @@ export async function setApplicationStatus(
   const app = await loadOwnedApplication(supabase, session.employerId, applicationId);
   if (!app) return { success: false, error: "Applicant not found." };
   if (app.status === status) return { success: true };
+
+  // Taking a shortlisting back. Inside the delay window the seeker was never
+  // told, so drop the pending notice and say nothing. Once it has been
+  // delivered we cannot unsee it for them — make the employer confirm, then
+  // remove it so the app stops contradicting the application's own status.
+  if (app.status === "shortlisted" && status !== "shortlisted") {
+    const notice = await findShortlistNotice(supabase, app.telegramId, app.job.id);
+    if (notice?.delivered && !options?.confirmed) {
+      return { success: false, needsConfirmation: true };
+    }
+    if (notice) {
+      await supabase.from("notifications").delete().eq("id", notice.id);
+    }
+  }
 
   const { error } = await supabase
     .from("applications")
@@ -169,14 +216,21 @@ export async function setApplicationStatus(
   // deliberately silent; they see the status in My Applications if they look.
   if (status === "shortlisted") {
     try {
-      await supabase.from("notifications").insert({
-        user_telegram_id: app.telegramId,
-        company_name: session.businessName,
-        job_title: app.job.title,
-        type: "shortlisted",
-        job_id: app.job.id,
-        read: false,
-      });
+      // One notice per application, ever. Toggling shortlisted off and on again
+      // must not re-announce it to a seeker who was already told.
+      const existing = await findShortlistNotice(supabase, app.telegramId, app.job.id);
+      if (!existing) {
+        const deliverAfter = new Date(Date.now() + SHORTLIST_NOTICE_DELAY_MINUTES * 60_000);
+        await supabase.from("notifications").insert({
+          user_telegram_id: app.telegramId,
+          company_name: session.businessName,
+          job_title: app.job.title,
+          type: "shortlisted",
+          job_id: app.job.id,
+          read: false,
+          deliver_after: deliverAfter.toISOString(),
+        });
+      }
     } catch (err) {
       console.error("Failed to notify shortlisted applicant:", err);
     }

@@ -65,6 +65,8 @@ export default function ApplicantsTab({ initialApplicants, jobs, initialJobFilte
   const [search, setSearch] = useState("");
   const [openId, setOpenId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  /** Set when un-shortlisting someone the seeker has already been told about. */
+  const [pendingUndo, setPendingUndo] = useState<{ id: string; status: ApplicationStatus } | null>(null);
   const [isPending, startTransition] = useTransition();
 
   // Remember which status tab the employer was on so a reload lands back here.
@@ -131,17 +133,20 @@ export default function ApplicantsTab({ initialApplicants, jobs, initialJobFilte
     }
   }
 
-  function handleStatus(id: string, status: ApplicationStatus) {
+  function handleStatus(id: string, status: ApplicationStatus, confirmed = false) {
     const previous = applicants.find((a) => a.id === id)?.status;
     applyLocalStatus(id, status);
     setError(null);
     startTransition(async () => {
       // Silent for the same reason: the status change is already applied
       // locally and rolls back below if the server rejects it.
-      const res = await runSilently(() => setApplicationStatus(id, status));
+      const res = await runSilently(() => setApplicationStatus(id, status, { confirmed }));
       if (!res.success) {
         if (previous) applyLocalStatus(id, previous);
-        setError(res.error || "Could not update this applicant.");
+        // The seeker has already been told they were shortlisted. Nothing has
+        // changed yet — ask before taking it back.
+        if (res.needsConfirmation) setPendingUndo({ id, status });
+        else setError(res.error || "Could not update this applicant.");
       }
     });
   }
@@ -264,6 +269,44 @@ export default function ApplicantsTab({ initialApplicants, jobs, initialJobFilte
           onStatus={handleStatus}
           onViewCv={handleViewCv}
         />
+      )}
+
+      {pendingUndo && (
+        <div
+          onClick={() => setPendingUndo(null)}
+          style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.5)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20, zIndex: 110 }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{ background: "#fff", borderRadius: 16, width: "100%", maxWidth: 420, padding: 24, boxShadow: "0 20px 50px rgba(0,0,0,0.25)" }}
+          >
+            <h3 style={{ fontSize: 17, fontWeight: 800, color: "#0f172a", margin: 0 }}>
+              They&apos;ve already been told
+            </h3>
+            <p style={{ fontSize: 14, color: "#475569", lineHeight: 1.55, margin: "10px 0 0 0" }}>
+              This applicant has seen a message saying they were shortlisted. Moving them
+              out will remove it, but there is no way to know whether they already read it.
+            </p>
+            <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
+              <button
+                onClick={() => setPendingUndo(null)}
+                style={{ flex: 1, border: "1px solid #e2e8f0", background: "#fff", borderRadius: 10, padding: "11px 16px", fontSize: 14, fontWeight: 700, color: "#64748b", cursor: "pointer" }}
+              >
+                Keep shortlisted
+              </button>
+              <button
+                onClick={() => {
+                  const { id, status } = pendingUndo;
+                  setPendingUndo(null);
+                  handleStatus(id, status, true);
+                }}
+                style={{ flex: 1, border: "none", background: "#ef4444", borderRadius: 10, padding: "11px 16px", fontSize: 14, fontWeight: 700, color: "#fff", cursor: "pointer" }}
+              >
+                Move them anyway
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

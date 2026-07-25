@@ -8,6 +8,13 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
+/**
+ * Grace period before a shortlist notice becomes visible to the seeker. Kept in
+ * step with SHORTLIST_NOTICE_DELAY_MINUTES in
+ * src/app/emp/dashboard/applicants/actions.ts — change both together.
+ */
+const SHORTLIST_NOTICE_DELAY_MINUTES = 5;
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-telegram-init-data",
@@ -123,17 +130,43 @@ serve(async (req: Request) => {
     // silent; the seeker sees the status in My Applications if they look.
     if (newStatus === "shortlisted") {
       try {
-        await supabase.from("notifications").insert({
-          user_telegram_id: (app as any).telegram_id,
-          company_name: employer.business_name,
-          job_title: job.title || "",
-          type: "shortlisted",
-          job_id: job.id,
-          read: false,
-        });
+        // Matches the web dashboard: the notice stays invisible for a few
+        // minutes so an employer who clicks by mistake can take it back before
+        // anyone is told, and one applicant is never announced twice.
+        const { data: existing } = await supabase
+          .from("notifications")
+          .select("id")
+          .eq("user_telegram_id", (app as any).telegram_id)
+          .eq("job_id", job.id)
+          .eq("type", "shortlisted")
+          .limit(1)
+          .maybeSingle();
+
+        if (!existing) {
+          await supabase.from("notifications").insert({
+            user_telegram_id: (app as any).telegram_id,
+            company_name: employer.business_name,
+            job_title: job.title || "",
+            type: "shortlisted",
+            job_id: job.id,
+            read: false,
+            deliver_after: new Date(Date.now() + SHORTLIST_NOTICE_DELAY_MINUTES * 60_000).toISOString(),
+          });
+        }
       } catch (notifyErr) {
         console.error("Failed to notify shortlisted applicant:", notifyErr);
       }
+    } else {
+      // Moving out of shortlisted: drop a notice the seeker has not seen yet.
+      // This function has no UI to confirm from, so a delivered notice is left
+      // alone rather than silently retracted.
+      await supabase
+        .from("notifications")
+        .delete()
+        .eq("user_telegram_id", (app as any).telegram_id)
+        .eq("job_id", job.id)
+        .eq("type", "shortlisted")
+        .gt("deliver_after", new Date().toISOString());
     }
 
     return new Response(JSON.stringify({ success: true }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });

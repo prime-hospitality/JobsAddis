@@ -23,6 +23,16 @@ interface HomeScreenProps {
 
 let businessAnimationHasRun = false;
 
+/**
+ * Where the feed was scrolled to when the seeker last tapped into a job.
+ *
+ * Opening a job unmounts this screen, so coming back used to rebuild the list
+ * from the top and lose the seeker's place — after browsing well down the feed,
+ * one look at a job meant scrolling all the way back. Module scope survives the
+ * unmount; it resets on reload, which is the right time to forget.
+ */
+let savedScrollTop = 0;
+
 export default function HomeScreen({ onJobSelect, onSearchPress, onBellPress, unreadCount = 0, profileName, pageSize, enableAnimations }: HomeScreenProps) {
 
   const shouldReduceMotion = useReducedMotion();
@@ -132,6 +142,33 @@ export default function HomeScreen({ onJobSelect, onSearchPress, onBellPress, un
     measureElement: useCallback((el: Element) => el.getBoundingClientRect().height, []),
     overscan: 3,
   });
+
+  // Put the seeker back where they were. This has to wait for the jobs to
+  // arrive — before that the list has no height and the scroll silently clamps
+  // to 0. Runs once per mount; browsing on from here just updates savedScrollTop.
+  const hasRestoredScroll = useRef(false);
+  useEffect(() => {
+    if (hasRestoredScroll.current || isLoading || jobPairs.length === 0) return;
+    hasRestoredScroll.current = true;
+    if (savedScrollTop <= 0) return;
+
+    // Two frames: the first lets the virtualizer lay out its rows, the second
+    // runs after that layout has been committed and the container is scrollable.
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        if (scrollRef.current) scrollRef.current.scrollTop = savedScrollTop;
+      });
+    });
+  }, [isLoading, jobPairs.length]);
+
+  /** Remember the current position, then open the job. */
+  const handleJobCardClick = useCallback(
+    (job: Job) => {
+      savedScrollTop = scrollRef.current?.scrollTop ?? 0;
+      onJobSelect(job);
+    },
+    [onJobSelect]
+  );
 
   return (
     <LazyMotion features={domAnimation}>
@@ -718,7 +755,7 @@ export default function HomeScreen({ onJobSelect, onSearchPress, onBellPress, un
                       >
                         <JobCard
                           job={job}
-                          onClick={onJobSelect}
+                          onClick={handleJobCardClick}
                           index={0}
                           enableAnimations={enableAnimations}
                           skipEntranceAnimation={true}

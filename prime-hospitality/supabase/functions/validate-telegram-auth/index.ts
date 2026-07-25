@@ -1283,6 +1283,7 @@ serve(async (req: Request) => {
         .from("notifications")
         .select("*")
         .eq("user_telegram_id", telegramId)
+        .or(`deliver_after.is.null,deliver_after.lte.${new Date().toISOString()}`)
         .order("created_at", { ascending: false });
 
       if (notifErr) throw notifErr;
@@ -1291,11 +1292,15 @@ serve(async (req: Request) => {
 
     // Action: Mark Notifications Read
     if (action === "mark_notifications_read") {
+      // Only what the seeker could actually see. Marking an undelivered row read
+      // would silently swallow it — it would arrive already-read and never show
+      // in the unread badge.
       const { error: markErr } = await supabase
         .from("notifications")
         .update({ read: true })
         .eq("user_telegram_id", telegramId)
-        .eq("read", false);
+        .eq("read", false)
+        .or(`deliver_after.is.null,deliver_after.lte.${new Date().toISOString()}`);
 
       if (markErr) throw markErr;
       return new Response(JSON.stringify({ success: true }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -1307,7 +1312,8 @@ serve(async (req: Request) => {
         .from("notifications")
         .select("*", { count: "exact", head: true })
         .eq("user_telegram_id", telegramId)
-        .eq("read", false);
+        .eq("read", false)
+        .or(`deliver_after.is.null,deliver_after.lte.${new Date().toISOString()}`);
 
       if (cntErr) throw cntErr;
       return new Response(JSON.stringify({ success: true, unread_count: count ?? 0 }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
