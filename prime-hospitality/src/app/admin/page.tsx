@@ -1,7 +1,6 @@
 import { cookies } from "next/headers";
-import AdminDashboard from "./AdminDashboard";
 import AdminLogin from "./AdminLogin";
-import { getAdminData } from "./actions";
+import AdminSessionGate from "./AdminSessionGate";
 import { ADMIN_UI_COOKIE, parseAdminUi } from "@/lib/adminUiCookie";
 
 export const metadata = {
@@ -16,22 +15,19 @@ export default async function AdminPage() {
   const authCookie = cookieStore.get("admin_session");
   const isAuthenticated = !!authCookie?.value;
 
+  // No session cookie at all → nobody is logged in on this browser: show login.
   if (!isAuthenticated) {
     return <AdminLogin />;
   }
 
-  // Fetch initial data securely on the server
-  let data;
-  try {
-    data = await getAdminData();
-  } catch (err) {
-    // If auth fails or data fetch fails, show login
-    return <AdminLogin />;
-  }
-
-  // Restore the admin's last tab/sub-tab position from a cookie so SSR renders
-  // the correct tab on first paint (no overview-then-jump flash on reload).
+  // A session cookie exists, but it's shared across every tab of the browser.
+  // The gate decides per-tab whether this tab has actually been logged into —
+  // a brand-new tab shows login instead of inheriting the open session, and the
+  // dashboard data is fetched (client-side) only after this tab is unlocked.
+  //
+  // Restore the last tab/sub-tab position from a cookie so an already-unlocked
+  // tab lands on the right tab without a flash.
   const initialUi = parseAdminUi(cookieStore.get(ADMIN_UI_COOKIE)?.value);
 
-  return <AdminDashboard initialData={data} initialUi={initialUi} />;
+  return <AdminSessionGate initialUi={initialUi} />;
 }

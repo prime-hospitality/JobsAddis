@@ -94,7 +94,7 @@ export async function loginAdmin(username: string, password: string) {
     // Always start a fresh login on the Overview tab — don't inherit the
     // previous user's saved position (this is a shared computer).
     jar.delete(ADMIN_UI_COOKIE);
-    return { success: true, role: "super_admin" };
+    return { success: true, role: "super_admin", username: storedUsername };
   }
 
   // Check sub-admins
@@ -106,10 +106,18 @@ export async function loginAdmin(username: string, password: string) {
     jar.set("admin_session", sessionData, { maxAge: 60 * 60 * 24, httpOnly: true, secure: process.env.NODE_ENV === "production" });
     // Always start a fresh login on the Overview tab (shared computer).
     jar.delete(ADMIN_UI_COOKIE);
-    return { success: true, role: "sub_admin" };
+    return { success: true, role: "sub_admin", username: sub.username };
   }
 
   return { success: false, error: "Invalid username or password" };
+}
+
+// Lightweight check of who the shared session cookie currently belongs to.
+// Used by a tab to detect if the browser's session was taken over by a
+// different admin (e.g. a sub-admin logged in on another tab).
+export async function getCurrentAdminUsername(): Promise<string | null> {
+  const session = await getSession();
+  return session?.username ?? null;
 }
 
 // ── Sub-Admin Management ─────────────────────────────────────────────────────

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { loginAdmin } from "./actions";
+import { setTabUser } from "@/lib/adminTabSession";
 
 export default function AdminLogin() {
   const [username, setUsername] = useState("");
@@ -31,6 +32,9 @@ export default function AdminLogin() {
     try {
       const res = await loginAdmin(username, password);
       if (res.success) {
+        // Mark THIS tab as unlocked for the account that just logged in, so the
+        // gate shows the dashboard here (and a new tab still requires login).
+        if (res.username) setTabUser(res.username);
         window.location.reload();
       } else {
         setError(res.error || "Login failed.");

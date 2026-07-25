@@ -11,6 +11,7 @@ import { Timer, Gear } from "@phosphor-icons/react";
 import { supabase } from "@/lib/supabase";
 import { runSilently } from "@/lib/silentFetch";
 import { AdminUiState, writeAdminUi, clearAdminUi } from "@/lib/adminUiCookie";
+import { clearTabUser } from "@/lib/adminTabSession";
 import ContentManagementTab from "./ContentManagementTab";
 import BroadcastTab from "./BroadcastTab";
 import ActivityLogTab from "./ActivityLogTab";
@@ -1402,6 +1403,7 @@ export default function AdminDashboard({ initialData, initialUi = {} }: { initia
 
   const handleLogout = async () => {
     clearAdminUi();
+    clearTabUser();
     await logoutAdmin();
     window.location.reload();
   };
