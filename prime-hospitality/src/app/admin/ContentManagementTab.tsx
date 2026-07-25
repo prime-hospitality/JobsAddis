@@ -608,7 +608,7 @@ export default function ContentManagementTab({
                   value={postsStatusFilter}
                   onChange={setPostsStatusFilter}
                   ariaLabel="Filter posts by status"
-                  searchPlaceholder="Search statuses…"
+                  searchable={false}
                   minWidth={190}
                   icon={<ListFilter size={14} color="#94a3b8" style={{ flexShrink: 0 }} />}
                   // Deliberately identical to the employer dashboard's status

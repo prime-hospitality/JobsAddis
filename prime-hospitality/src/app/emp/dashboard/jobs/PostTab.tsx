@@ -136,7 +136,8 @@ export default function PostTab({ data, loading, reload }: { data: PostingData; 
               value={statusFilter}
               onChange={setStatusFilter}
               ariaLabel="Filter postings by status"
-              searchPlaceholder="Search statuses…"
+              // Seven fixed statuses, all visible at once — nothing to search for.
+              searchable={false}
               minWidth={190}
               icon={<ListFilter size={14} color="#94a3b8" style={{ flexShrink: 0 }} />}
               options={[

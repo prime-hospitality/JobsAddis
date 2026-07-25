@@ -313,7 +313,7 @@ export default function CompanyProfileTab() {
                 minWidth={0}
                 placeholder="Select a business type"
                 ariaLabel="Business type"
-                searchPlaceholder="Search business types…"
+                searchable={false}
                 options={[
                   ...dropdownOptions.map((name) => ({ value: name, label: name })),
                   // Kept last, and set apart, because it opens a text field
