@@ -11,6 +11,7 @@ import {
 } from "./actions";
 import { runSilently } from "@/lib/silentFetch";
 import { cvActionLabel } from "@/lib/cvStorage";
+import FilterSelect from "../shared/FilterSelect";
 import { writeEmployerUi } from "@/lib/employerUiCookie";
 
 type TabKey = "all" | "shortlisted" | "rejected";
@@ -178,16 +179,21 @@ export default function ApplicantsTab({ initialApplicants, jobs, initialJobFilte
 
       {/* Filters */}
       <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", marginBottom: 16 }}>
-        <select
+        <FilterSelect
           value={jobFilter}
-          onChange={(e) => setJobFilter(e.target.value)}
-          style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 10, padding: "9px 14px", fontSize: 13, fontWeight: 600, color: "#0f172a", minWidth: 200 }}
-        >
-          <option value="">All jobs</option>
-          {jobs.map((j) => (
-            <option key={j.id} value={j.id}>{j.title}</option>
-          ))}
-        </select>
+          onChange={setJobFilter}
+          ariaLabel="Filter applicants by job"
+          searchPlaceholder="Search jobs…"
+          minWidth={240}
+          options={[
+            { value: "", label: "All jobs", count: applicants.length },
+            ...jobs.map((j) => ({
+              value: j.id,
+              label: j.title,
+              count: applicants.filter((a) => a.job_id === j.id).length,
+            })),
+          ]}
+        />
 
         <input
           type="search"

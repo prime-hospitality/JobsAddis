@@ -7,6 +7,7 @@ import { getEmployerProfile, updateEmployerProfile, EmployerProfileData } from "
 import { runSilently } from "@/lib/silentFetch";
 import { monogramPalette, monogramLetter } from "@/components/EmployerAvatar";
 import AvatarCropModal from "@/components/AvatarCropModal";
+import FilterSelect from "../shared/FilterSelect";
 
 const MAX_DESCRIPTION_LENGTH = 1000;
 const MAX_LOGO_BYTES = 5 * 1024 * 1024;
@@ -305,17 +306,21 @@ export default function CompanyProfileTab() {
 
             <div className="cpt-field">
               <label className="cpt-label">Business Type</label>
-              <select
-                className="cpt-select"
+              <FilterSelect
                 value={selectedType}
-                onChange={(e) => setSelectedType(e.target.value)}
-              >
-                <option value="" disabled>Select a business type</option>
-                {dropdownOptions.map((name) => (
-                  <option key={name} value={name}>{name}</option>
-                ))}
-                <option value={OTHER_TYPE_VALUE}>Other (specify)</option>
-              </select>
+                onChange={setSelectedType}
+                fullWidth
+                minWidth={0}
+                placeholder="Select a business type"
+                ariaLabel="Business type"
+                searchPlaceholder="Search business types…"
+                options={[
+                  ...dropdownOptions.map((name) => ({ value: name, label: name })),
+                  // Kept last, and set apart, because it opens a text field
+                  // rather than picking one of the known types.
+                  { value: OTHER_TYPE_VALUE, label: "Other (specify)", hint: "Type your own" },
+                ]}
+              />
             </div>
 
             {selectedType === OTHER_TYPE_VALUE && (

@@ -9,6 +9,7 @@ import { VacancyFormState, emptyVacancyForm, jobRowToForm } from "./vacancyShare
 import { StatusPill, MetaChip, Stat, STATUS_META, salaryLabel, AttentionModal, ConfirmModal } from "./postingUI";
 import type { PostingData } from "./ManageJobPostingsTab";
 import EmployerAvatar from "@/components/EmployerAvatar";
+import FilterSelect from "../shared/FilterSelect";
 
 export default function PostTab({ data, loading, reload }: { data: PostingData; loading: boolean; reload: () => Promise<void>; }) {
   const { jobs, autoPublish, dailyPostLimit, businessName, logoUrl } = data;
@@ -131,16 +132,25 @@ export default function PostTab({ data, loading, reload }: { data: PostingData; 
             Showing {filteredJobs.length} of {jobs.length} posting{jobs.length === 1 ? "" : "s"}
           </p>
           <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
-            <ListFilter size={14} color="#94a3b8" />
-            <select className="mjp-filter-select" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-              <option value="all">All Statuses</option>
-              <option value="active">Live</option>
-              <option value="pending">Under Review</option>
-              <option value="scheduled">Scheduled</option>
-              <option value="closed">Closed</option>
-              <option value="expired">Expired</option>
-              <option value="rejected">Rejected</option>
-            </select>
+            <FilterSelect
+              value={statusFilter}
+              onChange={setStatusFilter}
+              ariaLabel="Filter postings by status"
+              searchPlaceholder="Search statuses…"
+              minWidth={190}
+              icon={<ListFilter size={14} color="#94a3b8" style={{ flexShrink: 0 }} />}
+              options={[
+                { value: "all", label: "All Statuses", count: jobs.length },
+                // Same order and colours as the pills on the cards below, so the
+                // filter reads as the same vocabulary rather than a second one.
+                ...["active", "pending", "scheduled", "closed", "expired", "rejected"].map((s) => ({
+                  value: s,
+                  label: STATUS_META[s].label,
+                  dot: STATUS_META[s].dot,
+                  count: jobs.filter((j) => j.status === s).length,
+                })),
+              ]}
+            />
           </div>
         </div>
       )}
