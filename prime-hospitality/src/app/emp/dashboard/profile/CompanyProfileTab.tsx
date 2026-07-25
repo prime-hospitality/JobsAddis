@@ -7,7 +7,7 @@ import { getEmployerProfile, updateEmployerProfile, EmployerProfileData } from "
 import { runSilently } from "@/lib/silentFetch";
 import { monogramPalette, monogramLetter } from "@/components/EmployerAvatar";
 import AvatarCropModal from "@/components/AvatarCropModal";
-import FilterSelect from "../shared/FilterSelect";
+import FilterSelect from "@/components/FilterSelect";
 
 const MAX_DESCRIPTION_LENGTH = 1000;
 const MAX_LOGO_BYTES = 5 * 1024 * 1024;

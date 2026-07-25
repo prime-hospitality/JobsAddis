@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { Save, X, Briefcase, MapPin, CreditCard, ClipboardList, FileText } from "lucide-react";
 import { searchLocations } from "@/data/locations";
 import { VacancyFormState } from "./vacancyShared";
+import FilterSelect from "@/components/FilterSelect";
 
 const CHEVRON =
   "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='m6 9 6 6 6-6'/></svg>\")";
@@ -194,13 +195,18 @@ export default function VacancyFormModal({
                   </div>
                   <div className="vfm-field">
                     <label className="vfm-label">Employment Type</label>
-                    <select className="vfm-select" value={value.employment_type} onChange={(e) => set({ employment_type: e.target.value })}>
-                      <option value="Full Time">Full Time</option>
-                      <option value="Part Time">Part Time</option>
-                      <option value="Contract">Contract</option>
-                      <option value="Internship">Internship</option>
-                      <option value="Freelance">Freelance</option>
-                    </select>
+                    <FilterSelect
+                      value={value.employment_type}
+                      onChange={(v) => set({ employment_type: v })}
+                      fullWidth
+                      minWidth={0}
+                      // Five fixed options, all visible at once — a search box
+                      // here would be a field to ignore, not a shortcut.
+                      searchable={false}
+                      maxMenuHeight={224}
+                      ariaLabel="Employment type"
+                      options={["Full Time", "Part Time", "Contract", "Internship", "Freelance"].map((v) => ({ value: v, label: v }))}
+                    />
                   </div>
                 </div>
 
@@ -218,13 +224,16 @@ export default function VacancyFormModal({
                   </div>
                   <div className="vfm-field">
                     <label className="vfm-label">Experience</label>
-                    <select className="vfm-select" value={value.experience_required} onChange={(e) => set({ experience_required: e.target.value })}>
-                      <option value="Entry level">Entry level</option>
-                      <option value="Junior">Junior</option>
-                      <option value="Intermediate">Intermediate</option>
-                      <option value="Senior">Senior</option>
-                      <option value="Expert">Expert</option>
-                    </select>
+                    <FilterSelect
+                      value={value.experience_required}
+                      onChange={(v) => set({ experience_required: v })}
+                      fullWidth
+                      minWidth={0}
+                      searchable={false}
+                      maxMenuHeight={224}
+                      ariaLabel="Experience required"
+                      options={["Entry level", "Junior", "Intermediate", "Senior", "Expert"].map((v) => ({ value: v, label: v }))}
+                    />
                   </div>
                 </div>
 

@@ -10,6 +10,7 @@ import { Job } from "@/data/jobs";
 import { runSilently } from "@/lib/silentFetch";
 import { writeAdminUi } from "@/lib/adminUiCookie";
 import { StatusPill, MetaChip, salaryLabel, STATUS_META, PostingStyles } from "@/app/emp/dashboard/jobs/postingUI";
+import FilterSelect from "@/components/FilterSelect";
 
 
 export default function ContentManagementTab({
@@ -603,16 +604,25 @@ export default function ContentManagementTab({
                 <p className="text-sm text-[#8e8e93]">All jobs posted under the platform account — live, scheduled, or otherwise.</p>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
-                <ListFilter size={14} color="#94a3b8" />
-                <select className="mjp-filter-select" value={postsStatusFilter} onChange={(e) => setPostsStatusFilter(e.target.value)}>
-                  <option value="all">All Statuses</option>
-                  <option value="active">Live</option>
-                  <option value="pending">Under Review</option>
-                  <option value="scheduled">Scheduled</option>
-                  <option value="closed">Closed</option>
-                  <option value="expired">Expired</option>
-                  <option value="rejected">Rejected</option>
-                </select>
+                <FilterSelect
+                  value={postsStatusFilter}
+                  onChange={setPostsStatusFilter}
+                  ariaLabel="Filter posts by status"
+                  searchPlaceholder="Search statuses…"
+                  minWidth={190}
+                  icon={<ListFilter size={14} color="#94a3b8" style={{ flexShrink: 0 }} />}
+                  // Deliberately identical to the employer dashboard's status
+                  // filter — same labels, same colours, same counts.
+                  options={[
+                    { value: "all", label: "All Statuses", count: platformJobs.length },
+                    ...["active", "pending", "scheduled", "closed", "expired", "rejected"].map((s) => ({
+                      value: s,
+                      label: STATUS_META[s].label,
+                      dot: STATUS_META[s].dot,
+                      count: platformJobs.filter((j: any) => j.status === s).length,
+                    })),
+                  ]}
+                />
               </div>
             </div>
             {(() => {

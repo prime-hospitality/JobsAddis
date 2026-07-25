@@ -11,7 +11,7 @@ import {
 } from "./actions";
 import { runSilently } from "@/lib/silentFetch";
 import { cvActionLabel } from "@/lib/cvStorage";
-import FilterSelect from "../shared/FilterSelect";
+import FilterSelect from "@/components/FilterSelect";
 import { writeEmployerUi } from "@/lib/employerUiCookie";
 
 type TabKey = "all" | "shortlisted" | "rejected";

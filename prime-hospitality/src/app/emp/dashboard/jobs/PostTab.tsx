@@ -9,7 +9,7 @@ import { VacancyFormState, emptyVacancyForm, jobRowToForm } from "./vacancyShare
 import { StatusPill, MetaChip, Stat, STATUS_META, salaryLabel, AttentionModal, ConfirmModal } from "./postingUI";
 import type { PostingData } from "./ManageJobPostingsTab";
 import EmployerAvatar from "@/components/EmployerAvatar";
-import FilterSelect from "../shared/FilterSelect";
+import FilterSelect from "@/components/FilterSelect";
 
 export default function PostTab({ data, loading, reload }: { data: PostingData; loading: boolean; reload: () => Promise<void>; }) {
   const { jobs, autoPublish, dailyPostLimit, businessName, logoUrl } = data;
