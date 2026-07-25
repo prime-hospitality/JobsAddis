@@ -3,6 +3,8 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { LayoutGrid, FileStack } from "lucide-react";
 import { getEmployerPostingData } from "./actions";
+import { runSilently } from "@/lib/silentFetch";
+import { writeEmployerUi } from "@/lib/employerUiCookie";
 import { PostingStyles } from "./postingUI";
 import PostTab from "./PostTab";
 import VacancyTemplateTab from "./VacancyTemplateTab";
@@ -30,15 +32,27 @@ const EMPTY: PostingData = {
   logoUrl: null,
 };
 
-export default function ManageJobPostingsTab() {
-  const [activeSubTab, setActiveSubTab] = useState<"post" | "templates">("post");
+export default function ManageJobPostingsTab({
+  initialSubTab = "post",
+}: {
+  initialSubTab?: "post" | "templates";
+}) {
+  const [activeSubTab, setActiveSubTab] = useState<"post" | "templates">(initialSubTab);
   const [data, setData] = useState<PostingData>(EMPTY);
   const [loading, setLoading] = useState(true);
   const [reloadError, setReloadError] = useState<string | null>(null);
 
+  // Remember which sub-tab the employer was on so a reload lands back here.
+  useEffect(() => {
+    writeEmployerUi({ jobsSubTab: activeSubTab });
+  }, [activeSubTab]);
+
   const reload = useCallback(async () => {
     try {
-      const res = await getEmployerPostingData();
+      // runSilently: this tab renders its own inline loading/skeleton state, so
+      // the global full-screen overlay on top of it is redundant flicker — both
+      // on mount and on the refresh that follows every mutation.
+      const res = await runSilently(() => getEmployerPostingData());
       setData({
         jobs: res.jobs,
         templates: res.templates,

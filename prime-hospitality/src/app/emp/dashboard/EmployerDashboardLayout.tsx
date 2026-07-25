@@ -5,6 +5,7 @@ import { useRouter, usePathname } from "next/navigation";
 import { logoutEmployer, getEmployerNotifications, markNotificationAsRead } from "../actions";
 import { getApplicantCounts } from "./applicants/actions";
 import EmployerAvatar from "@/components/EmployerAvatar";
+import { runSilently } from "@/lib/silentFetch";
 
 const navItems = [
   {
@@ -85,10 +86,15 @@ export default function EmployerDashboardLayout({
   const [notifOpen, setNotifOpen] = useState(false);
   const [newApplicantCount, setNewApplicantCount] = useState(0);
 
+  // Both background polls below run through runSilently: they resolve via fetch
+  // (server actions), which would otherwise trip GlobalFetchInterceptor and
+  // flash the full-screen loading overlay on every 30s tick, on every page of
+  // the dashboard. They only feed header/nav badges, so there is nothing for
+  // the user to wait on.
   useEffect(() => {
     const fetchNotifs = async () => {
       try {
-        const res = await getEmployerNotifications();
+        const res = await runSilently(() => getEmployerNotifications());
         setNotifications(res);
       } catch (e) {
         console.error("Failed to fetch notifications", e);
@@ -103,7 +109,7 @@ export default function EmployerDashboardLayout({
   useEffect(() => {
     const fetchCount = async () => {
       try {
-        const { newCount } = await getApplicantCounts();
+        const { newCount } = await runSilently(() => getApplicantCounts());
         setNewApplicantCount(newCount);
       } catch (e) {
         console.error("Failed to fetch applicant counts", e);
@@ -304,11 +310,15 @@ export default function EmployerDashboardLayout({
                             return (
                               <div
                                 key={notif.id}
-                                onClick={async () => {
-                                  if (!notif.read) {
-                                    await markNotificationAsRead(notif.id);
-                                    setNotifications(prev => prev.map(n => n.id === notif.id ? { ...n, read: true } : n));
-                                  }
+                                onClick={() => {
+                                  if (notif.read) return;
+                                  // Mark it read in place and persist quietly —
+                                  // a full-screen overlay over the dropdown for
+                                  // a read receipt is pure flicker.
+                                  setNotifications(prev => prev.map(n => n.id === notif.id ? { ...n, read: true } : n));
+                                  runSilently(() => markNotificationAsRead(notif.id)).catch((e) =>
+                                    console.error("Failed to mark notification read", e)
+                                  );
                                 }}
                                 style={{
                                   padding: "12px 16px",

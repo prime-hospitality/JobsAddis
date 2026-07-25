@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import { createClient } from "@supabase/supabase-js";
 import { redirect } from "next/navigation";
 import bcrypt from "bcryptjs";
+import { EMPLOYER_UI_COOKIE } from "@/lib/employerUiCookie";
 
 const getSupabase = () => {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://placeholder.supabase.co";
@@ -207,7 +208,10 @@ export async function validateEmployerSession() {
 
 /** Logout employer */
 export async function logoutEmployer() {
-  (await cookies()).delete("employer_session");
+  const jar = await cookies();
+  jar.delete("employer_session");
+  // Don't leave one employer's saved sub-tab position for the next login.
+  jar.delete(EMPLOYER_UI_COOKIE);
 }
 
 /** Get employer full data for dashboard */

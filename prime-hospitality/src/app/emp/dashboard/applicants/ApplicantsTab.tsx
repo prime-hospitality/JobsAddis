@@ -9,6 +9,8 @@ import {
   type ApplicantRow,
   type ApplicationStatus,
 } from "./actions";
+import { runSilently } from "@/lib/silentFetch";
+import { writeEmployerUi } from "@/lib/employerUiCookie";
 
 type TabKey = "all" | "shortlisted" | "rejected";
 
@@ -53,16 +55,22 @@ interface Props {
   initialApplicants: ApplicantRow[];
   jobs: Array<{ id: string; title: string }>;
   initialJobFilter?: string;
+  initialTab?: TabKey;
 }
 
-export default function ApplicantsTab({ initialApplicants, jobs, initialJobFilter = "" }: Props) {
+export default function ApplicantsTab({ initialApplicants, jobs, initialJobFilter = "", initialTab = "all" }: Props) {
   const [applicants, setApplicants] = useState(initialApplicants);
   const [jobFilter, setJobFilter] = useState<string>(initialJobFilter);
-  const [tab, setTab] = useState<TabKey>("all");
+  const [tab, setTab] = useState<TabKey>(initialTab);
   const [search, setSearch] = useState("");
   const [openId, setOpenId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+
+  // Remember which status tab the employer was on so a reload lands back here.
+  useEffect(() => {
+    writeEmployerUi({ applicantsTab: tab });
+  }, [tab]);
 
   // Re-query when the job filter changes; status and search filter locally.
   // The first render already has the server's list, so skip that round-trip.
@@ -72,7 +80,9 @@ export default function ApplicantsTab({ initialApplicants, jobs, initialJobFilte
     let cancelled = false;
     startTransition(async () => {
       try {
-        const res = await getApplicants(jobFilter || undefined);
+        // runSilently: the list already dims itself while isPending, so the
+        // global full-screen overlay on top of it is redundant flicker.
+        const res = await runSilently(() => getApplicants(jobFilter || undefined));
         if (!cancelled) {
           setApplicants(res.applicants);
           setLoadedFilter(jobFilter);
@@ -115,7 +125,9 @@ export default function ApplicantsTab({ initialApplicants, jobs, initialJobFilte
     // "Reviewed" badge the seeker sees in their app.
     if (row.status === "pending") {
       applyLocalStatus(row.id, "reviewed");
-      startTransition(async () => { await markApplicantReviewed(row.id); });
+      // Silent: the badge already flipped optimistically, so an overlay here
+      // would flash over a card the employer is in the middle of reading.
+      startTransition(async () => { await runSilently(() => markApplicantReviewed(row.id)); });
     }
   }
 
@@ -124,7 +136,9 @@ export default function ApplicantsTab({ initialApplicants, jobs, initialJobFilte
     applyLocalStatus(id, status);
     setError(null);
     startTransition(async () => {
-      const res = await setApplicationStatus(id, status);
+      // Silent for the same reason: the status change is already applied
+      // locally and rolls back below if the server rejects it.
+      const res = await runSilently(() => setApplicationStatus(id, status));
       if (!res.success) {
         if (previous) applyLocalStatus(id, previous);
         setError(res.error || "Could not update this applicant.");

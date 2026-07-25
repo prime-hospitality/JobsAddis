@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Camera, CheckCircle2, AlertTriangle, Loader2 } from "lucide-react";
 import { getEmployerProfile, updateEmployerProfile, EmployerProfileData } from "./actions";
+import { runSilently } from "@/lib/silentFetch";
 import { monogramPalette, monogramLetter } from "@/components/EmployerAvatar";
 import AvatarCropModal from "@/components/AvatarCropModal";
 
@@ -130,7 +131,9 @@ export default function CompanyProfileTab() {
 
   const load = useCallback(async () => {
     try {
-      const res = await getEmployerProfile();
+      // runSilently: this tab shows its own "Loading your company profile…"
+      // state, so the global full-screen overlay on top of it is just flicker.
+      const res = await runSilently(() => getEmployerProfile());
       if (!res.success) {
         setErrorMsg(res.error);
         return;
