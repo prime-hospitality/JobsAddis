@@ -9,6 +9,7 @@ import AvatarCropModal from "@/components/AvatarCropModal";
 import { motion, AnimatePresence } from "framer-motion";
 import { Timer, Gear } from "@phosphor-icons/react";
 import { supabase } from "@/lib/supabase";
+import { runSilently } from "@/lib/silentFetch";
 import ContentManagementTab from "./ContentManagementTab";
 import BroadcastTab from "./BroadcastTab";
 import ActivityLogTab from "./ActivityLogTab";
@@ -922,7 +923,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
   useEffect(() => {
     const interval = setInterval(async () => {
       try {
-        const fresh = await getAdminData();
+        const fresh = await runSilently(() => getAdminData());
         setData((prev: any) => ({
           ...prev,
           employers: fresh.employers,

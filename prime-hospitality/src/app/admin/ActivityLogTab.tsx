@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { getActivityLog } from "./actions";
+import { runSilently } from "@/lib/silentFetch";
 import { History } from "lucide-react";
 
 const ACTION_LABELS: Record<string, string> = {
@@ -31,7 +32,9 @@ export default function ActivityLogTab() {
   const load = async (p: number, opts?: { silent?: boolean }) => {
     if (!opts?.silent) setLoading(true);
     try {
-      const res = await getActivityLog(p, pageSize);
+      const res = opts?.silent
+        ? await runSilently(() => getActivityLog(p, pageSize))
+        : await getActivityLog(p, pageSize);
       setRows(res.rows);
       setTotal(res.total);
     } catch (e) {

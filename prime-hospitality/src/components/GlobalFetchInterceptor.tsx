@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { isSilentFetch } from "@/lib/silentFetch";
 // import { Loader2 } from "lucide-react"; // No longer needed
 
 export function GlobalFetchInterceptor() {
@@ -14,23 +15,31 @@ export function GlobalFetchInterceptor() {
     let timer: NodeJS.Timeout | null = null;
 
     window.fetch = async (...args) => {
-      activeRequests++;
-      
-      // Delay loader to avoid flashing on very quick requests
-      if (activeRequests === 1) {
-        timer = setTimeout(() => {
-          setIsLoading(true);
-        }, 300); // 300ms threshold
+      // Background polls (dashboard/activity-log refresh) wrap themselves in
+      // runSilently() so they don't flash this overlay on every tick.
+      const background = isSilentFetch();
+
+      if (!background) {
+        activeRequests++;
+
+        // Delay loader to avoid flashing on very quick requests
+        if (activeRequests === 1) {
+          timer = setTimeout(() => {
+            setIsLoading(true);
+          }, 300); // 300ms threshold
+        }
       }
 
       try {
         const response = await originalFetch(...args);
         return response;
       } finally {
-        activeRequests--;
-        if (activeRequests === 0) {
-          if (timer) clearTimeout(timer);
-          setIsLoading(false);
+        if (!background) {
+          activeRequests--;
+          if (activeRequests === 0) {
+            if (timer) clearTimeout(timer);
+            setIsLoading(false);
+          }
         }
       }
     };
