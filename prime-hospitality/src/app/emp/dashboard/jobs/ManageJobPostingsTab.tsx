@@ -10,6 +10,8 @@ import VacancyTemplateTab from "./VacancyTemplateTab";
 export interface PostingData {
   jobs: any[];
   templates: any[];
+  /** job id → number of applications received. */
+  applicantCounts: Record<string, number>;
   autoPublish: boolean;
   dailyPostLimit: number;
   businessName: string;
@@ -20,6 +22,7 @@ export interface PostingData {
 const EMPTY: PostingData = {
   jobs: [],
   templates: [],
+  applicantCounts: {},
   autoPublish: false,
   dailyPostLimit: 15,
   businessName: "Your Company",
@@ -39,6 +42,7 @@ export default function ManageJobPostingsTab() {
       setData({
         jobs: res.jobs,
         templates: res.templates,
+        applicantCounts: res.applicantCounts || {},
         autoPublish: res.autoPublish,
         dailyPostLimit: res.dailyPostLimit,
         businessName: res.businessName || "Your Company",

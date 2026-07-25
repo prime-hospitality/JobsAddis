@@ -4,18 +4,17 @@ import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence, LazyMotion, domAnimation } from "framer-motion";
 import { Loader2, CheckCircle, AlertCircle } from "lucide-react";
 import { Job } from "@/data/jobs";
-import { JobSeekerProfile } from "@/data/profile";
+import { JobSeekerProfile, mapProfileRowToJobSeekerProfile } from "@/data/profile";
 import { useTelegram } from "@/hooks/useTelegram";
 import { usePerformance } from "@/hooks/usePerformance";
 import { useCvUpload } from "@/hooks/useCvUpload";
-import { fetchProfile, getUnreadCount } from "@/lib/api";
+import { fetchProfile, getUnreadCount, fetchApplications } from "@/lib/api";
 import { supabase } from "@/lib/supabase";
 import { mapSupabaseJobToJob } from "@/hooks/useJobs";
 
 import BottomNav, { NavTab } from "@/components/BottomNav";
 import HomeScreen from "@/screens/HomeScreen";
 import JobDetailScreen from "@/screens/JobDetailScreen";
-import ProfileCheckScreen from "@/screens/ProfileCheckScreen";
 import ApplicationScreen from "@/screens/ApplicationScreen";
 import ConfirmationScreen from "@/screens/ConfirmationScreen";
 import OnboardingScreen from "@/screens/OnboardingScreen";
@@ -31,7 +30,6 @@ import NotificationPanel from "@/components/NotificationPanel";
 type AppView =
   | { screen: "home" }
   | { screen: "jobDetail"; job: Job }
-  | { screen: "profileCheck"; job: Job }
   | { screen: "application"; job: Job; profile: JobSeekerProfile }
   | { screen: "confirmation"; job: Job }
   | { screen: "applicantManagement"; jobId: string; jobTitle: string };
@@ -78,6 +76,11 @@ export default function App() {
   const [view, setView] = useState<AppView>({ screen: "home" });
   const [unreadCount, setUnreadCount] = useState(0);
   const [notifPanelOpen, setNotifPanelOpen] = useState(false);
+  /** Job IDs this seeker has already applied to — drives the "Applied" state on job detail. */
+  const [appliedJobIds, setAppliedJobIds] = useState<Set<string>>(new Set());
+  /** Cover note kept at the app level so stepping back to re-read the job doesn't discard it. */
+  const [coverNoteDraft, setCoverNoteDraft] = useState<{ jobId: string; text: string } | null>(null);
+  const [applyError, setApplyError] = useState<string | null>(null);
 
   // Track when upload transitions from true → false to flash a "Done" tick or show error
   useEffect(() => {
@@ -205,6 +208,26 @@ export default function App() {
     handleDeepLink();
   }, [isTelegramReady, isOnboarded, startParam, deepLinkHandled]);
 
+  // Load which jobs this seeker has already applied to, so the job detail screen can
+  // say so up front instead of letting them fill in the form and fail at the last step.
+  useEffect(() => {
+    if (!isTelegramReady || !initData || !isOnboarded || isEmployer) return;
+
+    async function loadAppliedJobs() {
+      if (!initData) return;
+      try {
+        const res = await fetchApplications(initData);
+        setAppliedJobIds(
+          new Set((res.applications ?? []).map((a) => a.job_id as string).filter(Boolean))
+        );
+      } catch {
+        // Non-fatal — the server still rejects duplicates, this is only a UI hint.
+      }
+    }
+
+    loadAppliedJobs();
+  }, [isTelegramReady, initData, isOnboarded, isEmployer]);
+
   // Check unread notifications count
   useEffect(() => {
     if (!isTelegramReady || !initData || !isOnboarded) return;
@@ -247,6 +270,7 @@ export default function App() {
   };
 
   const handleJobSelect = (job: Job) => {
+    setApplyError(null);
     setView({ screen: "jobDetail", job });
   };
 
@@ -297,14 +321,24 @@ export default function App() {
   };
 
   const handleApply = (job: Job) => {
-    setView({ screen: "profileCheck", job });
-  };
-
-  const handleProfileChecked = (job: Job, profile: JobSeekerProfile) => {
-    setView({ screen: "application", job, profile });
+    // The onboarding gate above guarantees a profile exists by the time a seeker can
+    // reach a job, but a failed refresh could still leave it empty — say so rather
+    // than sending them to a form that would be rejected on submit.
+    if (!userProfile) {
+      setApplyError("We couldn't load your profile. Please reopen the app and try again.");
+      return;
+    }
+    setApplyError(null);
+    setView({
+      screen: "application",
+      job,
+      profile: mapProfileRowToJobSeekerProfile(userProfile, job.category),
+    });
   };
 
   const handleApplicationSubmit = (job: Job) => {
+    setAppliedJobIds((prev) => new Set(prev).add(job.id));
+    setCoverNoteDraft(null);
     setView({ screen: "confirmation", job });
   };
 
@@ -335,10 +369,8 @@ export default function App() {
       const handleBack = () => {
         if (view.screen === "jobDetail") {
           goBackToList();
-        } else if (view.screen === "profileCheck") {
-          setView({ screen: "jobDetail", job: view.job });
         } else if (view.screen === "application") {
-          setView({ screen: "profileCheck", job: view.job });
+          setView({ screen: "jobDetail", job: view.job });
         } else if (view.screen === "applicantManagement") {
           setView({ screen: "home" });
         } else if (view.screen === "confirmation") {
@@ -411,12 +443,6 @@ export default function App() {
     return <OnboardingScreen onComplete={() => setIsOnboarded(true)} />;
   }
 
-  // ── Determine which full-screen flow is active ──
-  const isInFlow =
-    view.screen !== "home" &&
-    view.screen !== "confirmation" &&
-    view.screen !== "applicantManagement";
-
   // Decide what main content to render
   const renderMainContent = () => {
     // Full-screen flows override tab content
@@ -426,19 +452,10 @@ export default function App() {
           key="jobDetail"
           job={view.job}
           isEmployer={isEmployer}
+          hasApplied={appliedJobIds.has(view.job.id)}
+          applyError={applyError}
           onBack={goBackToList}
           onApply={handleApply}
-        />
-      );
-    }
-
-    if (view.screen === "profileCheck") {
-      return (
-        <ProfileCheckScreen
-          key="profileCheck"
-          job={view.job}
-          onBack={() => setView({ screen: "jobDetail", job: view.job })}
-          onProceed={(profile) => handleProfileChecked(view.job, profile)}
         />
       );
     }
@@ -449,7 +466,9 @@ export default function App() {
           key="application"
           job={view.job}
           profile={view.profile}
-          onBack={() => setView({ screen: "profileCheck", job: view.job })}
+          coverNote={coverNoteDraft?.jobId === view.job.id ? coverNoteDraft.text : ""}
+          onCoverNoteChange={(text) => setCoverNoteDraft({ jobId: view.job.id, text })}
+          onBack={() => setView({ screen: "jobDetail", job: view.job })}
           onSubmit={() => handleApplicationSubmit(view.job)}
         />
       );

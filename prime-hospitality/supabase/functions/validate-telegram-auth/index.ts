@@ -374,6 +374,30 @@ serve(async (req: Request) => {
          return new Response(JSON.stringify({ error: "jobId is required" }), { status: 400, headers: corsHeaders });
       }
 
+      // 3b. The job must still be open — an employer may have closed it, or the
+      // deadline may have passed, since this job was loaded on the client.
+      const { data: jobRowCheck, error: jobCheckErr } = await supabase
+        .from("jobs")
+        .select("status, deadline")
+        .eq("id", jobId)
+        .single();
+
+      if (jobCheckErr || !jobRowCheck) {
+        return new Response(JSON.stringify({ error: "This job is no longer available." }), {
+          status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      if (jobRowCheck.status !== "active") {
+        return new Response(JSON.stringify({ error: "This job is no longer accepting applications." }), {
+          status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      if (jobRowCheck.deadline && new Date(jobRowCheck.deadline).getTime() < Date.now()) {
+        return new Response(JSON.stringify({ error: "The deadline for this job has passed." }), {
+          status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
       // 4. Rate Limiting: Max 10 applications per hour
       const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
       const { count, error: countError } = await supabase
@@ -403,8 +427,8 @@ serve(async (req: Request) => {
          });
       }
 
-      // 6. Sanitization & Insertion
-      const safeCoverNote = sanitizeHtml(coverNote || "");
+      // 6. Sanitization & Insertion — cap the cover note to match the client limit.
+      const safeCoverNote = sanitizeHtml((coverNote || "").slice(0, 300));
       
       const { error: insertError } = await supabase
         .from("applications")
@@ -704,6 +728,39 @@ serve(async (req: Request) => {
     }
 
     // Action: Get Profile
+    // Action: Signed link to the caller's OWN CV. The resumes bucket is private,
+    // so a stored cv_url is not directly openable — a seeker previewing their own
+    // CV has to go through here, and only ever gets their own file.
+    if (action === "get_own_cv_url") {
+      const { data: profileRow } = await supabase
+        .from("profiles")
+        .select("cv_url")
+        .eq("telegram_id", telegramId)
+        .single();
+
+      const storedCv: string | null = profileRow?.cv_url ?? null;
+      if (!storedCv) {
+        return new Response(JSON.stringify({ error: "No CV uploaded." }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+
+      // cv_url holds either a legacy public URL or a bare storage path.
+      const marker = "/resumes/";
+      const idx = storedCv.indexOf(marker);
+      const path = idx !== -1 ? storedCv.slice(idx + marker.length).split("?")[0] : storedCv.replace(/^\/+/, "");
+
+      const { data: signed, error: signErr } = await supabase.storage
+        .from("resumes")
+        .createSignedUrl(path, 300);
+
+      if (signErr || !signed?.signedUrl) {
+        return new Response(JSON.stringify({ error: "Could not open your CV. Please try again." }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+
+      return new Response(JSON.stringify({ success: true, url: signed.signedUrl }), {
+        status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     if (action === "get_profile") {
       const isEmployer = userData?.role === "employer";
       if (isEmployer) {
@@ -1196,6 +1253,19 @@ serve(async (req: Request) => {
       if (!uRow) return new Response(JSON.stringify({ error: "Not found" }), { status: 404, headers: corsHeaders });
       const { data: emp } = await supabase.from("employers").select("id").eq("user_id", uRow.id).single();
       if (!emp) return new Response(JSON.stringify({ error: "Not an employer" }), { status: 403, headers: corsHeaders });
+
+      // The job must belong to THIS employer. Without this check any employer
+      // could read any other employer's applicants — names, phone numbers and
+      // CV links — just by knowing a (publicly readable) job id.
+      const { data: ownedJob } = await supabase
+        .from("jobs")
+        .select("id")
+        .eq("id", jobId)
+        .eq("employer_id", emp.id)
+        .maybeSingle();
+      if (!ownedJob) {
+        return new Response(JSON.stringify({ error: "Not your job posting" }), { status: 403, headers: corsHeaders });
+      }
 
       const { data: apps, error: appsErr } = await supabase
         .from("applications")

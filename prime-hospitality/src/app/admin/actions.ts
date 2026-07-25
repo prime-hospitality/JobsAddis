@@ -3,6 +3,7 @@
 import { cookies } from "next/headers";
 import { createClient } from "@supabase/supabase-js";
 import { ADMIN_UI_COOKIE } from "@/lib/adminUiCookie";
+import { resumeStoragePath } from "@/lib/cvStorage";
 
 const getSupabase = () => {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://placeholder.supabase.co";
@@ -399,13 +400,9 @@ export async function deleteUser(userId: string, passwordAttempt: string) {
   await logActivity("delete_user", userId);
 
   // 3. Delete CV from storage if it exists
-  if (profile?.cv_url) {
-    const parts = profile.cv_url.split("/resumes/");
-    if (parts.length === 2) {
-      const path = parts[1];
-      // Fire and forget deletion, or await it
-      await supabase.storage.from("resumes").remove([path]);
-    }
+  const cvPath = resumeStoragePath(profile?.cv_url);
+  if (cvPath) {
+    await supabase.storage.from("resumes").remove([cvPath]);
   }
 
   // 4. Delete logo from storage if it exists
@@ -1233,11 +1230,9 @@ export async function approveSpecialRequest(userId: string, passwordAttempt: str
     .maybeSingle();
 
   // 2. Delete the old CV from storage if it exists — free up space
-  if (oldProfile?.cv_url) {
-    const parts = oldProfile.cv_url.split("/resumes/");
-    if (parts.length === 2) {
-      await supabase.storage.from("resumes").remove([parts[1]]);
-    }
+  const oldCvPath = resumeStoragePath(oldProfile?.cv_url);
+  if (oldCvPath) {
+    await supabase.storage.from("resumes").remove([oldCvPath]);
   }
 
   // 3. Delete the old profile row entirely — forces fresh onboarding

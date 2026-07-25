@@ -231,6 +231,16 @@ export async function fetchApplications(
 }
 
 // ---------------------------------------------------------------------------
+// Action: Short-lived signed link to the seeker's own CV
+// ---------------------------------------------------------------------------
+/** The resumes bucket is private, so a stored cv_url can't be opened directly. */
+export async function fetchOwnCvUrl(
+  initData: string | null
+): Promise<{ success: boolean; url: string }> {
+  return callEdgeFunction(initData, { action: "get_own_cv_url" });
+}
+
+// ---------------------------------------------------------------------------
 // Action: Fetch employer dashboard data
 // ---------------------------------------------------------------------------
 export interface FetchEmployerDashboardResult {

@@ -200,6 +200,21 @@ export default function PostTab({ data, loading, reload }: { data: PostingData; 
                     {job.quantity > 1 && <MetaChip icon={<Users size={11} />}>{job.quantity} openings</MetaChip>}
                   </div>
 
+                  {/* Applicants — links straight into the tracking page for this job. */}
+                  <a
+                    href={`/emp/dashboard/applicants?job=${job.id}`}
+                    style={{
+                      display: "inline-flex", alignItems: "center", gap: 6, alignSelf: "flex-start",
+                      fontSize: 12, fontWeight: 700, textDecoration: "none",
+                      color: (data.applicantCounts[job.id] ?? 0) > 0 ? "#0284c7" : "#94a3b8",
+                    }}
+                  >
+                    <Users size={12} />
+                    {(data.applicantCounts[job.id] ?? 0) === 0
+                      ? "No applicants yet"
+                      : `${data.applicantCounts[job.id]} applicant${data.applicantCounts[job.id] === 1 ? "" : "s"} →`}
+                  </a>
+
                   <div style={{ flex: 1 }} />
                   <div style={{ height: 1, background: "#f1f5f9" }} />
 

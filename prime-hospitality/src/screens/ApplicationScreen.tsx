@@ -10,17 +10,29 @@ import { useTelegram } from "@/hooks/useTelegram";
 import { submitApplication, ApiError } from "@/lib/api";
 import { formatPhoneForDisplay } from "@/lib/phone";
 
+const COVER_NOTE_MAX = 300;
+
 interface ApplicationScreenProps {
   job: Job;
   profile: JobSeekerProfile;
+  /** Held by the parent so stepping back to re-read the job doesn't discard the draft. */
+  coverNote: string;
+  onCoverNoteChange: (text: string) => void;
   onBack: () => void;
   onSubmit: () => void;
 }
 
-export default function ApplicationScreen({ job, profile, onBack, onSubmit }: ApplicationScreenProps) {
+export default function ApplicationScreen({
+  job,
+  profile,
+  coverNote,
+  onCoverNoteChange,
+  onBack,
+  onSubmit,
+}: ApplicationScreenProps) {
   const shouldReduceMotion = useReducedMotion();
   const { initData } = useTelegram();
-  const [whyHire, setWhyHire] = useState("");
+  const whyHire = coverNote;
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
@@ -41,7 +53,9 @@ export default function ApplicationScreen({ job, profile, onBack, onSubmit }: Ap
       console.error("Application submit error:", error);
       if (error instanceof ApiError) {
         if (error.isDuplicate) {
-          setSubmitError("You have already applied for this job.");
+          // 409 covers duplicates as well as a job that closed or expired since it
+          // was opened — the server's message is the specific one, so use it.
+          setSubmitError(error.message);
         } else if (error.isRateLimit) {
           setSubmitError("You have reached the application limit (10/hour). Please try again later.");
         } else if (error.isUnauthorized) {
@@ -213,7 +227,8 @@ export default function ApplicationScreen({ job, profile, onBack, onSubmit }: Ap
               className="input-base"
               placeholder={`Tell ${job.businessName} why you're the right person for this role…`}
               value={whyHire}
-              onChange={(e) => setWhyHire(e.target.value)}
+              onChange={(e) => onCoverNoteChange(e.target.value.slice(0, COVER_NOTE_MAX))}
+              maxLength={COVER_NOTE_MAX}
               rows={4}
               style={{
                 resize: "none",
@@ -221,7 +236,7 @@ export default function ApplicationScreen({ job, profile, onBack, onSubmit }: Ap
               }}
             />
             <p style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 6, textAlign: "right" }}>
-              {whyHire.length}/300 characters
+              {whyHire.length}/{COVER_NOTE_MAX} characters
             </p>
           </motion.div>
 

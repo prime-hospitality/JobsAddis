@@ -36,7 +36,7 @@ async function getDashboardData(employerId: string) {
   const recentApplications = allApplications
     .map((a: any) => {
       const job = allJobs.find((j: any) => j.applications?.some((app: any) => app.id === a.id));
-      return { ...a, jobTitle: job?.title || "Unknown Job" };
+      return { ...a, jobTitle: job?.title || "Unknown Job", job_id: job?.id };
     })
     .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
     .slice(0, 8);
@@ -201,7 +201,7 @@ export default async function EmployerDashboardPage() {
           ) : (
             <div style={{ maxHeight: 320, overflowY: "auto" }}>
               {data.recentApplications.map((app: any) => (
-                <div key={app.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", borderBottom: "1px solid #f8fafc" }}>
+                <a key={app.id} href={`/emp/dashboard/applicants?job=${app.job_id}`} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", borderBottom: "1px solid #f8fafc", textDecoration: "none", color: "inherit" }}>
                   {/* Avatar */}
                   <div style={{ width: 34, height: 34, borderRadius: "50%", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 800, color: "#fff", flexShrink: 0 }}>
                     {(app.profiles?.full_name || "?").charAt(0).toUpperCase()}
@@ -218,7 +218,7 @@ export default async function EmployerDashboardPage() {
                     </span>
                     <span style={{ fontSize: 10, color: "#cbd5e1" }}>{fmtTime(app.created_at)}</span>
                   </div>
-                </div>
+                </a>
               ))}
             </div>
           )}

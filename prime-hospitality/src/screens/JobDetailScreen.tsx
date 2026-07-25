@@ -8,8 +8,18 @@ import EmployerAvatar from "@/components/EmployerAvatar";
 interface JobDetailScreenProps {
   job: Job;
   isEmployer?: boolean;
+  /** True when this seeker already has an application on file for this job. */
+  hasApplied?: boolean;
+  /** Surfaced when the apply flow can't start (e.g. the profile failed to load). */
+  applyError?: string | null;
   onBack: () => void;
   onApply: (job: Job) => void;
+}
+
+function isDeadlinePassed(dateStr: string): boolean {
+  if (!dateStr) return false;
+  const d = new Date(dateStr);
+  return !isNaN(d.getTime()) && d.getTime() < Date.now();
 }
 
 function timeAgo(iso: string): string {
@@ -63,8 +73,9 @@ function renderWithLinks(text: string) {
   });
 }
 
-export default function JobDetailScreen({ job, isEmployer, onBack, onApply }: JobDetailScreenProps) {
+export default function JobDetailScreen({ job, isEmployer, hasApplied, applyError, onBack, onApply }: JobDetailScreenProps) {
   const shouldReduceMotion = useReducedMotion();
+  const deadlinePassed = isDeadlinePassed(job.deadline);
 
   const infoItems = [
     { icon: MapPin, label: "Location", value: job.location },
@@ -423,15 +434,47 @@ export default function JobDetailScreen({ job, isEmployer, onBack, onApply }: Jo
               borderTop: "1px solid var(--border)",
             }}
           >
-            <motion.button
-              id="apply-now-btn"
-              className="btn-primary"
-              whileTap={shouldReduceMotion ? {} : { scale: 0.97 }}
-              onClick={() => onApply(job)}
-              style={{ willChange: "transform" }}
-            >
-              Apply Now →
-            </motion.button>
+            {applyError && (
+              <div
+                style={{
+                  marginBottom: 10, padding: "10px 14px", borderRadius: 10,
+                  background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.25)",
+                  display: "flex", alignItems: "center", gap: 8,
+                }}
+              >
+                <AlertCircle size={15} color="var(--error)" style={{ flexShrink: 0 }} />
+                <p style={{ fontSize: 13, color: "#FCA5A5", margin: 0, lineHeight: 1.4 }}>{applyError}</p>
+              </div>
+            )}
+            {hasApplied ? (
+              <button
+                id="apply-now-btn"
+                className="btn-primary"
+                disabled
+                style={{ opacity: 0.6, cursor: "default" }}
+              >
+                Applied ✓
+              </button>
+            ) : deadlinePassed ? (
+              <button
+                id="apply-now-btn"
+                className="btn-primary"
+                disabled
+                style={{ opacity: 0.6, cursor: "default" }}
+              >
+                Applications Closed
+              </button>
+            ) : (
+              <motion.button
+                id="apply-now-btn"
+                className="btn-primary"
+                whileTap={shouldReduceMotion ? {} : { scale: 0.97 }}
+                onClick={() => onApply(job)}
+                style={{ willChange: "transform" }}
+              >
+                Apply Now →
+              </motion.button>
+            )}
           </div>
         )}
       </motion.div>

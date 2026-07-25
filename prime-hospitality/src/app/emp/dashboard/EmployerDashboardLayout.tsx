@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { logoutEmployer, getEmployerNotifications, markNotificationAsRead } from "../actions";
+import { getApplicantCounts } from "./applicants/actions";
 import EmployerAvatar from "@/components/EmployerAvatar";
 
 const navItems = [
@@ -82,6 +83,7 @@ export default function EmployerDashboardLayout({
   const [loggingOut, setLoggingOut] = useState(false);
   const [notifications, setNotifications] = useState<any[]>([]);
   const [notifOpen, setNotifOpen] = useState(false);
+  const [newApplicantCount, setNewApplicantCount] = useState(0);
 
   useEffect(() => {
     const fetchNotifs = async () => {
@@ -96,6 +98,21 @@ export default function EmployerDashboardLayout({
     const interval = setInterval(fetchNotifs, 30000);
     return () => clearInterval(interval);
   }, []);
+
+  // Badge the Applicant Tracking nav item with applicants nobody has opened yet.
+  useEffect(() => {
+    const fetchCount = async () => {
+      try {
+        const { newCount } = await getApplicantCounts();
+        setNewApplicantCount(newCount);
+      } catch (e) {
+        console.error("Failed to fetch applicant counts", e);
+      }
+    };
+    fetchCount();
+    const interval = setInterval(fetchCount, 30000);
+    return () => clearInterval(interval);
+  }, [pathname]);
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
@@ -194,6 +211,7 @@ export default function EmployerDashboardLayout({
             <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
               {navItems.map((item) => {
                 const isActive = pathname === item.href || (item.href !== "/emp/dashboard" && pathname.startsWith(item.href));
+                const badge = item.id === "applicants" ? newApplicantCount : 0;
                 return (
                   <button
                     key={item.id}
@@ -202,6 +220,11 @@ export default function EmployerDashboardLayout({
                   >
                     {item.icon}
                     <span>{item.label}</span>
+                    {badge > 0 && (
+                      <span style={{ marginLeft: "auto", background: "#ef4444", color: "#fff", borderRadius: 20, minWidth: 20, height: 20, padding: "0 6px", fontSize: 11, fontWeight: 700, display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+                        {badge > 99 ? "99+" : badge}
+                      </span>
+                    )}
                   </button>
                 );
               })}

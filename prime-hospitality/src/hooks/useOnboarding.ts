@@ -90,11 +90,10 @@ export function useOnboarding() {
             console.warn("[CV Upload] Upload failed (non-fatal, continuing without CV):", uploadError.message);
             cvUrl = null;
           } else {
-            const { data: publicUrlData } = supabase.storage
-              .from("resumes")
-              .getPublicUrl(filePath);
-            cvUrl = publicUrlData.publicUrl;
-            console.log("[CV Upload] Success! Public URL:", cvUrl);
+            // Store the storage path, not a URL — the resumes bucket is private
+            // and reads go through short-lived signed URLs minted server-side.
+            cvUrl = filePath;
+            console.log("[CV Upload] Success! Stored path:", cvUrl);
           }
         } catch (cvErr) {
           // Non-fatal: network error during upload — continue without CV

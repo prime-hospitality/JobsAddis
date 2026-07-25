@@ -47,12 +47,10 @@ export function CvUploadProvider({ children }: { children: ReactNode }) {
         throw new Error(uploadError.message);
       }
 
-      const { data: publicUrlData } = supabase.storage
-        .from("resumes")
-        .getPublicUrl(filePath);
-
-      const cvUrl = publicUrlData.publicUrl;
-      console.log("[CV Upload] Success! Public URL:", cvUrl);
+      // Store the storage path, not a URL — the resumes bucket is private and
+      // reads are served through short-lived signed URLs minted server-side.
+      const cvUrl = filePath;
+      console.log("[CV Upload] Success! Stored path:", cvUrl);
 
       // Update profile in DB via Edge Function
       await updateCv({ initData, cvUrl });

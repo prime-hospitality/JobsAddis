@@ -44,15 +44,25 @@ export async function getEmployerPostingData() {
   if (!session) throw new Error("Unauthorized");
 
   const supabase = getSupabase();
-  const [jobsRes, templatesRes, rules] = await Promise.all([
+  const [jobsRes, templatesRes, rules, applicationsRes] = await Promise.all([
     supabase.from("jobs").select("*").eq("employer_id", session.employerId).order("last_posted_at", { ascending: false }),
     supabase.from("employer_vacancy_templates").select("*").eq("employer_id", session.employerId).order("created_at", { ascending: false }),
     getEmployerPublishingRules(supabase, session.employerId),
+    supabase.from("applications").select("job_id, jobs!inner ( employer_id )").eq("jobs.employer_id", session.employerId),
   ]);
+
+  // Per-job applicant counts, so each posting can show how many people applied
+  // and link straight into the applicant tracking page for that job.
+  const applicantCounts: Record<string, number> = {};
+  for (const row of applicationsRes.data || []) {
+    const jobId = (row as any).job_id as string;
+    applicantCounts[jobId] = (applicantCounts[jobId] ?? 0) + 1;
+  }
 
   return {
     jobs: jobsRes.data || [],
     templates: templatesRes.data || [],
+    applicantCounts,
     autoPublish: rules.autoPublish,
     dailyPostLimit: rules.dailyPostLimit,
     businessName: session.businessName,

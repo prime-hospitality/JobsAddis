@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, LazyMotion, domAnimation, AnimatePresence } from "framer-motion";
 import { Phone, MapPin, Briefcase, FileText, RefreshCw, CheckCircle, HelpCircle, ShieldCheck, Settings, AlertCircle, Upload, Loader2, Moon, Sun, X, Pencil, Lock, ChevronRight, ChevronLeft, ChevronDown, Users, Search } from "lucide-react";
-import { fetchProfile as fetchProfileApi, updatePhone, updateSecondaryPhone } from "@/lib/api";
+import { fetchProfile as fetchProfileApi, updatePhone, updateSecondaryPhone, fetchOwnCvUrl } from "@/lib/api";
 import { formatPhoneForDisplay, normalizePhoneNumber } from "@/lib/phone";
 import { useTelegram } from "@/hooks/useTelegram";
 import { useCvUpload } from "@/hooks/useCvUpload";
@@ -382,6 +382,17 @@ export default function ProfileScreen() {
 
   const triggerCvUpload = () => {
     fileInputRef.current?.click();
+  };
+
+  // The resumes bucket is private, so previewing your own CV goes through a
+  // short-lived signed link rather than opening the stored path directly.
+  const handleViewCv = async () => {
+    try {
+      const res = await fetchOwnCvUrl(initData);
+      if (res.url) window.open(res.url, "_blank");
+    } catch (err) {
+      console.error("Failed to open CV:", err);
+    }
   };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1094,7 +1105,7 @@ export default function ProfileScreen() {
                       ) : profile.cv_url ? (
                         <>
                           <CheckCircle size={12} color="var(--success)" />
-                          <span style={{ textDecoration: "underline", color: "#6366F1", cursor: "pointer" }} onClick={() => profile.cv_url && window.open(profile.cv_url, "_blank")}>
+                          <span style={{ textDecoration: "underline", color: "#6366F1", cursor: "pointer" }} onClick={handleViewCv}>
                             View CV
                           </span>
                           <span style={{ color: "var(--text-muted)", fontSize: 11, marginLeft: 2, marginRight: 2 }}>|</span>

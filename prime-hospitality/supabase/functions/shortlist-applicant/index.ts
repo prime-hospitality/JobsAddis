@@ -5,7 +5,6 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 const TELEGRAM_BOT_TOKEN = Deno.env.get("TELEGRAM_BOT_TOKEN") || "";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
-const SEND_NOTIFICATION_URL = `${SUPABASE_URL}/functions/v1/send-telegram-notification`;
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
@@ -46,31 +45,29 @@ serve(async (req: Request) => {
 
   try {
     const initData = req.headers.get("x-telegram-init-data");
-    const isDev = !TELEGRAM_BOT_TOKEN || TELEGRAM_BOT_TOKEN === "";
+
+    // Fail closed. A missing bot token used to disable signature checking entirely
+    // and fall back to a hardcoded telegram id, which turned a misconfigured
+    // environment into an open door onto every employer's applicants.
+    if (!TELEGRAM_BOT_TOKEN) {
+      console.error("TELEGRAM_BOT_TOKEN is not configured — refusing to authenticate.");
+      return new Response(JSON.stringify({ error: "Server auth is not configured." }), { status: 500, headers: corsHeaders });
+    }
 
     if (!initData || initData.trim() === "") {
-      if (!isDev) {
-        return new Response(JSON.stringify({ error: "Missing auth header" }), { status: 401, headers: corsHeaders });
-      }
+      return new Response(JSON.stringify({ error: "Missing auth header" }), { status: 401, headers: corsHeaders });
     }
 
-    if (!isDev && initData) {
-      const isValid = await validateTelegramSignature(initData, TELEGRAM_BOT_TOKEN);
-      if (!isValid) {
-        return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders });
-      }
+    const isValid = await validateTelegramSignature(initData, TELEGRAM_BOT_TOKEN);
+    if (!isValid) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders });
     }
 
-    let telegramId: number;
-    if (isDev && (!initData || initData.trim() === "")) {
-      telegramId = 123456789;
-    } else {
-      const telegramUser = extractTelegramUser(initData || "");
-      if (!telegramUser?.id) {
-        return new Response(JSON.stringify({ error: "Could not extract user" }), { status: 400, headers: corsHeaders });
-      }
-      telegramId = telegramUser.id;
+    const telegramUser = extractTelegramUser(initData);
+    if (!telegramUser?.id) {
+      return new Response(JSON.stringify({ error: "Could not extract user" }), { status: 400, headers: corsHeaders });
     }
+    const telegramId: number = telegramUser.id;
 
     const payload = await req.json();
     const { action, applicationId } = payload;
@@ -84,62 +81,62 @@ serve(async (req: Request) => {
       return new Response(JSON.stringify({ error: "Not an employer" }), { status: 403, headers: corsHeaders });
     }
 
-    // ── Action: shortlist ─────────────────────────────────────────────────────
-    if (action === "shortlist") {
-      if (!applicationId) return new Response(JSON.stringify({ error: "applicationId required" }), { status: 400, headers: corsHeaders });
+    const STATUS_BY_ACTION: Record<string, string> = {
+      shortlist: "shortlisted",
+      unshortlist: "pending",
+      decline: "rejected",
+    };
 
-      // 1. Fetch the application to get job title and applicant telegram_id
-      const { data: app, error: appErr } = await supabase
-        .from("applications")
-        .select("id, telegram_id, status, jobs(title)")
-        .eq("id", applicationId)
-        .single();
-
-      if (appErr || !app) return new Response(JSON.stringify({ error: "Application not found" }), { status: 404, headers: corsHeaders });
-
-      // 2. Update status
-      const { error: updateErr } = await supabase
-        .from("applications")
-        .update({ status: "shortlisted" })
-        .eq("id", applicationId);
-      if (updateErr) throw updateErr;
-
-      // 3. Notifications disabled — employer does not want applicants notified.
-
-      // 4. Send Telegram DM (disabled per user request)
-      /*
-      fetch(SEND_NOTIFICATION_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
-        },
-        body: JSON.stringify({
-          telegram_id: app.telegram_id,
-          business_name: employer.business_name,
-          job_title: jobTitle,
-        }),
-      }).catch((e) => console.error("DM send failed (non-fatal):", e));
-      */
-
-      return new Response(JSON.stringify({ success: true }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    const newStatus = STATUS_BY_ACTION[action];
+    if (!newStatus) {
+      return new Response(JSON.stringify({ error: "Unknown action" }), { status: 400, headers: corsHeaders });
+    }
+    if (!applicationId) {
+      return new Response(JSON.stringify({ error: "applicationId required" }), { status: 400, headers: corsHeaders });
     }
 
-    // ── Action: unshortlist ───────────────────────────────────────────────────
-    if (action === "unshortlist") {
-      const { error } = await supabase.from("applications").update({ status: "pending" }).eq("id", applicationId);
-      if (error) throw error;
-      return new Response(JSON.stringify({ success: true }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    // ── Verify this application belongs to one of THIS employer's jobs ────────
+    // Without this an employer could shortlist or decline any other employer's
+    // applicants just by knowing an application id.
+    const { data: app, error: appErr } = await supabase
+      .from("applications")
+      .select("id, telegram_id, status, jobs!inner(id, title, employer_id)")
+      .eq("id", applicationId)
+      .single();
+
+    if (appErr || !app) {
+      return new Response(JSON.stringify({ error: "Application not found" }), { status: 404, headers: corsHeaders });
     }
 
-    // ── Action: decline ───────────────────────────────────────────────────────
-    if (action === "decline") {
-      const { error } = await supabase.from("applications").update({ status: "rejected" }).eq("id", applicationId);
-      if (error) throw error;
-      return new Response(JSON.stringify({ success: true }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    const job = Array.isArray((app as any).jobs) ? (app as any).jobs[0] : (app as any).jobs;
+    if (!job || job.employer_id !== employer.id) {
+      return new Response(JSON.stringify({ error: "Not your applicant" }), { status: 403, headers: corsHeaders });
     }
 
-    return new Response(JSON.stringify({ error: "Unknown action" }), { status: 400, headers: corsHeaders });
+    const { error: updateErr } = await supabase
+      .from("applications")
+      .update({ status: newStatus })
+      .eq("id", applicationId);
+    if (updateErr) throw updateErr;
+
+    // Seekers are told when they're shortlisted — good news only. Declines stay
+    // silent; the seeker sees the status in My Applications if they look.
+    if (newStatus === "shortlisted") {
+      try {
+        await supabase.from("notifications").insert({
+          user_telegram_id: (app as any).telegram_id,
+          company_name: employer.business_name,
+          job_title: job.title || "",
+          type: "shortlisted",
+          job_id: job.id,
+          read: false,
+        });
+      } catch (notifyErr) {
+        console.error("Failed to notify shortlisted applicant:", notifyErr);
+      }
+    }
+
+    return new Response(JSON.stringify({ success: true }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
   } catch (error: any) {
     const detail = error?.message || error?.toString() || "Unknown error";

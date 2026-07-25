@@ -300,16 +300,19 @@ export default function ApplicantProfileView({
               <span style={{ fontSize: 13, color: "var(--text-muted)", fontWeight: 500, display: "flex", alignItems: "center", gap: 8 }}>
                 <FileText size={14} color="var(--text-secondary)" /> Resume (CV)
               </span>
+              {/* This screen is currently orphaned (no route reaches it) — employers
+                  manage applicants from the web dashboard. If it is ever revived,
+                  the CV link needs a signed URL: `cv_url` holds a storage path and
+                  the resumes bucket is private, so it can't be opened directly.
+                  Mirror the `get_own_cv_url` edge action, scoped to the employer. */}
               {p?.cv_url ? (
                 <span
-                  onClick={() => window.open(p.cv_url!, "_blank")}
                   style={{
-                    fontSize: 13, fontWeight: 600, color: "#6366F1",
-                    textDecoration: "underline", cursor: "pointer",
+                    fontSize: 13, fontWeight: 600, color: "var(--text-secondary)",
                     display: "flex", alignItems: "center", gap: 5,
                   }}
                 >
-                  <CheckCircle size={12} color="var(--success)" /> View CV
+                  <CheckCircle size={12} color="var(--success)" /> CV on file
                 </span>
               ) : (
                 <span style={{ fontSize: 13, color: "var(--text-muted)", fontWeight: 500 }}>Not uploaded</span>
