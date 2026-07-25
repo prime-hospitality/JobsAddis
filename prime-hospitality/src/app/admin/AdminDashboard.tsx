@@ -10,6 +10,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Timer, Gear } from "@phosphor-icons/react";
 import { supabase } from "@/lib/supabase";
 import { runSilently } from "@/lib/silentFetch";
+import { AdminUiState, writeAdminUi, clearAdminUi } from "@/lib/adminUiCookie";
 import ContentManagementTab from "./ContentManagementTab";
 import BroadcastTab from "./BroadcastTab";
 import ActivityLogTab from "./ActivityLogTab";
@@ -633,22 +634,19 @@ type MonSubTab = "monetization" | "pricing";
 type EmpSubTab = "emp_config" | null;
 type EmpConfigSubTab = "view_emp" | "add_emp" | null;
 
-export default function AdminDashboard({ initialData }: { initialData: any }) {
+export default function AdminDashboard({ initialData, initialUi = {} }: { initialData: any; initialUi?: Partial<AdminUiState> }) {
   const [data, setData] = useState(initialData);
   const VALID_TABS: Tab[] = ["overview", "employers", "jobs", "configuration", "monetization", "reporting", "settings"];
-  const getInitialTab = (): Tab => {
-    if (typeof window !== "undefined") {
-      const stored = sessionStorage.getItem("adminActiveTab") as Tab;
-      if (stored && VALID_TABS.includes(stored)) return stored;
-    }
-    return "overview";
-  };
+  // Seed each tab/sub-tab from the persisted UI cookie (passed in from the server
+  // component) so SSR and the client agree on first render — no reload flash.
+  const seed = <T,>(value: unknown, allowed: readonly T[], fallback: T): T =>
+    allowed.includes(value as T) ? (value as T) : fallback;
 
-  const [activeTab, setActiveTab] = useState<Tab>(getInitialTab);
-  const [configSubTab, setConfigSubTab] = useState<ConfigSubTab>("users");
-  const [monSubTab, setMonSubTab] = useState<MonSubTab>("monetization");
-  const [empSubTab, setEmpSubTab] = useState<EmpSubTab>("emp_config");
-  const [empConfigSubTab, setEmpConfigSubTab] = useState<EmpConfigSubTab>(null);
+  const [activeTab, setActiveTab] = useState<Tab>(() => seed(initialUi.tab, VALID_TABS, "overview"));
+  const [configSubTab, setConfigSubTab] = useState<ConfigSubTab>(() => seed(initialUi.configSubTab, ["users", "content", "broadcast", "activity"], "users"));
+  const [monSubTab, setMonSubTab] = useState<MonSubTab>(() => seed(initialUi.monSubTab, ["monetization", "pricing"], "monetization"));
+  const [empSubTab, setEmpSubTab] = useState<EmpSubTab>(() => seed(initialUi.empSubTab, ["emp_config", null], "emp_config"));
+  const [empConfigSubTab, setEmpConfigSubTab] = useState<EmpConfigSubTab>(() => seed(initialUi.empConfigSubTab, ["view_emp", "add_emp", null], null));
   const [selectedEmployerId, setSelectedEmployerId] = useState<string | null>(null);
   const [loading, setLoading] = useState<string | null>(null);
 
@@ -690,7 +688,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
   const [editLoading, setEditLoading] = useState(false);
   const [editLogoFile, setEditLogoFile] = useState<File | null>(null);
   const [editError, setEditError] = useState("");
-  const [settingsTab, setSettingsTab] = useState<"edit" | "publishing">("edit");
+  const [settingsTab, setSettingsTab] = useState<"edit" | "publishing">(() => seed(initialUi.settingsTab, ["edit", "publishing"], "edit"));
   const [autoPublishSaving, setAutoPublishSaving] = useState(false);
 
   const [pricingState, setPricingState] = useState({
@@ -813,7 +811,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
   const [platformCropFile, setPlatformCropFile] = useState<File | null>(null);
   const platformFileInputRef = useRef<HTMLInputElement>(null);
   const [showNotifications, setShowNotifications] = useState(false);
-  const [seekerSubTab, setSeekerSubTab] = useState<SeekerSubTab>("user-config");
+  const [seekerSubTab, setSeekerSubTab] = useState<SeekerSubTab>(() => seed(initialUi.seekerSubTab, ["user-config", "tab2", "tab3", "tab4"], "user-config"));
   const [userSearchName, setUserSearchName] = useState("");
   const [userSearchPhone, setUserSearchPhone] = useState("");
 
@@ -907,13 +905,14 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
     }
   }, [activeTab, empSubTab]);
 
-  // Sync active tab to sessionStorage so refresh restores the same tab
+  // Persist tab + sub-tab position to a cookie so a full reload restores the
+  // same spot (the server reads this cookie to render the right tab up front).
   useEffect(() => {
-    sessionStorage.setItem("adminActiveTab", activeTab);
+    writeAdminUi({ tab: activeTab, configSubTab, monSubTab, empSubTab, empConfigSubTab, settingsTab, seekerSubTab });
     if (window.location.hash) {
       window.history.replaceState(null, "", window.location.pathname);
     }
-  }, [activeTab]);
+  }, [activeTab, configSubTab, monSubTab, empSubTab, empConfigSubTab, settingsTab, seekerSubTab]);
 
   // `data` is otherwise only ever set once (server-rendered on page load) or
   // patched locally right after this admin's own action. Anything that
@@ -1402,7 +1401,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
   };
 
   const handleLogout = async () => {
-    sessionStorage.removeItem("adminActiveTab");
+    clearAdminUi();
     await logoutAdmin();
     window.location.reload();
   };
@@ -2553,7 +2552,7 @@ export default function AdminDashboard({ initialData }: { initialData: any }) {
 
 
             {activeTab === "configuration" && configSubTab === "content" && (
-              <ContentManagementTab />
+              <ContentManagementTab initialActiveSubTab={initialUi.contentSubTab} initialVacancyManagementSubTab={initialUi.vacancyMgmtSubTab} />
             )}
 
             {activeTab === "configuration" && configSubTab === "broadcast" && (

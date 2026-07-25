@@ -32,9 +32,9 @@ export default function ActivityLogTab() {
   const load = async (p: number, opts?: { silent?: boolean }) => {
     if (!opts?.silent) setLoading(true);
     try {
-      const res = opts?.silent
-        ? await runSilently(() => getActivityLog(p, pageSize))
-        : await getActivityLog(p, pageSize);
+      // Always route through runSilently so neither the mount load nor the poll
+      // trips the global full-screen overlay — this tab shows its own spinner.
+      const res = await runSilently(() => getActivityLog(p, pageSize));
       setRows(res.rows);
       setTotal(res.total);
     } catch (e) {

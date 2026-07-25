@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { getVacancyReport, getApplicationReport, getUserGrowthReport, getPackagePerformanceReport } from "./actions";
+import { runSilently } from "@/lib/silentFetch";
 import { BarChart3 } from "lucide-react";
 
 type Report = {
@@ -57,12 +58,16 @@ export default function ReportingTab() {
   const load = async (d: number) => {
     setLoading(true);
     try {
-      const [vacancy, application, growth, packages] = await Promise.all([
-        getVacancyReport(d),
-        getApplicationReport(d),
-        getUserGrowthReport(d),
-        getPackagePerformanceReport(),
-      ]);
+      // Wrap in runSilently so this doesn't trip the global full-screen overlay
+      // on reload — this tab renders its own "Loading reports…" state.
+      const [vacancy, application, growth, packages] = await runSilently(() =>
+        Promise.all([
+          getVacancyReport(d),
+          getApplicationReport(d),
+          getUserGrowthReport(d),
+          getPackagePerformanceReport(),
+        ])
+      );
       setReport({ vacancy, application, growth, packages });
     } catch (e) {
       console.error(e);

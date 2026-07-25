@@ -7,12 +7,26 @@ import { Timer } from "@phosphor-icons/react";
 import { searchLocations } from "@/data/locations";
 import JobDetailScreen from "@/screens/JobDetailScreen";
 import { Job } from "@/data/jobs";
+import { runSilently } from "@/lib/silentFetch";
+import { writeAdminUi } from "@/lib/adminUiCookie";
 import { StatusPill, MetaChip, salaryLabel, STATUS_META, PostingStyles } from "@/app/emp/dashboard/jobs/postingUI";
 
 
-export default function ContentManagementTab() {
-  const [activeSubTab, setActiveSubTab] = useState<"faqs" | "onboarding" | "vacancyManagement">("faqs");
-  const [vacancyManagementSubTab, setVacancyManagementSubTab] = useState<"templates" | "posts">("templates");
+export default function ContentManagementTab({
+  initialActiveSubTab,
+  initialVacancyManagementSubTab,
+}: {
+  initialActiveSubTab?: string;
+  initialVacancyManagementSubTab?: string;
+} = {}) {
+  const ACTIVE_SUB_TABS = ["faqs", "onboarding", "vacancyManagement"] as const;
+  const VACANCY_SUB_TABS = ["templates", "posts"] as const;
+  const [activeSubTab, setActiveSubTab] = useState<"faqs" | "onboarding" | "vacancyManagement">(
+    () => (ACTIVE_SUB_TABS.includes(initialActiveSubTab as any) ? (initialActiveSubTab as any) : "faqs")
+  );
+  const [vacancyManagementSubTab, setVacancyManagementSubTab] = useState<"templates" | "posts">(
+    () => (VACANCY_SUB_TABS.includes(initialVacancyManagementSubTab as any) ? (initialVacancyManagementSubTab as any) : "templates")
+  );
   const [data, setData] = useState<{ faqs: any[]; templates: any[]; onboardingConfig: any[] }>({ faqs: [], templates: [], onboardingConfig: [] });
   const [platformJobs, setPlatformJobs] = useState<any[]>([]);
   const [postsStatusFilter, setPostsStatusFilter] = useState("all");
@@ -22,10 +36,18 @@ export default function ContentManagementTab() {
     loadData();
   }, []);
 
+  // Persist this tab's sub-tab position (merged into the shared admin_ui cookie)
+  // so a full reload restores it.
+  useEffect(() => {
+    writeAdminUi({ contentSubTab: activeSubTab, vacancyMgmtSubTab: vacancyManagementSubTab });
+  }, [activeSubTab, vacancyManagementSubTab]);
+
   const loadData = async () => {
     setLoading(true);
     try {
-      const [res, jobsRes] = await Promise.all([getContentData(), getPlatformJobs()]);
+      // Wrap in runSilently so the reload/refresh doesn't trip the global
+      // full-screen overlay — this component shows its own "Loading…" state.
+      const [res, jobsRes] = await runSilently(() => Promise.all([getContentData(), getPlatformJobs()]));
       setData(res);
       setPlatformJobs(jobsRes);
     } catch (e) {

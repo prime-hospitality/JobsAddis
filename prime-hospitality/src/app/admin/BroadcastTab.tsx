@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { sendBroadcast, getRecentBroadcasts } from "./actions";
+import { runSilently } from "@/lib/silentFetch";
 import { Send, Megaphone, Loader2 } from "lucide-react";
 
 type Target = "all" | "job_seeker" | "employer";
@@ -18,7 +19,9 @@ export default function BroadcastTab() {
   const loadRecent = async () => {
     setLoading(true);
     try {
-      const rows = await getRecentBroadcasts();
+      // Wrap in runSilently so this doesn't trip the global full-screen overlay
+      // on reload — this tab renders its own loading state.
+      const rows = await runSilently(() => getRecentBroadcasts());
       setRecent(rows);
     } catch (e) {
       console.error(e);
