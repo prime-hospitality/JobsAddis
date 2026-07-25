@@ -663,6 +663,7 @@ export default function ContentManagementTab({
                               <Clock size={12} style={{ flexShrink: 0 }} />
                               <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                                 {new Date(job.created_at).toLocaleDateString()}
+                                {job.last_posted_at && new Date(job.last_posted_at).getTime() - new Date(job.created_at).getTime() > 60000 && ` · Reposted ${new Date(job.last_posted_at).toLocaleDateString()}`}
                                 {job.deadline && ` · ends ${new Date(job.deadline).toLocaleDateString()}`}
                               </span>
                             </div>

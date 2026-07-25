@@ -450,7 +450,7 @@ export async function repostJob(jobId: string, newDeadline: string) {
 
   const { error } = await supabase
     .from("jobs")
-    .update({ deadline: newDeadline, status: "active", scheduled_at: null, pre_approved: false })
+    .update({ deadline: newDeadline, status: "active", scheduled_at: null, pre_approved: false, last_posted_at: new Date().toISOString() })
     .eq("id", jobId);
 
   if (error) throw error;
@@ -935,6 +935,7 @@ export async function repostPlatformJob(jobId: string, data: PlatformJobEditData
     deadline: data.deadline,
     quantity: data.quantity,
     status: newStatus,
+    last_posted_at: new Date().toISOString(),
   }).eq("id", jobId);
 
   if (error) return { success: false, error: error.message || "Failed to repost job" };

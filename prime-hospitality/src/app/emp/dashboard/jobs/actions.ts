@@ -20,6 +20,8 @@ async function getEmployerPublishingRules(supabase: ReturnType<typeof getSupabas
   };
 }
 
+// Counts against last_posted_at (not created_at) so that a repost of an expired
+// job counts as one of today's posts, same as a fresh "Post Now".
 async function getTodayPostCount(supabase: ReturnType<typeof getSupabase>, employerId: string) {
   const startOfDay = new Date();
   startOfDay.setHours(0, 0, 0, 0);
@@ -27,7 +29,7 @@ async function getTodayPostCount(supabase: ReturnType<typeof getSupabase>, emplo
     .from("jobs")
     .select("id", { count: "exact", head: true })
     .eq("employer_id", employerId)
-    .gte("created_at", startOfDay.toISOString());
+    .gte("last_posted_at", startOfDay.toISOString());
   return count || 0;
 }
 
@@ -43,7 +45,7 @@ export async function getEmployerPostingData() {
 
   const supabase = getSupabase();
   const [jobsRes, templatesRes, rules] = await Promise.all([
-    supabase.from("jobs").select("*").eq("employer_id", session.employerId).order("created_at", { ascending: false }),
+    supabase.from("jobs").select("*").eq("employer_id", session.employerId).order("last_posted_at", { ascending: false }),
     supabase.from("employer_vacancy_templates").select("*").eq("employer_id", session.employerId).order("created_at", { ascending: false }),
     getEmployerPublishingRules(supabase, session.employerId),
   ]);
@@ -193,6 +195,10 @@ export async function repostEmployerJob(jobId: string, form: VacancyFormState): 
       deadline: form.deadline,
       quantity: form.quantity || 1,
       status: newStatus,
+      // Stamp the repost time: makes this count toward today's post limit,
+      // floats the job to the top of the feed, and shows it as freshly posted
+      // to seekers — while created_at stays as the original post date.
+      last_posted_at: new Date().toISOString(),
     })
     .eq("id", jobId);
 

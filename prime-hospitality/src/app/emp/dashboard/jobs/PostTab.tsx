@@ -36,7 +36,8 @@ export default function PostTab({ data, loading, reload }: { data: PostingData; 
   };
 
   const startOfToday = () => { const d = new Date(); d.setHours(0, 0, 0, 0); return d; };
-  const postedToday = jobs.filter((j) => new Date(j.created_at) >= startOfToday()).length;
+  // Mirror the server counter: reposts count as today's posts via last_posted_at.
+  const postedToday = jobs.filter((j) => new Date(j.last_posted_at ?? j.created_at) >= startOfToday()).length;
   const liveCount = jobs.filter((j) => j.status === "active").length;
   const reviewCount = jobs.filter((j) => j.status === "pending").length;
   const scheduledCount = jobs.filter((j) => j.status === "scheduled").length;
@@ -171,6 +172,8 @@ export default function PostTab({ data, loading, reload }: { data: PostingData; 
         <div className="mjp-grid">
           {filteredJobs.map((job) => {
             const accent = (STATUS_META[job.status] || STATUS_META.pending).accent;
+            // Reposted if it was made live again well after it was first created.
+            const reposted = job.last_posted_at && new Date(job.last_posted_at).getTime() - new Date(job.created_at).getTime() > 60000;
             return (
               <div
                 key={job.id}
@@ -214,6 +217,7 @@ export default function PostTab({ data, loading, reload }: { data: PostingData; 
                         <Clock size={12} style={{ flexShrink: 0 }} />
                         <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                           {new Date(job.created_at).toLocaleDateString()}
+                          {reposted && ` · Reposted ${new Date(job.last_posted_at).toLocaleDateString()}`}
                           {job.deadline && ` · ends ${new Date(job.deadline).toLocaleDateString()}`}
                         </span>
                       </div>

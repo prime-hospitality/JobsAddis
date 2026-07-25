@@ -1392,13 +1392,14 @@ export default function AdminDashboard({ initialData, initialUi = {} }: { initia
     setRepostError("");
     try {
       const deadlineIso = new Date(repostDeadline).toISOString();
+      const nowIso = new Date().toISOString();
       await repostJob(repostModal.id, deadlineIso);
       setData((prev: any) => ({
         ...prev,
-        jobs: prev.jobs.map((j: any) => j.id === repostModal.id ? { ...j, status: "active", deadline: deadlineIso, scheduled_at: null, pre_approved: false } : j)
+        jobs: prev.jobs.map((j: any) => j.id === repostModal.id ? { ...j, status: "active", deadline: deadlineIso, scheduled_at: null, pre_approved: false, last_posted_at: nowIso } : j)
       }));
       if (viewingJob?.id === repostModal.id) {
-        setViewingJob((prev: any) => prev ? { ...prev, status: "active", deadline: deadlineIso, scheduled_at: null, pre_approved: false } : null);
+        setViewingJob((prev: any) => prev ? { ...prev, status: "active", deadline: deadlineIso, scheduled_at: null, pre_approved: false, last_posted_at: nowIso } : null);
       }
       setRepostModal(null);
       setRepostDeadline("");
@@ -3459,9 +3460,22 @@ export default function AdminDashboard({ initialData, initialUi = {} }: { initia
                 </div>
               </div>
 
-              <div>
-                <span style={{ fontSize: 11, color: "#9ca3af", textTransform: "uppercase", fontWeight: 600 }}>Deadline</span>
-                <div style={{ fontWeight: 600, marginTop: 2 }}>{new Date(viewingJob.deadline).toLocaleDateString()}</div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                <div>
+                  <span style={{ fontSize: 11, color: "#9ca3af", textTransform: "uppercase", fontWeight: 600 }}>Deadline</span>
+                  <div style={{ fontWeight: 600, marginTop: 2 }}>{new Date(viewingJob.deadline).toLocaleDateString()}</div>
+                </div>
+                <div>
+                  <span style={{ fontSize: 11, color: "#9ca3af", textTransform: "uppercase", fontWeight: 600 }}>Posted</span>
+                  <div style={{ fontWeight: 600, marginTop: 2 }}>
+                    {viewingJob.created_at ? new Date(viewingJob.created_at).toLocaleDateString() : "—"}
+                    {viewingJob.last_posted_at && new Date(viewingJob.last_posted_at).getTime() - new Date(viewingJob.created_at).getTime() > 60000 && (
+                      <span style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#059669", marginTop: 2 }}>
+                        Reposted {new Date(viewingJob.last_posted_at).toLocaleDateString()}
+                      </span>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
 

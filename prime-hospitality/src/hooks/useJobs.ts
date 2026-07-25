@@ -30,6 +30,7 @@ export interface SupabaseJob {
   deadline: string;
   status: "pending" | "active" | "closed" | "rejected";
   created_at: string;
+  last_posted_at: string | null;
   quantity: number;
   employers?:
     | {
@@ -82,7 +83,9 @@ export function mapSupabaseJobToJob(sj: SupabaseJob): Job {
     salaryMin: sj.salary_min,
     salaryMax: sj.salary_max,
     currency: sj.currency,
-    postedAt: sj.created_at,
+    // Seekers see how recently the job was made live — a reposted job reads as
+    // freshly posted. Falls back to created_at for rows predating the column.
+    postedAt: sj.last_posted_at ?? sj.created_at,
     description: sj.description,
     fullDescription: sj.full_description,
     requirements: {
@@ -144,6 +147,7 @@ export function useJobs(category?: string | null, limit?: number): UseJobsReturn
           deadline,
           status,
           created_at,
+          last_posted_at,
           quantity,
           employers (
             business_name,
@@ -153,7 +157,7 @@ export function useJobs(category?: string | null, limit?: number): UseJobsReturn
         `
         )
         .eq("status", "active") // Only show approved, live jobs
-        .order("created_at", { ascending: false });
+        .order("last_posted_at", { ascending: false }); // reposts surface as fresh
 
       if (category) {
         query = query.eq("category", category);
