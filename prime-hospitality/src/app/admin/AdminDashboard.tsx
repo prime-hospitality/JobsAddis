@@ -866,6 +866,14 @@ export default function AdminDashboard({ initialData, initialUi = {} }: { initia
         setEmpLoading(true);
         try {
           const res = await searchEmployers(empViewSearch, empPage, empPageSize);
+          // If the data set shrank under us (e.g. an employer was deleted while
+          // on the last page), snap back to the last real page instead of
+          // stranding the admin on a now-empty page.
+          const lastPage = Math.max(1, Math.ceil(res.total / empPageSize));
+          if (empPage > lastPage) {
+            setEmpPage(lastPage);
+            return;
+          }
           setEmpResults(res.employers);
           setEmpTotal(res.total);
         } catch (e) {

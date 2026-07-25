@@ -305,10 +305,21 @@ export async function searchEmployers(queryBusinessName: string = "", page: numb
 
   let query = getSupabase()
     .from("employers")
-    .select("*, users(telegram_id, role)", { count: "exact" });
+    // `!inner` + the role filter below exclude admin-linked employers at the DB
+    // level so `count` matches the rows we return (post-query JS filtering would
+    // leave the total inflated and let pagination page past the real data).
+    .select("*, users!inner(telegram_id, role)", { count: "exact" })
+    .neq("users.role", "admin");
 
-  if (queryBusinessName && queryBusinessName.trim()) {
-    query = query.ilike("business_name", `%${queryBusinessName.trim()}%`);
+  const q = (queryBusinessName || "").trim();
+  if (q) {
+    // A purely numeric search is treated as a Telegram ID lookup (the ID column
+    // is shown in the table); anything else matches the business name.
+    if (/^\d+$/.test(q)) {
+      query = query.eq("users.telegram_id", q);
+    } else {
+      query = query.ilike("business_name", `%${q}%`);
+    }
   }
 
   const from = (page - 1) * pageSize;
@@ -320,7 +331,7 @@ export async function searchEmployers(queryBusinessName: string = "", page: numb
 
   if (error) throw new Error(error.message);
 
-  const employers = (data || []).filter((e: any) => e.users?.role !== "admin");
+  const employers = data || [];
 
   return {
     employers,
