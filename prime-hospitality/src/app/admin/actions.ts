@@ -2,6 +2,7 @@
 
 import { cookies } from "next/headers";
 import { createClient } from "@supabase/supabase-js";
+import { ADMIN_UI_COOKIE } from "@/lib/adminUiCookie";
 
 const getSupabase = () => {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://placeholder.supabase.co";
@@ -88,7 +89,11 @@ export async function loginAdmin(username: string, password: string) {
 
   if (username.toLowerCase() === storedUsername.toLowerCase() && password === storedPassword) {
     const sessionData = JSON.stringify({ username: storedUsername, role: "super_admin" });
-    (await cookies()).set("admin_session", sessionData, { maxAge: 60 * 60 * 24, httpOnly: true, secure: process.env.NODE_ENV === "production" });
+    const jar = await cookies();
+    jar.set("admin_session", sessionData, { maxAge: 60 * 60 * 24, httpOnly: true, secure: process.env.NODE_ENV === "production" });
+    // Always start a fresh login on the Overview tab — don't inherit the
+    // previous user's saved position (this is a shared computer).
+    jar.delete(ADMIN_UI_COOKIE);
     return { success: true, role: "super_admin" };
   }
 
@@ -97,7 +102,10 @@ export async function loginAdmin(username: string, password: string) {
   const sub = subs.find((s) => s.username.toLowerCase() === username.toLowerCase() && s.password === password);
   if (sub) {
     const sessionData = JSON.stringify({ username: sub.username, role: "sub_admin" });
-    (await cookies()).set("admin_session", sessionData, { maxAge: 60 * 60 * 24, httpOnly: true, secure: process.env.NODE_ENV === "production" });
+    const jar = await cookies();
+    jar.set("admin_session", sessionData, { maxAge: 60 * 60 * 24, httpOnly: true, secure: process.env.NODE_ENV === "production" });
+    // Always start a fresh login on the Overview tab (shared computer).
+    jar.delete(ADMIN_UI_COOKIE);
     return { success: true, role: "sub_admin" };
   }
 
@@ -162,7 +170,9 @@ export async function listSubAdmins() {
 }
 
 export async function logoutAdmin() {
-  (await cookies()).delete("admin_session");
+  const jar = await cookies();
+  jar.delete("admin_session");
+  jar.delete(ADMIN_UI_COOKIE);
 }
 
 export async function getAdminData() {
