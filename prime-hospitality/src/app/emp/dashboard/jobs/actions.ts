@@ -12,13 +12,25 @@ import {
 async function getEmployerPublishingRules(supabase: ReturnType<typeof getSupabase>, employerId: string) {
   const { data } = await supabase
     .from("employers")
-    .select("auto_publish, daily_post_limit")
+    .select("auto_publish, daily_post_limit, package_expires_at")
     .eq("id", employerId)
     .single();
   return {
     autoPublish: !!data?.auto_publish,
     dailyPostLimit: data?.daily_post_limit ?? 15,
+    // Date-only (YYYY-MM-DD) so it compares cleanly against the deadline
+    // field, which is itself a plain date with no time component.
+    packageExpiresAt: data?.package_expires_at ? String(data.package_expires_at).split("T")[0] : null,
   };
+}
+
+// Employers can't set a job deadline past their current plan's end date.
+// When they leave the deadline blank, default to 30 days out same as
+// before, but clamped to that same cutoff.
+function resolveDeadline(formDeadline: string | null | undefined, maxDeadline: string | null): string {
+  if (formDeadline) return formDeadline;
+  const fallback = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+  return maxDeadline && fallback > maxDeadline ? maxDeadline : fallback;
 }
 
 // Counts against last_posted_at (not created_at) so that a repost of an expired
@@ -34,7 +46,7 @@ async function getTodayPostCount(supabase: ReturnType<typeof getSupabase>, emplo
   return count || 0;
 }
 
-function validateVacancyForm(form: VacancyFormState, opts?: { requireDeadline?: boolean }): string | null {
+function validateVacancyForm(form: VacancyFormState, opts?: { requireDeadline?: boolean; maxDeadline?: string | null }): string | null {
   const errors = validateVacancyFormShared(form, opts);
   return errors ? Object.values(errors)[0]! : null;
 }
@@ -65,6 +77,7 @@ export async function getEmployerPostingData() {
     applicantCounts,
     autoPublish: rules.autoPublish,
     dailyPostLimit: rules.dailyPostLimit,
+    packageExpiresAt: rules.packageExpiresAt,
     businessName: session.businessName,
     businessType: session.businessType,
     logoUrl: session.logoUrl || null,
@@ -76,11 +89,11 @@ export async function createEmployerJob(form: VacancyFormState): Promise<{ succe
   const session = await requireEmployer();
   if (!session) return { success: false, error: "Unauthorized" };
 
-  const validationError = validateVacancyForm(form);
-  if (validationError) return { success: false, error: validationError };
-
   const supabase = getSupabase();
   const rules = await getEmployerPublishingRules(supabase, session.employerId);
+
+  const validationError = validateVacancyForm(form, { maxDeadline: rules.packageExpiresAt });
+  if (validationError) return { success: false, error: validationError };
 
   if (rules.dailyPostLimit !== -1) {
     const postedToday = await getTodayPostCount(supabase, session.employerId);
@@ -105,7 +118,7 @@ export async function createEmployerJob(form: VacancyFormState): Promise<{ succe
     description,
     full_description: description,
     requirements: buildRequirementsJson(form),
-    deadline: form.deadline || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
+    deadline: resolveDeadline(form.deadline, rules.packageExpiresAt),
     quantity: form.quantity || 1,
     status: rules.autoPublish ? "active" : "pending",
   });
@@ -120,10 +133,12 @@ export async function updateEmployerJobPost(jobId: string, form: VacancyFormStat
   const session = await requireEmployer();
   if (!session) return { success: false, error: "Unauthorized" };
 
-  const validationError = validateVacancyForm(form);
+  const supabase = getSupabase();
+  const rules = await getEmployerPublishingRules(supabase, session.employerId);
+
+  const validationError = validateVacancyForm(form, { maxDeadline: rules.packageExpiresAt });
   if (validationError) return { success: false, error: validationError };
 
-  const supabase = getSupabase();
   const { data: existing } = await supabase.from("jobs").select("id, employer_id").eq("id", jobId).maybeSingle();
   if (!existing || existing.employer_id !== session.employerId) return { success: false, error: "Job not found" };
 
@@ -144,7 +159,7 @@ export async function updateEmployerJobPost(jobId: string, form: VacancyFormStat
       description,
       full_description: description,
       requirements: buildRequirementsJson(form),
-      deadline: form.deadline || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
+      deadline: resolveDeadline(form.deadline, rules.packageExpiresAt),
       quantity: form.quantity || 1,
     })
     .eq("id", jobId);
@@ -163,15 +178,16 @@ export async function repostEmployerJob(jobId: string, form: VacancyFormState): 
   const session = await requireEmployer();
   if (!session) return { success: false, error: "Unauthorized" };
 
-  const validationError = validateVacancyForm(form, { requireDeadline: true });
+  const supabase = getSupabase();
+  const rules = await getEmployerPublishingRules(supabase, session.employerId);
+
+  const validationError = validateVacancyForm(form, { requireDeadline: true, maxDeadline: rules.packageExpiresAt });
   if (validationError) return { success: false, error: validationError };
 
-  const supabase = getSupabase();
   const { data: existing } = await supabase.from("jobs").select("id, employer_id, status, deadline").eq("id", jobId).maybeSingle();
   if (!existing || existing.employer_id !== session.employerId) return { success: false, error: "Job not found" };
   if (existing.status !== "expired") return { success: false, error: "Only expired jobs can be reposted." };
 
-  const rules = await getEmployerPublishingRules(supabase, session.employerId);
   if (rules.dailyPostLimit !== -1) {
     const postedToday = await getTodayPostCount(supabase, session.employerId);
     if (postedToday >= rules.dailyPostLimit) {
@@ -230,10 +246,12 @@ export async function upsertEmployerVacancyTemplate(payload: VacancyFormState) {
   const session = await requireEmployer();
   if (!session) return { success: false, error: "Unauthorized" };
 
-  const validationError = validateVacancyForm(payload);
+  const supabase = getSupabase();
+  const rules = await getEmployerPublishingRules(supabase, session.employerId);
+
+  const validationError = validateVacancyForm(payload, { maxDeadline: rules.packageExpiresAt });
   if (validationError) return { success: false, error: validationError };
 
-  const supabase = getSupabase();
   const { id, ...data } = payload;
 
   if (id) {
@@ -353,7 +371,7 @@ export async function postJobFromEmployerTemplate(templateId: string) {
     description,
     full_description: description,
     requirements: buildRequirementsJson(tpl as any),
-    deadline: tpl.deadline || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
+    deadline: resolveDeadline(tpl.deadline, rules.packageExpiresAt),
     quantity: tpl.quantity || 1,
     status: rules.autoPublish ? "active" : "pending",
   });
@@ -395,7 +413,7 @@ export async function scheduleJobFromEmployerTemplate(templateId: string, schedu
     description,
     full_description: description,
     requirements: buildRequirementsJson(tpl as any),
-    deadline: tpl.deadline || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
+    deadline: resolveDeadline(tpl.deadline, rules.packageExpiresAt),
     quantity: tpl.quantity || 1,
     status: "scheduled",
     scheduled_at: scheduledAt,

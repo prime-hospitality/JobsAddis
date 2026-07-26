@@ -16,6 +16,9 @@ export interface PostingData {
   applicantCounts: Record<string, number>;
   autoPublish: boolean;
   dailyPostLimit: number;
+  /** Date (YYYY-MM-DD) this employer's current plan runs out, or null if
+   *  they have none -- caps how far out a job deadline can be set. */
+  packageExpiresAt: string | null;
   businessName: string;
   businessType: string;
   logoUrl: string | null;
@@ -27,6 +30,7 @@ const EMPTY: PostingData = {
   applicantCounts: {},
   autoPublish: false,
   dailyPostLimit: 15,
+  packageExpiresAt: null,
   businessName: "Your Company",
   businessType: "",
   logoUrl: null,
@@ -59,6 +63,7 @@ export default function ManageJobPostingsTab({
         applicantCounts: res.applicantCounts || {},
         autoPublish: res.autoPublish,
         dailyPostLimit: res.dailyPostLimit,
+        packageExpiresAt: res.packageExpiresAt ?? null,
         businessName: res.businessName || "Your Company",
         businessType: res.businessType || "",
         logoUrl: res.logoUrl || null,

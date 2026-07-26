@@ -58,7 +58,7 @@ export interface VacancyFormErrors {
  *  that persists a VacancyFormState). */
 export function validateVacancyForm(
   form: Pick<VacancyFormState, "title" | "description_template" | "deadline">,
-  opts?: { requireDeadline?: boolean }
+  opts?: { requireDeadline?: boolean; maxDeadline?: string | null }
 ): VacancyFormErrors | null {
   const errors: VacancyFormErrors = {};
   if (!form.title?.trim()) errors.title = "Job Title is required.";
@@ -68,6 +68,12 @@ export function validateVacancyForm(
     today.setHours(0, 0, 0, 0);
     if (!form.deadline) errors.deadline = "A new deadline is required to repost this job.";
     else if (new Date(form.deadline) < today) errors.deadline = "Deadline must be today or later.";
+  }
+  // Employers can't set a deadline past their current plan's end date --
+  // checked regardless of requireDeadline, since a deadline can be entered
+  // even when it isn't otherwise mandatory.
+  if (!errors.deadline && form.deadline && opts?.maxDeadline && form.deadline > opts.maxDeadline) {
+    errors.deadline = `Deadline can't be later than ${opts.maxDeadline} — that's when your current plan ends.`;
   }
   return Object.keys(errors).length ? errors : null;
 }

@@ -19,7 +19,7 @@ import type { PostingData } from "./ManageJobPostingsTab";
 import EmployerAvatar from "@/components/EmployerAvatar";
 
 export default function VacancyTemplateTab({ data, loading, reload }: { data: PostingData; loading: boolean; reload: () => Promise<void>; }) {
-  const { templates, businessName, logoUrl, autoPublish } = data;
+  const { templates, businessName, logoUrl, autoPublish, packageExpiresAt } = data;
 
   // Template form modal state
   const [formModal, setFormModal] = useState<VacancyFormState | null>(null);
@@ -282,6 +282,7 @@ export default function VacancyTemplateTab({ data, loading, reload }: { data: Po
           onClose={() => setFormModal(null)}
           onSubmit={handleSaveTemplate}
           saving={templateSaving}
+          maxDeadline={packageExpiresAt}
           saveLabel="Save Template"
           headerTitle={formModal.id ? "Edit Vacancy Template" : "Create New Template"}
           headerSubtitle="Configure a predefined job posting for quick reuse."

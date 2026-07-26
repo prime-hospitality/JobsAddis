@@ -103,6 +103,7 @@ export default function VacancyFormModal({
   headerTitle,
   headerSubtitle,
   requireDeadline,
+  maxDeadline,
   mode = "employer",
   scheduledPublish,
 }: {
@@ -115,6 +116,9 @@ export default function VacancyFormModal({
   headerTitle: string;
   headerSubtitle: string;
   requireDeadline?: boolean;
+  /** Date (YYYY-MM-DD) past which the deadline picker is capped -- an
+   *  employer's plan end date. Omit for no cap (e.g. the admin dashboard). */
+  maxDeadline?: string | null;
   /** Reserved for admin-only affordances -- today that's just whether
    *  `scheduledPublish` is honored. Defaults to the employer dashboard. */
   mode?: "employer" | "admin";
@@ -148,7 +152,7 @@ export default function VacancyFormModal({
   };
 
   const handleSave = () => {
-    const errors = validateVacancyForm(value, { requireDeadline });
+    const errors = validateVacancyForm(value, { requireDeadline, maxDeadline });
     setFieldErrors(errors || {});
     if (!errors) onSubmit();
   };
@@ -292,12 +296,14 @@ export default function VacancyFormModal({
                 <div className="vfm-field">
                   <label className="vfm-label">
                     <span>Application Deadline {requireDeadline && <span className="vfm-req">*</span>}</span>
+                    {maxDeadline && <span className="vfm-hint">Plan ends {maxDeadline}</span>}
                   </label>
                   <input
                     className={`vfm-input${fieldErrors.deadline ? " error" : ""}`}
                     type="date"
                     value={value.deadline}
                     min={requireDeadline ? new Date().toISOString().split("T")[0] : undefined}
+                    max={maxDeadline || undefined}
                     onChange={(e) => set({ deadline: e.target.value })}
                   />
                   {fieldErrors.deadline && <p className="vfm-error-text">{fieldErrors.deadline}</p>}

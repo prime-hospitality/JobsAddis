@@ -12,7 +12,7 @@ import EmployerAvatar from "@/components/EmployerAvatar";
 import FilterSelect from "@/components/FilterSelect";
 
 export default function PostTab({ data, loading, reload }: { data: PostingData; loading: boolean; reload: () => Promise<void>; }) {
-  const { jobs, autoPublish, dailyPostLimit, businessName, logoUrl } = data;
+  const { jobs, autoPublish, dailyPostLimit, packageExpiresAt, businessName, logoUrl } = data;
 
   const [formModal, setFormModal] = useState<{ mode: "create" | "edit" | "repost"; jobId?: string; value: VacancyFormState } | null>(null);
   const [saving, setSaving] = useState(false);
@@ -278,6 +278,7 @@ export default function PostTab({ data, loading, reload }: { data: PostingData; 
           onSubmit={handleSubmit}
           saving={saving}
           requireDeadline={formModal.mode === "repost"}
+          maxDeadline={packageExpiresAt}
           saveLabel={formModal.mode === "create" ? "Post Now" : formModal.mode === "repost" ? "Repost Job" : "Save Changes"}
           headerTitle={formModal.mode === "create" ? "Post a New Job" : formModal.mode === "repost" ? "Repost This Job" : "Edit Job Posting"}
           headerSubtitle={
