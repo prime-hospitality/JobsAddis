@@ -21,7 +21,8 @@ export const DEPARTMENTS = [
   "Management & Administration",
   "Sales & Marketing",
   "Human Resources",
-  "Engineering & IT",
+  "Engineering",
+  "IT",
   "Security",
   "Spa & Recreation",
   "Other"
@@ -254,33 +255,35 @@ export const HOTEL_JOB_CATEGORIES: JobCategoryDetail[] = [
     keywords: ["hr", "human resources", "recruiter", "recruitment", "training coordinator", "training manager", "personnel", "payroll officer"]
   },
 
-  // ── Engineering & IT ──
+  // ── Engineering ──
   {
     id: "maintenance-technician",
     name: "Maintenance Technician",
     nameAm: "ጥገና ሰራተኛ",
-    department: "Engineering & IT",
+    department: "Engineering",
     keywords: ["maintenance", "technician", "electrician", "plumber", "carpenter", "mason", "handyman", "engineering supervisor"]
   },
   {
     id: "painter",
     name: "Painter",
     nameAm: "ቀለም ቀቢ",
-    department: "Engineering & IT",
+    department: "Engineering",
     keywords: ["painter", "painting", "wall painter"]
   },
   {
     id: "chief-engineer",
     name: "Chief Engineer",
     nameAm: "ቺፍ ኢንጂነር / ዋና መሐንዲስ",
-    department: "Engineering & IT",
+    department: "Engineering",
     keywords: ["chief engineer", "head engineer", "engineering manager", "director of engineering"]
   },
+
+  // ── IT ──
   {
     id: "it-officer",
     name: "IT Officer",
     nameAm: "አይቲ ኦፊሰር",
-    department: "Engineering & IT",
+    department: "IT",
     keywords: ["it officer", "it support", "it manager", "system administrator", "network administrator", "computer technician"]
   },
 

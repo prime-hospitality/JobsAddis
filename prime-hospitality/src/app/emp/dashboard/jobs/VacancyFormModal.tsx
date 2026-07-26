@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Save, X, Briefcase, MapPin, CreditCard, ClipboardList, FileText, CalendarClock } from "lucide-react";
+import { Save, X, Briefcase, MapPin, CreditCard, ClipboardList, CalendarClock } from "lucide-react";
 import { searchLocations } from "@/data/locations";
 import { VacancyFormState, validateVacancyForm } from "./vacancyShared";
 import { DEPARTMENTS } from "@/data/job-categories";
@@ -18,7 +18,7 @@ const STYLES = `
 
   .vfm-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 18px 22px; border-bottom: 1px solid #eef2f7; flex-shrink: 0; }
   .vfm-header-l { display: flex; align-items: center; gap: 13px; min-width: 0; }
-  .vfm-header-ico { width: 42px; height: 42px; border-radius: 12px; background: linear-gradient(135deg, #0284c7, #0369a1); color: #fff; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 4px 12px -3px rgba(2,132,199,0.5); }
+  .vfm-header-ico { width: 42px; height: 42px; border-radius: 12px; background: #e6f2fa; border: 1.5px solid #0369a1; color: #0369a1; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
   .vfm-title { font-size: 18px; font-weight: 800; color: #0f172a; letter-spacing: -.02em; margin: 0; line-height: 1.2; }
   .vfm-sub { font-size: 12.5px; color: #64748b; margin: 2px 0 0 0; }
   .vfm-close { width: 36px; height: 36px; border-radius: 9px; border: 1px solid #e2e8f0; background: #fff; color: #94a3b8; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all .15s ease; flex-shrink: 0; }
@@ -162,7 +162,7 @@ export default function VacancyFormModal({
         <div className="vfm-header">
           <div className="vfm-header-l">
             <div className="vfm-header-ico">
-              <FileText size={22} strokeWidth={1.75} />
+              <ClipboardList size={22} strokeWidth={1.75} />
             </div>
             <div style={{ minWidth: 0 }}>
               <h3 className="vfm-title">{headerTitle}</h3>
