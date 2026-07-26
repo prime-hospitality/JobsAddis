@@ -302,7 +302,7 @@ export default function VacancyFormModal({
                     className={`vfm-input${fieldErrors.deadline ? " error" : ""}`}
                     type="date"
                     value={value.deadline}
-                    min={requireDeadline ? new Date().toISOString().split("T")[0] : undefined}
+                    min={new Date().toISOString().split("T")[0]}
                     max={maxDeadline || undefined}
                     onChange={(e) => set({ deadline: e.target.value })}
                   />
