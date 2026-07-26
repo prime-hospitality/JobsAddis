@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { getContentData, upsertFaq, deleteFaq, upsertVacancyTemplate, deleteVacancyTemplate, updateOnboardingConfig, postJobFromTemplate, checkTemplateStatus, scheduleJobFromTemplate, getPlatformJobs, createPlatformJob, updatePlatformJob, repostPlatformJob, deletePlatformJob } from "./actions";
+import { getContentData, upsertFaq, deleteFaq, upsertVacancyTemplate, deleteVacancyTemplate, updateOnboardingConfig, postJobFromTemplate, checkTemplateStatus, scheduleJobFromTemplate, getPlatformJobs, createPlatformJob, updatePlatformJob, repostPlatformJob, deletePlatformJob, getPlatformEmployerProfile } from "./actions";
 import { Plus, Trash2, Pencil, Briefcase, MapPin, CheckCircle2, Clock, Users, Send, Loader2, AlertTriangle, RefreshCw, ListFilter, FileStack, LayoutGrid, RotateCw } from "lucide-react";
 import { Timer } from "@phosphor-icons/react";
 import JobDetailScreen from "@/screens/JobDetailScreen";
@@ -12,6 +12,7 @@ import { StatusPill, MetaChip, salaryLabel, STATUS_META, PostingStyles } from "@
 import VacancyFormModal from "@/app/emp/dashboard/jobs/VacancyFormModal";
 import { VacancyFormState, emptyVacancyForm, jobRowToForm, templateRowToForm } from "@/app/emp/dashboard/jobs/vacancyShared";
 import FilterSelect from "@/components/FilterSelect";
+import EmployerAvatar from "@/components/EmployerAvatar";
 
 
 export default function ContentManagementTab({
@@ -31,6 +32,10 @@ export default function ContentManagementTab({
   );
   const [data, setData] = useState<{ faqs: any[]; templates: any[]; onboardingConfig: any[] }>({ faqs: [], templates: [], onboardingConfig: [] });
   const [platformJobs, setPlatformJobs] = useState<any[]>([]);
+  // The picture/name shown for the platform's own posts (templates + admin-direct
+  // jobs) — sourced live so it always matches what's set under Platform profile,
+  // instead of a stale hardcoded logo.
+  const [platformProfile, setPlatformProfile] = useState<{ businessName: string; logoUrl: string | null }>({ businessName: "JobsAdis", logoUrl: null });
   const [postsStatusFilter, setPostsStatusFilter] = useState("all");
   const [loading, setLoading] = useState(true);
 
@@ -49,9 +54,10 @@ export default function ContentManagementTab({
     try {
       // Wrap in runSilently so the reload/refresh doesn't trip the global
       // full-screen overlay — this component shows its own "Loading…" state.
-      const [res, jobsRes] = await runSilently(() => Promise.all([getContentData(), getPlatformJobs()]));
+      const [res, jobsRes, profileRes] = await runSilently(() => Promise.all([getContentData(), getPlatformJobs(), getPlatformEmployerProfile()]));
       setData(res);
       setPlatformJobs(jobsRes);
+      if (profileRes.success) setPlatformProfile({ businessName: profileRes.businessName, logoUrl: profileRes.logoUrl });
     } catch (e) {
       console.error(e);
     }
@@ -393,9 +399,9 @@ export default function ContentManagementTab({
 
                       setViewingTemplateJob({
                         id: tpl.id,
-                        businessName: "JobsAdis",
+                        businessName: platformProfile.businessName,
                         businessLogo: "🏢",
-                        logoUrl: "/addis_jobs_logo.png",
+                        logoUrl: platformProfile.logoUrl || undefined,
                         businessType: "Platform",
                         title: tpl.title || "Untitled",
                         category: tpl.job_category || "Other",
@@ -424,9 +430,7 @@ export default function ContentManagementTab({
                     {/* Header row */}
                     <div style={{ display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 12 }}>
                       {/* Logo */}
-                      <div style={{ width: 48, height: 48, borderRadius: 12, background: "var(--brand-subtle, rgba(14,165,233,0.12))", border: "1px solid var(--border, rgba(255,255,255,0.08))", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                        <img src="/addis_jobs_logo.png" alt="Addis Jobs Logo" style={{ width: "100%", height: "100%", objectFit: "contain", padding: 6 }} />
-                      </div>
+                      <EmployerAvatar name={platformProfile.businessName} logoUrl={platformProfile.logoUrl} size={48} radius={12} />
                       {/* Title + category */}
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <p style={{ fontSize: 12, color: "var(--text-secondary, #94a3b8)", marginBottom: 2, fontWeight: 500, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
@@ -607,9 +611,7 @@ export default function ContentManagementTab({
                       <div className="mjp-card-accent" style={{ background: (STATUS_META[job.status] || STATUS_META.pending).accent }} />
                       <div style={{ padding: 18, display: "flex", flexDirection: "column", gap: 12, flex: 1 }}>
                         <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
-                          <div style={{ width: 46, height: 46, borderRadius: 12, background: "rgba(14,165,233,0.12)", border: "1px solid #e9eef4", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                            <img src="/addis_jobs_logo.png" alt="Addis Jobs Logo" style={{ width: "100%", height: "100%", objectFit: "contain", padding: 6 }} />
-                          </div>
+                          <EmployerAvatar name={platformProfile.businessName} logoUrl={platformProfile.logoUrl} size={46} radius={12} />
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <p className="mjp-eyebrow">{job.category || "Other"}</p>
                             <h3 className="mjp-title" style={{ overflow: "hidden", textOverflow: "ellipsis", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>{job.title}</h3>
