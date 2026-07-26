@@ -3551,44 +3551,50 @@ export default function AdminDashboard({ initialData, initialUi = {} }: { initia
       {/* Authorization Number Success Modal */}
       {authNumberResult && (
         <div style={{ position: "fixed", inset: 0, backdropFilter: "blur(4px)", background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 300, padding: "0 16px" }}>
-          <div style={{ background: "#fff", borderRadius: 12, padding: 32, width: "100%", maxWidth: 400, border: "1px solid #e5e7eb", textAlign: "center" }}>
-            <div style={{ width: 48, height: 48, borderRadius: 8, background: "#ecfdf5", color: "#059669", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px", border: "1px solid #d1fae5" }}>
-              <CheckCircle size={24} strokeWidth={2.5} />
-            </div>
-            <h3 style={{ margin: "0 0 8px 0", fontSize: 20, fontWeight: 700, color: "#111827" }}>Employer Registered</h3>
-            <p style={{ margin: "0 0 24px 0", fontSize: 14, color: "#4b5563" }}><strong>{authNumberResult.name}</strong> has been successfully added to the platform.</p>
-            
-            <div style={{ background: "#f9fafb", border: "1px solid #e5e7eb", borderRadius: 8, padding: "24px", marginBottom: 16 }}>
-              <p style={{ margin: "0 0 12px 0", fontSize: 12, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.05em", fontWeight: 600 }}>Authorization Code</p>
-              <div style={{ fontSize: 36, fontWeight: 800, color: "#111827", letterSpacing: "0.2em", fontFamily: "monospace" }}>{authNumberResult.number}</div>
-              <p style={{ margin: "12px 0 0 0", fontSize: 12, color: "#6b7280" }}>Share this code with the employer</p>
+          <div style={{ background: "#fff", borderRadius: 14, width: "100%", maxWidth: 360, border: "1px solid #e5e7eb", overflow: "hidden" }}>
+            <div style={{ padding: "24px 26px 18px" }}>
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 11, fontWeight: 700, letterSpacing: "0.05em", textTransform: "uppercase", color: "#059669", background: "#ecfdf5", border: "1px solid #d1fae5", padding: "3px 9px", borderRadius: 20, marginBottom: 10 }}>
+                <Check size={11} strokeWidth={3} /> Registered
+              </span>
+              <p style={{ margin: "0 0 4px 0", fontSize: 17, fontWeight: 700, color: "#111827" }}>{authNumberResult.name}</p>
+              <p style={{ margin: 0, fontSize: 12.5, color: "#6b7280" }}>Employer account created &mdash; hand off the code below.</p>
             </div>
 
-            <div style={{ background: "#fff7ed", border: "1px solid #ffedd5", borderRadius: 8, padding: "12px 16px", marginBottom: 24, textAlign: "left", display: "flex", gap: "12px", alignItems: "flex-start" }}>
-              <div style={{ color: "#ea580c", marginTop: "2px" }}>
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
-              </div>
-              <p style={{ margin: 0, fontSize: 13, color: "#9a3412", lineHeight: 1.4 }}>This code will not be shown again. Please save or send it to the employer immediately.</p>
-            </div>
-
-            <div style={{ display: "flex", gap: 12 }}>
+            <div
+              style={{
+                borderTop: "1.5px dashed #e2e8f0",
+                padding: "20px 26px 16px",
+                textAlign: "center",
+                position: "relative",
+                backgroundColor: copied ? "#ecfdf5" : "#fff",
+                transition: copied ? "background-color 0.05s ease" : "background-color 0.5s ease",
+              }}
+            >
+              <p style={{ margin: "0 0 8px 0", fontSize: 11, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 600 }}>Authorization Code</p>
+              <div style={{ fontSize: 34, fontWeight: 800, color: "#111827", letterSpacing: "0.16em", fontFamily: "monospace" }}>{authNumberResult.number}</div>
               <button
-                onClick={() => { 
-                  navigator.clipboard.writeText(authNumberResult.number); 
+                onClick={() => {
+                  navigator.clipboard.writeText(authNumberResult.number);
                   setCopied(true);
-                  setTimeout(() => setCopied(false), 2000);
+                  setTimeout(() => setCopied(false), 1600);
                 }}
-                style={{ flex: 1, padding: "10px", borderRadius: 8, border: "1px solid #e5e7eb", background: copied ? "#f0fdf4" : "#fff", color: copied ? "#166534" : "#374151", fontSize: 14, fontWeight: 600, cursor: "pointer", transition: "all 0.2s", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}
+                aria-label="Copy code"
+                style={{ position: "absolute", top: 16, right: 20, width: 32, height: 32, borderRadius: 8, border: copied ? "1px solid #bbf7d0" : "1px solid #e5e7eb", background: copied ? "#f0fdf4" : "#fff", color: "#6b7280", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
               >
-                {copied ? (
-                  <><Check size={16} /> Copied</>
-                ) : (
-                  <><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg> Copy Code</>
-                )}
+                <span style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", opacity: copied ? 0 : 1, transition: "opacity 0.12s linear" }}>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                </span>
+                <span style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", opacity: copied ? 1 : 0, transition: "opacity 0.12s linear", color: "#059669" }}>
+                  <Check size={14} />
+                </span>
               </button>
+            </div>
+
+            <div style={{ padding: "12px 26px 22px", textAlign: "center" }}>
+              <p style={{ margin: "0 0 14px 0", fontSize: 11.5, color: "#6b7280", lineHeight: 1.4 }}>Shown once &mdash; save or send it to the employer immediately.</p>
               <button
                 onClick={() => setAuthNumberResult(null)}
-                style={{ flex: 1, padding: "10px", borderRadius: 8, border: "none", background: "#111827", color: "#fff", fontSize: 14, fontWeight: 600, cursor: "pointer" }}
+                style={{ width: "100%", padding: "10px", borderRadius: 8, border: "none", background: "#111827", color: "#fff", fontSize: 14, fontWeight: 600, cursor: "pointer" }}
               >
                 Done
               </button>
