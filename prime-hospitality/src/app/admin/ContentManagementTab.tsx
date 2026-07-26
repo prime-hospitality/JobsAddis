@@ -1,15 +1,16 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { getContentData, upsertFaq, deleteFaq, upsertVacancyTemplate, deleteVacancyTemplate, updateOnboardingConfig, postJobFromTemplate, checkTemplateStatus, scheduleJobFromTemplate, getPlatformJobs, updatePlatformJob, repostPlatformJob, deletePlatformJob, PlatformJobEditData } from "./actions";
-import { Plus, Save, Trash2, Pencil, X, Briefcase, MapPin, CreditCard, Calendar, FileText, CheckCircle2, Clock, Users, Send, Loader2, AlertTriangle, RefreshCw, ListFilter, FileStack, LayoutGrid, RotateCw } from "lucide-react";
+import { getContentData, upsertFaq, deleteFaq, upsertVacancyTemplate, deleteVacancyTemplate, updateOnboardingConfig, postJobFromTemplate, checkTemplateStatus, scheduleJobFromTemplate, getPlatformJobs, updatePlatformJob, repostPlatformJob, deletePlatformJob } from "./actions";
+import { Plus, Trash2, Pencil, Briefcase, MapPin, CheckCircle2, Clock, Users, Send, Loader2, AlertTriangle, RefreshCw, ListFilter, FileStack, LayoutGrid, RotateCw } from "lucide-react";
 import { Timer } from "@phosphor-icons/react";
-import { searchLocations } from "@/data/locations";
 import JobDetailScreen from "@/screens/JobDetailScreen";
 import { Job } from "@/data/jobs";
 import { runSilently } from "@/lib/silentFetch";
 import { writeAdminUi } from "@/lib/adminUiCookie";
 import { StatusPill, MetaChip, salaryLabel, STATUS_META, PostingStyles } from "@/app/emp/dashboard/jobs/postingUI";
+import VacancyFormModal from "@/app/emp/dashboard/jobs/VacancyFormModal";
+import { VacancyFormState, emptyVacancyForm, jobRowToForm, templateRowToForm } from "@/app/emp/dashboard/jobs/vacancyShared";
 import FilterSelect from "@/components/FilterSelect";
 
 
@@ -99,27 +100,7 @@ export default function ContentManagementTab({
   };
 
   // Template State
-  const [requirementsTab, setRequirementsTab] = useState<"skill" | "education">("skill");
-  const [templateModal, setTemplateModal] = useState<{
-    id?: string;
-    title: string;
-    job_category: string;
-    description_template: string;
-    requirements_template: string;
-    location: string;
-    employment_type: string;
-    salary_type: string;
-    salary_min: number | null;
-    salary_max: number | null;
-    salary_currency: string;
-    salary_period: string;
-    experience_required: string;
-    responsibilities_template: string;
-    benefits_template: string;
-    deadline: string;
-    quantity: number;
-    education_requirements: string;
-  } | null>(null);
+  const [templateModal, setTemplateModal] = useState<VacancyFormState | null>(null);
   const [viewingTemplateJob, setViewingTemplateJob] = useState<Job | null>(null);
   const [postingTemplateId, setPostingTemplateId] = useState<string | null>(null);
   const [postedTemplateId, setPostedTemplateId] = useState<string | null>(null);
@@ -181,7 +162,7 @@ export default function ContentManagementTab({
   };
   // Platform Job Edit (Posts tab) -- also handles reposting an expired job
   const [jobEditModal, setJobEditModal] = useState<
-    (PlatformJobEditData & { id: string; isScheduled: boolean; isRepost: boolean; scheduleDate: string; scheduleTime: string }) | null
+    (VacancyFormState & { isScheduled: boolean; isRepost: boolean; scheduleDate: string; scheduleTime: string }) | null
   >(null);
   const [jobEditSaving, setJobEditSaving] = useState(false);
 
@@ -189,21 +170,10 @@ export default function ContentManagementTab({
     const isRepost = !!options?.repost;
     const isScheduled = !isRepost && job.status === "scheduled";
     const scheduledDate = job.scheduled_at ? new Date(job.scheduled_at) : null;
+    const form = jobRowToForm(job);
     setJobEditModal({
-      id: job.id,
-      title: job.title || "",
-      job_category: job.category || "Other",
-      location: job.location || "",
-      employment_type: job.job_type || "Full Time",
-      salary_type: job.salary_min === -1 ? "negotiable" : job.salary_min === -2 ? "company_scale" : "fixed",
-      salary_min: job.salary_min && job.salary_min > 0 ? job.salary_min : null,
-      salary_max: job.salary_max && job.salary_max > 0 ? job.salary_max : null,
-      salary_currency: job.currency || "ETB",
-      description: job.description || "",
-      experience_required: job.requirements?.experience || "Entry level",
-      education_requirements: job.requirements?.education || "",
-      deadline: isRepost ? "" : job.deadline ? job.deadline.split("T")[0] : "",
-      quantity: job.quantity || 1,
+      ...form,
+      deadline: isRepost ? "" : form.deadline,
       isScheduled,
       isRepost,
       scheduleDate: scheduledDate ? scheduledDate.toISOString().split("T")[0] : "",
@@ -213,29 +183,20 @@ export default function ContentManagementTab({
 
   const handleSaveJobEdit = async () => {
     if (!jobEditModal) return;
-    if (!jobEditModal.title.trim() || !jobEditModal.description.trim()) {
-      setErrorModal("Title and Description are required.");
-      return;
-    }
-    if (jobEditModal.isRepost && !jobEditModal.deadline) {
-      setErrorModal("A new deadline is required to repost this job.");
-      return;
-    }
     setJobEditSaving(true);
     try {
-      const { id, isScheduled, isRepost, scheduleDate, scheduleTime, ...editData } = jobEditModal;
-      const payload: PlatformJobEditData = { ...editData };
-      if (isScheduled && scheduleDate && scheduleTime) {
-        payload.scheduled_at = new Date(`${scheduleDate}T${scheduleTime}`).toISOString();
-      }
+      const { isScheduled, isRepost, scheduleDate, scheduleTime, ...form } = jobEditModal;
+      const scheduledAt = isScheduled && scheduleDate && scheduleTime
+        ? new Date(`${scheduleDate}T${scheduleTime}`).toISOString()
+        : undefined;
       if (isRepost) {
-        const res = await repostPlatformJob(id, payload);
+        const res = await repostPlatformJob(form.id!, form);
         if (!res.success) {
           setErrorModal("Failed to repost job: " + res.error);
           return;
         }
       } else {
-        await updatePlatformJob(id, payload);
+        await updatePlatformJob(form.id!, form, scheduledAt);
       }
       setJobEditModal(null);
       loadData();
@@ -250,19 +211,18 @@ export default function ContentManagementTab({
     setDeleteConfirmModal({ id, type: "platformJob" });
   };
 
-  const [locationSuggestionsOpen, setLocationSuggestionsOpen] = useState(false);
   const [templateSaving, setTemplateSaving] = useState(false);
   const [errorModal, setErrorModal] = useState<string | null>(null);
 
   const handleSaveTemplate = async () => {
     if (!templateModal) return;
-    if (!templateModal.description_template.trim()) {
-      setErrorModal("Job Description is required.");
-      return;
-    }
     setTemplateSaving(true);
     try {
-      await upsertVacancyTemplate(templateModal);
+      const res = await upsertVacancyTemplate(templateModal);
+      if (res && "error" in res && res.error) {
+        setErrorModal("Failed to save template: " + res.error);
+        return;
+      }
       setTemplateModal(null);
       loadData();
     } finally {
@@ -383,25 +343,7 @@ export default function ContentManagementTab({
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-lg font-bold text-black">Vacancy Templates</h3>
               <button
-                onClick={() => setTemplateModal({
-                  title: "",
-                  job_category: "Other",
-                  description_template: "",
-                  requirements_template: "",
-                  location: "",
-                  employment_type: "Full Time",
-                  salary_type: "fixed",
-                  salary_min: null,
-                  salary_max: null,
-                  salary_currency: "ETB",
-                  salary_period: "Monthly",
-                  experience_required: "Entry level",
-                  responsibilities_template: "",
-                  benefits_template: "",
-                  deadline: "",
-                  quantity: 1,
-                  education_requirements: ""
-                })}
+                onClick={() => setTemplateModal(emptyVacancyForm())}
                 className="bg-[#0284c7] text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-[#0369a1] transition-colors flex items-center gap-2"
               >
                 <Plus size={16} /> Add Template
@@ -479,7 +421,7 @@ export default function ContentManagementTab({
                       {/* Action buttons */}
                       <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
                         <button
-                          onClick={(e) => { e.stopPropagation(); setRequirementsTab("skill"); setTemplateModal({ id: tpl.id, title: tpl.title || "", job_category: tpl.job_category || "Other", description_template: tpl.description_template || "", requirements_template: tpl.requirements_template || "", location: tpl.location || "", employment_type: tpl.employment_type || "Full Time", salary_type: tpl.salary_type || "fixed", salary_min: tpl.salary_min, salary_max: tpl.salary_max, salary_currency: tpl.salary_currency || "ETB", salary_period: tpl.salary_period || "Monthly", experience_required: tpl.experience_required || "Entry level", responsibilities_template: tpl.responsibilities_template || "", benefits_template: tpl.benefits_template || "", deadline: tpl.deadline || "", quantity: tpl.quantity || 1, education_requirements: tpl.education_requirements || "" }); }}
+                          onClick={(e) => { e.stopPropagation(); setTemplateModal(templateRowToForm(tpl)); }}
                           style={{ padding: "6px", borderRadius: 8, background: "rgba(14,165,233,0.12)", border: "1px solid rgba(14,165,233,0.2)", color: "#38bdf8", cursor: "pointer", display: "flex", alignItems: "center" }}
                         >
                           <Pencil size={14} />
@@ -863,362 +805,16 @@ export default function ContentManagementTab({
       )}
 
       {templateModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 backdrop-blur-sm bg-gray-900/40 transition-all duration-300">
-          <div className="bg-white rounded-3xl w-full max-w-5xl shadow-[0_20px_60px_-15px_rgba(0,0,0,0.3)] max-h-[90vh] overflow-hidden flex flex-col border border-[#e5e5ea] ring-1 ring-black/5 animate-in fade-in zoom-in-95 duration-200">
-            
-            {/* Modal Header */}
-            <div className="px-8 py-6 border-b border-[#e5e5ea] flex items-center justify-between bg-gradient-to-r from-gray-50/50 to-white">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#0284c7] to-[#0369a1] text-white flex items-center justify-center shadow-lg shadow-[#0284c7]/20">
-                  <FileText size={24} strokeWidth={1.5} />
-                </div>
-                <div>
-                  <h3 className="text-2xl font-bold text-black tracking-tight">
-                    {templateModal.id ? "Edit Vacancy Template" : "Create New Template"}
-                  </h3>
-                  <p className="text-sm text-[#8e8e93] font-medium mt-1">Configure predefined job postings for quick reuse.</p>
-                </div>
-              </div>
-              <button 
-                onClick={() => setTemplateModal(null)} 
-                className="p-2 text-[#aeaeb2] hover:text-[#1c1c1e] hover:bg-[#e5e5ea] rounded-full transition-colors"
-              >
-                <X size={24} />
-              </button>
-            </div>
-
-            {/* Modal Body */}
-            <div className="flex-1 overflow-y-auto p-8 custom-scrollbar bg-[#f2f2f7]/30">
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-                
-                {/* Left Column - Core Info */}
-                <div className="lg:col-span-5 space-y-8">
-                  {/* Section: Basic Details */}
-                  <div className="space-y-5">
-                    <div className="flex items-center gap-2 text-[#0284c7] font-semibold text-sm uppercase tracking-wider mb-2">
-                      <Briefcase size={16} /> Basic Details
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-semibold text-[#1c1c1e] mb-1.5">Job Title</label>
-                      <input
-                        type="text"
-                        value={templateModal.title}
-                        onChange={(e) => setTemplateModal({ ...templateModal, title: e.target.value })}
-                        className="w-full px-4 py-3 bg-white border border-[#c6c6c8] rounded-xl text-sm focus:ring-4 focus:ring-[#0284c7]/10 focus:border-[#0284c7] transition-all outline-none shadow-sm placeholder:text-[#aeaeb2]"
-                        placeholder="e.g. Senior Bartender"
-                      />
-                    </div>
-                    
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-semibold text-[#1c1c1e] mb-1.5">Department</label>
-                        <input
-                          type="text"
-                          value={templateModal.job_category}
-                          onChange={(e) => setTemplateModal({ ...templateModal, job_category: e.target.value })}
-                          className="w-full px-4 py-3 bg-white border border-[#c6c6c8] rounded-xl text-sm focus:ring-4 focus:ring-[#0284c7]/10 focus:border-[#0284c7] transition-all outline-none shadow-sm placeholder:text-[#aeaeb2]"
-                          placeholder="e.g. Hospitality"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-semibold text-[#1c1c1e] mb-1.5">Employment Type</label>
-                        <select
-                          value={templateModal.employment_type}
-                          onChange={(e) => setTemplateModal({ ...templateModal, employment_type: e.target.value })}
-                          className="w-full px-4 py-3 bg-white border border-[#c6c6c8] rounded-xl text-sm focus:ring-4 focus:ring-[#0284c7]/10 focus:border-[#0284c7] transition-all outline-none shadow-sm appearance-none cursor-pointer"
-                        >
-                          <option value="Full Time">Full Time</option>
-                          <option value="Part Time">Part Time</option>
-                          <option value="Contract">Contract</option>
-                          <option value="Internship">Internship</option>
-                          <option value="Freelance">Freelance</option>
-                        </select>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-semibold text-[#1c1c1e] mb-1.5">Number of Required</label>
-                        <input
-                          type="number"
-                          min={1}
-                          value={templateModal.quantity}
-                          onChange={(e) => setTemplateModal({ ...templateModal, quantity: Math.max(1, Number(e.target.value)) })}
-                          className="w-full px-4 py-3 bg-white border border-[#c6c6c8] rounded-xl text-sm focus:ring-4 focus:ring-[#0284c7]/10 focus:border-[#0284c7] transition-all outline-none shadow-sm placeholder:text-[#aeaeb2]"
-                          placeholder="1"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="relative">
-                      <label className="block text-sm font-semibold text-[#1c1c1e] mb-1.5">Place of Work</label>
-                      <div className="relative">
-                        <MapPin size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#aeaeb2]" />
-                        <input
-                          type="text"
-                          value={templateModal.location}
-                          onChange={(e) => {
-                            setTemplateModal({ ...templateModal, location: e.target.value });
-                            setLocationSuggestionsOpen(true);
-                          }}
-                          onFocus={() => setLocationSuggestionsOpen(true)}
-                          onBlur={() => setTimeout(() => setLocationSuggestionsOpen(false), 200)}
-                          className="w-full pl-10 pr-4 py-3 bg-white border border-[#c6c6c8] rounded-xl text-sm focus:ring-4 focus:ring-[#0284c7]/10 focus:border-[#0284c7] transition-all outline-none shadow-sm placeholder:text-[#aeaeb2]"
-                          placeholder="Search neighborhood or sub-city..."
-                          autoComplete="off"
-                        />
-                      </div>
-                      {locationSuggestionsOpen && (() => {
-                        const results = searchLocations(templateModal.location).slice(0, 8);
-                        return results.length > 0 ? (
-                          <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-[#e5e5ea] rounded-xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.15)] z-50 max-h-56 overflow-y-auto overflow-x-hidden">
-                            {results.map(loc => (
-                              <button
-                                key={loc.id}
-                                type="button"
-                                onMouseDown={(e) => {
-                                  e.preventDefault();
-                                  setTemplateModal({ ...templateModal, location: loc.name });
-                                  setLocationSuggestionsOpen(false);
-                                }}
-                                className="w-full text-left px-4 py-3 hover:bg-[#f0f9ff] text-sm border-b border-gray-50 last:border-0 transition-colors group flex items-center justify-between"
-                              >
-                                <div className="font-semibold text-[#1c1c1e] group-hover:text-[#0284c7] transition-colors">{loc.name}</div>
-                                <div className="text-[11px] font-medium text-[#aeaeb2] bg-[#f2f2f7] group-hover:bg-white px-2 py-0.5 rounded-full border border-[#e5e5ea] transition-colors">
-                                  {loc.subCity} • {loc.type.charAt(0).toUpperCase() + loc.type.slice(1)}
-                                </div>
-                              </button>
-                            ))}
-                          </div>
-                        ) : null;
-                      })()}
-                    </div>
-                  </div>
-
-                  <hr className="border-[#c6c6c8]/60" />
-
-                  {/* Section: Compensation */}
-                  <div className="space-y-5">
-                    <div className="flex items-center gap-2 text-[#059669] font-semibold text-sm uppercase tracking-wider mb-2">
-                      <CreditCard size={16} /> Compensation
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-semibold text-[#1c1c1e] mb-2">Salary Structure</label>
-                      <div className="flex p-1 bg-[#e5e5ea] rounded-xl border border-[#c6c6c8]/60">
-                        {[
-                          { value: "fixed", label: "Fixed Amount" },
-                          { value: "company_scale", label: "Company Scale" },
-                          { value: "negotiable", label: "Negotiable" },
-                        ].map(opt => (
-                          <button
-                            key={opt.value}
-                            type="button"
-                            onClick={() => setTemplateModal({ ...templateModal, salary_type: opt.value })}
-                            className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all duration-200 ${
-                              templateModal.salary_type === opt.value 
-                                ? "bg-white text-black shadow-sm ring-1 ring-gray-200" 
-                                : "text-[#8e8e93] hover:text-[#1c1c1e] hover:bg-[#f2f2f7]/50"
-                            }`}
-                          >
-                            {opt.label}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    {templateModal.salary_type === "fixed" && (
-                      <div className="grid grid-cols-2 gap-4 animate-in slide-in-from-top-2 fade-in duration-200">
-                        <div>
-                          <label className="block text-sm font-semibold text-[#1c1c1e] mb-1.5">Minimum</label>
-                          <div className="relative">
-                            <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#aeaeb2] font-medium text-sm">ETB</span>
-                            <input
-                              type="number"
-                              value={templateModal.salary_min || ""}
-                              onChange={(e) => setTemplateModal({ ...templateModal, salary_min: e.target.value ? Number(e.target.value) : null })}
-                              className="w-full pl-12 pr-4 py-3 bg-white border border-[#c6c6c8] rounded-xl text-sm focus:ring-4 focus:ring-[#059669]/10 focus:border-[#059669] transition-all outline-none shadow-sm"
-                              placeholder="0"
-                            />
-                          </div>
-                        </div>
-                        <div>
-                          <label className="block text-sm font-semibold text-[#1c1c1e] mb-1.5">Maximum</label>
-                          <div className="relative">
-                            <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#aeaeb2] font-medium text-sm">ETB</span>
-                            <input
-                              type="number"
-                              value={templateModal.salary_max || ""}
-                              onChange={(e) => setTemplateModal({ ...templateModal, salary_max: e.target.value ? Number(e.target.value) : null })}
-                              className="w-full pl-12 pr-4 py-3 bg-white border border-[#c6c6c8] rounded-xl text-sm focus:ring-4 focus:ring-[#059669]/10 focus:border-[#059669] transition-all outline-none shadow-sm"
-                              placeholder="0"
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                  
-                  <hr className="border-[#c6c6c8]/60" />
-
-                  {/* Section: Timeline & Exp */}
-                  <div className="space-y-5">
-                    <div className="flex items-center gap-2 text-[#7c3aed] font-semibold text-sm uppercase tracking-wider mb-2">
-                      <Calendar size={16} /> Requirements
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-semibold text-[#1c1c1e] mb-1.5">Experience</label>
-                        <select
-                          value={templateModal.experience_required}
-                          onChange={(e) => setTemplateModal({ ...templateModal, experience_required: e.target.value })}
-                          className="w-full px-4 py-3 bg-white border border-[#c6c6c8] rounded-xl text-sm focus:ring-4 focus:ring-[#7c3aed]/10 focus:border-[#7c3aed] transition-all outline-none shadow-sm appearance-none cursor-pointer"
-                        >
-                          <option value="Entry level">Entry level</option>
-                          <option value="Junior">Junior</option>
-                          <option value="Intermediate">Intermediate</option>
-                          <option value="Senior">Senior</option>
-                          <option value="Expert">Expert</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-semibold text-[#1c1c1e] mb-1.5">Deadline</label>
-                        <input
-                          type="date"
-                          value={templateModal.deadline}
-                          onChange={(e) => setTemplateModal({ ...templateModal, deadline: e.target.value })}
-                          className="w-full px-4 py-3 bg-white border border-[#c6c6c8] rounded-xl text-sm focus:ring-4 focus:ring-[#7c3aed]/10 focus:border-[#7c3aed] transition-all outline-none shadow-sm text-[#8e8e93]"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Right Column - Templates */}
-                <div className="lg:col-span-7 bg-white p-6 rounded-2xl border border-[#c6c6c8]/60 shadow-sm flex flex-col gap-5">
-                  <div className="flex items-center gap-2 text-[#1c1c1e] font-bold text-base border-b border-[#e5e5ea] pb-3 mb-2">
-                    Content Templates
-                  </div>
-                  
-                  <div className="flex-1 flex flex-col gap-5">
-                    <div className="group">
-                      <label className="block text-sm font-semibold text-[#1c1c1e] mb-1.5 flex justify-between">
-                        Job Description <span style={{ color: "#ef4444" }}>*</span>
-                        <span className="text-[10px] font-bold text-[#aeaeb2] uppercase tracking-wider bg-[#e5e5ea] px-2 py-0.5 rounded-full group-focus-within:bg-[#0284c7] group-focus-within:text-white transition-colors">Main overview</span>
-                      </label>
-                      <textarea
-                        value={templateModal.description_template}
-                        onChange={(e) => setTemplateModal({ ...templateModal, description_template: e.target.value })}
-                        className="w-full px-4 py-3 bg-[#f2f2f7]/50 hover:bg-white border border-[#c6c6c8] rounded-xl text-sm h-32 resize-none focus:ring-4 focus:ring-[#0284c7]/10 focus:border-[#0284c7] transition-all outline-none leading-relaxed shadow-inner placeholder:text-[#c6c6c8]"
-                        placeholder="Provide a compelling overview of the role and what it entails..."
-                      />
-                    </div>
-                    
-                    <div className="group">
-                      <label className="block text-sm font-semibold text-[#1c1c1e] mb-1.5 flex justify-between">
-                        Responsibilities
-                        <span className="text-[10px] font-bold text-[#aeaeb2] uppercase tracking-wider bg-[#e5e5ea] px-2 py-0.5 rounded-full group-focus-within:bg-[#0284c7] group-focus-within:text-white transition-colors">Bulleted list</span>
-                      </label>
-                      <textarea
-                        value={templateModal.responsibilities_template}
-                        onChange={(e) => setTemplateModal({ ...templateModal, responsibilities_template: e.target.value })}
-                        className="w-full px-4 py-3 bg-[#f2f2f7]/50 hover:bg-white border border-[#c6c6c8] rounded-xl text-sm h-28 resize-none focus:ring-4 focus:ring-[#0284c7]/10 focus:border-[#0284c7] transition-all outline-none leading-relaxed shadow-inner placeholder:text-[#c6c6c8]"
-                        placeholder="- Daily task one&#10;- Daily task two&#10;- Key deliverable..."
-                      />
-                    </div>
-
-                    <div className="group">
-                      {/* Toggle between Requirement skill & Education Requirements */}
-                      <div className="flex items-center gap-2 mb-2">
-                        <div className="flex p-0.5 bg-[#e5e5ea] rounded-lg border border-[#c6c6c8]/60">
-                          <button
-                            type="button"
-                            onClick={() => setRequirementsTab("skill")}
-                            className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all duration-200 ${
-                              requirementsTab === "skill"
-                                ? "bg-white text-black shadow-sm ring-1 ring-gray-200"
-                                : "text-[#8e8e93] hover:text-[#1c1c1e]"
-                            }`}
-                          >
-                            Requirement Skill
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setRequirementsTab("education")}
-                            className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all duration-200 ${
-                              requirementsTab === "education"
-                                ? "bg-white text-black shadow-sm ring-1 ring-gray-200"
-                                : "text-[#8e8e93] hover:text-[#1c1c1e]"
-                            }`}
-                          >
-                            Education Requirements
-                          </button>
-                        </div>
-                      </div>
-
-                      {requirementsTab === "skill" ? (
-                        <textarea
-                          value={templateModal.requirements_template}
-                          onChange={(e) => setTemplateModal({ ...templateModal, requirements_template: e.target.value })}
-                          className="w-full px-4 py-3 bg-[#f2f2f7]/50 hover:bg-white border border-[#c6c6c8] rounded-xl text-sm h-28 resize-none focus:ring-4 focus:ring-[#0284c7]/10 focus:border-[#0284c7] transition-all outline-none leading-relaxed shadow-inner placeholder:text-[#c6c6c8]"
-                          placeholder="- Required skill one&#10;- Certification...&#10;- Years of experience..."
-                        />
-                      ) : (
-                        <textarea
-                          value={templateModal.education_requirements}
-                          onChange={(e) => setTemplateModal({ ...templateModal, education_requirements: e.target.value })}
-                          className="w-full px-4 py-3 bg-[#f2f2f7]/50 hover:bg-white border border-[#c6c6c8] rounded-xl text-sm h-28 resize-none focus:ring-4 focus:ring-[#7c3aed]/10 focus:border-[#7c3aed] transition-all outline-none leading-relaxed shadow-inner placeholder:text-[#c6c6c8]"
-                          placeholder="- Bachelor's Degree in Hospitality Management&#10;- Vocational certificate in...&#10;- Minimum education level..."
-                        />
-                      )}
-                    </div>
-
-                    <div className="group">
-                      <label className="block text-sm font-semibold text-[#1c1c1e] mb-1.5">Benefits</label>
-                      <textarea
-                        value={templateModal.benefits_template}
-                        onChange={(e) => setTemplateModal({ ...templateModal, benefits_template: e.target.value })}
-                        className="w-full px-4 py-3 bg-[#f2f2f7]/50 hover:bg-white border border-[#c6c6c8] rounded-xl text-sm h-28 resize-none focus:ring-4 focus:ring-[#0284c7]/10 focus:border-[#0284c7] transition-all outline-none leading-relaxed shadow-inner placeholder:text-[#c6c6c8]"
-                        placeholder="- Paid time off&#10;- Health insurance..."
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Modal Footer */}
-            <div className="px-8 py-5 border-t border-[#e5e5ea] bg-[#f2f2f7]/80 flex items-center justify-between">
-              <div className="text-sm text-[#8e8e93] flex items-center gap-2">
-                <CheckCircle2 size={16} className="text-green-500" /> Auto-saves standard fields securely.
-              </div>
-              <div className="flex gap-3">
-                <button 
-                  onClick={() => setTemplateModal(null)} 
-                  className="px-6 py-2.5 text-sm font-bold text-[#8e8e93] bg-white border border-[#c6c6c8] hover:bg-[#f2f2f7] hover:text-black rounded-xl transition-all shadow-sm"
-                >
-                  Cancel
-                </button>
-                <button 
-                  onClick={handleSaveTemplate}
-                  disabled={templateSaving}
-                  className="px-8 py-2.5 text-sm font-bold text-white bg-gradient-to-b from-[#0ea5e9] to-[#0284c7] hover:from-[#38bdf8] hover:to-[#0369a1] rounded-xl transition-all shadow-md shadow-[#0284c7]/30 ring-1 ring-inset ring-white/20 flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
-                >
-                  {templateSaving ? (
-                    <svg className="animate-spin" width={16} height={16} viewBox="0 0 24 24" fill="none">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
-                    </svg>
-                  ) : (
-                    <><Save size={16} /> Save Template</>
-                  )}
-                </button>
-              </div>
-            </div>
-
-          </div>
-        </div>
+        <VacancyFormModal
+          value={templateModal}
+          onChange={setTemplateModal}
+          onClose={() => setTemplateModal(null)}
+          onSubmit={handleSaveTemplate}
+          saving={templateSaving}
+          saveLabel="Save Template"
+          headerTitle={templateModal.id ? "Edit Vacancy Template" : "Create New Template"}
+          headerSubtitle="Configure predefined job postings for quick reuse."
+        />
       )}
 
       {deleteConfirmModal && (
@@ -1442,97 +1038,28 @@ export default function ContentManagementTab({
 
       {/* Job Edit Modal (Posts tab) -- also used to repost an expired job */}
       {jobEditModal && (
-        <div className="fixed inset-0 z-[300] flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)" }} onClick={() => !jobEditSaving && setJobEditModal(null)}>
-          <div className="bg-white rounded-2xl w-full max-w-lg shadow-xl max-h-[85vh] overflow-hidden flex flex-col" onClick={(e) => e.stopPropagation()}>
-            <div className="px-6 py-5 border-b border-[#e5e5ea] flex items-center justify-between">
-              <h3 className="text-lg font-bold text-black">{jobEditModal.isRepost ? "Repost Job" : jobEditModal.isScheduled ? "Edit Scheduled Post" : "Edit Job Post"}</h3>
-              <button onClick={() => setJobEditModal(null)} className="p-2 text-[#aeaeb2] hover:text-[#1c1c1e] hover:bg-[#e5e5ea] rounded-full transition-colors"><X size={20} /></button>
-            </div>
-            <div className="flex-1 overflow-y-auto p-6 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-[#1c1c1e] mb-1">Job Title</label>
-                <input type="text" value={jobEditModal.title} onChange={(e) => setJobEditModal({ ...jobEditModal, title: e.target.value })} className="w-full px-4 py-2.5 bg-[#f2f2f7] border border-[#c6c6c8] rounded-xl text-sm focus:ring-2 focus:ring-[#0284c7] outline-none" />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-[#1c1c1e] mb-1">Category</label>
-                  <input type="text" value={jobEditModal.job_category} onChange={(e) => setJobEditModal({ ...jobEditModal, job_category: e.target.value })} className="w-full px-4 py-2.5 bg-[#f2f2f7] border border-[#c6c6c8] rounded-xl text-sm focus:ring-2 focus:ring-[#0284c7] outline-none" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-[#1c1c1e] mb-1">Employment Type</label>
-                  <select value={jobEditModal.employment_type} onChange={(e) => setJobEditModal({ ...jobEditModal, employment_type: e.target.value })} className="w-full px-4 py-2.5 bg-[#f2f2f7] border border-[#c6c6c8] rounded-xl text-sm focus:ring-2 focus:ring-[#0284c7] outline-none">
-                    <option value="Full Time">Full Time</option>
-                    <option value="Part Time">Part Time</option>
-                    <option value="Contract">Contract</option>
-                    <option value="Internship">Internship</option>
-                    <option value="Freelance">Freelance</option>
-                  </select>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-[#1c1c1e] mb-1">Location</label>
-                  <input type="text" value={jobEditModal.location} onChange={(e) => setJobEditModal({ ...jobEditModal, location: e.target.value })} className="w-full px-4 py-2.5 bg-[#f2f2f7] border border-[#c6c6c8] rounded-xl text-sm focus:ring-2 focus:ring-[#0284c7] outline-none" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-[#1c1c1e] mb-1">Openings</label>
-                  <input type="number" min={1} value={jobEditModal.quantity} onChange={(e) => setJobEditModal({ ...jobEditModal, quantity: Math.max(1, Number(e.target.value)) })} className="w-full px-4 py-2.5 bg-[#f2f2f7] border border-[#c6c6c8] rounded-xl text-sm focus:ring-2 focus:ring-[#0284c7] outline-none" />
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-[#1c1c1e] mb-1">Salary</label>
-                <select value={jobEditModal.salary_type} onChange={(e) => setJobEditModal({ ...jobEditModal, salary_type: e.target.value })} className="w-full px-4 py-2.5 bg-[#f2f2f7] border border-[#c6c6c8] rounded-xl text-sm focus:ring-2 focus:ring-[#0284c7] outline-none mb-2">
-                  <option value="fixed">Fixed Amount</option>
-                  <option value="negotiable">Negotiable</option>
-                  <option value="company_scale">Per Company Scale</option>
-                </select>
-                {jobEditModal.salary_type === "fixed" && (
-                  <div className="grid grid-cols-3 gap-3">
-                    <input type="number" placeholder="Min" value={jobEditModal.salary_min ?? ""} onChange={(e) => setJobEditModal({ ...jobEditModal, salary_min: e.target.value ? Number(e.target.value) : null })} className="w-full px-4 py-2.5 bg-[#f2f2f7] border border-[#c6c6c8] rounded-xl text-sm focus:ring-2 focus:ring-[#0284c7] outline-none" />
-                    <input type="number" placeholder="Max" value={jobEditModal.salary_max ?? ""} onChange={(e) => setJobEditModal({ ...jobEditModal, salary_max: e.target.value ? Number(e.target.value) : null })} className="w-full px-4 py-2.5 bg-[#f2f2f7] border border-[#c6c6c8] rounded-xl text-sm focus:ring-2 focus:ring-[#0284c7] outline-none" />
-                    <input type="text" placeholder="Currency" value={jobEditModal.salary_currency} onChange={(e) => setJobEditModal({ ...jobEditModal, salary_currency: e.target.value })} className="w-full px-4 py-2.5 bg-[#f2f2f7] border border-[#c6c6c8] rounded-xl text-sm focus:ring-2 focus:ring-[#0284c7] outline-none" />
-                  </div>
-                )}
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-[#1c1c1e] mb-1">Experience</label>
-                  <input type="text" value={jobEditModal.experience_required} onChange={(e) => setJobEditModal({ ...jobEditModal, experience_required: e.target.value })} className="w-full px-4 py-2.5 bg-[#f2f2f7] border border-[#c6c6c8] rounded-xl text-sm focus:ring-2 focus:ring-[#0284c7] outline-none" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-[#1c1c1e] mb-1">Deadline</label>
-                  <input type="date" value={jobEditModal.deadline} onChange={(e) => setJobEditModal({ ...jobEditModal, deadline: e.target.value })} className="w-full px-4 py-2.5 bg-[#f2f2f7] border border-[#c6c6c8] rounded-xl text-sm focus:ring-2 focus:ring-[#0284c7] outline-none" />
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-[#1c1c1e] mb-1">Education Requirements</label>
-                <input type="text" value={jobEditModal.education_requirements} onChange={(e) => setJobEditModal({ ...jobEditModal, education_requirements: e.target.value })} className="w-full px-4 py-2.5 bg-[#f2f2f7] border border-[#c6c6c8] rounded-xl text-sm focus:ring-2 focus:ring-[#0284c7] outline-none" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-[#1c1c1e] mb-1">Description</label>
-                <textarea value={jobEditModal.description} onChange={(e) => setJobEditModal({ ...jobEditModal, description: e.target.value })} className="w-full px-4 py-2.5 bg-[#f2f2f7] border border-[#c6c6c8] rounded-xl text-sm h-28 resize-none focus:ring-2 focus:ring-[#0284c7] outline-none" />
-              </div>
-              {jobEditModal.isScheduled && (
-                <div className="grid grid-cols-2 gap-4 pt-2 border-t border-[#e5e5ea]">
-                  <div>
-                    <label className="block text-sm font-medium text-[#1c1c1e] mb-1">Publish Date</label>
-                    <input type="date" value={jobEditModal.scheduleDate} onChange={(e) => setJobEditModal({ ...jobEditModal, scheduleDate: e.target.value })} className="w-full px-4 py-2.5 bg-[#f2f2f7] border border-[#c6c6c8] rounded-xl text-sm focus:ring-2 focus:ring-[#0284c7] outline-none" />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-[#1c1c1e] mb-1">Publish Time</label>
-                    <input type="time" value={jobEditModal.scheduleTime} onChange={(e) => setJobEditModal({ ...jobEditModal, scheduleTime: e.target.value })} className="w-full px-4 py-2.5 bg-[#f2f2f7] border border-[#c6c6c8] rounded-xl text-sm focus:ring-2 focus:ring-[#0284c7] outline-none" />
-                  </div>
-                </div>
-              )}
-            </div>
-            <div className="flex justify-end gap-3 px-6 py-4 border-t border-[#e5e5ea] bg-[#f2f2f7]/50">
-              <button onClick={() => setJobEditModal(null)} className="px-5 py-2.5 text-sm font-medium text-[#8e8e93] hover:bg-[#e5e5ea] rounded-xl transition-colors">Cancel</button>
-              <button onClick={handleSaveJobEdit} disabled={jobEditSaving} className="px-5 py-2.5 text-sm font-medium text-white bg-[#0284c7] hover:bg-[#0369a1] rounded-xl transition-colors">
-                {jobEditSaving ? (jobEditModal.isRepost ? "Reposting..." : "Saving...") : jobEditModal.isRepost ? "Repost Job" : "Save Changes"}
-              </button>
-            </div>
-          </div>
-        </div>
+        <VacancyFormModal
+          value={jobEditModal}
+          onChange={(next) => setJobEditModal({ ...jobEditModal, ...next })}
+          onClose={() => setJobEditModal(null)}
+          onSubmit={handleSaveJobEdit}
+          saving={jobEditSaving}
+          saveLabel={jobEditModal.isRepost ? "Repost Job" : "Save Changes"}
+          headerTitle={jobEditModal.isRepost ? "Repost Job" : jobEditModal.isScheduled ? "Edit Scheduled Post" : "Edit Job Post"}
+          headerSubtitle={jobEditModal.isRepost ? "Reposting carries the full listing forward -- review every field before republishing." : "Update this platform job posting."}
+          requireDeadline={jobEditModal.isRepost}
+          mode="admin"
+          scheduledPublish={
+            jobEditModal.isScheduled
+              ? {
+                  date: jobEditModal.scheduleDate,
+                  time: jobEditModal.scheduleTime,
+                  onDateChange: (v) => setJobEditModal({ ...jobEditModal, scheduleDate: v }),
+                  onTimeChange: (v) => setJobEditModal({ ...jobEditModal, scheduleTime: v }),
+                }
+              : undefined
+          }
+        />
       )}
 
       {/* Error Modal */}

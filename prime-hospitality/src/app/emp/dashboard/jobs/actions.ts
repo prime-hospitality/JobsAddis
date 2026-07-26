@@ -6,6 +6,7 @@ import {
   buildJobDescription,
   buildRequirementsJson,
   resolveSalary,
+  validateVacancyForm as validateVacancyFormShared,
 } from "./vacancyShared";
 
 async function getEmployerPublishingRules(supabase: ReturnType<typeof getSupabase>, employerId: string) {
@@ -33,10 +34,9 @@ async function getTodayPostCount(supabase: ReturnType<typeof getSupabase>, emplo
   return count || 0;
 }
 
-function validateVacancyForm(form: VacancyFormState): string | null {
-  if (!form.title?.trim()) return "Job Title is required.";
-  if (!form.description_template?.trim()) return "Job Description is required.";
-  return null;
+function validateVacancyForm(form: VacancyFormState, opts?: { requireDeadline?: boolean }): string | null {
+  const errors = validateVacancyFormShared(form, opts);
+  return errors ? Object.values(errors)[0]! : null;
 }
 
 export async function getEmployerPostingData() {
@@ -101,7 +101,7 @@ export async function createEmployerJob(form: VacancyFormState): Promise<{ succe
     job_type: form.employment_type || "Full Time",
     salary_min,
     salary_max,
-    currency: form.salary_currency || "ETB",
+    currency: "ETB",
     description,
     full_description: description,
     requirements: buildRequirementsJson(form),
@@ -140,7 +140,7 @@ export async function updateEmployerJobPost(jobId: string, form: VacancyFormStat
       job_type: form.employment_type || "Full Time",
       salary_min,
       salary_max,
-      currency: form.salary_currency || "ETB",
+      currency: "ETB",
       description,
       full_description: description,
       requirements: buildRequirementsJson(form),
@@ -163,13 +163,8 @@ export async function repostEmployerJob(jobId: string, form: VacancyFormState): 
   const session = await requireEmployer();
   if (!session) return { success: false, error: "Unauthorized" };
 
-  const validationError = validateVacancyForm(form);
+  const validationError = validateVacancyForm(form, { requireDeadline: true });
   if (validationError) return { success: false, error: validationError };
-
-  if (!form.deadline) return { success: false, error: "A new deadline is required to repost this job." };
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  if (new Date(form.deadline) < today) return { success: false, error: "The new deadline must be today or later." };
 
   const supabase = getSupabase();
   const { data: existing } = await supabase.from("jobs").select("id, employer_id, status, deadline").eq("id", jobId).maybeSingle();
@@ -198,7 +193,7 @@ export async function repostEmployerJob(jobId: string, form: VacancyFormState): 
       job_type: form.employment_type || "Full Time",
       salary_min,
       salary_max,
-      currency: form.salary_currency || "ETB",
+      currency: "ETB",
       description,
       full_description: description,
       requirements: buildRequirementsJson(form),
@@ -258,8 +253,8 @@ export async function upsertEmployerVacancyTemplate(payload: VacancyFormState) {
     salary_type: data.salary_type,
     salary_min: data.salary_min,
     salary_max: data.salary_max,
-    salary_currency: data.salary_currency,
-    salary_period: data.salary_period,
+    salary_currency: "ETB",
+    salary_period: "Monthly",
     experience_required: data.experience_required,
     responsibilities_template: data.responsibilities_template,
     benefits_template: data.benefits_template,

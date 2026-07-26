@@ -1,10 +1,13 @@
 "use client";
 
 import React, { useState } from "react";
-import { Save, X, Briefcase, MapPin, CreditCard, ClipboardList, FileText } from "lucide-react";
+import { Save, X, Briefcase, MapPin, CreditCard, ClipboardList, FileText, CalendarClock } from "lucide-react";
 import { searchLocations } from "@/data/locations";
-import { VacancyFormState } from "./vacancyShared";
+import { VacancyFormState, validateVacancyForm } from "./vacancyShared";
+import { DEPARTMENTS } from "@/data/job-categories";
 import FilterSelect from "@/components/FilterSelect";
+
+const DEPARTMENT_OPTIONS = DEPARTMENTS.map((d) => ({ value: d, label: d }));
 
 const CHEVRON =
   "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='m6 9 6 6 6-6'/></svg>\")";
@@ -100,6 +103,8 @@ export default function VacancyFormModal({
   headerTitle,
   headerSubtitle,
   requireDeadline,
+  mode = "employer",
+  scheduledPublish,
 }: {
   value: VacancyFormState;
   onChange: (next: VacancyFormState) => void;
@@ -110,10 +115,26 @@ export default function VacancyFormModal({
   headerTitle: string;
   headerSubtitle: string;
   requireDeadline?: boolean;
+  /** Reserved for admin-only affordances -- today that's just whether
+   *  `scheduledPublish` is honored. Defaults to the employer dashboard. */
+  mode?: "employer" | "admin";
+  /** Publish Date/Time section, shown only when supplied (admin editing a
+   *  job that's currently status "scheduled"). */
+  scheduledPublish?: {
+    date: string;
+    time: string;
+    onDateChange: (v: string) => void;
+    onTimeChange: (v: string) => void;
+  };
 }) {
   const [requirementsTab, setRequirementsTab] = useState<"skill" | "education">("skill");
   const [locationSuggestionsOpen, setLocationSuggestionsOpen] = useState(false);
-  const [fieldErrors, setFieldErrors] = useState<{ title?: boolean; description_template?: boolean; deadline?: boolean }>({});
+  const [fieldErrors, setFieldErrors] = useState<{ title?: string; description_template?: string; deadline?: string }>({});
+
+  const departmentOptions =
+    value.job_category && !DEPARTMENTS.includes(value.job_category as any)
+      ? [{ value: value.job_category, label: value.job_category }, ...DEPARTMENT_OPTIONS]
+      : DEPARTMENT_OPTIONS;
 
   const set = (patch: Partial<VacancyFormState>) => {
     onChange({ ...value, ...patch });
@@ -127,16 +148,9 @@ export default function VacancyFormModal({
   };
 
   const handleSave = () => {
-    const errors: typeof fieldErrors = {};
-    if (!value.title.trim()) errors.title = true;
-    if (!value.description_template.trim()) errors.description_template = true;
-    if (requireDeadline) {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      if (!value.deadline || new Date(value.deadline) < today) errors.deadline = true;
-    }
-    setFieldErrors(errors);
-    if (Object.keys(errors).length === 0) onSubmit();
+    const errors = validateVacancyForm(value, { requireDeadline });
+    setFieldErrors(errors || {});
+    if (!errors) onSubmit();
   };
 
   return (
@@ -179,18 +193,21 @@ export default function VacancyFormModal({
                     onChange={(e) => set({ title: e.target.value })}
                     placeholder="e.g. Senior Bartender"
                   />
-                  {fieldErrors.title && <p className="vfm-error-text">This field is required.</p>}
+                  {fieldErrors.title && <p className="vfm-error-text">{fieldErrors.title}</p>}
                 </div>
 
                 <div className="vfm-row2">
                   <div className="vfm-field">
                     <label className="vfm-label">Department</label>
-                    <input
-                      className="vfm-input"
-                      type="text"
+                    <FilterSelect
                       value={value.job_category}
-                      onChange={(e) => set({ job_category: e.target.value })}
-                      placeholder="e.g. Hospitality"
+                      onChange={(v) => set({ job_category: v })}
+                      fullWidth
+                      minWidth={0}
+                      searchable={false}
+                      maxMenuHeight={224}
+                      ariaLabel="Department"
+                      options={departmentOptions}
                     />
                   </div>
                   <div className="vfm-field">
@@ -283,11 +300,7 @@ export default function VacancyFormModal({
                     min={requireDeadline ? new Date().toISOString().split("T")[0] : undefined}
                     onChange={(e) => set({ deadline: e.target.value })}
                   />
-                  {fieldErrors.deadline && (
-                    <p className="vfm-error-text">
-                      {!value.deadline ? "A new deadline is required to repost this job." : "Deadline must be today or later."}
-                    </p>
-                  )}
+                  {fieldErrors.deadline && <p className="vfm-error-text">{fieldErrors.deadline}</p>}
                 </div>
               </div>
 
@@ -366,7 +379,7 @@ export default function VacancyFormModal({
                   onChange={(e) => set({ description_template: e.target.value })}
                   placeholder="Provide a compelling overview of the role and what it entails..."
                 />
-                {fieldErrors.description_template && <p className="vfm-error-text">This field is required.</p>}
+                {fieldErrors.description_template && <p className="vfm-error-text">{fieldErrors.description_template}</p>}
               </div>
 
               <div className="vfm-field">
@@ -429,6 +442,26 @@ export default function VacancyFormModal({
                   placeholder={"- Paid time off\n- Health insurance..."}
                 />
               </div>
+
+              {mode === "admin" && scheduledPublish && (
+                <div className="vfm-field">
+                  <label className="vfm-label"><CalendarClock size={13} style={{ marginRight: 5, verticalAlign: -2 }} />Publish Date &amp; Time</label>
+                  <div className="vfm-row2">
+                    <input
+                      className="vfm-input"
+                      type="date"
+                      value={scheduledPublish.date}
+                      onChange={(e) => scheduledPublish.onDateChange(e.target.value)}
+                    />
+                    <input
+                      className="vfm-input"
+                      type="time"
+                      value={scheduledPublish.time}
+                      onChange={(e) => scheduledPublish.onTimeChange(e.target.value)}
+                    />
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

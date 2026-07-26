@@ -1,7 +1,10 @@
-// Shared shape + helpers for the Employer Dashboard's "Manage Job Postings" tab.
-// Used by both the Post tab (direct job posting) and the Vacancy Template tab
-// (employer-scoped templates). Kept schema-compatible with the admin vacancy
-// template form, but deliberately has no data connection to the admin side.
+// Shared shape + helpers for job-posting forms across the app: the Employer
+// Dashboard's "Manage Job Postings" tab (Post + Vacancy Template sub-tabs)
+// and the Admin Dashboard's Content Management > Vacancy Management tab
+// (Templates + Posts sub-tabs). Kept schema-compatible with both the
+// employer and admin template tables, but those tables remain data-isolated
+// from each other -- only this field-entry layer and its validation are
+// actually shared.
 
 export interface VacancyFormState {
   id?: string;
@@ -14,8 +17,6 @@ export interface VacancyFormState {
   salary_type: string;
   salary_min: number | null;
   salary_max: number | null;
-  salary_currency: string;
-  salary_period: string;
   experience_required: string;
   responsibilities_template: string;
   benefits_template: string;
@@ -35,8 +36,6 @@ export function emptyVacancyForm(): VacancyFormState {
     salary_type: "fixed",
     salary_min: null,
     salary_max: null,
-    salary_currency: "ETB",
-    salary_period: "Monthly",
     experience_required: "Entry level",
     responsibilities_template: "",
     benefits_template: "",
@@ -44,6 +43,31 @@ export function emptyVacancyForm(): VacancyFormState {
     quantity: 1,
     education_requirements: "",
   };
+}
+
+export interface VacancyFormErrors {
+  title?: string;
+  description_template?: string;
+  deadline?: string;
+}
+
+/** Single source of truth for job-form validation, shared by the employer
+ *  and admin dashboards (both the client-side modal and every server action
+ *  that persists a VacancyFormState). */
+export function validateVacancyForm(
+  form: Pick<VacancyFormState, "title" | "description_template" | "deadline">,
+  opts?: { requireDeadline?: boolean }
+): VacancyFormErrors | null {
+  const errors: VacancyFormErrors = {};
+  if (!form.title?.trim()) errors.title = "Job Title is required.";
+  if (!form.description_template?.trim()) errors.description_template = "Job Description is required.";
+  if (opts?.requireDeadline) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (!form.deadline) errors.deadline = "A new deadline is required to repost this job.";
+    else if (new Date(form.deadline) < today) errors.deadline = "Deadline must be today or later.";
+  }
+  return Object.keys(errors).length ? errors : null;
 }
 
 const RESP_MARKER = "\n\nResponsibilities:\n";
@@ -144,8 +168,6 @@ export function jobRowToForm(job: any): VacancyFormState {
     salary_type: inferSalaryType(job.salary_min),
     salary_min: job.salary_min != null && job.salary_min >= 0 ? job.salary_min : null,
     salary_max: job.salary_max != null && job.salary_max >= 0 ? job.salary_max : null,
-    salary_currency: job.currency || "ETB",
-    salary_period: "Monthly",
     experience_required: requirements.experience || "Entry level",
     responsibilities_template: split.responsibilities_template,
     benefits_template: split.benefits_template,
@@ -168,8 +190,6 @@ export function templateRowToForm(tpl: any): VacancyFormState {
     salary_type: tpl.salary_type || "fixed",
     salary_min: tpl.salary_min,
     salary_max: tpl.salary_max,
-    salary_currency: tpl.salary_currency || "ETB",
-    salary_period: tpl.salary_period || "Monthly",
     experience_required: tpl.experience_required || "Entry level",
     responsibilities_template: tpl.responsibilities_template || "",
     benefits_template: tpl.benefits_template || "",

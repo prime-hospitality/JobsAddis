@@ -4,6 +4,13 @@ import { cookies } from "next/headers";
 import { createClient } from "@supabase/supabase-js";
 import { ADMIN_UI_COOKIE } from "@/lib/adminUiCookie";
 import { resumeStoragePath } from "@/lib/cvStorage";
+import {
+  VacancyFormState,
+  validateVacancyForm,
+  buildJobDescription,
+  buildRequirementsJson,
+  resolveSalary,
+} from "@/app/emp/dashboard/jobs/vacancyShared";
 
 const getSupabase = () => {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://placeholder.supabase.co";
@@ -687,26 +694,8 @@ export async function postJobFromTemplate(templateId: string) {
     .single();
   if (tplErr || !tpl) return { success: false, error: "Template not found" };
 
-  // Build the full description
-  const formatList = (txt: string) =>
-    txt.split("\n").filter((l: string) => l.trim()).map((l: string) => l.trim().match(/^[-•*]/) ? l : `• ${l.trim()}`).join("\n");
-
-  let description = tpl.description_template || "";
-  if (tpl.responsibilities_template) description += "\n\nResponsibilities:\n" + formatList(tpl.responsibilities_template);
-  if (tpl.requirements_template) description += "\n\nRequirements:\n" + formatList(tpl.requirements_template);
-  if (tpl.benefits_template) description += "\n\nBenefits:\n" + formatList(tpl.benefits_template);
-
-  // Resolve salary fields
-  let salaryMin: number;
-  let salaryMax: number;
-  if (tpl.salary_type === "negotiable") {
-    salaryMin = -1; salaryMax = -1;
-  } else if (tpl.salary_type === "company_scale") {
-    salaryMin = -2; salaryMax = -2;
-  } else {
-    salaryMin = tpl.salary_min ?? 0;
-    salaryMax = tpl.salary_max ?? tpl.salary_min ?? 0;
-  }
+  const description = buildJobDescription(tpl as any);
+  const { salary_min, salary_max } = resolveSalary(tpl as any);
 
   // Resolve the platform employer
   const employerResult = await getPlatformEmployerId(supabase);
@@ -720,18 +709,12 @@ export async function postJobFromTemplate(templateId: string) {
     location: tpl.location || "Addis Ababa",
     neighborhood: tpl.location || "Addis Ababa",
     job_type: tpl.employment_type || "Full Time",
-    salary_min: salaryMin,
-    salary_max: salaryMax,
-    currency: tpl.salary_currency || "ETB",
-    description: description,
+    salary_min,
+    salary_max,
+    currency: "ETB",
+    description,
     full_description: description,
-    requirements: {
-      experience: tpl.experience_required || "Entry Level",
-      education: tpl.education_requirements || "",
-      languages: [],
-      locationPreference: null,
-      workingHours: null,
-    },
+    requirements: buildRequirementsJson(tpl as any),
     deadline: tpl.deadline || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
     quantity: tpl.quantity || 1,
     status: "active",
@@ -753,24 +736,8 @@ export async function scheduleJobFromTemplate(templateId: string, scheduledAt: s
     .single();
   if (tplErr || !tpl) return { success: false, error: "Template not found" };
 
-  const formatList = (txt: string) =>
-    txt.split("\n").filter((l: string) => l.trim()).map((l: string) => l.trim().match(/^[-•*]/) ? l : `• ${l.trim()}`).join("\n");
-
-  let description = tpl.description_template || "";
-  if (tpl.responsibilities_template) description += "\n\nResponsibilities:\n" + formatList(tpl.responsibilities_template);
-  if (tpl.requirements_template) description += "\n\nRequirements:\n" + formatList(tpl.requirements_template);
-  if (tpl.benefits_template) description += "\n\nBenefits:\n" + formatList(tpl.benefits_template);
-
-  let salaryMin: number;
-  let salaryMax: number;
-  if (tpl.salary_type === "negotiable") {
-    salaryMin = -1; salaryMax = -1;
-  } else if (tpl.salary_type === "company_scale") {
-    salaryMin = -2; salaryMax = -2;
-  } else {
-    salaryMin = tpl.salary_min ?? 0;
-    salaryMax = tpl.salary_max ?? tpl.salary_min ?? 0;
-  }
+  const description = buildJobDescription(tpl as any);
+  const { salary_min, salary_max } = resolveSalary(tpl as any);
 
   // Resolve the platform employer
   const employerResult2 = await getPlatformEmployerId(supabase);
@@ -784,18 +751,12 @@ export async function scheduleJobFromTemplate(templateId: string, scheduledAt: s
     location: tpl.location || "Addis Ababa",
     neighborhood: tpl.location || "Addis Ababa",
     job_type: tpl.employment_type || "Full Time",
-    salary_min: salaryMin,
-    salary_max: salaryMax,
-    currency: tpl.salary_currency || "ETB",
-    description: description,
+    salary_min,
+    salary_max,
+    currency: "ETB",
+    description,
     full_description: description,
-    requirements: {
-      experience: tpl.experience_required || "Entry Level",
-      education: tpl.education_requirements || "",
-      languages: [],
-      locationPreference: null,
-      workingHours: null,
-    },
+    requirements: buildRequirementsJson(tpl as any),
     deadline: tpl.deadline || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
     quantity: tpl.quantity || 1,
     status: "scheduled",
@@ -829,108 +790,79 @@ export async function getPlatformJobs() {
   return jobs || [];
 }
 
-export interface PlatformJobEditData {
-  title: string;
-  job_category: string;
-  location: string;
-  employment_type: string;
-  salary_type: string;
-  salary_min: number | null;
-  salary_max: number | null;
-  salary_currency: string;
-  description: string;
-  experience_required: string;
-  education_requirements: string;
-  deadline: string;
-  quantity: number;
-  scheduled_at?: string;
-}
-
-function resolvePlatformJobSalary(data: Pick<PlatformJobEditData, "salary_type" | "salary_min" | "salary_max">): { salaryMin: number; salaryMax: number } {
-  if (data.salary_type === "negotiable") return { salaryMin: -1, salaryMax: -1 };
-  if (data.salary_type === "company_scale") return { salaryMin: -2, salaryMax: -2 };
-  return { salaryMin: data.salary_min ?? 0, salaryMax: data.salary_max ?? data.salary_min ?? 0 };
-}
-
-export async function updatePlatformJob(jobId: string, data: PlatformJobEditData) {
+export async function updatePlatformJob(jobId: string, form: VacancyFormState, scheduledAt?: string) {
   await requirePermission("manageJobs");
+
+  const errors = validateVacancyForm(form);
+  if (errors) return { success: false, error: Object.values(errors)[0] };
+
   const supabase = getSupabase();
 
-  const { salaryMin, salaryMax } = resolvePlatformJobSalary(data);
+  const description = buildJobDescription(form);
+  const { salary_min, salary_max } = resolveSalary(form);
 
   const update: Record<string, unknown> = {
-    title: data.title,
-    category: data.job_category,
-    location: data.location,
-    neighborhood: data.location,
-    job_type: data.employment_type,
-    salary_min: salaryMin,
-    salary_max: salaryMax,
-    currency: data.salary_currency,
-    description: data.description,
-    full_description: data.description,
-    requirements: {
-      experience: data.experience_required,
-      education: data.education_requirements,
-      languages: [],
-      locationPreference: null,
-      workingHours: null,
-    },
-    deadline: data.deadline,
-    quantity: data.quantity,
+    title: form.title,
+    category: form.job_category,
+    location: form.location,
+    neighborhood: form.location,
+    job_type: form.employment_type,
+    salary_min,
+    salary_max,
+    currency: "ETB",
+    description,
+    full_description: description,
+    requirements: buildRequirementsJson(form),
+    deadline: form.deadline,
+    quantity: form.quantity,
   };
-  if (data.scheduled_at) {
-    update.scheduled_at = data.scheduled_at;
+  if (scheduledAt) {
+    update.scheduled_at = scheduledAt;
   }
 
   const { error } = await supabase.from("jobs").update(update).eq("id", jobId);
-  if (error) throw error;
+  if (error) return { success: false, error: error.message || "Failed to update job" };
   await logActivity("edit_platform_job", jobId, {});
   return { success: true };
 }
 
 /** Reposts an expired platform job: requires a new deadline, rebuilds the
- *  listing fields, and republishes it to 'active' or 'pending' depending on
- *  whether the platform employer auto-publishes -- mirrors the employer-side
- *  repost flow (repostEmployerJob). */
-export async function repostPlatformJob(jobId: string, data: PlatformJobEditData): Promise<{ success: true; status: "active" | "pending" } | { success: false; error: string }> {
+ *  full listing (title through Benefits, matching the create flow) and
+ *  republishes it to 'active' or 'pending' depending on whether the platform
+ *  employer auto-publishes -- mirrors the employer-side repost flow
+ *  (repostEmployerJob). */
+export async function repostPlatformJob(jobId: string, form: VacancyFormState): Promise<{ success: true; status: "active" | "pending" } | { success: false; error: string }> {
   await requirePermission("manageJobs");
+
+  const errors = validateVacancyForm(form, { requireDeadline: true });
+  if (errors) return { success: false, error: Object.values(errors)[0]! };
+
   const supabase = getSupabase();
 
   const { data: existing } = await supabase.from("jobs").select("id, employer_id, status").eq("id", jobId).maybeSingle();
   if (!existing) return { success: false, error: "Job not found" };
   if (existing.status !== "expired") return { success: false, error: "Only expired jobs can be reposted." };
 
-  if (!data.deadline) return { success: false, error: "A new deadline is required to repost this job." };
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  if (new Date(data.deadline) < today) return { success: false, error: "The new deadline must be today or later." };
-
   const { data: employer } = await supabase.from("employers").select("auto_publish").eq("id", existing.employer_id).maybeSingle();
   const newStatus: "active" | "pending" = employer?.auto_publish ? "active" : "pending";
 
-  const { salaryMin, salaryMax } = resolvePlatformJobSalary(data);
+  const description = buildJobDescription(form);
+  const { salary_min, salary_max } = resolveSalary(form);
 
   const { error } = await supabase.from("jobs").update({
-    title: data.title,
-    category: data.job_category,
-    location: data.location,
-    neighborhood: data.location,
-    job_type: data.employment_type,
-    salary_min: salaryMin,
-    salary_max: salaryMax,
-    currency: data.salary_currency,
-    description: data.description,
-    full_description: data.description,
-    requirements: {
-      experience: data.experience_required,
-      education: data.education_requirements,
-      languages: [],
-      locationPreference: null,
-      workingHours: null,
-    },
-    deadline: data.deadline,
-    quantity: data.quantity,
+    title: form.title,
+    category: form.job_category,
+    location: form.location,
+    neighborhood: form.location,
+    job_type: form.employment_type,
+    salary_min,
+    salary_max,
+    currency: "ETB",
+    description,
+    full_description: description,
+    requirements: buildRequirementsJson(form),
+    deadline: form.deadline,
+    quantity: form.quantity,
     status: newStatus,
     last_posted_at: new Date().toISOString(),
   }).eq("id", jobId);
@@ -1306,34 +1238,16 @@ export async function deleteFaq(id: string) {
 }
 
 
-export interface VacancyTemplatePayload {
-  id?: string | null;
-  title: string;
-  job_category: string;
-  description_template: string;
-  requirements_template: string;
-  location: string;
-  employment_type: string;
-  salary_type: string;
-  salary_min: number | null;
-  salary_max?: number | null;
-  salary_currency?: string;
-  salary_period?: string;
-  experience_required?: string;
-  responsibilities_template?: string;
-  benefits_template?: string;
-  deadline?: string;
-  quantity?: number;
-  education_requirements?: string;
-}
-
-export async function upsertVacancyTemplate(payload: VacancyTemplatePayload) {
+export async function upsertVacancyTemplate(payload: VacancyFormState) {
   const auth = (await cookies()).get("admin_session");
   if (!auth?.value) throw new Error("Unauthorized");
 
+  const errors = validateVacancyForm(payload);
+  if (errors) return { success: false, error: Object.values(errors)[0] };
+
   const supabase = getSupabase();
   const { id, ...data } = payload;
-  
+
   const dbPayload = {
     ...(id ? { id } : {}),
     title: data.title,
@@ -1345,8 +1259,8 @@ export async function upsertVacancyTemplate(payload: VacancyTemplatePayload) {
     salary_type: data.salary_type,
     salary_min: data.salary_min,
     salary_max: data.salary_max,
-    salary_currency: data.salary_currency,
-    salary_period: data.salary_period,
+    salary_currency: "ETB",
+    salary_period: "Monthly",
     experience_required: data.experience_required,
     responsibilities_template: data.responsibilities_template,
     benefits_template: data.benefits_template,
@@ -1358,7 +1272,7 @@ export async function upsertVacancyTemplate(payload: VacancyTemplatePayload) {
 
   const { error } = await supabase.from("vacancy_templates").upsert(dbPayload);
 
-  if (error) throw error;
+  if (error) return { success: false, error: error.message || "Failed to save template" };
   return { success: true };
 }
 
