@@ -146,13 +146,52 @@ serve(async (req) => {
       }
     }
     
+    // 4. Warn employers whose subscription expires within 24 hours. Dashboard
+    // access itself is never blocked by expiry (only posting new jobs is) --
+    // this is a heads-up so they can renew before that kicks in.
+    // expiry_warning_sent gates this to once per billing cycle: it's reset to
+    // false whenever an admin (re)assigns a package (see updateEmployer).
+    const twentyFourHoursFromNow = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+
+    const { data: expiringSoonEmployers, error: expiringSoonError } = await supabase
+      .from('employers')
+      .select('id, users(telegram_id)')
+      .eq('expiry_warning_sent', false)
+      .gt('package_expires_at', now)
+      .lte('package_expires_at', twentyFourHoursFromNow);
+
+    if (expiringSoonError) throw expiringSoonError;
+
+    let subscriptionExpiryWarningsSent = 0;
+
+    if (expiringSoonEmployers && expiringSoonEmployers.length > 0) {
+      for (const employer of expiringSoonEmployers) {
+        const telegramId = (employer.users as any)?.telegram_id;
+        if (telegramId) {
+          await supabase.from('notifications').insert({
+            user_telegram_id: telegramId,
+            company_name: "System",
+            job_title: "Subscription Expiring Soon",
+            type: "subscription_expiring",
+            read: false
+          });
+          subscriptionExpiryWarningsSent++;
+        }
+        // Mark it sent regardless of whether a telegram_id was found, so a
+        // missing telegram_id doesn't retry every minute for the rest of the
+        // 24h window.
+        await supabase.from('employers').update({ expiry_warning_sent: true }).eq('id', employer.id);
+      }
+    }
+
     return new Response(JSON.stringify({
       success: true,
       publishedCount,
       sentToReviewCount,
       expiredEmployerJobsCount,
       expiredDeadlineCount,
-      warningsSent: expiringWarningsSent
+      warningsSent: expiringWarningsSent,
+      subscriptionExpiryWarningsSent
     }), {
       headers: { "Content-Type": "application/json" },
       status: 200,

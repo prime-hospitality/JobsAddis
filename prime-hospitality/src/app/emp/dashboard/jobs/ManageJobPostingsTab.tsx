@@ -8,6 +8,7 @@ import { writeEmployerUi } from "@/lib/employerUiCookie";
 import { PostingStyles } from "./postingUI";
 import PostTab from "./PostTab";
 import VacancyTemplateTab from "./VacancyTemplateTab";
+import RenewSubscriptionButton from "../RenewSubscriptionButton";
 
 export interface PostingData {
   jobs: any[];
@@ -19,6 +20,8 @@ export interface PostingData {
   /** Date (YYYY-MM-DD) this employer's current plan runs out, or null if
    *  they have none -- caps how far out a job deadline can be set. */
   packageExpiresAt: string | null;
+  renewalRequested: boolean;
+  employerId: string;
   businessName: string;
   businessType: string;
   logoUrl: string | null;
@@ -31,6 +34,8 @@ const EMPTY: PostingData = {
   autoPublish: false,
   dailyPostLimit: 15,
   packageExpiresAt: null,
+  renewalRequested: false,
+  employerId: "",
   businessName: "Your Company",
   businessType: "",
   logoUrl: null,
@@ -64,6 +69,8 @@ export default function ManageJobPostingsTab({
         autoPublish: res.autoPublish,
         dailyPostLimit: res.dailyPostLimit,
         packageExpiresAt: res.packageExpiresAt ?? null,
+        renewalRequested: !!res.renewalRequested,
+        employerId: res.employerId,
         businessName: res.businessName || "Your Company",
         businessType: res.businessType || "",
         logoUrl: res.logoUrl || null,
@@ -83,9 +90,29 @@ export default function ManageJobPostingsTab({
     })();
   }, [reload]);
 
+  const expiresAt = data.packageExpiresAt ? new Date(data.packageExpiresAt) : null;
+  const isExpired = !expiresAt || expiresAt.getTime() < Date.now();
+  const showRenewalNudge = !loading && (!expiresAt || expiresAt.getTime() - Date.now() <= 24 * 60 * 60 * 1000);
+
   return (
     <div className="mjp-scope" style={{ maxWidth: 1200, margin: "0 auto", fontFamily: "'Inter', sans-serif" }}>
       <PostingStyles />
+
+      {showRenewalNudge && (
+        <div style={{ background: isExpired ? "#fef2f2" : "#fffbeb", border: `1px solid ${isExpired ? "#fecaca" : "#fde68a"}`, borderRadius: 10, padding: "14px 16px", marginBottom: 16, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12, color: isExpired ? "#991b1b" : "#92400e" }}>
+          <div>
+            <p style={{ fontSize: 13, fontWeight: 700, margin: 0 }}>
+              {isExpired ? "Your subscription has expired — posting is disabled" : "Your subscription expires in less than 24 hours"}
+            </p>
+            <p style={{ fontSize: 12.5, margin: "3px 0 0 0", opacity: 0.9 }}>
+              {isExpired
+                ? "You can still manage existing jobs and applicants, but new posts, reposts, and scheduled posts are blocked until you renew."
+                : "Once it ends, you won't be able to post, repost, or schedule new jobs until you renew."}
+            </p>
+          </div>
+          <RenewSubscriptionButton employerId={data.employerId} initialRequested={data.renewalRequested} />
+        </div>
+      )}
 
       {reloadError && (
         <div

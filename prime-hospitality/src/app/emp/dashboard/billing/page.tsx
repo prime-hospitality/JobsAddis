@@ -2,6 +2,7 @@ import Link from "next/link";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
+import RenewSubscriptionButton from "../RenewSubscriptionButton";
 
 async function getSession() {
   const sessionCookie = (await cookies()).get("employer_session");
@@ -28,7 +29,7 @@ export default async function BillingPage() {
   // Fetch employer's active package
   const { data: employer } = await supabase
     .from("employers")
-    .select("active_package_id, package_expires_at, packages(name, duration_days, price)")
+    .select("active_package_id, package_expires_at, renewal_requested, packages(name, duration_days, price)")
     .eq("id", session.employerId)
     .maybeSingle();
 
@@ -83,13 +84,16 @@ export default async function BillingPage() {
               : "Upgrade to unlock job postings and applicant tracking."}
           </p>
         </div>
-        <Link
-          href="/pricing"
-          style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.25)", borderRadius: 10, padding: "10px 18px", color: "#fff", fontSize: 14, fontWeight: 600, textDecoration: "none", backdropFilter: "blur(8px)", transition: "background 0.2s", flexShrink: 0 }}
-        >
-          {activePackage ? "Upgrade Plan" : "View Pricing Plans"}
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-        </Link>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", color: "#fff" }}>
+          <RenewSubscriptionButton employerId={session.employerId} initialRequested={!!employer?.renewal_requested} />
+          <Link
+            href="/pricing"
+            style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.25)", borderRadius: 10, padding: "10px 18px", color: "#fff", fontSize: 14, fontWeight: 600, textDecoration: "none", backdropFilter: "blur(8px)", transition: "background 0.2s", flexShrink: 0 }}
+          >
+            {activePackage ? "Upgrade Plan" : "View Pricing Plans"}
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </Link>
+        </div>
       </div>
 
       {/* Stat tiles */}

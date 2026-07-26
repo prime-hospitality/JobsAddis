@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
 import Link from "next/link";
+import RenewSubscriptionButton from "./RenewSubscriptionButton";
 
 async function getSession() {
   const sessionCookie = (await cookies()).get("employer_session");
@@ -57,6 +58,23 @@ async function getDashboardData(employerId: string) {
   };
 }
 
+async function getRenewalStatus(employerId: string) {
+  const supabase = getSupabase();
+  const { data } = await supabase
+    .from("employers")
+    .select("package_expires_at, renewal_requested")
+    .eq("id", employerId)
+    .maybeSingle();
+
+  const expiresAt = data?.package_expires_at ? new Date(data.package_expires_at) : null;
+  const isExpired = !expiresAt || expiresAt.getTime() < Date.now();
+  // Keep nudging on Overview/Jobs both in the 24h run-up to expiry and after
+  // it's actually passed -- posting stays blocked either way until renewed.
+  const showNudge = !expiresAt || expiresAt.getTime() - Date.now() <= 24 * 60 * 60 * 1000;
+
+  return { isExpired, showNudge, renewalRequested: !!data?.renewal_requested };
+}
+
 function StatCard({ label, value, color, icon }: { label: string; value: number; color: string; icon: React.ReactNode }) {
   return (
     <div style={{ background: "#fff", borderRadius: 12, padding: "20px 22px", border: "1px solid #e2e8f0", display: "flex", alignItems: "center", gap: 16, boxShadow: "0 1px 4px rgba(0,0,0,0.04)" }}>
@@ -85,6 +103,7 @@ export default async function EmployerDashboardPage() {
   if (!session) redirect("/emp");
 
   const data = await getDashboardData(session.employerId);
+  const renewal = await getRenewalStatus(session.employerId);
 
   const statusBg: Record<string, string> = {
     active: "#d1fae5", pending: "#fef3c7", shortlisted: "#ede9fe", rejected: "#fee2e2", reviewed: "#dbeafe",
@@ -112,6 +131,23 @@ export default async function EmployerDashboardPage() {
           Post a Job
         </Link>
       </div>
+
+      {/* Subscription renewal nudge */}
+      {renewal.showNudge && (
+        <div style={{ background: renewal.isExpired ? "#fef2f2" : "#fffbeb", border: `1px solid ${renewal.isExpired ? "#fecaca" : "#fde68a"}`, borderRadius: 14, padding: "16px 20px", marginBottom: 24, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 16, color: renewal.isExpired ? "#991b1b" : "#92400e" }}>
+          <div>
+            <p style={{ fontSize: 14, fontWeight: 700, margin: 0 }}>
+              {renewal.isExpired ? "Your subscription has expired" : "Your subscription expires in less than 24 hours"}
+            </p>
+            <p style={{ fontSize: 13, margin: "4px 0 0 0", opacity: 0.9 }}>
+              {renewal.isExpired
+                ? "You can still manage your existing jobs and applicants, but posting new jobs is disabled until you renew."
+                : "Once it ends, posting new jobs will be disabled until you renew."}
+            </p>
+          </div>
+          <RenewSubscriptionButton employerId={session.employerId} initialRequested={renewal.renewalRequested} />
+        </div>
+      )}
 
       {/* Stats Row */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 16, marginBottom: 24 }}>

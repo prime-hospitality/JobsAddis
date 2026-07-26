@@ -185,20 +185,11 @@ export async function refreshEmployerSessionCookie(updates: {
   });
 }
 
-// The platform doesn't offer free subscriptions, so any real employer with no
-// package assigned is treated as expired. The one exception is the internal
-// "platform employer" used to attribute admin-direct job posts (see
-// getPlatformEmployerId in admin/actions.ts) — it has no subscription of its
-// own and must never be locked out. Mirrors that same resolution strategy.
-async function isPlatformEmployer(supabase: ReturnType<typeof getSupabase>, employerId: string, businessName: string | null | undefined) {
-  const { data: cfg } = await supabase.from("app_config").select("value").eq("key", "platform_employer_id").maybeSingle();
-  if (cfg?.value) return cfg.value === employerId;
-  const platformNames = ["addis jobs", "jobsadis", "jobsaddis", "jobs addis"];
-  return !!businessName && platformNames.includes(businessName.toLowerCase());
-}
-
 /** Validate that the employer in the current session still exists in the DB.
- *  Returns { valid: true } or { valid: false, reason: "deleted" | "rejected" | "expired" } */
+ *  Returns { valid: true } or { valid: false, reason: "deleted" | "rejected" }.
+ *  A lapsed subscription does NOT invalidate the session — an expired employer
+ *  keeps full dashboard access; only creating new job listings is blocked
+ *  (enforced in emp/dashboard/jobs/actions.ts), not the dashboard itself. */
 export async function validateEmployerSession() {
   const session = await getEmployerSession();
   if (!session?.employerId) return { valid: false, reason: "deleted" as const };
@@ -206,17 +197,13 @@ export async function validateEmployerSession() {
   const supabase = getSupabase();
   const { data: employer } = await supabase
     .from("employers")
-    .select("id, business_name, status, package_expires_at, renewal_requested")
+    .select("id, status")
     .eq("id", session.employerId)
     .maybeSingle();
 
   if (!employer) return { valid: false, reason: "deleted" as const };
   if (employer.status === "rejected") return { valid: false, reason: "rejected" as const };
 
-  const isExpired = !employer.package_expires_at || new Date(employer.package_expires_at) < new Date();
-  if (isExpired && !(await isPlatformEmployer(supabase, employer.id, employer.business_name))) {
-    return { valid: false, reason: "expired" as const, renewalRequested: employer.renewal_requested };
-  }
   return { valid: true };
 }
 

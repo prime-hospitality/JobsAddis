@@ -1078,6 +1078,7 @@ export async function updateEmployer(employerId: string, businessName: string, b
     updateFields.active_package_id = packageId;
     updateFields.package_expires_at = now.toISOString();
     updateFields.renewal_requested = false;
+    updateFields.expiry_warning_sent = false;
   }
 
   const { data, error } = await supabase

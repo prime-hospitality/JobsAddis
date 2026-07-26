@@ -12,15 +12,20 @@ import {
 async function getEmployerPublishingRules(supabase: ReturnType<typeof getSupabase>, employerId: string) {
   const { data } = await supabase
     .from("employers")
-    .select("auto_publish, daily_post_limit, package_expires_at")
+    .select("auto_publish, daily_post_limit, package_expires_at, renewal_requested")
     .eq("id", employerId)
     .single();
+  // No package at all is treated the same as an expired one -- posting always
+  // requires a currently-valid package.
+  const isExpired = !data?.package_expires_at || new Date(data.package_expires_at) < new Date();
   return {
     autoPublish: !!data?.auto_publish,
     dailyPostLimit: data?.daily_post_limit ?? 15,
     // Date-only (YYYY-MM-DD) so it compares cleanly against the deadline
     // field, which is itself a plain date with no time component.
     packageExpiresAt: data?.package_expires_at ? String(data.package_expires_at).split("T")[0] : null,
+    isExpired,
+    renewalRequested: !!data?.renewal_requested,
   };
 }
 
@@ -78,6 +83,8 @@ export async function getEmployerPostingData() {
     autoPublish: rules.autoPublish,
     dailyPostLimit: rules.dailyPostLimit,
     packageExpiresAt: rules.packageExpiresAt,
+    renewalRequested: rules.renewalRequested,
+    employerId: session.employerId,
     businessName: session.businessName,
     businessType: session.businessType,
     logoUrl: session.logoUrl || null,
@@ -91,6 +98,7 @@ export async function createEmployerJob(form: VacancyFormState): Promise<{ succe
 
   const supabase = getSupabase();
   const rules = await getEmployerPublishingRules(supabase, session.employerId);
+  if (rules.isExpired) return { success: false, error: "Your subscription has expired. Renew your plan to keep posting jobs." };
 
   const validationError = validateVacancyForm(form, { maxDeadline: rules.packageExpiresAt });
   if (validationError) return { success: false, error: validationError };
@@ -180,6 +188,7 @@ export async function repostEmployerJob(jobId: string, form: VacancyFormState): 
 
   const supabase = getSupabase();
   const rules = await getEmployerPublishingRules(supabase, session.employerId);
+  if (rules.isExpired) return { success: false, error: "Your subscription has expired. Renew your plan to keep posting jobs." };
 
   const validationError = validateVacancyForm(form, { requireDeadline: true, maxDeadline: rules.packageExpiresAt });
   if (validationError) return { success: false, error: validationError };
@@ -348,6 +357,7 @@ export async function postJobFromEmployerTemplate(templateId: string) {
   if (!tpl) return { success: false, error: "Template not found" };
 
   const rules = await getEmployerPublishingRules(supabase, session.employerId);
+  if (rules.isExpired) return { success: false, error: "Your subscription has expired. Renew your plan to keep posting jobs." };
   if (rules.dailyPostLimit !== -1) {
     const postedToday = await getTodayPostCount(supabase, session.employerId);
     if (postedToday >= rules.dailyPostLimit) {
@@ -390,6 +400,7 @@ export async function scheduleJobFromEmployerTemplate(templateId: string, schedu
   if (!tpl) return { success: false, error: "Template not found" };
 
   const rules = await getEmployerPublishingRules(supabase, session.employerId);
+  if (rules.isExpired) return { success: false, error: "Your subscription has expired. Renew your plan to keep posting jobs." };
   if (rules.dailyPostLimit !== -1) {
     const postedToday = await getTodayPostCount(supabase, session.employerId);
     if (postedToday >= rules.dailyPostLimit) {
