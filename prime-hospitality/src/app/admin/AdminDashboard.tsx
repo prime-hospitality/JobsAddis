@@ -243,7 +243,7 @@ function PackageDropdown({ packages, selectedId, onSelect }: { packages: any[], 
         }}
       >
         <span style={{ color: selectedPkg ? "#1c1c1e" : "#8e8e93", fontSize: 14, fontWeight: 500 }}>
-          {selectedPkg ? selectedPkg.name : "No Package (Free / Manual Later)"}
+          {selectedPkg ? selectedPkg.name : "Select a package"}
         </span>
         <ChevronDown size={16} color="#8e8e93" style={{ transform: isOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }} />
       </button>
@@ -262,23 +262,6 @@ function PackageDropdown({ packages, selectedId, onSelect }: { packages: any[], 
             }}
           >
             <div style={{ maxHeight: 240, overflowY: "auto", padding: 6 }}>
-              <button
-                type="button"
-                onClick={() => { onSelect(""); setIsOpen(false); }}
-                style={{
-                  width: "100%", display: "flex", alignItems: "center", padding: "10px 12px", gap: 10,
-                  background: selectedId === "" ? "#f2f2f7" : "transparent", border: "none", borderRadius: 8, cursor: "pointer",
-                  textAlign: "left"
-                }}
-                onMouseEnter={(e) => { if(selectedId !== "") e.currentTarget.style.background = "#f2f2f7" }}
-                onMouseLeave={(e) => { if(selectedId !== "") e.currentTarget.style.background = "transparent" }}
-              >
-                <div style={{ width: 16, display: "flex", justifyContent: "center" }}>
-                  {selectedId === "" && <Check size={16} color="#007aff" />}
-                </div>
-                <span style={{ fontSize: 14, fontWeight: 500, color: "#1c1c1e" }}>No Package (Free / Manual Later)</span>
-              </button>
-
               {packages.map(pkg => (
                 <button
                   key={pkg.id}
@@ -680,15 +663,16 @@ export default function AdminDashboard({ initialData, initialUi = {} }: { initia
   const [userActionLoading, setUserActionLoading] = useState(false);
   const [userActionError, setUserActionError] = useState("");
 
-  const [editModal, setEditModal] = useState<{ id: string; name: string; type: string; postLimit: number } | null>(null);
+  const [editModal, setEditModal] = useState<{ id: string; name: string; type: string; postLimit: number; packageId: string } | null>(null);
   const [editName, setEditName] = useState("");
   const [editType, setEditType] = useState("");
   const [editPostLimit, setEditPostLimit] = useState<number>(15);
   const [editPackageId, setEditPackageId] = useState<string>("");
-  const [editExtendDays, setEditExtendDays] = useState<number>(0);
   const [editLoading, setEditLoading] = useState(false);
   const [editLogoFile, setEditLogoFile] = useState<File | null>(null);
+  const [editCropFile, setEditCropFile] = useState<File | null>(null);
   const [editError, setEditError] = useState("");
+  const [editPassword, setEditPassword] = useState("");
   const [settingsTab, setSettingsTab] = useState<"edit" | "publishing">(() => seed(initialUi.settingsTab, ["edit", "publishing"], "edit"));
   const [autoPublishSaving, setAutoPublishSaving] = useState(false);
 
@@ -976,6 +960,12 @@ export default function AdminDashboard({ initialData, initialUi = {} }: { initia
     return `${limit}/day`;
   };
 
+  const handleEditLogoCropConfirm = (blob: Blob) => {
+    const croppedFile = new File([blob], "avatar.png", { type: "image/png" });
+    setEditCropFile(null);
+    setEditLogoFile(croppedFile);
+  };
+
   const handleEditEmployer = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editModal) return;
@@ -992,11 +982,10 @@ export default function AdminDashboard({ initialData, initialUi = {} }: { initia
         }
       }
 
-      const res = await updateEmployer(editModal.id, editName, editType, editPostLimit, editPackageId || null, editExtendDays);
-      
+      // Upload the logo first: it's the most failure-prone step (file type/size,
+      // network, storage), so if it fails, nothing else should have been saved yet.
       let logoUrl = null;
       if (editLogoFile) {
-        // Delete the old logo from storage if one exists
         const currentEmployer = data.employers.find((emp: any) => emp.id === editModal.id);
         const oldLogoUrl = currentEmployer?.logo_url;
         if (oldLogoUrl) {
@@ -1010,13 +999,18 @@ export default function AdminDashboard({ initialData, initialUi = {} }: { initia
         const fileName = `${editModal.id}-${Date.now()}.${fileExt}`;
         const { error: uploadError } = await supabase.storage.from("logos").upload(fileName, editLogoFile);
         if (uploadError) throw new Error("Logo upload failed: " + uploadError.message);
-        
+
         const { data: publicUrlData } = supabase.storage.from("logos").getPublicUrl(fileName);
         logoUrl = publicUrlData.publicUrl;
-        
+
         // Update the logo on the backend
         await adminUpdateEmployerLogo(editModal.id, logoUrl);
       }
+
+      // Only send a package id if the admin actually changed the selection —
+      // otherwise the server leaves package/expiry untouched (see updateEmployer).
+      const packageChanged = editPackageId !== editModal.packageId;
+      const res = await updateEmployer(editModal.id, editName, editType, editPostLimit, editPassword, packageChanged ? editPackageId : undefined);
 
       if (res.success && res.employer) {
         const finalEmployer = { ...res.employer };
@@ -1027,6 +1021,7 @@ export default function AdminDashboard({ initialData, initialUi = {} }: { initia
         }));
         setEmpResults((prev: any[]) => prev.map((emp: any) => emp.id === editModal.id ? finalEmployer : emp));
         setEditModal(null);
+        setEditPassword("");
       }
     } catch (err: any) {
       setEditError(err.message || "Failed to update employer");
@@ -2035,13 +2030,13 @@ export default function AdminDashboard({ initialData, initialUi = {} }: { initia
                       />
                     </div>
                     <div>
-                      <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#1c1c1e", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.05em" }}>Subscription Package (Optional)</label>
+                      <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#1c1c1e", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.05em" }}>Subscription Package</label>
                       <PackageDropdown packages={packages} selectedId={selectedPackageId} onSelect={setSelectedPackageId} />
                     </div>
                     {formError && <p style={{ margin: 0, fontSize: 13, color: "#dc2626", background: "#fef2f2", padding: "10px 14px", borderRadius: 8, border: "1px solid #fecaca" }}>{formError}</p>}
                     <div style={{ display: "flex", gap: 10, marginTop: 4 }}>
                       <button type="button" onClick={() => setEmpConfigSubTab("view_emp")} disabled={formLoading} style={{ flex: 1, padding: "12px", borderRadius: 10, border: "1.5px solid #e2e8f0", background: "#f8fafc", color: "#64748b", fontSize: 14, fontWeight: 600, cursor: "pointer" }}>Cancel</button>
-                      <button type="submit" disabled={formLoading || !newTelegramId || !newBusinessName || !newBusinessType} style={{ flex: 2, padding: "12px", borderRadius: 10, border: "none", background: formLoading ? "#93c5fd" : "linear-gradient(135deg, #1c1c1e, #2c2c2e)", color: "#fff", fontSize: 14, fontWeight: 700, cursor: formLoading ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, boxShadow: "0 4px 12px rgba(0,0,0,0.12)" }}>
+                      <button type="submit" disabled={formLoading || !newTelegramId || !newBusinessName || !newBusinessType || !selectedPackageId} style={{ flex: 2, padding: "12px", borderRadius: 10, border: "none", background: formLoading ? "#93c5fd" : "linear-gradient(135deg, #1c1c1e, #2c2c2e)", color: "#fff", fontSize: 14, fontWeight: 700, cursor: formLoading ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, boxShadow: "0 4px 12px rgba(0,0,0,0.12)" }}>
                         {formLoading ? (<><svg style={{ animation: "spin 1s linear infinite" }} xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Registering...</>) : (<>Register Employer</>)}
                       </button>
                     </div>
@@ -2378,7 +2373,7 @@ export default function AdminDashboard({ initialData, initialUi = {} }: { initia
                       </td>
                       <td style={{ padding: "16px 24px", textAlign: "right", display: "flex", gap: 8, justifyContent: "flex-end", alignItems: "center" }}>
                         <button
-                          onClick={() => { setEditModal({ id: item.id, name: item.business_name, type: item.business_type || "", postLimit: item.daily_post_limit ?? 15 }); setEditName(item.business_name); setEditType(item.business_type || ""); setEditPostLimit(item.daily_post_limit ?? 15); setEditPackageId(item.active_package_id || ""); setEditExtendDays(0); setEditLogoFile(null); setEditError(""); setSettingsTab("edit"); }}
+                          onClick={() => { setEditModal({ id: item.id, name: item.business_name, type: item.business_type || "", postLimit: item.daily_post_limit ?? 15, packageId: item.active_package_id || "" }); setEditName(item.business_name); setEditType(item.business_type || ""); setEditPostLimit(item.daily_post_limit ?? 15); setEditPackageId(item.active_package_id || ""); setEditLogoFile(null); setEditError(""); setEditPassword(""); setSettingsTab("edit"); }}
                           style={{ background: "transparent", border: "none", cursor: "pointer", color: "#6b7280", padding: "6px", borderRadius: 6, display: "flex", alignItems: "center", justifyContent: "center" }}
                           title="Employer settings"
                         >
@@ -2466,7 +2461,7 @@ export default function AdminDashboard({ initialData, initialUi = {} }: { initia
                   </div>
                   <div className="flex gap-2 justify-end mt-2 pt-3 border-t border-[#e5e5ea]">
                     <button
-                      onClick={() => { setEditModal({ id: item.id, name: item.business_name, type: item.business_type || "", postLimit: item.daily_post_limit ?? 15 }); setEditName(item.business_name); setEditType(item.business_type || ""); setEditPostLimit(item.daily_post_limit ?? 15); setEditPackageId(item.active_package_id || ""); setEditExtendDays(0); setEditLogoFile(null); setEditError(""); setSettingsTab("edit"); }}
+                      onClick={() => { setEditModal({ id: item.id, name: item.business_name, type: item.business_type || "", postLimit: item.daily_post_limit ?? 15, packageId: item.active_package_id || "" }); setEditName(item.business_name); setEditType(item.business_type || ""); setEditPostLimit(item.daily_post_limit ?? 15); setEditPackageId(item.active_package_id || ""); setEditLogoFile(null); setEditError(""); setEditPassword(""); setSettingsTab("edit"); }}
                       className="bg-[#f3f4f6] text-[#374151] border-none px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5"
                     >
                       <Gear size={14} /> Settings
@@ -2868,6 +2863,10 @@ export default function AdminDashboard({ initialData, initialUi = {} }: { initia
         <AvatarCropModal file={platformCropFile} onCancel={() => setPlatformCropFile(null)} onConfirm={handlePlatformCropConfirm} />
       )}
 
+      {editCropFile && (
+        <AvatarCropModal file={editCropFile} onCancel={() => setEditCropFile(null)} onConfirm={handleEditLogoCropConfirm} />
+      )}
+
       {/* Delete Employer Modal */}
       {deleteModal && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 10000 }}>
@@ -3129,10 +3128,18 @@ export default function AdminDashboard({ initialData, initialUi = {} }: { initia
                     <input
                       type="file"
                       accept="image/*"
-                      onChange={e => setEditLogoFile(e.target.files?.[0] || null)}
+                      onChange={e => {
+                        const file = e.target.files?.[0];
+                        e.target.value = "";
+                        if (!file) return;
+                        if (!file.type.startsWith("image/")) { setEditError("Please choose an image file."); return; }
+                        if (file.size > 5 * 1024 * 1024) { setEditError("Image must be smaller than 5MB."); return; }
+                        setEditError("");
+                        setEditCropFile(file);
+                      }}
                       style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: "1px dashed #d1d5db", fontSize: 13, boxSizing: "border-box", background: "#f9fafb" }}
                     />
-                    {editLogoFile && <p style={{ fontSize: 12, color: "#059669", marginTop: 4 }}>Selected: {editLogoFile.name}</p>}
+                    {editLogoFile && <p style={{ fontSize: 12, color: "#059669", marginTop: 4 }}>New photo selected and cropped.</p>}
                   </div>
 
                   {/* Subscription Package */}
@@ -3143,7 +3150,7 @@ export default function AdminDashboard({ initialData, initialUi = {} }: { initia
                       onChange={e => setEditPackageId(e.target.value)}
                       style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid #d1d5db", fontSize: 14, boxSizing: "border-box" }}
                     >
-                      <option value="">No Package (Free / Manual Later)</option>
+                      <option value="" disabled>Select a package</option>
                       {packages.map((pkg) => (
                         <option key={pkg.id} value={pkg.id}>
                           {pkg.name} — {pkg.duration_days} Days ({Number(pkg.price).toLocaleString("en-US")} ETB)
@@ -3151,20 +3158,6 @@ export default function AdminDashboard({ initialData, initialUi = {} }: { initia
                       ))}
                     </select>
                   </div>
-
-                  {/* Extend Days */}
-                  {editPackageId && (
-                    <div>
-                      <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#1c1c1e", marginBottom: 6 }}>Extend Package Duration (Days)</label>
-                      <input
-                        type="number"
-                        min="0"
-                        value={editExtendDays}
-                        onChange={e => setEditExtendDays(parseInt(e.target.value) || 0)}
-                        style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid #d1d5db", fontSize: 14, boxSizing: "border-box" }}
-                      />
-                    </div>
-                  )}
 
                   {/* Daily Post Limit */}
                   <div>
@@ -3192,6 +3185,20 @@ export default function AdminDashboard({ initialData, initialUi = {} }: { initia
                       ))}
                     </div>
                   </div>
+
+                  {/* Super Admin Password */}
+                  <div>
+                    <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#1c1c1e", marginBottom: 6 }}>Admin Password Required</label>
+                    <input
+                      type="password"
+                      value={editPassword}
+                      onChange={e => setEditPassword(e.target.value)}
+                      placeholder="Enter admin password"
+                      required
+                      style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid #d1d5db", fontSize: 14, boxSizing: "border-box" }}
+                    />
+                  </div>
+
                   {editError && <p style={{ color: "#dc2626", margin: 0, fontSize: 13 }}>{editError}</p>}
                   <div style={{ display: "flex", gap: 12, justifyContent: "flex-end", marginTop: 8 }}>
                     <button
@@ -3204,7 +3211,7 @@ export default function AdminDashboard({ initialData, initialUi = {} }: { initia
                     </button>
                     <button
                       type="submit"
-                      disabled={editLoading || !editName.trim()}
+                      disabled={editLoading || !editName.trim() || !editPackageId || !editPassword}
                       style={{ background: "#1c1c1e", color: "#fff", border: "none", padding: "8px 16px", borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 8 }}
                     >
                       <Pencil size={14} />

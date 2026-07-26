@@ -922,7 +922,7 @@ export async function deletePlatformJob(jobId: string) {
   return { success: true };
 }
 
-export async function addEmployer(telegramId: number, businessName: string, businessType: string, packageId: string | null = null) {
+export async function addEmployer(telegramId: number, businessName: string, businessType: string, packageId: string | null) {
   await requirePermission("manageEmployers");
 
   // Validate telegramId format (positive integer, 5-12 digits, no leading 0)
@@ -930,6 +930,7 @@ export async function addEmployer(telegramId: number, businessName: string, busi
   if (!/^[1-9][0-9]{4,11}$/.test(tgIdStr)) {
     throw new Error("Telegram ID must be a valid number between 5 and 12 digits, and cannot start with 0.");
   }
+  if (!packageId) throw new Error("A package must be selected.");
 
   const supabase = getSupabase();
   
@@ -1046,13 +1047,17 @@ export async function addEmployer(telegramId: number, businessName: string, busi
   return { success: true, employer: newEmp, authorizationNumber: authNumber };
 }
 
-export async function updateEmployer(employerId: string, businessName: string, businessType: string, dailyPostLimit: number, packageId?: string | null, extendDays: number = 0) {
+export async function updateEmployer(employerId: string, businessName: string, businessType: string, dailyPostLimit: number, passwordAttempt: string, packageId?: string | null) {
   await requirePermission("manageEmployers");
+
+  const supabase = getSupabase();
+  const { data: pCfg } = await supabase.from("app_config").select("value").eq("key", "admin_password").single();
+  const storedPassword = pCfg?.value?.trim() || process.env.ADMIN_PASSWORD || "admin123";
+  if (passwordAttempt !== storedPassword) throw new Error("Incorrect admin password");
 
   if (!businessName.trim()) throw new Error("Business name cannot be empty.");
   if (![15, 30, -1].includes(dailyPostLimit)) throw new Error("Invalid post limit value.");
 
-  const supabase = getSupabase();
   const updateFields: any = {
     business_name: businessName.trim(),
     business_type: businessType.trim(),
@@ -1060,24 +1065,19 @@ export async function updateEmployer(employerId: string, businessName: string, b
   };
 
   if (packageId !== undefined) {
-    if (packageId === null || packageId === "") {
-      updateFields.active_package_id = null;
-      updateFields.package_expires_at = null;
-    } else {
-      const { data: pkg, error: pkgErr } = await supabase
-        .from("packages")
-        .select("duration_days")
-        .eq("id", packageId)
-        .maybeSingle();
-      if (pkgErr) throw pkgErr;
-      if (pkg) {
-        const now = new Date();
-        now.setDate(now.getDate() + pkg.duration_days + extendDays);
-        updateFields.active_package_id = packageId;
-        updateFields.package_expires_at = now.toISOString();
-        updateFields.renewal_requested = false;
-      }
-    }
+    if (!packageId) throw new Error("A package must be selected.");
+    const { data: pkg, error: pkgErr } = await supabase
+      .from("packages")
+      .select("duration_days")
+      .eq("id", packageId)
+      .maybeSingle();
+    if (pkgErr) throw pkgErr;
+    if (!pkg) throw new Error("Selected package not found.");
+    const now = new Date();
+    now.setDate(now.getDate() + pkg.duration_days);
+    updateFields.active_package_id = packageId;
+    updateFields.package_expires_at = now.toISOString();
+    updateFields.renewal_requested = false;
   }
 
   const { data, error } = await supabase
@@ -1089,7 +1089,7 @@ export async function updateEmployer(employerId: string, businessName: string, b
 
   if (error) throw error;
   if (packageId !== undefined) {
-    await logActivity("assign_package", employerId, { packageId, extendDays });
+    await logActivity("assign_package", employerId, { packageId });
   }
   return { success: true, employer: data };
 }
