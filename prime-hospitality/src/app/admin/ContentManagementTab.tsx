@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { getContentData, upsertFaq, deleteFaq, upsertVacancyTemplate, deleteVacancyTemplate, updateOnboardingConfig, postJobFromTemplate, checkTemplateStatus, scheduleJobFromTemplate, getPlatformJobs, updatePlatformJob, repostPlatformJob, deletePlatformJob } from "./actions";
+import { getContentData, upsertFaq, deleteFaq, upsertVacancyTemplate, deleteVacancyTemplate, updateOnboardingConfig, postJobFromTemplate, checkTemplateStatus, scheduleJobFromTemplate, getPlatformJobs, createPlatformJob, updatePlatformJob, repostPlatformJob, deletePlatformJob } from "./actions";
 import { Plus, Trash2, Pencil, Briefcase, MapPin, CheckCircle2, Clock, Users, Send, Loader2, AlertTriangle, RefreshCw, ListFilter, FileStack, LayoutGrid, RotateCw } from "lucide-react";
 import { Timer } from "@phosphor-icons/react";
 import JobDetailScreen from "@/screens/JobDetailScreen";
@@ -204,6 +204,28 @@ export default function ContentManagementTab({
       setErrorModal("Failed to save job: " + (err instanceof Error ? err.message : "Unknown error"));
     } finally {
       setJobEditSaving(false);
+    }
+  };
+
+  // Platform Job Create (Posts tab) -- posts a brand-new job directly, no template needed
+  const [newJobModal, setNewJobModal] = useState<VacancyFormState | null>(null);
+  const [newJobSaving, setNewJobSaving] = useState(false);
+
+  const handleSaveNewJob = async () => {
+    if (!newJobModal) return;
+    setNewJobSaving(true);
+    try {
+      const res = await createPlatformJob(newJobModal);
+      if (!res.success) {
+        setErrorModal("Failed to post job: " + res.error);
+        return;
+      }
+      setNewJobModal(null);
+      loadData();
+    } catch (err) {
+      setErrorModal("Failed to post job: " + (err instanceof Error ? err.message : "Unknown error"));
+    } finally {
+      setNewJobSaving(false);
     }
   };
 
@@ -546,6 +568,9 @@ export default function ContentManagementTab({
                 <p className="text-sm text-[#8e8e93]">All jobs posted under the platform account — live, scheduled, or otherwise.</p>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+                <button className="mjp-btn-primary" onClick={() => setNewJobModal(emptyVacancyForm())} title="Post a new job">
+                  <Plus size={16} /> Post Now
+                </button>
                 <FilterSelect
                   value={postsStatusFilter}
                   onChange={setPostsStatusFilter}
@@ -1034,6 +1059,21 @@ export default function ContentManagementTab({
             </form>
           </div>
         </div>
+      )}
+
+      {/* New Job Modal (Posts tab) -- posts a job directly, no template needed */}
+      {newJobModal && (
+        <VacancyFormModal
+          value={newJobModal}
+          onChange={setNewJobModal}
+          onClose={() => setNewJobModal(null)}
+          onSubmit={handleSaveNewJob}
+          saving={newJobSaving}
+          saveLabel="Post Now"
+          headerTitle="Post a New Job"
+          headerSubtitle="Fill in the details below to publish this vacancy under the platform account."
+          mode="admin"
+        />
       )}
 
       {/* Job Edit Modal (Posts tab) -- also used to repost an expired job */}

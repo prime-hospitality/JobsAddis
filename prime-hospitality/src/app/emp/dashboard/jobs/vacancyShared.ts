@@ -18,6 +18,7 @@ export interface VacancyFormState {
   salary_min: number | null;
   salary_max: number | null;
   experience_required: string;
+  experience_template: string;
   responsibilities_template: string;
   benefits_template: string;
   deadline: string;
@@ -37,6 +38,7 @@ export function emptyVacancyForm(): VacancyFormState {
     salary_min: null,
     salary_max: null,
     experience_required: "Entry level",
+    experience_template: "",
     responsibilities_template: "",
     benefits_template: "",
     deadline: "",
@@ -72,6 +74,7 @@ export function validateVacancyForm(
 
 const RESP_MARKER = "\n\nResponsibilities:\n";
 const REQ_MARKER = "\n\nRequirements:\n";
+const EXP_MARKER = "\n\nExperience:\n";
 const BEN_MARKER = "\n\nBenefits:\n";
 
 function formatList(txt: string) {
@@ -85,19 +88,23 @@ function formatList(txt: string) {
 /** Builds the flat description string stored on the `jobs` row, mirroring the
  *  admin template -> job posting logic exactly, so Post-tab jobs render
  *  identically to admin-posted jobs in the job seeker app. */
-export function buildJobDescription(form: Pick<VacancyFormState, "description_template" | "responsibilities_template" | "requirements_template" | "benefits_template">) {
-  let desc = form.description_template || "";
+export function buildJobDescription(form: Pick<VacancyFormState, "description_template" | "responsibilities_template" | "requirements_template" | "experience_template" | "benefits_template">) {
+  let desc = formatList(form.description_template || "");
   if (form.responsibilities_template) desc += RESP_MARKER + formatList(form.responsibilities_template);
   if (form.requirements_template) desc += REQ_MARKER + formatList(form.requirements_template);
+  if (form.experience_template) desc += EXP_MARKER + formatList(form.experience_template);
   if (form.benefits_template) desc += BEN_MARKER + formatList(form.benefits_template);
   return desc;
 }
 
 /** Reverses buildJobDescription() so an existing job can be reloaded into the
- *  structured form for editing without a schema change to `jobs`. */
+ *  structured form for editing without a schema change to `jobs`. Markers are
+ *  peeled off from the end (last-appended first) so an experience section
+ *  sitting between Requirements and Benefits doesn't get swallowed by either. */
 export function splitJobDescription(full: string) {
   let rest = full || "";
   let benefits_template = "";
+  let experience_template = "";
   let requirements_template = "";
   let responsibilities_template = "";
 
@@ -105,6 +112,11 @@ export function splitJobDescription(full: string) {
   if (benIdx !== -1) {
     benefits_template = rest.slice(benIdx + BEN_MARKER.length);
     rest = rest.slice(0, benIdx);
+  }
+  const expIdx = rest.indexOf(EXP_MARKER);
+  if (expIdx !== -1) {
+    experience_template = rest.slice(expIdx + EXP_MARKER.length);
+    rest = rest.slice(0, expIdx);
   }
   const reqIdx = rest.indexOf(REQ_MARKER);
   if (reqIdx !== -1) {
@@ -121,6 +133,7 @@ export function splitJobDescription(full: string) {
     description_template: rest,
     responsibilities_template,
     requirements_template,
+    experience_template,
     benefits_template,
   };
 }
@@ -169,6 +182,7 @@ export function jobRowToForm(job: any): VacancyFormState {
     salary_min: job.salary_min != null && job.salary_min >= 0 ? job.salary_min : null,
     salary_max: job.salary_max != null && job.salary_max >= 0 ? job.salary_max : null,
     experience_required: requirements.experience || "Entry level",
+    experience_template: split.experience_template,
     responsibilities_template: split.responsibilities_template,
     benefits_template: split.benefits_template,
     deadline: job.deadline ? String(job.deadline).split("T")[0] : "",
@@ -191,6 +205,7 @@ export function templateRowToForm(tpl: any): VacancyFormState {
     salary_min: tpl.salary_min,
     salary_max: tpl.salary_max,
     experience_required: tpl.experience_required || "Entry level",
+    experience_template: tpl.experience_template || "",
     responsibilities_template: tpl.responsibilities_template || "",
     benefits_template: tpl.benefits_template || "",
     deadline: tpl.deadline || "",

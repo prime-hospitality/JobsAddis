@@ -256,6 +256,7 @@ export async function upsertEmployerVacancyTemplate(payload: VacancyFormState) {
     salary_currency: "ETB",
     salary_period: "Monthly",
     experience_required: data.experience_required,
+    experience_template: data.experience_template,
     responsibilities_template: data.responsibilities_template,
     benefits_template: data.benefits_template,
     deadline: data.deadline || null,

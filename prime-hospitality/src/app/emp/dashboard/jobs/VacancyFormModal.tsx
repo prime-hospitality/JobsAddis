@@ -127,7 +127,7 @@ export default function VacancyFormModal({
     onTimeChange: (v: string) => void;
   };
 }) {
-  const [requirementsTab, setRequirementsTab] = useState<"skill" | "education">("skill");
+  const [requirementsTab, setRequirementsTab] = useState<"skill" | "experience" | "education">("skill");
   const [locationSuggestionsOpen, setLocationSuggestionsOpen] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<{ title?: string; description_template?: string; deadline?: string }>({});
 
@@ -370,14 +370,14 @@ export default function VacancyFormModal({
               <div className="vfm-field">
                 <label className="vfm-label">
                   <span>Job Description <span className="vfm-req">*</span></span>
-                  <span className="vfm-hint">Main overview</span>
+                  <span className="vfm-hint">Bulleted list</span>
                 </label>
                 <textarea
                   className={`vfm-textarea${fieldErrors.description_template ? " error" : ""}`}
                   style={{ height: 112 }}
                   value={value.description_template}
                   onChange={(e) => set({ description_template: e.target.value })}
-                  placeholder="Provide a compelling overview of the role and what it entails..."
+                  placeholder={"- Compelling overview line one\n- What the role entails..."}
                 />
                 {fieldErrors.description_template && <p className="vfm-error-text">{fieldErrors.description_template}</p>}
               </div>
@@ -407,6 +407,13 @@ export default function VacancyFormModal({
                   </button>
                   <button
                     type="button"
+                    className={`vfm-seg-btn${requirementsTab === "experience" ? " active" : ""}`}
+                    onClick={() => setRequirementsTab("experience")}
+                  >
+                    Experience
+                  </button>
+                  <button
+                    type="button"
                     className={`vfm-seg-btn${requirementsTab === "education" ? " active" : ""}`}
                     onClick={() => setRequirementsTab("education")}
                   >
@@ -420,6 +427,14 @@ export default function VacancyFormModal({
                     value={value.requirements_template}
                     onChange={(e) => set({ requirements_template: e.target.value })}
                     placeholder={"- Required skill one\n- Certification...\n- Years of experience..."}
+                  />
+                ) : requirementsTab === "experience" ? (
+                  <textarea
+                    className="vfm-textarea"
+                    style={{ height: 92 }}
+                    value={value.experience_template}
+                    onChange={(e) => set({ experience_template: e.target.value })}
+                    placeholder={"- 2+ years in a similar role\n- Prior experience with POS systems\n- Supervisory experience preferred..."}
                   />
                 ) : (
                   <textarea

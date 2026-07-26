@@ -680,6 +680,47 @@ export async function updatePlatformEmployerLogo(formData: FormData): Promise<Up
   return { success: true, logoUrl: finalLogoUrl };
 }
 
+/** "Post Now" on the Posts tab -- creates a new platform job directly, without
+ *  going through a saved template. Mirrors the employer dashboard's
+ *  createEmployerJob, but attributes the job to the platform employer and
+ *  publishes it immediately (admin posts don't go through a review step). */
+export async function createPlatformJob(form: VacancyFormState): Promise<{ success: true } | { success: false; error: string }> {
+  await requirePermission("manageJobs");
+
+  const errors = validateVacancyForm(form);
+  if (errors) return { success: false, error: Object.values(errors)[0]! };
+
+  const supabase = getSupabase();
+
+  const employerResult = await getPlatformEmployerId(supabase);
+  if ("error" in employerResult) return { success: false, error: employerResult.error };
+
+  const description = buildJobDescription(form);
+  const { salary_min, salary_max } = resolveSalary(form);
+
+  const { data: inserted, error } = await supabase.from("jobs").insert({
+    employer_id: employerResult.id,
+    title: form.title,
+    category: form.job_category,
+    location: form.location || "Addis Ababa",
+    neighborhood: form.location || "Addis Ababa",
+    job_type: form.employment_type || "Full Time",
+    salary_min,
+    salary_max,
+    currency: "ETB",
+    description,
+    full_description: description,
+    requirements: buildRequirementsJson(form),
+    deadline: form.deadline || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
+    quantity: form.quantity || 1,
+    status: "active",
+  }).select("id").single();
+
+  if (error) return { success: false, error: error.message || "Failed to post job" };
+  await logActivity("create_platform_job", inserted.id, { title: form.title });
+  return { success: true };
+}
+
 export async function postJobFromTemplate(templateId: string) {
   const auth = (await cookies()).get("admin_session");
   if (!auth?.value) return { success: false, error: "Unauthorized" };
@@ -1262,6 +1303,7 @@ export async function upsertVacancyTemplate(payload: VacancyFormState) {
     salary_currency: "ETB",
     salary_period: "Monthly",
     experience_required: data.experience_required,
+    experience_template: data.experience_template,
     responsibilities_template: data.responsibilities_template,
     benefits_template: data.benefits_template,
     deadline: data.deadline || null,
