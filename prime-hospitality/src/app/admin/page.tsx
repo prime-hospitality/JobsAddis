@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import AdminLogin from "./AdminLogin";
 import AdminSessionGate from "./AdminSessionGate";
 import { ADMIN_UI_COOKIE, parseAdminUi } from "@/lib/adminUiCookie";
+import { verifySessionValue } from "@/lib/signedSession";
 
 export const metadata = {
   title: "JobsAdis Admin",
@@ -13,7 +14,7 @@ export const metadata = {
 export default async function AdminPage() {
   const cookieStore = await cookies();
   const authCookie = cookieStore.get("admin_session");
-  const isAuthenticated = !!authCookie?.value;
+  const isAuthenticated = !!verifySessionValue(authCookie?.value);
 
   // No session cookie at all → nobody is logged in on this browser: show login.
   if (!isAuthenticated) {

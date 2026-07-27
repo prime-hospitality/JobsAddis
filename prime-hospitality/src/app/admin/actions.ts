@@ -2,8 +2,11 @@
 
 import { cookies } from "next/headers";
 import { createClient } from "@supabase/supabase-js";
+import bcrypt from "bcryptjs";
 import { ADMIN_UI_COOKIE } from "@/lib/adminUiCookie";
 import { resumeStoragePath } from "@/lib/cvStorage";
+import { verifyConfigPassword } from "@/lib/appConfigPassword";
+import { signSessionValue, verifySessionValue } from "@/lib/signedSession";
 import {
   VacancyFormState,
   validateVacancyForm,
@@ -12,11 +15,16 @@ import {
   resolveSalary,
 } from "@/app/emp/dashboard/jobs/vacancyShared";
 
+const ADMIN_PASSWORD_FALLBACK = process.env.ADMIN_PASSWORD || "admin123";
+
 const getSupabase = () => {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://placeholder.supabase.co";
   const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "placeholder-key";
   return createClient(supabaseUrl, supabaseServiceKey);
 };
+
+const ADMIN_MAX_LOGIN_ATTEMPTS = 5;
+const ADMIN_LOCKOUT_MINUTES = 15;
 
 // ── Permission Types ────────────────────────────────────────────────────────
 export type AdminPermissions = {
@@ -46,11 +54,23 @@ async function saveSubAdmins(admins: SubAdmin[]): Promise<void> {
   await getSupabase().from("app_config").upsert({ key: "sub_admins", value: JSON.stringify(admins), updated_at: new Date().toISOString() }, { onConflict: "key" });
 }
 
+// Sub-admin passwords live inside the sub_admins JSON blob rather than one
+// app_config row each, so they can't reuse verifyConfigPassword directly.
+// Same idea though: bcrypt going forward, with older plaintext rows
+// upgraded to a hash the moment they successfully match.
+async function matchAndMaybeUpgradeSubAdminPassword(allSubs: SubAdmin[], record: SubAdmin, passwordAttempt: string): Promise<boolean> {
+  const looksHashed = /^\$2[aby]\$/.test(record.password);
+  if (looksHashed) return bcrypt.compare(passwordAttempt, record.password);
+  if (passwordAttempt !== record.password) return false;
+  const upgraded = await bcrypt.hash(passwordAttempt, 10);
+  await saveSubAdmins(allSubs.map((s) => (s.id === record.id ? { ...s, password: upgraded } : s)));
+  return true;
+}
+
 // ── Session helpers ─────────────────────────────────────────────────────────
 async function getSession() {
   const cookie = (await cookies()).get("admin_session");
-  if (!cookie?.value) return null;
-  try { return JSON.parse(cookie.value); } catch { return null; }
+  return verifySessionValue(cookie?.value);
 }
 
 export async function getLoggedInAdmin(): Promise<{ username: string; role: "super_admin" | "sub_admin"; permissions: AdminPermissions } | null> {
@@ -88,15 +108,30 @@ async function logActivity(action: string, target?: string, metadata?: Record<st
 
 export async function loginAdmin(username: string, password: string) {
   const supabase = getSupabase();
+  const attemptKey = username.trim().toLowerCase();
+
+  // Keyed by the attempted username (not IP -- there's no reliable client IP
+  // in this environment) so brute-forcing one account's password can't lock
+  // out a different admin. See clearAdminLoginLockout in idp/actions.ts for
+  // the self-service unlock if a real admin trips this on themselves.
+  const { data: attemptRow } = await supabase
+    .from("admin_login_attempts")
+    .select("failed_attempts, locked_until")
+    .eq("username", attemptKey)
+    .maybeSingle();
+
+  if (attemptRow?.locked_until && new Date(attemptRow.locked_until) > new Date()) {
+    const minutesLeft = Math.ceil((new Date(attemptRow.locked_until).getTime() - Date.now()) / 60000);
+    return { success: false, error: `Too many failed attempts. Please try again in ${minutesLeft} minute${minutesLeft === 1 ? "" : "s"}.` };
+  }
 
   // Check super admin first
   const { data: uCfg } = await supabase.from("app_config").select("value").eq("key", "admin_username").single();
   const storedUsername = uCfg?.value?.trim() || "admin";
-  const { data: pCfg } = await supabase.from("app_config").select("value").eq("key", "admin_password").single();
-  const storedPassword = pCfg?.value?.trim() || process.env.ADMIN_PASSWORD || "admin123";
 
-  if (username.toLowerCase() === storedUsername.toLowerCase() && password === storedPassword) {
-    const sessionData = JSON.stringify({ username: storedUsername, role: "super_admin" });
+  if (username.toLowerCase() === storedUsername.toLowerCase() && await verifyConfigPassword("admin_password", password, ADMIN_PASSWORD_FALLBACK)) {
+    if (attemptRow) await supabase.from("admin_login_attempts").delete().eq("username", attemptKey);
+    const sessionData = signSessionValue({ username: storedUsername, role: "super_admin" });
     const jar = await cookies();
     jar.set("admin_session", sessionData, { maxAge: 60 * 60 * 24, httpOnly: true, secure: process.env.NODE_ENV === "production" });
     // Always start a fresh login on the Overview tab — don't inherit the
@@ -105,18 +140,28 @@ export async function loginAdmin(username: string, password: string) {
     return { success: true, role: "super_admin", username: storedUsername };
   }
 
-  // Check sub-admins
+  // Check sub-admins. Older rows may still hold a plaintext password --
+  // upgrade to a hash the moment one of those matches.
   const subs = await getSubAdmins();
-  const sub = subs.find((s) => s.username.toLowerCase() === username.toLowerCase() && s.password === password);
-  if (sub) {
-    const sessionData = JSON.stringify({ username: sub.username, role: "sub_admin" });
+  const subRecord = subs.find((s) => s.username.toLowerCase() === username.toLowerCase());
+  const subMatched = subRecord ? await matchAndMaybeUpgradeSubAdminPassword(subs, subRecord, password) : false;
+  if (subRecord && subMatched) {
+    if (attemptRow) await supabase.from("admin_login_attempts").delete().eq("username", attemptKey);
+    const sessionData = signSessionValue({ username: subRecord.username, role: "sub_admin" });
     const jar = await cookies();
     jar.set("admin_session", sessionData, { maxAge: 60 * 60 * 24, httpOnly: true, secure: process.env.NODE_ENV === "production" });
     // Always start a fresh login on the Overview tab (shared computer).
     jar.delete(ADMIN_UI_COOKIE);
-    return { success: true, role: "sub_admin", username: sub.username };
+    return { success: true, role: "sub_admin", username: subRecord.username };
   }
 
+  const nextAttempts = (attemptRow?.failed_attempts ?? 0) + 1;
+  if (nextAttempts >= ADMIN_MAX_LOGIN_ATTEMPTS) {
+    const lockedUntil = new Date(Date.now() + ADMIN_LOCKOUT_MINUTES * 60000).toISOString();
+    await supabase.from("admin_login_attempts").upsert({ username: attemptKey, failed_attempts: 0, locked_until: lockedUntil });
+    return { success: false, error: `Too many failed attempts. Please try again in ${ADMIN_LOCKOUT_MINUTES} minutes.` };
+  }
+  await supabase.from("admin_login_attempts").upsert({ username: attemptKey, failed_attempts: nextAttempts, locked_until: null });
   return { success: false, error: "Invalid username or password" };
 }
 
@@ -142,7 +187,7 @@ export async function createSubAdmin(username: string, password: string) {
   const newSub: SubAdmin = {
     id: Date.now().toString(),
     username: username.trim(),
-    password: password.trim(),
+    password: await bcrypt.hash(password.trim(), 10),
     permissions: { manageEmployers: false, manageJobs: false, manageUsers: false, manageConfiguration: false, manageReports: false },
     createdAt: new Date().toISOString(),
   };
@@ -168,10 +213,9 @@ export async function deleteSubAdmin(id: string, passwordAttempt: string) {
   const session = await getSession();
   if (!session || session.role !== "super_admin") return { success: false, error: "Only the super admin can delete sub-admins" };
 
-  const supabase = getSupabase();
-  const { data: pCfg } = await supabase.from("app_config").select("value").eq("key", "admin_password").single();
-  const storedPassword = pCfg?.value?.trim() || process.env.ADMIN_PASSWORD || "admin123";
-  if (passwordAttempt !== storedPassword) return { success: false, error: "Incorrect admin password" };
+  if (!(await verifyConfigPassword("admin_password", passwordAttempt, ADMIN_PASSWORD_FALLBACK))) {
+    return { success: false, error: "Incorrect admin password" };
+  }
 
   const subs = await getSubAdmins();
   await saveSubAdmins(subs.filter((s) => s.id !== id));
@@ -379,11 +423,8 @@ export async function toggleUserBan(userId: string, isBanned: boolean, passwordA
   if (!admin.permissions.manageUsers) return { success: false, error: "Permission denied" };
 
   // Only verify password for super admin; sub-admins with permission can act directly
-  if (admin.role === "super_admin") {
-    const supabase = getSupabase();
-    const { data: pCfg } = await supabase.from("app_config").select("value").eq("key", "admin_password").single();
-    const storedPassword = pCfg?.value?.trim() || process.env.ADMIN_PASSWORD || "admin123";
-    if (passwordAttempt !== storedPassword) return { success: false, error: "Incorrect admin password" };
+  if (admin.role === "super_admin" && !(await verifyConfigPassword("admin_password", passwordAttempt, ADMIN_PASSWORD_FALLBACK))) {
+    return { success: false, error: "Incorrect admin password" };
   }
 
   const { error } = await getSupabase().from("users").update({ is_banned: isBanned }).eq("id", userId);
@@ -398,10 +439,9 @@ export async function deleteUser(userId: string, passwordAttempt: string) {
   if (!admin.permissions.manageUsers) return { success: false, error: "Permission denied" };
 
   const supabase = getSupabase();
-  const { data: pCfg } = await supabase.from("app_config").select("value").eq("key", "admin_password").single();
-  const storedPassword = pCfg?.value?.trim() || process.env.ADMIN_PASSWORD || "admin123";
-  if (passwordAttempt !== storedPassword) return { success: false, error: "Incorrect admin password" };
-
+  if (!(await verifyConfigPassword("admin_password", passwordAttempt, ADMIN_PASSWORD_FALLBACK))) {
+    return { success: false, error: "Incorrect admin password" };
+  }
 
   // 1. Fetch user's profile to get the CV URL before deletion
   const { data: profile } = await supabase
@@ -534,8 +574,7 @@ export async function cancelScheduledJob(jobId: string) {
 }
 
 export async function checkTemplateStatus(templateId: string) {
-  const auth = (await cookies()).get("admin_session");
-  if (!auth?.value) throw new Error("Unauthorized");
+  if (!verifySessionValue((await cookies()).get("admin_session")?.value)) throw new Error("Unauthorized");
 
   const supabase = getSupabase();
   const { data: tpl } = await supabase.from("vacancy_templates").select("title, updated_at").eq("id", templateId).single();
@@ -738,8 +777,7 @@ export async function createPlatformJob(form: VacancyFormState): Promise<{ succe
 }
 
 export async function postJobFromTemplate(templateId: string) {
-  const auth = (await cookies()).get("admin_session");
-  if (!auth?.value) return { success: false, error: "Unauthorized" };
+  if (!verifySessionValue((await cookies()).get("admin_session")?.value)) return { success: false, error: "Unauthorized" };
 
   const supabase = getSupabase();
 
@@ -782,8 +820,7 @@ export async function postJobFromTemplate(templateId: string) {
 }
 
 export async function scheduleJobFromTemplate(templateId: string, scheduledAt: string) {
-  const auth = (await cookies()).get("admin_session");
-  if (!auth?.value) return { success: false, error: "Unauthorized" };
+  if (!verifySessionValue((await cookies()).get("admin_session")?.value)) return { success: false, error: "Unauthorized" };
 
   const supabase = getSupabase();
   const { data: tpl, error: tplErr } = await supabase
@@ -829,8 +866,7 @@ export async function scheduleJobFromTemplate(templateId: string, scheduledAt: s
 // employer (via postJobFromTemplate / scheduleJobFromTemplate above).
 
 export async function getPlatformJobs() {
-  const auth = (await cookies()).get("admin_session");
-  if (!auth?.value) throw new Error("Unauthorized");
+  if (!verifySessionValue((await cookies()).get("admin_session")?.value)) throw new Error("Unauthorized");
 
   const supabase = getSupabase();
   const employerResult = await getPlatformEmployerId(supabase);
@@ -1067,9 +1103,9 @@ export async function updateEmployer(employerId: string, businessName: string, b
   await requirePermission("manageEmployers");
 
   const supabase = getSupabase();
-  const { data: pCfg } = await supabase.from("app_config").select("value").eq("key", "admin_password").single();
-  const storedPassword = pCfg?.value?.trim() || process.env.ADMIN_PASSWORD || "admin123";
-  if (passwordAttempt !== storedPassword) throw new Error("Incorrect admin password");
+  if (!(await verifyConfigPassword("admin_password", passwordAttempt, ADMIN_PASSWORD_FALLBACK))) {
+    throw new Error("Incorrect admin password");
+  }
 
   if (!businessName.trim()) throw new Error("Business name cannot be empty.");
   if (![15, 30, -1].includes(dailyPostLimit)) throw new Error("Invalid post limit value.");
@@ -1147,10 +1183,9 @@ export async function deleteEmployer(employerId: string, passwordAttempt: string
   if (!admin.permissions.manageEmployers) return { success: false, error: "Permission denied" };
 
   const supabase = getSupabase();
-  const { data: pCfg } = await supabase.from("app_config").select("value").eq("key", "admin_password").single();
-  const storedPassword = pCfg?.value?.trim() || process.env.ADMIN_PASSWORD || "admin123";
-  if (passwordAttempt !== storedPassword) return { success: false, error: "Incorrect admin password" };
-
+  if (!(await verifyConfigPassword("admin_password", passwordAttempt, ADMIN_PASSWORD_FALLBACK))) {
+    return { success: false, error: "Incorrect admin password" };
+  }
 
   // 1. Fetch employer to get the logo URL and linked user_id before deletion
   const { data: employer } = await supabase
@@ -1224,11 +1259,8 @@ export async function approveSpecialRequest(userId: string, passwordAttempt: str
   if (!admin) return { success: false, error: "Unauthorized" };
   if (!admin.permissions.manageUsers) return { success: false, error: "Permission denied" };
 
-  if (admin.role === "super_admin") {
-    const supabase = getSupabase();
-    const { data: pCfg } = await supabase.from("app_config").select("value").eq("key", "admin_password").single();
-    const storedPassword = pCfg?.value?.trim() || process.env.ADMIN_PASSWORD || "admin123";
-    if (passwordAttempt !== storedPassword) return { success: false, error: "Incorrect admin password" };
+  if (admin.role === "super_admin" && !(await verifyConfigPassword("admin_password", passwordAttempt, ADMIN_PASSWORD_FALLBACK))) {
+    return { success: false, error: "Incorrect admin password" };
   }
 
   const supabase = getSupabase();
@@ -1274,8 +1306,7 @@ export async function approveSpecialRequest(userId: string, passwordAttempt: str
 // ── Content Management ────────────────────────────────────────────────────────
 
 export async function getContentData() {
-  const auth = (await cookies()).get("admin_session");
-  if (!auth?.value) throw new Error("Unauthorized");
+  if (!verifySessionValue((await cookies()).get("admin_session")?.value)) throw new Error("Unauthorized");
 
   const supabase = getSupabase();
   const [faqs, templates, config] = await Promise.all([
@@ -1292,8 +1323,7 @@ export async function getContentData() {
 }
 
 export async function upsertFaq(id: string | null, question: string, answer: string, display_order: number) {
-  const auth = (await cookies()).get("admin_session");
-  if (!auth?.value) throw new Error("Unauthorized");
+  if (!verifySessionValue((await cookies()).get("admin_session")?.value)) throw new Error("Unauthorized");
 
   const { error } = await getSupabase().from("faqs").upsert({
     ...(id ? { id } : {}),
@@ -1308,8 +1338,7 @@ export async function upsertFaq(id: string | null, question: string, answer: str
 }
 
 export async function deleteFaq(id: string) {
-  const auth = (await cookies()).get("admin_session");
-  if (!auth?.value) throw new Error("Unauthorized");
+  if (!verifySessionValue((await cookies()).get("admin_session")?.value)) throw new Error("Unauthorized");
 
   const { error } = await getSupabase().from("faqs").delete().eq("id", id);
   if (error) throw error;
@@ -1318,8 +1347,7 @@ export async function deleteFaq(id: string) {
 
 
 export async function upsertVacancyTemplate(payload: VacancyFormState) {
-  const auth = (await cookies()).get("admin_session");
-  if (!auth?.value) throw new Error("Unauthorized");
+  if (!verifySessionValue((await cookies()).get("admin_session")?.value)) throw new Error("Unauthorized");
 
   const errors = validateVacancyForm(payload);
   if (errors) return { success: false, error: Object.values(errors)[0] };

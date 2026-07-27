@@ -120,6 +120,11 @@ export default function EmployerLoginPage() {
       if (!result.success) {
         setError(result.error || "Failed to setup password");
       } else {
+        // Save Telegram ID for next visit (never save passwords), same as
+        // the returning-login path -- otherwise the very first login after
+        // onboarding wouldn't get the "Continue as..." quick-login chip.
+        localStorage.setItem(SAVED_ID_KEY, telegramId.trim());
+        if (employerName) localStorage.setItem(SAVED_NAME_KEY, employerName);
         router.push("/emp/dashboard");
       }
     } catch {

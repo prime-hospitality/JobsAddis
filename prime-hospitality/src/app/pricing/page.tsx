@@ -2,6 +2,7 @@ import Link from "next/link";
 import React from "react";
 import { cookies } from "next/headers";
 import { createClient } from "@supabase/supabase-js";
+import { verifySessionValue } from "@/lib/signedSession";
 
 // Default config matching the flat structure from AdminDashboard
 const DEFAULT_CONFIG = {
@@ -92,7 +93,7 @@ function FeatureRow({ label, price, dark }: { label: string; price?: string; dar
 
 export default async function PricingPage() {
   const sessionCookie = (await cookies()).get("employer_session");
-  const isAuthenticated = !!sessionCookie?.value;
+  const isAuthenticated = !!verifySessionValue(sessionCookie?.value);
   const [config, allPackages] = await Promise.all([getPricingConfig(), getPackages()]);
 
   const standardPackageRows = allPackages.filter(p => (p.category || "standard") === "standard");

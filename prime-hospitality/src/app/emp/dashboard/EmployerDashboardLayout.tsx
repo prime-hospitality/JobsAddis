@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
-import { logoutEmployer, getEmployerNotifications, markNotificationAsRead } from "../actions";
+import { logoutEmployer, getEmployerNotifications, markNotificationAsRead, getEmployerAccounts, switchEmployerAccount, removeEmployerAccount } from "../actions";
 import { getApplicantCounts } from "./applicants/actions";
 import EmployerAvatar from "@/components/EmployerAvatar";
 import { runSilently } from "@/lib/silentFetch";
@@ -85,6 +85,8 @@ export default function EmployerDashboardLayout({
   const [notifications, setNotifications] = useState<any[]>([]);
   const [notifOpen, setNotifOpen] = useState(false);
   const [newApplicantCount, setNewApplicantCount] = useState(0);
+  const [accounts, setAccounts] = useState<{ employerId: string; businessName: string; businessType: string; logoUrl: string | null }[]>([]);
+  const [switchingAccount, setSwitchingAccount] = useState(false);
 
   // Both background polls below run through runSilently: they resolve via fetch
   // (server actions), which would otherwise trip GlobalFetchInterceptor and
@@ -129,6 +131,52 @@ export default function EmployerDashboardLayout({
     setLoggingOut(true);
     await logoutEmployer();
     router.push("/emp");
+  };
+
+  const loadAccounts = async () => {
+    try {
+      const res = await getEmployerAccounts();
+      setAccounts(res.accounts);
+    } catch (e) {
+      console.error("Failed to fetch employer accounts", e);
+    }
+  };
+
+  const handleToggleProfile = () => {
+    const next = !profileOpen;
+    setProfileOpen(next);
+    if (next) loadAccounts();
+  };
+
+  const handleSwitchAccount = async (employerId: string) => {
+    if (employerId === session?.employerId || switchingAccount) return;
+    setSwitchingAccount(true);
+    try {
+      const res = await switchEmployerAccount(employerId);
+      if (res.success) {
+        setProfileOpen(false);
+        router.refresh();
+      }
+    } catch (e) {
+      console.error("Failed to switch account", e);
+    } finally {
+      setSwitchingAccount(false);
+    }
+  };
+
+  const handleRemoveAccount = async (e: React.MouseEvent, employerId: string) => {
+    e.stopPropagation();
+    try {
+      const res = await removeEmployerAccount(employerId);
+      if (res.loggedOut) {
+        router.push("/emp");
+      } else {
+        if (res.switchedTo) router.refresh();
+        await loadAccounts();
+      }
+    } catch (err) {
+      console.error("Failed to remove account", err);
+    }
   };
 
   return (
@@ -379,7 +427,7 @@ export default function EmployerDashboardLayout({
               <div style={{ position: "relative" }}>
                 <button
                   className="emp-profile-btn"
-                  onClick={() => setProfileOpen(!profileOpen)}
+                  onClick={handleToggleProfile}
                   style={{ display: "flex", alignItems: "center", gap: 10, padding: "6px 10px 6px 6px", borderRadius: 10, border: "1px solid #e2e8f0", background: "#fff", cursor: "pointer", transition: "border-color 0.15s" }}
                 >
                   <EmployerAvatar name={session?.businessName || "?"} logoUrl={session?.logoUrl} size={30} radius={8} fontSize={13} />
@@ -398,6 +446,45 @@ export default function EmployerDashboardLayout({
                         <p style={{ fontSize: 13, fontWeight: 700, color: "#0f172a", margin: 0 }}>{session?.businessName}</p>
                         <p style={{ fontSize: 11, color: "#94a3b8", margin: "2px 0 0 0" }}>TG: {session?.telegramId}</p>
                       </div>
+
+                      {accounts.length > 1 && (
+                        <div style={{ borderBottom: "1px solid #f1f5f9", padding: "6px 0" }}>
+                          {accounts.map((acc) => {
+                            const isActive = acc.employerId === session?.employerId;
+                            return (
+                              <div
+                                key={acc.employerId}
+                                onClick={() => handleSwitchAccount(acc.employerId)}
+                                style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "8px 14px", cursor: isActive || switchingAccount ? "default" : "pointer", background: isActive ? "#f0f9ff" : "transparent" }}
+                              >
+                                <EmployerAvatar name={acc.businessName || "?"} logoUrl={acc.logoUrl} size={26} radius={7} fontSize={11} />
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                  <div style={{ fontSize: 12.5, fontWeight: 600, color: "#0f172a", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{acc.businessName}</div>
+                                </div>
+                                {isActive ? (
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0284c7" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                                ) : (
+                                  <button
+                                    onClick={(e) => handleRemoveAccount(e, acc.employerId)}
+                                    title="Sign out of this account"
+                                    style={{ background: "transparent", border: "none", cursor: "pointer", color: "#cbd5e1", padding: 2, display: "flex", flexShrink: 0 }}
+                                  >
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                                  </button>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+
+                      <button
+                        onClick={() => { setProfileOpen(false); router.push("/emp"); }}
+                        style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "10px 14px", border: "none", background: "transparent", cursor: "pointer", fontSize: 13, fontWeight: 600, color: "#0284c7", borderBottom: "1px solid #f1f5f9" }}
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                        Add Another Account
+                      </button>
                       <button
                         onClick={() => { setProfileOpen(false); router.push("/emp/dashboard/profile"); }}
                         style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "10px 14px", border: "none", background: "transparent", cursor: "pointer", fontSize: 13, fontWeight: 500, color: "#374151" }}

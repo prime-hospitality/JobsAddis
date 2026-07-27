@@ -5,12 +5,70 @@ import { createClient } from "@supabase/supabase-js";
 import { redirect } from "next/navigation";
 import bcrypt from "bcryptjs";
 import { EMPLOYER_UI_COOKIE } from "@/lib/employerUiCookie";
+import { signSessionValue, verifySessionValue } from "@/lib/signedSession";
 
 const getSupabase = () => {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://placeholder.supabase.co";
   const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "placeholder-key";
   return createClient(supabaseUrl, supabaseServiceKey);
 };
+
+// ── Multi-account support ────────────────────────────────────────────────
+// `employer_session` (below) always holds the *currently active* account, in
+// the same flat shape every other page already parses directly. This second
+// cookie holds every account that's been logged into in this browser, so a
+// switch is just "point employer_session at a different entry" with no
+// re-authentication and no disturbing the other files that read
+// employer_session inline.
+const MAX_AUTH_CODE_ATTEMPTS = 5;
+const AUTH_LOCKOUT_MINUTES = 15;
+const ACCOUNTS_COOKIE = "employer_accounts";
+const SESSION_MAX_AGE = 60 * 60 * 8;
+const MAX_ACCOUNTS = 5;
+
+type EmployerAccountSession = {
+  employerId: string;
+  telegramId: number;
+  businessName: string;
+  businessType: string;
+  logoUrl: string | null;
+  status: string;
+};
+
+async function readAccounts(): Promise<EmployerAccountSession[]> {
+  const raw = (await cookies()).get(ACCOUNTS_COOKIE)?.value;
+  let accounts: EmployerAccountSession[] = verifySessionValue(raw) ?? [];
+  // Back-compat: an employer already logged in before multi-account support
+  // shipped has no employer_accounts cookie yet -- seed it from today's
+  // single session so they don't vanish from their own switcher.
+  if (accounts.length === 0) {
+    const current = await getEmployerSession();
+    if (current?.employerId) accounts = [current];
+  }
+  return accounts;
+}
+
+async function writeAccounts(accounts: EmployerAccountSession[]) {
+  (await cookies()).set(ACCOUNTS_COOKIE, signSessionValue(accounts.slice(-MAX_ACCOUNTS)), {
+    maxAge: SESSION_MAX_AGE,
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+  });
+}
+
+async function setActiveSession(account: EmployerAccountSession) {
+  (await cookies()).set("employer_session", signSessionValue(account), {
+    maxAge: SESSION_MAX_AGE,
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+  });
+}
+
+function upsertAccount(accounts: EmployerAccountSession[], account: EmployerAccountSession) {
+  return [...accounts.filter((a) => a.employerId !== account.employerId), account];
+}
 
 /** Check if a Telegram ID belongs to a registered employer */
 export async function checkEmployerByTelegramId(telegramId: string) {
@@ -62,12 +120,35 @@ export async function verifyEmployerAuthCode(telegramId: string, authNumber: str
   if (statusErr) return { success: false, error: `DB error: ${statusErr.message}` };
   if (employerStatusCheck?.status === "rejected") return { success: false, error: "rejected" };
 
-  const { data: employer, error: empErr } = await supabase.from("employers").select("authorization_number, password_hash").eq("user_id", user.id).maybeSingle();
+  const { data: employer, error: empErr } = await supabase.from("employers").select("id, authorization_number, password_hash, auth_code_attempts, auth_code_locked_until").eq("user_id", user.id).maybeSingle();
   if (empErr) return { success: false, error: `DB error: ${empErr.message}` };
   if (!employer) return { success: false, error: "not_found" };
 
   if (employer.password_hash) return { success: false, error: "Account already onboarded" };
-  if (employer.authorization_number !== trimmedCode) return { success: false, error: "Invalid authorization code. Please try again." };
+
+  // The code is only 5 digits (100,000 combinations) and has no expiry, so
+  // without a cap someone who knows a valid Telegram ID could script through
+  // every combination. Locks for a fixed window rather than permanently --
+  // low-stakes account, no need to route a support request through an admin.
+  if (employer.auth_code_locked_until && new Date(employer.auth_code_locked_until) > new Date()) {
+    const minutesLeft = Math.ceil((new Date(employer.auth_code_locked_until).getTime() - Date.now()) / 60000);
+    return { success: false, error: `Too many incorrect attempts. Please try again in ${minutesLeft} minute${minutesLeft === 1 ? "" : "s"}.` };
+  }
+
+  if (employer.authorization_number !== trimmedCode) {
+    const nextAttempts = employer.auth_code_attempts + 1;
+    if (nextAttempts >= MAX_AUTH_CODE_ATTEMPTS) {
+      const lockedUntil = new Date(Date.now() + AUTH_LOCKOUT_MINUTES * 60000).toISOString();
+      await supabase.from("employers").update({ auth_code_attempts: 0, auth_code_locked_until: lockedUntil }).eq("id", employer.id);
+      return { success: false, error: `Too many incorrect attempts. Please try again in ${AUTH_LOCKOUT_MINUTES} minutes.` };
+    }
+    await supabase.from("employers").update({ auth_code_attempts: nextAttempts }).eq("id", employer.id);
+    return { success: false, error: "Invalid authorization code. Please try again." };
+  }
+
+  if (employer.auth_code_attempts > 0 || employer.auth_code_locked_until) {
+    await supabase.from("employers").update({ auth_code_attempts: 0, auth_code_locked_until: null }).eq("id", employer.id);
+  }
 
   return { success: true };
 }
@@ -94,16 +175,17 @@ export async function setupEmployerPassword(telegramId: string, authNumber: stri
 
   if (updateError || !employer) return { success: false, error: "Failed to setup password" };
 
-  const sessionData = JSON.stringify({
+  const account: EmployerAccountSession = {
     employerId: employer.id,
     telegramId: id,
     businessName: employer.business_name,
     businessType: employer.business_type,
     logoUrl: employer.logo_url || null,
     status: employer.status,
-  });
+  };
 
-  (await cookies()).set("employer_session", sessionData, { maxAge: 60 * 60 * 8, httpOnly: true, secure: process.env.NODE_ENV === "production", path: "/" });
+  await setActiveSession(account);
+  await writeAccounts(upsertAccount(await readAccounts(), account));
 
   return { success: true };
 }
@@ -139,16 +221,20 @@ export async function loginWithPassword(telegramId: string, password: string) {
   const isValid = await bcrypt.compare(password, employer.password_hash);
   if (!isValid) return { success: false, error: "Invalid password" };
 
-  const sessionData = JSON.stringify({
+  const account: EmployerAccountSession = {
     employerId: employer.id,
     telegramId: id,
     businessName: employer.business_name,
     businessType: employer.business_type,
     logoUrl: employer.logo_url || null,
     status: employer.status,
-  });
+  };
 
-  (await cookies()).set("employer_session", sessionData, { maxAge: 60 * 60 * 8, httpOnly: true, secure: process.env.NODE_ENV === "production", path: "/" });
+  // Adds to (rather than replaces) whichever accounts are already signed in
+  // on this browser, so logging into a second employer doesn't sign the
+  // first one out -- see the account switcher in EmployerDashboardLayout.
+  await setActiveSession(account);
+  await writeAccounts(upsertAccount(await readAccounts(), account));
 
   return { success: true };
 }
@@ -156,12 +242,7 @@ export async function loginWithPassword(telegramId: string, password: string) {
 /** Get the current employer session */
 export async function getEmployerSession() {
   const sessionCookie = (await cookies()).get("employer_session");
-  if (!sessionCookie?.value) return null;
-  try {
-    return JSON.parse(sessionCookie.value);
-  } catch {
-    return null;
-  }
+  return verifySessionValue(sessionCookie?.value);
 }
 
 /** Merges the given fields into the current employer_session cookie. Needed
@@ -177,7 +258,7 @@ export async function refreshEmployerSessionCookie(updates: {
   if (!session) return;
 
   const next = { ...session, ...updates };
-  (await cookies()).set("employer_session", JSON.stringify(next), {
+  (await cookies()).set("employer_session", signSessionValue(next), {
     maxAge: 60 * 60 * 8,
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
@@ -207,12 +288,87 @@ export async function validateEmployerSession() {
   return { valid: true };
 }
 
-/** Logout employer */
+/** Logout employer -- signs out of every saved account on this browser, not
+ *  just the active one. For signing out of a single account while staying
+ *  logged into others, see removeEmployerAccount. */
 export async function logoutEmployer() {
   const jar = await cookies();
   jar.delete("employer_session");
+  jar.delete(ACCOUNTS_COOKIE);
   // Don't leave one employer's saved sub-tab position for the next login.
   jar.delete(EMPLOYER_UI_COOKIE);
+}
+
+/** All accounts signed into this browser, plus which one is active -- for
+ *  the account switcher in EmployerDashboardLayout. */
+export async function getEmployerAccounts() {
+  const accounts = await readAccounts();
+  const current = await getEmployerSession();
+  return { accounts, activeEmployerId: current?.employerId ?? null };
+}
+
+/** Flips the active session to an already-signed-in account -- no
+ *  re-authentication, matching a browser-style account switcher. Re-checks
+ *  the account is still valid so a switch never lands on one that's since
+ *  been deleted, rejected, or banned. */
+export async function switchEmployerAccount(employerId: string) {
+  const accounts = await readAccounts();
+  const target = accounts.find((a) => a.employerId === employerId);
+  if (!target) return { success: false, error: "Account not found. Please log in again." };
+
+  const supabase = getSupabase();
+  const { data: employer } = await supabase
+    .from("employers")
+    .select("id, business_name, business_type, status, logo_url, users(is_banned)")
+    .eq("id", employerId)
+    .maybeSingle();
+
+  const isBanned = Array.isArray(employer?.users) ? (employer as any).users[0]?.is_banned : (employer as any)?.users?.is_banned;
+  if (!employer || employer.status === "rejected" || isBanned) {
+    await writeAccounts(accounts.filter((a) => a.employerId !== employerId));
+    return { success: false, error: "This account is no longer available." };
+  }
+
+  const refreshed: EmployerAccountSession = {
+    employerId: employer.id,
+    telegramId: target.telegramId,
+    businessName: employer.business_name,
+    businessType: employer.business_type,
+    logoUrl: employer.logo_url || null,
+    status: employer.status,
+  };
+
+  await setActiveSession(refreshed);
+  await writeAccounts(upsertAccount(accounts, refreshed));
+  // Don't carry Account A's last-open sub-tab into Account B's dashboard.
+  (await cookies()).delete(EMPLOYER_UI_COOKIE);
+
+  return { success: true };
+}
+
+/** Signs out of a single saved account without touching the others. If the
+ *  removed account was the active one, falls back to another saved account;
+ *  if it was the last one, this is equivalent to a full logoutEmployer(). */
+export async function removeEmployerAccount(employerId: string) {
+  const accounts = await readAccounts();
+  const remaining = accounts.filter((a) => a.employerId !== employerId);
+  const current = await getEmployerSession();
+  const jar = await cookies();
+
+  if (remaining.length === 0) {
+    jar.delete("employer_session");
+    jar.delete(ACCOUNTS_COOKIE);
+    jar.delete(EMPLOYER_UI_COOKIE);
+    return { success: true, loggedOut: true as const };
+  }
+
+  await writeAccounts(remaining);
+  if (current?.employerId === employerId) {
+    await setActiveSession(remaining[0]);
+    jar.delete(EMPLOYER_UI_COOKIE);
+    return { success: true, loggedOut: false as const, switchedTo: remaining[0] };
+  }
+  return { success: true, loggedOut: false as const };
 }
 
 /** Get employer full data for dashboard */

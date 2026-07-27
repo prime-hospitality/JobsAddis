@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { logoutIdp, changeAdminUsername, changeAdminPassword, getAdminUsername } from "./actions";
-import { LogOut, Cpu, Users, Smartphone, Server, Activity, Search, Filter, KeyRound, Menu, X, Check, AlertCircle } from "lucide-react";
+import { logoutIdp, changeAdminUsername, changeAdminPassword, changeIdpPassword, getAdminUsername, getAdminLockouts, clearAdminLoginLockout } from "./actions";
+import { LogOut, Cpu, Users, Smartphone, Server, Activity, Search, Filter, KeyRound, Menu, X, Check, AlertCircle, Unlock, Clock } from "lucide-react";
 
 type View = "telemetry" | "password-management";
 
@@ -33,9 +33,35 @@ function PasswordManagementPanel() {
   const [passwordStatus, setPasswordStatus] = useState<{ ok: boolean; msg: string } | null>(null);
   const [savingPassword, setSavingPassword] = useState(false);
 
+  const [newIdpPassword, setNewIdpPassword] = useState("");
+  const [confirmIdpPassword, setConfirmIdpPassword] = useState("");
+  const [idpPasswordStatus, setIdpPasswordStatus] = useState<{ ok: boolean; msg: string } | null>(null);
+  const [savingIdpPassword, setSavingIdpPassword] = useState(false);
+
+  const [lockouts, setLockouts] = useState<{ username: string; failed_attempts: number; locked_until: string | null }[]>([]);
+  const [lockoutsLoading, setLockoutsLoading] = useState(true);
+  const [clearingUsername, setClearingUsername] = useState<string | null>(null);
+
+  const loadLockouts = () => {
+    getAdminLockouts().then(setLockouts).catch(() => setLockouts([])).finally(() => setLockoutsLoading(false));
+  };
+
   useEffect(() => {
     getAdminUsername().then(setCurrentUsername).catch(() => setCurrentUsername("admin"));
+    loadLockouts();
   }, []);
+
+  const activeLockouts = lockouts.filter(l => l.locked_until && new Date(l.locked_until) > new Date());
+
+  const handleClearLockout = async (username: string) => {
+    setClearingUsername(username);
+    try {
+      await clearAdminLoginLockout(username);
+      loadLockouts();
+    } finally {
+      setClearingUsername(null);
+    }
+  };
 
   const handleSaveUsername = async () => {
     if (!newUsername.trim()) return;
@@ -63,6 +89,22 @@ function PasswordManagementPanel() {
     if (res.success) {
       setNewPassword("");
       setConfirmPassword("");
+    }
+  };
+
+  const handleSaveIdpPassword = async () => {
+    if (newIdpPassword !== confirmIdpPassword) {
+      setIdpPasswordStatus({ ok: false, msg: "Passwords do not match." });
+      return;
+    }
+    setSavingIdpPassword(true);
+    setIdpPasswordStatus(null);
+    const res = await changeIdpPassword(newIdpPassword);
+    setSavingIdpPassword(false);
+    setIdpPasswordStatus({ ok: !!res.success, msg: res.success ? "Password updated!" : (res.error || "Failed.") });
+    if (res.success) {
+      setNewIdpPassword("");
+      setConfirmIdpPassword("");
     }
   };
 
@@ -170,6 +212,93 @@ function PasswordManagementPanel() {
         </div>
 
         {passwordStatus && <div style={{ marginTop: 12 }}><StatusBadge status={passwordStatus} /></div>}
+      </div>
+
+      {/* ── IDP Password ── */}
+      <div style={{ background: "#171717", border: "1px solid #262626", borderRadius: 12, padding: 24, marginTop: 16 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20 }}>
+          <div style={{ width: 32, height: 32, borderRadius: 8, background: "rgba(16,185,129,0.12)", border: "1px solid rgba(16,185,129,0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <KeyRound size={15} color="#10b981" />
+          </div>
+          <div>
+            <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: "#f3f4f6" }}>This IDP Portal's Password</p>
+            <p style={{ margin: 0, fontSize: 12, color: "#6b7280" }}>Separate from the /admin password. Min. 6 characters</p>
+          </div>
+        </div>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          <input
+            type="password"
+            value={newIdpPassword}
+            onChange={e => { setNewIdpPassword(e.target.value); setIdpPasswordStatus(null); }}
+            placeholder="New IDP password"
+            style={inputStyle}
+          />
+          <div style={{ display: "flex", gap: 10 }}>
+            <input
+              type="password"
+              value={confirmIdpPassword}
+              onChange={e => { setConfirmIdpPassword(e.target.value); setIdpPasswordStatus(null); }}
+              placeholder="Confirm password"
+              style={inputStyle}
+              onKeyDown={e => { if (e.key === "Enter") handleSaveIdpPassword(); }}
+            />
+            <SaveBtn onClick={handleSaveIdpPassword} loading={savingIdpPassword} disabled={!newIdpPassword || !confirmIdpPassword} />
+          </div>
+        </div>
+
+        {idpPasswordStatus && <div style={{ marginTop: 12 }}><StatusBadge status={idpPasswordStatus} /></div>}
+      </div>
+
+      {/* ── Login Lockouts ── */}
+      <div style={{ background: "#171717", border: "1px solid #262626", borderRadius: 12, padding: 24, marginTop: 16 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20 }}>
+          <div style={{ width: 32, height: 32, borderRadius: 8, background: "rgba(234,179,8,0.12)", border: "1px solid rgba(234,179,8,0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <Clock size={15} color="#eab308" />
+          </div>
+          <div>
+            <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: "#f3f4f6" }}>Admin Login Lockouts</p>
+            <p style={{ margin: 0, fontSize: 12, color: "#6b7280" }}>
+              /admin locks a username out for 15 minutes after 5 wrong tries
+            </p>
+          </div>
+        </div>
+
+        {lockoutsLoading ? (
+          <p style={{ fontSize: 13, color: "#6b7280", margin: 0 }}>Loading...</p>
+        ) : activeLockouts.length === 0 ? (
+          <p style={{ fontSize: 13, color: "#6b7280", margin: 0 }}>No active lockouts.</p>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {activeLockouts.map((l) => {
+              const minutesLeft = Math.max(1, Math.ceil((new Date(l.locked_until!).getTime() - Date.now()) / 60000));
+              return (
+                <div key={l.username} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, background: "#121212", border: "1px solid #3f3f46", borderRadius: 8, padding: "10px 14px" }}>
+                  <div>
+                    <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: "#f3f4f6" }}>{l.username}</p>
+                    <p style={{ margin: 0, fontSize: 12, color: "#eab308" }}>Locked, ~{minutesLeft} min remaining</p>
+                  </div>
+                  <button
+                    onClick={() => handleClearLockout(l.username)}
+                    disabled={clearingUsername === l.username}
+                    style={{
+                      display: "flex", alignItems: "center", gap: 6,
+                      background: clearingUsername === l.username ? "#27272a" : "rgba(16,185,129,0.12)",
+                      color: clearingUsername === l.username ? "#52525b" : "#10b981",
+                      border: "1px solid rgba(16,185,129,0.25)", borderRadius: 8,
+                      padding: "8px 14px", fontSize: 12, fontWeight: 700,
+                      cursor: clearingUsername === l.username ? "not-allowed" : "pointer",
+                      fontFamily: "monospace",
+                    }}
+                  >
+                    <Unlock size={13} />
+                    {clearingUsername === l.username ? "Unlocking..." : "Unlock Now"}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );

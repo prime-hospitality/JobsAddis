@@ -1,7 +1,8 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import EmployerDashboardLayout from "./EmployerDashboardLayout";
-import { validateEmployerSession, logoutEmployer } from "../actions";
+import { validateEmployerSession, removeEmployerAccount } from "../actions";
+import { verifySessionValue } from "@/lib/signedSession";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -11,12 +12,7 @@ export const metadata: Metadata = {
 
 async function getSession() {
   const sessionCookie = (await cookies()).get("employer_session");
-  if (!sessionCookie?.value) return null;
-  try {
-    return JSON.parse(sessionCookie.value);
-  } catch {
-    return null;
-  }
+  return verifySessionValue(sessionCookie?.value);
 }
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -30,8 +26,12 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const validation = await validateEmployerSession();
 
   if (!validation.valid) {
-    // Clear the stale cookie
-    await logoutEmployer();
+    // Drop just this account -- if another saved account is still valid,
+    // fall back to it instead of taking out every account on this browser.
+    const removal = await removeEmployerAccount(session.employerId);
+    if (!removal.loggedOut) {
+      redirect("/emp/dashboard");
+    }
 
     const isDeleted = validation.reason === "deleted";
 

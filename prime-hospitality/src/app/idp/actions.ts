@@ -2,6 +2,7 @@
 
 import { cookies } from "next/headers";
 import { createClient } from "@supabase/supabase-js";
+import { verifyConfigPassword, setConfigPassword } from "@/lib/appConfigPassword";
 
 const getSupabase = () => {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://placeholder.supabase.co";
@@ -15,17 +16,27 @@ const verifyIdpAuth = async () => {
 };
 
 // ── Auth ─────────────────────────────────────────────────────────────
+// IDP used to share the /admin dashboard's password outright -- anyone with
+// one had the other. It now has its own separate app_config credential
+// (idp_password), managed below.
 
 export async function loginIdp(password: string) {
-  const supabase = getSupabase();
-  const { data: pCfg } = await supabase.from("app_config").select("value").eq("key", "admin_password").single();
-  const storedPassword = pCfg?.value?.trim() || process.env.ADMIN_PASSWORD || "admin123";
-
-  if (password === storedPassword) {
+  const ok = await verifyConfigPassword("idp_password", password, process.env.IDP_PASSWORD || "changeme-idp");
+  if (ok) {
     (await cookies()).set("idp_session", "true", { maxAge: 60 * 60 * 24, httpOnly: true, secure: process.env.NODE_ENV === "production" });
     return { success: true };
   }
   return { success: false, error: "Invalid password" };
+}
+
+/** Change the IDP portal's own password (separate from the /admin password). */
+export async function changeIdpPassword(newPassword: string) {
+  await verifyIdpAuth();
+  if (!newPassword || newPassword.length < 6) {
+    return { success: false, error: "Password must be at least 6 characters." };
+  }
+  await setConfigPassword("idp_password", newPassword);
+  return { success: true };
 }
 
 export async function logoutIdp() {
@@ -92,10 +103,31 @@ export async function changeAdminPassword(newPassword: string) {
   if (!newPassword || newPassword.length < 6) {
     return { success: false, error: "Password must be at least 6 characters." };
   }
+  await setConfigPassword("admin_password", newPassword);
+  return { success: true };
+}
+
+// ── Admin Login Lockouts ────────────────────────────────────────────────
+// /admin locks a username out for 15 minutes after 5 failed attempts (see
+// loginAdmin in admin/actions.ts). This is the self-service escape hatch --
+// gated behind this separate IDP password rather than exposed on the public
+// /admin login page, since anything reachable from there would just become
+// a second thing to brute-force.
+
+export async function getAdminLockouts() {
+  await verifyIdpAuth();
   const supabase = getSupabase();
-  const { error } = await supabase
-    .from("app_config")
-    .upsert({ key: "admin_password", value: newPassword, updated_at: new Date().toISOString() });
-  if (error) return { success: false, error: "Failed to update password." };
+  const { data } = await supabase
+    .from("admin_login_attempts")
+    .select("username, failed_attempts, locked_until")
+    .order("locked_until", { ascending: false });
+  return data ?? [];
+}
+
+export async function clearAdminLoginLockout(username: string) {
+  await verifyIdpAuth();
+  const supabase = getSupabase();
+  const { error } = await supabase.from("admin_login_attempts").delete().eq("username", username);
+  if (error) return { success: false, error: "Failed to clear lockout." };
   return { success: true };
 }

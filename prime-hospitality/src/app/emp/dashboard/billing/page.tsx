@@ -3,15 +3,11 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
 import RenewSubscriptionButton from "../RenewSubscriptionButton";
+import { verifySessionValue } from "@/lib/signedSession";
 
 async function getSession() {
   const sessionCookie = (await cookies()).get("employer_session");
-  if (!sessionCookie?.value) return null;
-  try {
-    return JSON.parse(sessionCookie.value);
-  } catch {
-    return null;
-  }
+  return verifySessionValue(sessionCookie?.value);
 }
 
 const getSupabase = () => {
