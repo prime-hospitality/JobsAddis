@@ -38,6 +38,9 @@ export default async function BillingPage() {
   const expiresAt = employer?.package_expires_at ? new Date(employer.package_expires_at) : null;
   const isExpired = expiresAt ? expiresAt.getTime() < Date.now() : false;
   const daysLeft = expiresAt ? Math.ceil((expiresAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : null;
+  // Same 24h-before-expiry gate as the Overview/Manage Job Postings nudge --
+  // the Renew button only needs to show up once renewing is actually relevant.
+  const showRenewalNudge = !expiresAt || expiresAt.getTime() - Date.now() <= 24 * 60 * 60 * 1000;
 
   const statusLabel = !activePackage ? "Free Tier" : isExpired ? "Expired" : "Active";
   const statusBg = !activePackage ? "rgba(255,255,255,0.15)" : isExpired ? "#fee2e2" : "#dcfce3";
@@ -85,7 +88,9 @@ export default async function BillingPage() {
           </p>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", color: "#fff" }}>
-          <RenewSubscriptionButton employerId={session.employerId} initialRequestedAt={employer?.renewal_requested_at ?? null} initialSeenAt={employer?.renewal_seen_at ?? null} />
+          {showRenewalNudge && (
+            <RenewSubscriptionButton employerId={session.employerId} initialRequestedAt={employer?.renewal_requested_at ?? null} initialSeenAt={employer?.renewal_seen_at ?? null} />
+          )}
           <Link
             href="/pricing"
             style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.25)", borderRadius: 10, padding: "10px 18px", color: "#fff", fontSize: 14, fontWeight: 600, textDecoration: "none", backdropFilter: "blur(8px)", transition: "background 0.2s", flexShrink: 0 }}

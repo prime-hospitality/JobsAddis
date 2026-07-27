@@ -1575,8 +1575,13 @@ export default function AdminDashboard({ initialData, initialUi = {} }: { initia
                 onClick={() => setShowNotifications(!showNotifications)}
                 className="text-[#8e8e93] hover:text-[#1c1c1e] relative transition-colors cursor-pointer border-none bg-transparent flex items-center justify-center"
               >
-                {((data.specialRequests && data.specialRequests.length > 0) || renewalRequests.length > 0) && (
-                  <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full border border-white"></span>
+                {((data.specialRequests?.length || 0) + renewalRequests.length) > 0 && (
+                  <span
+                    className="absolute -top-1.5 -right-1.5 bg-red-500 text-white rounded-full border border-white"
+                    style={{ width: 16, height: 16, fontSize: 9, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}
+                  >
+                    {(data.specialRequests?.length || 0) + renewalRequests.length}
+                  </span>
                 )}
                 <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
               </button>
@@ -1663,7 +1668,7 @@ export default function AdminDashboard({ initialData, initialUi = {} }: { initia
                                         className="text-xs font-semibold text-[#1c1c1e] hover:text-[#2c2c2e] bg-[#e5e5ea] hover:bg-[#e5e5ea] px-3 py-1.5 rounded-md transition-colors flex-1 text-center"
                                         style={{ border: "none", cursor: "pointer" }}
                                       >
-                                        View or Fix
+                                        Go to Employer
                                       </button>
                                     </div>
                                   </div>
@@ -1697,8 +1702,13 @@ export default function AdminDashboard({ initialData, initialUi = {} }: { initia
                 onClick={() => setShowNotifications(!showNotifications)}
                 className="text-[#8e8e93] hover:text-[#1c1c1e] relative transition-colors cursor-pointer border-none bg-transparent flex items-center justify-center"
               >
-                {((data.specialRequests && data.specialRequests.length > 0) || renewalRequests.length > 0) && (
-                  <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full border border-white"></span>
+                {((data.specialRequests?.length || 0) + renewalRequests.length) > 0 && (
+                  <span
+                    className="absolute -top-1.5 -right-1.5 bg-red-500 text-white rounded-full border border-white"
+                    style={{ width: 16, height: 16, fontSize: 9, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}
+                  >
+                    {(data.specialRequests?.length || 0) + renewalRequests.length}
+                  </span>
                 )}
                 <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
               </button>
@@ -1785,7 +1795,7 @@ export default function AdminDashboard({ initialData, initialUi = {} }: { initia
                                         className="text-xs font-semibold text-[#1c1c1e] hover:text-[#2c2c2e] bg-[#e5e5ea] hover:bg-[#e5e5ea] px-3 py-1.5 rounded-md transition-colors flex-1 text-center"
                                         style={{ border: "none", cursor: "pointer" }}
                                       >
-                                        View or Fix
+                                        Go to Employer
                                       </button>
                                     </div>
                                   </div>
