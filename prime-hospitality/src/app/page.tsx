@@ -7,6 +7,7 @@ import { Job } from "@/data/jobs";
 import { JobSeekerProfile, mapProfileRowToJobSeekerProfile } from "@/data/profile";
 import { useTelegram } from "@/hooks/useTelegram";
 import { usePerformance } from "@/hooks/usePerformance";
+import { useT } from "@/lib/i18n";
 import { useCvUpload } from "@/hooks/useCvUpload";
 import { fetchProfile, getUnreadCount, fetchApplications } from "@/lib/api";
 import { supabase } from "@/lib/supabase";
@@ -35,7 +36,7 @@ type AppView =
   | { screen: "applicantManagement"; jobId: string; jobTitle: string };
 
 // Keys to wipe when a user is deleted or needs to re-onboard.
-const USER_LOCAL_KEYS = ["profile_privacy_dismissed", "theme"];
+const USER_LOCAL_KEYS = ["profile_privacy_dismissed", "theme", "lang"];
 
 function clearUserLocalData() {
   try {
@@ -44,6 +45,7 @@ function clearUserLocalData() {
 }
 
 export default function App() {
+  const t = useT();
   const { user, isEmployer: telegramIsEmployer, isReady: isTelegramReady, initData, startParam, deviceInfo } = useTelegram();
   const { enableAnimations, pageSize, performanceClass } = usePerformance(deviceInfo);
   const [isEmployer, setIsEmployer] = useState<boolean>(telegramIsEmployer);
@@ -88,12 +90,12 @@ export default function App() {
       if (cvUploadError) {
         setCvFailed(true);
         setErrorMessage(cvUploadError);
-        const t = setTimeout(() => setCvFailed(false), 4000);
-        return () => clearTimeout(t);
+        const timer = setTimeout(() => setCvFailed(false), 4000);
+        return () => clearTimeout(timer);
       } else {
         setCvJustDone(true);
-        const t = setTimeout(() => setCvJustDone(false), 3000);
-        return () => clearTimeout(t);
+        const timer = setTimeout(() => setCvJustDone(false), 3000);
+        return () => clearTimeout(timer);
       }
     }
     prevUploadingRef.current = isUploadingCv;
@@ -325,7 +327,7 @@ export default function App() {
     // reach a job, but a failed refresh could still leave it empty — say so rather
     // than sending them to a form that would be rejected on submit.
     if (!userProfile) {
-      setApplyError("We couldn't load your profile. Please reopen the app and try again.");
+      setApplyError(t("app.profileLoadFailed"));
       return;
     }
     setApplyError(null);
@@ -428,11 +430,11 @@ export default function App() {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100dvh', padding: 20, textAlign: 'center', background: '#f9fafb' }}>
         <AlertCircle size={64} color="#EF4444" style={{ marginBottom: 24 }} />
-        <h2 style={{ color: '#111827', fontSize: 28, fontWeight: 'bold', marginBottom: 12 }}>Account Suspended</h2>
+        <h2 style={{ color: '#111827', fontSize: 28, fontWeight: 'bold', marginBottom: 12 }}>{t("app.accountSuspended")}</h2>
         <p style={{ color: '#6B7280', fontSize: 16, lineHeight: 1.5 }}>
-          You have been banned from using this application.
+          {t("app.bannedLine1")}
           <br />
-          Please contact support if you believe this is a mistake.
+          {t("app.bannedLine2")}
         </p>
       </div>
     );
@@ -631,14 +633,14 @@ export default function App() {
                   <>
                     <CheckCircle size={16} color="#fff" />
                     <span style={{ fontSize: 13, fontWeight: 700, color: "#fff" }}>
-                      CV uploaded!
+                      {t("app.cvUploaded")}
                     </span>
                   </>
                 ) : cvFailed ? (
                   <>
                     <AlertCircle size={16} color="#fff" />
                     <span style={{ fontSize: 13, fontWeight: 700, color: "#fff", textOverflow: "ellipsis", overflow: "hidden" }}>
-                      {errorMessage || "Upload failed"}
+                      {errorMessage || t("app.cvUploadFailed")}
                     </span>
                   </>
                 ) : (
@@ -650,7 +652,7 @@ export default function App() {
                       <Loader2 size={16} color="var(--brand)" />
                     </motion.div>
                     <span style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)" }}>
-                      Uploading CV…
+                      {t("app.cvUploading")}
                     </span>
                   </>
                 )}

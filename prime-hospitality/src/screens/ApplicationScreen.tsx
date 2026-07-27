@@ -9,6 +9,7 @@ import { JobSeekerProfile } from "@/data/profile";
 import { useTelegram } from "@/hooks/useTelegram";
 import { submitApplication, ApiError } from "@/lib/api";
 import { formatPhoneForDisplay } from "@/lib/phone";
+import { useT } from "@/lib/i18n";
 
 const COVER_NOTE_MAX = 300;
 
@@ -30,6 +31,7 @@ export default function ApplicationScreen({
   onBack,
   onSubmit,
 }: ApplicationScreenProps) {
+  const t = useT();
   const shouldReduceMotion = useReducedMotion();
   const { initData } = useTelegram();
   const whyHire = coverNote;
@@ -57,14 +59,14 @@ export default function ApplicationScreen({
           // was opened — the server's message is the specific one, so use it.
           setSubmitError(error.message);
         } else if (error.isRateLimit) {
-          setSubmitError("You have reached the application limit (10/hour). Please try again later.");
+          setSubmitError(t("apply.errorRateLimit"));
         } else if (error.isUnauthorized) {
-          setSubmitError("Authentication failed. Please reopen the app from Telegram.");
+          setSubmitError(t("apply.errorUnauthorized"));
         } else {
           setSubmitError(error.message);
         }
       } else {
-        setSubmitError("Something went wrong. Please try again.");
+        setSubmitError(t("apply.errorGeneric"));
       }
     } finally {
       setIsSubmitting(false);
@@ -119,7 +121,7 @@ export default function ApplicationScreen({
           </motion.button>
           <div>
             <p style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 500, marginBottom: 1 }}>
-              Applying to {job.businessName}
+              {t("apply.applyingTo", { business: job.businessName })}
             </p>
             <h1 style={{ fontSize: 16, fontWeight: 700, color: "var(--text-primary)" }}>
               {job.title}
@@ -154,28 +156,31 @@ export default function ApplicationScreen({
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.25, delay: 0.08 }}
           >
-            <SectionLabel>Your Information</SectionLabel>
+            <SectionLabel>{t("apply.yourInformation")}</SectionLabel>
 
             <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 20 }}>
 
               {/* Full name */}
               <PrefilledField
                 icon={<User size={14} color="var(--brand)" />}
-                label="Full Name"
+                label={t("apply.fullName")}
+                preFilledLabel={t("apply.preFilled")}
                 value={profile.fullName}
               />
 
               {/* Phone */}
               <PrefilledField
                 icon={<Phone size={14} color="var(--brand)" />}
-                label="Phone Number"
+                label={t("apply.phoneNumber")}
+                preFilledLabel={t("apply.preFilled")}
                 value={formatPhoneForDisplay(profile.phone)}
               />
 
               {/* Experience */}
               <PrefilledField
                 icon={<Briefcase size={14} color="var(--brand)" />}
-                label="Experience Level"
+                label={t("apply.experienceLevel")}
+                preFilledLabel={t("apply.preFilled")}
                 value={profile.experienceLevel}
               />
 
@@ -191,10 +196,10 @@ export default function ApplicationScreen({
                 <MapPin size={14} color="var(--brand)" style={{ flexShrink: 0 }} />
                 <div>
                   <p style={{ fontSize: 10, color: "var(--text-muted)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: 2 }}>
-                    Location
+                    {t("apply.location")}
                   </p>
                   <p style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary)" }}>
-                    {profile.neighborhood}, Addis Ababa
+                    {t("apply.locationValue", { neighborhood: profile.neighborhood })}
                   </p>
                 </div>
                 {job.locationMismatch && (
@@ -207,7 +212,7 @@ export default function ApplicationScreen({
                       borderRadius: 100, padding: "3px 8px", flexShrink: 0,
                     }}
                   >
-                    ⚠️ Mismatch
+                    {t("apply.locationMismatch")}
                   </span>
                 )}
               </div>
@@ -221,11 +226,11 @@ export default function ApplicationScreen({
             transition={{ duration: 0.25, delay: 0.12 }}
             style={{ marginBottom: 24 }}
           >
-            <SectionLabel>Cover Note (Optional)</SectionLabel>
+            <SectionLabel>{t("apply.coverNoteLabel")}</SectionLabel>
             <textarea
               id="why-hire-field"
               className="input-base"
-              placeholder={`Tell ${job.businessName} why you're the right person for this role…`}
+              placeholder={t("apply.coverNotePlaceholder", { business: job.businessName })}
               value={whyHire}
               onChange={(e) => onCoverNoteChange(e.target.value.slice(0, COVER_NOTE_MAX))}
               maxLength={COVER_NOTE_MAX}
@@ -236,7 +241,7 @@ export default function ApplicationScreen({
               }}
             />
             <p style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 6, textAlign: "right" }}>
-              {whyHire.length}/{COVER_NOTE_MAX} characters
+              {t("apply.characterCount", { used: whyHire.length, max: COVER_NOTE_MAX })}
             </p>
           </motion.div>
 
@@ -252,7 +257,7 @@ export default function ApplicationScreen({
             }}
           >
             <p style={{ fontSize: 12, color: "var(--text-muted)", lineHeight: 1.6 }}>
-              📋 Your profile details will be shared with {job.businessName}. They will contact you via your Telegram or phone number if you are shortlisted.
+              {t("apply.privacyNote", { business: job.businessName })}
             </p>
           </motion.div>
         </div>
@@ -306,10 +311,10 @@ export default function ApplicationScreen({
                 animate={{ opacity: [1, 0.5, 1] }}
                 transition={{ duration: 0.8, repeat: Infinity }}
               >
-                Submitting…
+                {t("apply.submitting")}
               </motion.span>
             ) : (
-              "Submit Application ✓"
+              t("apply.submit")
             )}
           </motion.button>
         </div>
@@ -331,7 +336,7 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
   );
 }
 
-function PrefilledField({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
+function PrefilledField({ icon, label, value, preFilledLabel }: { icon: React.ReactNode; label: string; value: string; preFilledLabel: string }) {
   return (
     <div
       style={{
@@ -355,7 +360,7 @@ function PrefilledField({ icon, label, value }: { icon: React.ReactNode; label: 
           borderRadius: 6, padding: "2px 7px", flexShrink: 0, fontWeight: 500,
         }}
       >
-        Pre-filled
+        {preFilledLabel}
       </span>
     </div>
   );

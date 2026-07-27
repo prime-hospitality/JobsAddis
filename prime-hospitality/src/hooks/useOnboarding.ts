@@ -2,6 +2,7 @@ import { useState, useCallback, useRef, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { createProfile, ApiError } from "@/lib/api";
 import { useTelegram } from "./useTelegram";
+import { useT } from "@/lib/i18n";
 
 export type OnboardingStep = 1 | 2 | 3 | 4 | 5 | 6;
 
@@ -40,6 +41,7 @@ const initialState: OnboardingState = {
 };
 
 export function useOnboarding() {
+  const t = useT();
   const { user, initData } = useTelegram();
   const [state, setState] = useState<OnboardingState>(initialState);
 
@@ -125,7 +127,7 @@ export function useOnboarding() {
       setStep(6);
     } catch (error: unknown) {
       console.error("[Onboarding] Submission error:", error);
-      let message = "Failed to submit profile. Please try again.";
+      let message = t("app.onboardingSubmitFailed");
       if (error instanceof ApiError) {
         console.error("[Onboarding] ApiError — status:", error.statusCode, "message:", error.message);
         if (error.isDuplicate) {
@@ -144,7 +146,7 @@ export function useOnboarding() {
     } finally {
       setState((prev) => ({ ...prev, isSubmitting: false }));
     }
-  }, [state]); // refs give us live access — no need to list initData/user as deps
+  }, [state, t]); // refs give us live access — no need to list initData/user as deps
 
   return {
     state,

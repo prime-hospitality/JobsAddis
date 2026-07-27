@@ -18,6 +18,7 @@ export const viewport: Viewport = {
 };
 
 import { CvUploadProvider } from "@/hooks/useCvUpload";
+import { LocaleProvider } from "@/lib/i18n";
 
 export default function RootLayout({
   children,
@@ -25,7 +26,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    // The blocking script below and the Telegram SDK both mutate <html> before
+    // React hydrates — setting `lang`, `color-scheme`, and --tg-viewport-*. That
+    // is the point (it avoids a flash of the wrong theme/language), but it makes
+    // the client attributes diverge from the server-rendered ones. This suppresses
+    // the resulting warning for this element's own attributes only; children are
+    // still checked normally.
+    <html lang="en" suppressHydrationWarning>
       <head>
         {/* Preload the splash logo so it's in cache before the loading screen renders */}
         <link rel="preload" href="/logo.png" as="image" />
@@ -34,7 +41,7 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Noto+Sans+Ethiopic:wght@400;500;600;700;800&display=swap"
           rel="stylesheet"
         />
         <meta name="telegram:web-app" content="true" />
@@ -43,6 +50,11 @@ export default function RootLayout({
         <script
           dangerouslySetInnerHTML={{
             __html: `
+              try {
+                // Apply the saved language before paint so Amharic doesn't flash English.
+                var lang = localStorage.getItem('lang');
+                document.documentElement.lang = (lang === 'am') ? 'am' : 'en';
+              } catch (e) {}
               try {
                 var saved = localStorage.getItem('theme');
                 // New user: no preference saved yet — lock to light mode explicitly
@@ -74,9 +86,11 @@ export default function RootLayout({
         />
       </head>
       <body className="antialiased">
-        <CvUploadProvider>
-          {children}
-        </CvUploadProvider>
+        <LocaleProvider>
+          <CvUploadProvider>
+            {children}
+          </CvUploadProvider>
+        </LocaleProvider>
       </body>
     </html>
   );

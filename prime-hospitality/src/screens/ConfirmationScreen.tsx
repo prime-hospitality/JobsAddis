@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { motion, useReducedMotion, LazyMotion, domAnimation } from "framer-motion";
 import { CheckCircle } from "lucide-react";
+import { useT } from "@/lib/i18n";
 
 interface ConfirmationScreenProps {
   businessName: string;
@@ -12,6 +13,7 @@ interface ConfirmationScreenProps {
 }
 
 export default function ConfirmationScreen({ businessName, jobTitle, onBrowseMore, onViewApplications }: ConfirmationScreenProps) {
+  const t = useT();
   const shouldReduceMotion = useReducedMotion();
 
   // Trigger a gentle haptic feedback on mount (Telegram WebApp API)
@@ -118,7 +120,7 @@ export default function ConfirmationScreen({ businessName, jobTitle, onBrowseMor
               marginBottom: 10,
             }}
           >
-            Application Sent!
+            {t("confirmation.eyebrow")}
           </p>
 
           <h1
@@ -131,8 +133,9 @@ export default function ConfirmationScreen({ businessName, jobTitle, onBrowseMor
               marginBottom: 14,
             }}
           >
-            Your application has been sent to{" "}
-            <span className="text-brand-gradient">{businessName}</span>
+            {t.node("confirmation.heading", {
+              business: <span className="text-brand-gradient">{businessName}</span>,
+            })}
           </h1>
 
           <p
@@ -145,7 +148,9 @@ export default function ConfirmationScreen({ businessName, jobTitle, onBrowseMor
               margin: "0 auto 32px",
             }}
           >
-            You applied for <strong style={{ color: "var(--text-primary)" }}>{jobTitle}</strong>. The hiring team will review your profile and contact you soon. Stay ready!
+            {t.node("confirmation.body", {
+              job: <strong style={{ color: "var(--text-primary)" }}>{jobTitle}</strong>,
+            })}
           </p>
         </motion.div>
 
@@ -160,9 +165,9 @@ export default function ConfirmationScreen({ businessName, jobTitle, onBrowseMor
           }}
         >
           {[
-            { emoji: "✅", text: "Profile shared" },
-            { emoji: "📨", text: "Employer notified" },
-            { emoji: "⏳", text: "Awaiting review" },
+            { emoji: "✅", text: t("confirmation.milestoneProfileShared") },
+            { emoji: "📨", text: t("confirmation.milestoneEmployerNotified") },
+            { emoji: "⏳", text: t("confirmation.milestoneAwaitingReview") },
           ].map(({ emoji, text }) => (
             <div
               key={text}
@@ -198,7 +203,7 @@ export default function ConfirmationScreen({ businessName, jobTitle, onBrowseMor
             onClick={onBrowseMore}
             style={{ willChange: "transform" }}
           >
-            Browse More Jobs
+            {t("confirmation.browseMore")}
           </motion.button>
 
           <motion.button
@@ -207,7 +212,7 @@ export default function ConfirmationScreen({ businessName, jobTitle, onBrowseMor
             whileTap={shouldReduceMotion ? {} : { scale: 0.97 }}
             onClick={onViewApplications}
           >
-            View My Applications
+            {t("confirmation.viewApplications")}
           </motion.button>
         </motion.div>
 
@@ -222,7 +227,7 @@ export default function ConfirmationScreen({ businessName, jobTitle, onBrowseMor
             position: "relative", zIndex: 1,
           }}
         >
-          🌟 Prime Hospitality — Connecting talent with Ethiopia's finest hospitality businesses
+          {t("confirmation.footer")}
         </motion.p>
       </motion.div>
     </LazyMotion>

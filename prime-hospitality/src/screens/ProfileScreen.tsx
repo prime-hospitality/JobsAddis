@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, LazyMotion, domAnimation, AnimatePresence } from "framer-motion";
-import { Phone, MapPin, Briefcase, FileText, RefreshCw, CheckCircle, HelpCircle, ShieldCheck, Settings, AlertCircle, Upload, Loader2, Moon, Sun, X, Pencil, Lock, ChevronRight, ChevronLeft, ChevronDown, Users, Search } from "lucide-react";
+import { Phone, MapPin, Briefcase, FileText, RefreshCw, CheckCircle, HelpCircle, ShieldCheck, Settings, AlertCircle, Upload, Loader2, Moon, Sun, X, Pencil, Lock, ChevronRight, ChevronLeft, ChevronDown, Users, Search, Languages } from "lucide-react";
 import { fetchProfile as fetchProfileApi, updatePhone, updateSecondaryPhone, fetchOwnCvUrl } from "@/lib/api";
 import { formatPhoneForDisplay, normalizePhoneNumber } from "@/lib/phone";
 import { cvOpensInBrowser } from "@/lib/cvStorage";
@@ -11,11 +11,21 @@ import { useCvUpload } from "@/hooks/useCvUpload";
 import { supabase } from "@/lib/supabase";
 import { JOB_CATEGORIES } from "@/data/jobs";
 import { LOCATIONS, LOCATIONS_BY_SUB_CITY } from "@/data/locations";
+import { useT, useLocale, LANGS, LANG_LABELS, type TKey } from "@/lib/i18n";
+import {
+  SEARCH_EXPERIENCE_OPTIONS as EXPERIENCE_OPTIONS,
+  SEARCH_EXPERIENCE_LABELS as EXPERIENCE_LABELS,
+  categoryLabel,
+  categoryMatches,
+  locationLabel,
+  subCityLabel,
+  locationMatches,
+} from "@/lib/vocabulary";
 
 // ── Profile completion helpers ──────────────────────────────────────────────
 interface CompletionSection {
   key: string;
-  label: string;
+  labelKey: TKey;
   done: boolean;
   weight: number;
 }
@@ -24,32 +34,32 @@ function getCompletionSections(profile: Profile): CompletionSection[] {
   return [
     {
       key: "personal",
-      label: "Personal information incomplete",
+      labelKey: "profile.completion.personal",
       done: !!(profile.full_name && profile.age && profile.location),
       weight: 20,
     },
     {
       key: "contact",
-      label: "Contact number not shared",
+      labelKey: "profile.completion.contact",
       done: !!(profile.contact_shared || profile.phone_number),
       weight: 20,
     },
     {
       key: "roles",
-      label: "No job roles selected",
+      labelKey: "profile.completion.roles",
       done: !!(profile.selected_categories && profile.selected_categories.length > 0),
       weight: 20,
     },
     {
       key: "experience",
-      label: "Experience levels not set",
+      labelKey: "profile.completion.experience",
       done: !!(profile.selected_categories && profile.selected_categories.length > 0 &&
         profile.selected_categories.every((c) => !!profile.experience_levels?.[c])),
       weight: 20,
     },
     {
       key: "cv",
-      label: "Resume (CV) not uploaded",
+      labelKey: "profile.completion.cv",
       done: !!(profile.cv_url),
       weight: 20,
     },
@@ -78,6 +88,8 @@ interface Profile {
 }
 
 export default function ProfileScreen() {
+  const t = useT();
+  const { lang, setLang } = useLocale();
   const { user, initData } = useTelegram();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -169,17 +181,17 @@ export default function ProfileScreen() {
 
   const openPhoneModal = () => {
     const displayVal = formatPhoneForDisplay(profile?.phone_number);
-    setPhoneInput(displayVal === "Not set" ? "" : displayVal);
+    setPhoneInput(displayVal === t("profile.notSet") ? "" : displayVal);
     setPhoneModalOpen(true);
   };
 
   const handleSaveManualPhone = async () => {
     const cleaned = phoneInput.trim();
-    if (!cleaned) { showToast("error", "Please enter a phone number."); return; }
+    if (!cleaned) { showToast("error", t("profile.phoneRequired")); return; }
     
     const formatted = normalizePhoneNumber(cleaned);
     if (!formatted) {
-      showToast("error", "Invalid phone number. Use 09XXXXXXXX or 07XXXXXXXX.");
+      showToast("error", t("profile.phoneInvalid"));
       return;
     }
 
@@ -189,10 +201,10 @@ export default function ProfileScreen() {
       // Optimistically update local state immediately so it shows in the UI
       setProfile((prev) => prev ? { ...prev, phone_number: formatted, contact_shared: true } : prev);
       setPhoneModalOpen(false);
-      showToast("success", "Phone number saved successfully!");
+      showToast("success", t("profile.phoneSaved"));
       fetchProfile(); // background refresh to sync with DB
     } catch (err: any) {
-      showToast("error", err.message || "Failed to save phone number.");
+      showToast("error", err.message || t("profile.phoneSaveFailed"));
     } finally {
       setPhoneLoading(false);
     }
@@ -200,11 +212,11 @@ export default function ProfileScreen() {
 
   const openSecondaryPhoneModal = () => {
     if (!profile?.phone_number) {
-      showToast("error", "You must share your primary phone number first.");
+      showToast("error", t("profile.needPrimaryPhoneFirst"));
       return;
     }
     const displayVal = formatPhoneForDisplay(profile?.secondary_phone);
-    setSecondaryPhoneInput(displayVal === "Not set" ? "" : displayVal);
+    setSecondaryPhoneInput(displayVal === t("profile.notSet") ? "" : displayVal);
     setSecondaryPhoneModalOpen(true);
   };
 
@@ -218,27 +230,27 @@ export default function ProfileScreen() {
         // Optimistically clear from local state
         setProfile((prev) => prev ? { ...prev, secondary_phone: null } : prev);
         setSecondaryPhoneModalOpen(false);
-        showToast("success", "Secondary phone number removed.");
+        showToast("success", t("profile.secondaryRemoved"));
         fetchProfile(); // background refresh
         return;
       }
       
       const formatted = normalizePhoneNumber(cleaned);
       if (!formatted) {
-        showToast("error", "Invalid phone number. Use 09XXXXXXXX or 07XXXXXXXX.");
+        showToast("error", t("profile.phoneInvalid"));
         setSecondaryPhoneLoading(false);
         return;
       }
 
       if (!profile?.phone_number) {
-        showToast("error", "You must share your primary phone number first.");
+        showToast("error", t("profile.needPrimaryPhoneFirst"));
         setSecondaryPhoneLoading(false);
         return;
       }
 
       const normalizedPrimary = normalizePhoneNumber(profile.phone_number);
       if (normalizedPrimary === formatted) {
-        showToast("error", "Secondary phone cannot be the same as your primary phone number.");
+        showToast("error", t("profile.secondaryDuplicate"));
         setSecondaryPhoneLoading(false);
         return;
       }
@@ -247,10 +259,10 @@ export default function ProfileScreen() {
       // Optimistically update local state immediately so it shows in the UI
       setProfile((prev) => prev ? { ...prev, secondary_phone: formatted } : prev);
       setSecondaryPhoneModalOpen(false);
-      showToast("success", "Secondary phone number saved successfully!");
+      showToast("success", t("profile.secondarySaved"));
       fetchProfile(); // background refresh to sync with DB
     } catch (err: any) {
-      showToast("error", err.message || "Failed to save secondary phone number.");
+      showToast("error", err.message || t("profile.secondarySaveFailed"));
     } finally {
       setSecondaryPhoneLoading(false);
     }
@@ -295,10 +307,10 @@ export default function ProfileScreen() {
         .eq("telegram_id", profile.telegram_id);
       if (error) throw error;
       setProfile(prev => prev ? { ...prev, selected_categories: editRoles, experience_levels: editExperience } : prev);
-      showToast("success", "Roles & experience updated!");
+      showToast("success", t("profile.rolesUpdated"));
       setSettingsView(null);
     } catch (err: any) {
-      showToast("error", err.message || "Failed to save.");
+      showToast("error", err.message || t("profile.saveFailed"));
     } finally {
       setIsSavingSettings(false);
     }
@@ -314,10 +326,10 @@ export default function ProfileScreen() {
         .eq("telegram_id", profile.telegram_id);
       if (error) throw error;
       setProfile(prev => prev ? { ...prev, location: editLocation.trim() } : prev);
-      showToast("success", "Location updated!");
+      showToast("success", t("profile.locationUpdated"));
       setSettingsView(null);
     } catch (err: any) {
-      showToast("error", err.message || "Failed to save location.");
+      showToast("error", err.message || t("profile.locationSaveFailed"));
     } finally {
       setIsSavingSettings(false);
     }
@@ -338,7 +350,7 @@ export default function ProfileScreen() {
 
     // No real Telegram session — can't securely fetch profile
     if (!initData) {
-      setError("Open the app inside Telegram to view your profile.");
+      setError(t("profile.loadErrorNoTelegram"));
       setIsLoading(false);
       return;
     }
@@ -346,13 +358,13 @@ export default function ProfileScreen() {
     try {
       const result = await fetchProfileApi(initData);
       if (!result.profile) {
-        setError("Profile not found. Please complete registration.");
+        setError(t("profile.loadErrorNotFound"));
       } else {
         setProfile(result.profile as unknown as Profile);
       }
     } catch (err) {
       console.error("Failed to fetch profile:", err);
-      setError("Could not load your profile. Please try again.");
+      setError(t("profile.loadErrorGeneric"));
     } finally {
       setIsLoading(false);
     }
@@ -421,10 +433,10 @@ export default function ProfileScreen() {
                   .eq("telegram_id", profile.telegram_id);
                 if (error) throw error;
                 await fetchProfile();
-                showToast("success", "Phone number shared successfully!");
+                showToast("success", t("profile.phoneShared"));
               } catch (err: any) {
                 console.error("Error updating phone:", err);
-                showToast("error", "Failed to save phone number.");
+                showToast("error", t("profile.phoneSaveFailed"));
               } finally {
                 setIsLoading(false);
               }
@@ -432,7 +444,7 @@ export default function ProfileScreen() {
           }
         });
       } else {
-        showToast("error", "This feature is only available inside Telegram.");
+        showToast("error", t("profile.telegramOnly"));
       }
     } catch (e) {
       console.warn("Telegram SDK requestContact error:", e);
@@ -521,7 +533,7 @@ export default function ProfileScreen() {
                   lineHeight: 1.3,
                   margin: 0,
                 }}>
-                  {toast.type === "success" ? "Success!" : "Something went wrong"}
+                  {toast.type === "success" ? t("profile.toastSuccess") : t("profile.toastError")}
                 </p>
                 <p style={{
                   fontSize: 13,
@@ -556,10 +568,10 @@ export default function ProfileScreen() {
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <div>
               <h1 style={{ fontSize: 22, fontWeight: 800, color: "var(--text-primary)", letterSpacing: "-0.02em", marginBottom: 4 }}>
-                My Profile
+                {t("profile.title")}
               </h1>
               <p style={{ fontSize: 14, color: "var(--text-secondary)" }}>
-                Manage your job seeker profile
+                {t("profile.subtitle")}
               </p>
             </div>
             <motion.button
@@ -606,7 +618,7 @@ export default function ProfileScreen() {
                   background: "none", border: "none", cursor: "pointer",
                 }}
               >
-                Try again
+                {t("profile.tryAgain")}
               </button>
             </motion.div>
           )}
@@ -680,7 +692,7 @@ export default function ProfileScreen() {
                             {profile.full_name}
                           </h2>
                           <p style={{ fontSize: 13, color: "var(--text-secondary)", marginBottom: 6, fontWeight: 600 }}>
-                            Age: {profile.age} · {profile.willing_to_relocate ? "Willing to relocate" : "Local only"}
+                            {t("profile.ageAndRelocate", { age: profile.age, relocate: profile.willing_to_relocate ? t("profile.willingToRelocate") : t("profile.localOnly") })}
                           </p>
                           <span
                             style={{
@@ -729,7 +741,7 @@ export default function ProfileScreen() {
                     >
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
                         <span style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)" }}>
-                          Profile Strength
+                          {t("profile.profileStrength")}
                         </span>
                         <span style={{
                           fontSize: 13, fontWeight: 800,
@@ -761,7 +773,7 @@ export default function ProfileScreen() {
                     {incomplete.length > 0 && (
                       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                         <p style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 2 }}>
-                          Pending
+                          {t("profile.pending")}
                         </p>
                         {incomplete.map((s) => {
                           const isCv = s.key === "cv";
@@ -793,16 +805,16 @@ export default function ProfileScreen() {
                               }} />
                               <div style={{ flex: 1 }}>
                                 <p style={{ fontSize: 13, fontWeight: 500, color: "var(--text-secondary)" }}>
-                                  {s.label}
+                                  {t(s.labelKey)}
                                 </p>
                                 {isContact && (
                                   <p style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 3, lineHeight: 1.4 }}>
-                                    Not sharing a primary phone will impact your profile — employers won't know how to contact you.
+                                    {t("profile.noPhoneWarning")}
                                   </p>
                                 )}
                                 {isCv && (
                                   <p style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 3, lineHeight: 1.4 }}>
-                                    {isUploadingCv ? "Uploading CV..." : "Not uploading a CV reduces your chances of being hired, as employers look for detailed work history and qualifications. Tap to upload."}
+                                    {isUploadingCv ? t("profile.uploadingCv") : t("profile.noCvWarning")}
                                   </p>
                                 )}
                               </div>
@@ -837,7 +849,7 @@ export default function ProfileScreen() {
                     <motion.button
                       whileTap={{ scale: 0.88 }}
                       onClick={() => restorePrivacy()}
-                      title="Show privacy notice"
+                      title={t("profile.showPrivacyNotice")}
                       style={{
                         width: 28, height: 28,
                         borderRadius: "50%",
@@ -874,10 +886,10 @@ export default function ProfileScreen() {
                     </div>
                     <div style={{ flex: 1 }}>
                       <p style={{ fontSize: 14, fontWeight: 700, color: "#6366F1", marginBottom: 4 }}>
-                        Only Visible to Employers
+                        {t("profile.onlyVisibleToEmployers")}
                       </p>
                       <p style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.4 }}>
-                        Your profile and contact info are strictly confidential. They are only viewable by verified companies, and never by other job seekers.
+                        {t("profile.privacyBody")}
                       </p>
                     </div>
                     {/* OK button */}
@@ -929,7 +941,7 @@ export default function ProfileScreen() {
                     </span>
                     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                       <span style={{ fontSize: 13, color: profile.phone_number ? "var(--text-primary)" : "var(--text-muted)", fontWeight: 600 }}>
-                        {profile.phone_number ? formatPhoneForDisplay(profile.phone_number) : "Contact number not shared"}
+                        {profile.phone_number ? formatPhoneForDisplay(profile.phone_number) : t("profile.contactNotShared")}
                       </span>
                       {profile.phone_number ? (
                         /* Locked — number already shared, cannot be edited */
@@ -959,7 +971,7 @@ export default function ProfileScreen() {
                           }}
                         >
                           <Phone size={11} />
-                          Share Now
+                          {t("profile.shareNow")}
                         </motion.button>
                       )}
                     </div>
@@ -1031,7 +1043,7 @@ export default function ProfileScreen() {
                   </div>
                   {!profile?.phone_number && (
                     <span style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4, lineHeight: 1.4, paddingLeft: 22 }}>
-                      You must share your primary phone number before adding a secondary one.
+                      {t("profile.needPrimaryFirst")}
                     </span>
                   )}
                 </div>
@@ -1079,7 +1091,7 @@ export default function ProfileScreen() {
                             color: "var(--text-primary)",
                           }}
                         >
-                          <span style={{ fontWeight: 700 }}>{cat}</span>
+                          <span style={{ fontWeight: 700 }}>{categoryLabel(cat, t.lang)}</span>
                           <span style={{ color: "var(--text-secondary)", marginLeft: 6, fontWeight: 500 }}>· {exp}</span>
                         </div>
                       );
@@ -1107,11 +1119,11 @@ export default function ProfileScreen() {
                         <>
                           <CheckCircle size={12} color="var(--success)" />
                           <span style={{ textDecoration: "underline", color: "#6366F1", cursor: "pointer" }} onClick={handleViewCv}>
-                            {cvOpensInBrowser(profile.cv_url) ? "View CV" : "Download CV"}
+                            {cvOpensInBrowser(profile.cv_url) ? t("profile.viewCv") : t("profile.downloadCv")}
                           </span>
                           <span style={{ color: "var(--text-muted)", fontSize: 11, marginLeft: 2, marginRight: 2 }}>|</span>
                           <span style={{ textDecoration: "underline", color: "var(--text-secondary)", cursor: "pointer" }} onClick={triggerCvUpload}>
-                            Change
+                            {t("profile.change")}
                           </span>
                         </>
                       ) : (
@@ -1208,14 +1220,14 @@ export default function ProfileScreen() {
                 )}
                 <div>
                   <p style={{ fontSize: 17, fontWeight: 800, color: "var(--text-primary)", margin: 0 }}>
-                    {settingsView === "roles_overview" ? "Job Roles & Experience"
-                      : settingsView === "experience" ? "Select Experience"
-                      : settingsView === "location" ? "Change Location"
-                      : settingsView === "faq" ? "Help & FAQ"
-                      : "Settings"}
+                    {settingsView === "roles_overview" ? t("profile.jobRolesAndExperience")
+                      : settingsView === "experience" ? t("profile.selectExperience")
+                      : settingsView === "location" ? t("profile.changeLocation")
+                      : settingsView === "faq" ? t("profile.helpAndFaq")
+                      : t("profile.settings")}
                   </p>
                   {settingsView === null && (
-                    <p style={{ fontSize: 12, color: "var(--text-muted)", margin: 0 }}>Manage your profile preferences</p>
+                    <p style={{ fontSize: 12, color: "var(--text-muted)", margin: 0 }}>{t("profile.settingsSubtitle")}</p>
                   )}
                 </div>
               </div>
@@ -1228,7 +1240,7 @@ export default function ProfileScreen() {
                   <div style={{ padding: "16px" }}>
 
                     {/* Profile section */}
-                    <p style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>Profile</p>
+                    <p style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>{t("profile.sectionProfile")}</p>
 
                     {/* Edit Job Roles & Experience */}
                     <button
@@ -1245,11 +1257,11 @@ export default function ProfileScreen() {
                           <Briefcase size={17} color="var(--brand)" />
                         </div>
                         <div style={{ textAlign: "left" }}>
-                          <p style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>Job Roles & Experience</p>
+                          <p style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>{t("profile.jobRolesAndExperience")}</p>
                           <p style={{ fontSize: 12, color: "var(--text-muted)", margin: 0 }}>
                             {editRoles.length > 0 
                               ? `${editRoles.length} selected`
-                              : "Not set"}
+                              : t("profile.notSet")}
                           </p>
                         </div>
                       </div>
@@ -1271,15 +1283,15 @@ export default function ProfileScreen() {
                           <MapPin size={17} color="var(--brand)" />
                         </div>
                         <div style={{ textAlign: "left" }}>
-                          <p style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>Location</p>
-                          <p style={{ fontSize: 12, color: "var(--text-muted)", margin: 0 }}>{profile?.location || "Not set"}</p>
+                          <p style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>{t("profile.location")}</p>
+                          <p style={{ fontSize: 12, color: "var(--text-muted)", margin: 0 }}>{profile?.location || t("profile.notSet")}</p>
                         </div>
                       </div>
                       <ChevronRight size={18} color="var(--text-muted)" />
                     </button>
 
                     {/* Appearance section */}
-                    <p style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>Appearance</p>
+                    <p style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>{t("profile.sectionAppearance")}</p>
 
                     {/* Help & FAQ */}
                     <button
@@ -1299,8 +1311,8 @@ export default function ProfileScreen() {
                           <HelpCircle size={17} color="var(--brand)" />
                         </div>
                         <div>
-                          <p style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>Help & FAQ</p>
-                          <p style={{ fontSize: 12, color: "var(--text-muted)", margin: 0 }}>Frequently Asked Questions</p>
+                          <p style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>{t("profile.helpAndFaq")}</p>
+                          <p style={{ fontSize: 12, color: "var(--text-muted)", margin: 0 }}>{t("profile.faqSubtitle")}</p>
                         </div>
                       </div>
                       <ChevronRight size={18} color="var(--text-muted)" />
@@ -1322,8 +1334,8 @@ export default function ProfileScreen() {
                           {isDark ? <Moon size={17} color="#818CF8" /> : <Sun size={17} color="#F59E0B" />}
                         </div>
                         <div>
-                          <p style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>{isDark ? "Dark Mode" : "Light Mode"}</p>
-                          <p style={{ fontSize: 12, color: "var(--text-muted)", margin: 0 }}>{isDark ? "Easy on the eyes at night" : "Bright and clear display"}</p>
+                          <p style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>{isDark ? t("profile.darkMode") : t("profile.lightMode")}</p>
+                          <p style={{ fontSize: 12, color: "var(--text-muted)", margin: 0 }}>{isDark ? t("profile.darkModeHint") : t("profile.lightModeHint")}</p>
                         </div>
                       </div>
                       <motion.button
@@ -1345,6 +1357,47 @@ export default function ProfileScreen() {
                       </motion.button>
                     </div>
 
+                    {/* Language picker */}
+                    <div style={{
+                      display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12,
+                      background: "var(--surface-elevated)", border: "1px solid var(--border)",
+                      borderRadius: 14, padding: "14px 16px", marginTop: 12,
+                    }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
+                        <div style={{
+                          width: 36, height: 36, borderRadius: 10, flexShrink: 0,
+                          background: "var(--brand-subtle)", border: "1px solid var(--border)",
+                          display: "flex", alignItems: "center", justifyContent: "center",
+                        }}>
+                          <Languages size={17} color="var(--brand)" />
+                        </div>
+                        <div style={{ minWidth: 0 }}>
+                          <p style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>{t("common.appLanguage")}</p>
+                          <p style={{ fontSize: 12, color: "var(--text-muted)", margin: 0 }}>{LANG_LABELS[lang]}</p>
+                        </div>
+                      </div>
+                      <div style={{ display: "flex", gap: 4, flexShrink: 0, background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 100, padding: 3 }}>
+                        {LANGS.map((code) => {
+                          const isActive = lang === code;
+                          return (
+                            <button
+                              key={code}
+                              onClick={() => setLang(code)}
+                              style={{
+                                padding: "5px 12px", borderRadius: 100, border: "none", cursor: "pointer",
+                                background: isActive ? "var(--brand)" : "transparent",
+                                color: isActive ? "#fff" : "var(--text-muted)",
+                                fontWeight: isActive ? 700 : 500, fontSize: 12,
+                                transition: "background 0.2s, color 0.2s",
+                              }}
+                            >
+                              {LANG_LABELS[code]}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
                   </div>
                 )}
 
@@ -1362,12 +1415,12 @@ export default function ProfileScreen() {
                   };
                   const teamNames = Object.keys(ROLE_TEAMS).filter(t => t !== "Unassigned");
                   const isSearching = roleSearch.trim().length > 0;
-                  const searchResults = JOB_CATEGORIES.filter(c => c.toLowerCase().includes(roleSearch.toLowerCase()));
+                  const searchResults = JOB_CATEGORIES.filter(c => categoryMatches(c, roleSearch));
                   const teamCats = roleTeamView ? (ROLE_TEAMS[roleTeamView] ?? []) : [];
                   
                   const handleRoleClick = (cat: string) => {
                     if (!editRoles.includes(cat) && editRoles.length >= 3) {
-                      showToast("error", "You can only select up to 3 job roles.");
+                      showToast("error", t("profile.maxThreeRoles"));
                       return;
                     }
                     setPendingRole(cat);
@@ -1394,7 +1447,7 @@ export default function ProfileScreen() {
                             border: isPending || isAlreadyAdded ? "1px solid var(--brand)" : "1px solid var(--border)",
                             borderRadius: 12, cursor: "pointer",
                           }}>
-                            <span style={{ fontSize: 14, fontWeight: isPending || isAlreadyAdded ? 700 : 500, color: isPending || isAlreadyAdded ? "var(--brand)" : "var(--text-primary)" }}>{cat}</span>
+                            <span style={{ fontSize: 14, fontWeight: isPending || isAlreadyAdded ? 700 : 500, color: isPending || isAlreadyAdded ? "var(--brand)" : "var(--text-primary)" }}>{categoryLabel(cat, t.lang)}</span>
                             <div style={{ width: 20, height: 20, borderRadius: 6, border: isPending || isAlreadyAdded ? "none" : "2px solid var(--text-muted)", background: isPending || isAlreadyAdded ? "var(--brand)" : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                               {(isPending || isAlreadyAdded) && <CheckCircle size={13} color="white" />}
                             </div>
@@ -1419,12 +1472,12 @@ export default function ProfileScreen() {
                                 borderRadius: 12,
                               }}>
                                 <div>
-                                  <p style={{ fontSize: 14, fontWeight: 700, color: "var(--brand)", margin: 0 }}>{role}</p>
-                                  <p style={{ fontSize: 11, color: "var(--text-muted)", margin: 0 }}>Exp: {editExperience[role] || "Not set"}</p>
+                                  <p style={{ fontSize: 14, fontWeight: 700, color: "var(--brand)", margin: 0 }}>{categoryLabel(role, t.lang)}</p>
+                                  <p style={{ fontSize: 11, color: "var(--text-muted)", margin: 0 }}>Exp: {editExperience[role] || t("profile.notSet")}</p>
                                 </div>
                                 <div style={{ display: "flex", gap: 8 }}>
-                                  <button onClick={() => { setPendingRole(role); setSettingsView("experience"); }} style={{ padding: "6px 10px", background: "var(--brand)", color: "white", borderRadius: 8, fontSize: 11, fontWeight: 700, border: "none", cursor: "pointer" }}>Edit Exp</button>
-                                  <button onClick={() => removeRole(role)} style={{ padding: "6px 10px", background: "var(--surface)", color: "var(--text-muted)", borderRadius: 8, fontSize: 11, fontWeight: 700, border: "1px solid var(--border)", cursor: "pointer" }}>Remove</button>
+                                  <button onClick={() => { setPendingRole(role); setSettingsView("experience"); }} style={{ padding: "6px 10px", background: "var(--brand)", color: "white", borderRadius: 8, fontSize: 11, fontWeight: 700, border: "none", cursor: "pointer" }}>{t("profile.editExp")}</button>
+                                  <button onClick={() => removeRole(role)} style={{ padding: "6px 10px", background: "var(--surface)", color: "var(--text-muted)", borderRadius: 8, fontSize: 11, fontWeight: 700, border: "1px solid var(--border)", cursor: "pointer" }}>{t("profile.remove")}</button>
                                 </div>
                               </div>
                             ))}
@@ -1435,12 +1488,12 @@ export default function ProfileScreen() {
                       {/* Add New Role Section */}
                       {editRoles.length < 3 && (
                         <>
-                          <p style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>Add Role</p>
+                          <p style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>{t("profile.addRole")}</p>
                           {/* Search */}
                           <div style={{ display: "flex", alignItems: "center", gap: 8, background: "var(--app-bg)", border: "1px solid var(--border)", borderRadius: 12, padding: "11px 14px", marginBottom: 14 }}>
                             <Search size={16} color="var(--text-muted)" />
                             <input
-                              placeholder="Search roles..."
+                              placeholder={t("profile.searchRoles")}
                               value={roleSearch}
                               onChange={(e) => { setRoleSearch(e.target.value); setRoleTeamView(null); setPendingRole(null); }}
                               style={{ border: "none", outline: "none", width: "100%", fontSize: 14, background: "transparent", color: "var(--text-primary)" }}
@@ -1450,7 +1503,7 @@ export default function ProfileScreen() {
                           
                           {/* Search results */}
                           {isSearching && (
-                            searchResults.length > 0 ? <RoleGrid cats={searchResults} /> : <p style={{ textAlign: "center", color: "var(--text-muted)", padding: "20px 0" }}>No roles found.</p>
+                            searchResults.length > 0 ? <RoleGrid cats={searchResults} /> : <p style={{ textAlign: "center", color: "var(--text-muted)", padding: "20px 0" }}>{t("profile.noRolesFound")}</p>
                           )}
                           
                           {/* Team list */}
@@ -1511,7 +1564,7 @@ export default function ProfileScreen() {
                             className="btn-primary"
                             style={{ width: "100%", background: editRoles.length === 0 ? "var(--surface-elevated)" : "var(--brand)", color: editRoles.length === 0 ? "var(--text-muted)" : "white" }}
                           >
-                            {isSavingSettings ? "Saving..." : "Save Changes"}
+                            {isSavingSettings ? t("profile.saving") : t("profile.saveChanges")}
                           </motion.button>
                         )}
                       </div>
@@ -1521,21 +1574,13 @@ export default function ProfileScreen() {
 
                 {/* ════ EXPERIENCE VIEW ════ */}
                 {settingsView === "experience" && (() => {
-                  const EXPERIENCE_OPTIONS = [
-                    "Entry Level (Fresh Graduate)",
-                    "Junior Level(1-3 years)",
-                    "Mid Level(3-5 years)",
-                    "Senior(5-8 years)",
-                    "Executive(VP, Director)",
-                    "Senior Executive(C Level)",
-                  ];
                   
                   const currentRole = pendingRole;
                   if (!currentRole) return null;
 
                   const handleSaveExperience = () => {
                     if (!editExperience[currentRole]) {
-                      showToast("error", "Please select an experience level.");
+                      showToast("error", t("profile.pickExperience"));
                       return;
                     }
                     if (!editRoles.includes(currentRole)) {
@@ -1549,8 +1594,8 @@ export default function ProfileScreen() {
 
                   return (
                     <div style={{ padding: "16px" }}>
-                      <p style={{ fontSize: 16, fontWeight: 700, color: "var(--text-primary)", marginBottom: 4 }}>{currentRole}</p>
-                      <p style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 20 }}>Select your experience level for this role.</p>
+                      <p style={{ fontSize: 16, fontWeight: 700, color: "var(--text-primary)", marginBottom: 4 }}>{categoryLabel(currentRole, t.lang)}</p>
+                      <p style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 20 }}>{t("profile.selectExperienceForRole")}</p>
                       
                       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                         {EXPERIENCE_OPTIONS.map(opt => {
@@ -1563,7 +1608,7 @@ export default function ProfileScreen() {
                               border: isSel ? "1px solid var(--brand)" : "1px solid var(--border)",
                               borderRadius: 12, cursor: "pointer",
                             }}>
-                              <span style={{ fontSize: 13, fontWeight: isSel ? 700 : 500, color: isSel ? "var(--brand)" : "var(--text-primary)", textAlign: "left" }}>{opt}</span>
+                              <span style={{ fontSize: 13, fontWeight: isSel ? 700 : 500, color: isSel ? "var(--brand)" : "var(--text-primary)", textAlign: "left" }}>{t(EXPERIENCE_LABELS[opt])}</span>
                               <div style={{ width: 20, height: 20, borderRadius: "50%", border: isSel ? "none" : "2px solid var(--text-muted)", background: isSel ? "var(--brand)" : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                                 {isSel && <CheckCircle size={13} color="white" />}
                               </div>
@@ -1578,7 +1623,7 @@ export default function ProfileScreen() {
                         className="btn-primary"
                         style={{ width: "100%", marginTop: 24 }}
                       >
-                        {editRoles.includes(currentRole) ? "Update Experience" : "Add Role"}
+                        {editRoles.includes(currentRole) ? t("profile.updateExperience") : t("profile.addRole")}
                       </motion.button>
                     </div>
                   );
@@ -1588,7 +1633,7 @@ export default function ProfileScreen() {
                 {settingsView === "location" && (() => {
                   const allLocs = LOCATIONS;
                   const filtered = locationSearch.trim()
-                    ? allLocs.filter(l => l.name.toLowerCase().includes(locationSearch.toLowerCase()) || l.subCity.toLowerCase().includes(locationSearch.toLowerCase()))
+                    ? allLocs.filter(l => locationMatches(l, locationSearch))
                     : allLocs;
                   const grouped = locationSearch.trim() ? null : LOCATIONS_BY_SUB_CITY;
                   return (
@@ -1596,7 +1641,7 @@ export default function ProfileScreen() {
                       <div style={{ display: "flex", alignItems: "center", gap: 8, background: "var(--app-bg)", border: "1px solid var(--border)", borderRadius: 12, padding: "11px 14px", marginBottom: 14 }}>
                         <Search size={16} color="var(--text-muted)" />
                         <input
-                          placeholder="Search location..."
+                          placeholder={t("profile.searchLocation")}
                           value={locationSearch}
                           onChange={(e) => setLocationSearch(e.target.value)}
                           style={{ border: "none", outline: "none", width: "100%", fontSize: 14, background: "transparent", color: "var(--text-primary)" }}
@@ -1621,19 +1666,19 @@ export default function ProfileScreen() {
                                 borderRadius: 12, cursor: "pointer",
                               }}>
                                 <div style={{ textAlign: "left" }}>
-                                  <p style={{ fontSize: 13, fontWeight: 600, color: isSel ? "var(--brand)" : "var(--text-primary)", margin: 0 }}>{loc.name}</p>
-                                  <p style={{ fontSize: 11, color: "var(--text-muted)", margin: 0 }}>{loc.subCity}</p>
+                                  <p style={{ fontSize: 13, fontWeight: 600, color: isSel ? "var(--brand)" : "var(--text-primary)", margin: 0 }}>{locationLabel(loc.name, t.lang)}</p>
+                                  <p style={{ fontSize: 11, color: "var(--text-muted)", margin: 0 }}>{subCityLabel(loc.subCity, t.lang)}</p>
                                 </div>
                                 {isSel && <CheckCircle size={16} color="var(--brand)" />}
                               </button>
                             );
                           })}
-                          {filtered.length === 0 && <p style={{ textAlign: "center", color: "var(--text-muted)", padding: "20px 0" }}>No locations found.</p>}
+                          {filtered.length === 0 && <p style={{ textAlign: "center", color: "var(--text-muted)", padding: "20px 0" }}>{t("profile.noLocationsFound")}</p>}
                         </div>
                       ) : (
                         Object.entries(grouped!).map(([subCity, locs]) => (
                           <div key={subCity} style={{ marginBottom: 16 }}>
-                            <p style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 6 }}>{subCity}</p>
+                            <p style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 6 }}>{subCityLabel(subCity, t.lang)}</p>
                             <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                               {locs.map(loc => {
                                 const isSel = editLocation === loc.name;
@@ -1644,7 +1689,7 @@ export default function ProfileScreen() {
                                     border: isSel ? "1px solid var(--brand)" : "1px solid var(--border)",
                                     borderRadius: 10, cursor: "pointer",
                                   }}>
-                                    <span style={{ fontSize: 13, fontWeight: isSel ? 700 : 500, color: isSel ? "var(--brand)" : "var(--text-primary)" }}>{loc.name}</span>
+                                    <span style={{ fontSize: 13, fontWeight: isSel ? 700 : 500, color: isSel ? "var(--brand)" : "var(--text-primary)" }}>{locationLabel(loc.name, t.lang)}</span>
                                     {isSel && <CheckCircle size={14} color="var(--brand)" />}
                                   </button>
                                 );
@@ -1660,7 +1705,7 @@ export default function ProfileScreen() {
                         className="btn-primary"
                         style={{ width: "100%", marginTop: 16, position: "sticky", bottom: 16 }}
                       >
-                        {isSavingSettings ? "Saving..." : "Save Location"}
+                        {isSavingSettings ? t("profile.saving") : t("profile.saveLocation")}
                       </motion.button>
                     </div>
                   );
@@ -1672,11 +1717,11 @@ export default function ProfileScreen() {
                     <div style={{ flex: 1, overflowY: "auto", paddingBottom: "env(safe-area-inset-bottom, 20px)" }}>
                       {faqLoading ? (
                         <div style={{ padding: 20, textAlign: "center", color: "var(--text-muted)" }}>
-                          Loading FAQs...
+                          {t("profile.loadingFaqs")}
                         </div>
                       ) : faqData.length === 0 ? (
                         <div style={{ padding: 20, textAlign: "center", color: "var(--text-muted)" }}>
-                          No FAQs available right now.
+                          {t("profile.noFaqs")}
                         </div>
                       ) : faqData.map((item, i) => {
                         const isOpen = openFaqIndex === i;
@@ -1704,11 +1749,11 @@ export default function ProfileScreen() {
 
                       {/* Support Contact */}
                       <div style={{ marginTop: 8, padding: "18px", background: "var(--surface-elevated)", border: "1px solid var(--border)", borderRadius: 16 }}>
-                        <p style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)", marginBottom: 14, textTransform: "uppercase", letterSpacing: "0.06em" }}>Contact Support</p>
+                        <p style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)", marginBottom: 14, textTransform: "uppercase", letterSpacing: "0.06em" }}>{t("profile.contactSupport")}</p>
                         {[
-                          { icon: <HelpCircle size={16} color="var(--brand)" />, label: "Telegram", value: "@JobsAddisSupport" },
-                          { icon: <Phone size={16} color="var(--brand)" />, label: "Phone", value: "+251 91 234 5678" },
-                          { icon: <AlertCircle size={16} color="var(--brand)" />, label: "Email", value: "support@jobsaddis.com" },
+                          { icon: <HelpCircle size={16} color="var(--brand)" />, label: t("profile.supportTelegram"), value: "@JobsAddisSupport" },
+                          { icon: <Phone size={16} color="var(--brand)" />, label: t("profile.supportPhone"), value: "+251 91 234 5678" },
+                          { icon: <AlertCircle size={16} color="var(--brand)" />, label: t("profile.supportEmail"), value: "support@jobsaddis.com" },
                         ].map((c) => (
                           <div key={c.label} style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
                             <div style={{ width: 34, height: 34, borderRadius: 10, background: "var(--brand-subtle)", border: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
@@ -1778,10 +1823,10 @@ export default function ProfileScreen() {
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
                   <div>
                     <p style={{ fontSize: 18, fontWeight: 800, color: "var(--text-primary)", margin: 0 }}>
-                      {profile?.phone_number ? "Edit Phone Number" : "Add Phone Number"}
+                      {profile?.phone_number ? t("profile.editPhone") : t("profile.addPhone")}
                     </p>
                     <p style={{ fontSize: 13, color: "var(--text-secondary)", marginTop: 4 }}>
-                      This will be shared with employers
+                      {t("profile.sharedWithEmployers")}
                     </p>
                   </div>
                   <motion.button
@@ -1815,7 +1860,7 @@ export default function ProfileScreen() {
                   <Phone size={18} color="var(--brand)" />
                   <input
                     type="tel"
-                    placeholder="+251 9XX XXX XXXX"
+                    placeholder={t("profile.phonePlaceholder")}
                     value={phoneInput}
                     onChange={(e) => setPhoneInput(e.target.value)}
                     autoFocus
@@ -1865,7 +1910,7 @@ export default function ProfileScreen() {
                   ) : (
                     <CheckCircle size={18} />
                   )}
-                  {phoneLoading ? "Saving..." : "Save Phone Number"}
+                  {phoneLoading ? t("profile.saving") : t("profile.savePhone")}
                 </motion.button>
               </motion.div>
             </>
@@ -1916,10 +1961,10 @@ export default function ProfileScreen() {
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
                   <div>
                     <p style={{ fontSize: 18, fontWeight: 800, color: "var(--text-primary)", margin: 0 }}>
-                      {profile?.secondary_phone ? "Edit Secondary Phone" : "Add Secondary Phone"}
+                      {profile?.secondary_phone ? t("profile.editSecondaryPhone") : t("profile.addSecondaryPhone")}
                     </p>
                     <p style={{ fontSize: 13, color: "var(--text-secondary)", marginTop: 4 }}>
-                      This will be shared with employers as a backup contact
+                      {t("profile.sharedWithEmployersBackup")}
                     </p>
                   </div>
                   <motion.button
@@ -1953,7 +1998,7 @@ export default function ProfileScreen() {
                   <Phone size={18} color="var(--brand)" />
                   <input
                     type="tel"
-                    placeholder="+251 9XX XXX XXXX"
+                    placeholder={t("profile.phonePlaceholder")}
                     value={secondaryPhoneInput}
                     onChange={(e) => setSecondaryPhoneInput(e.target.value)}
                     autoFocus
@@ -2003,7 +2048,7 @@ export default function ProfileScreen() {
                   ) : (
                     <CheckCircle size={18} />
                   )}
-                  {secondaryPhoneLoading ? "Saving..." : "Save Phone Number"}
+                  {secondaryPhoneLoading ? t("profile.saving") : t("profile.savePhone")}
                 </motion.button>
               </motion.div>
             </>

@@ -57,7 +57,9 @@
 }
 
 html {
-  font-family: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
+  /* Latin resolves from Jakarta/Inter; Ethiopic (U+1200–137F) falls through to
+     Noto Sans Ethiopic, which is the only loaded face that covers it. */
+  font-family: 'Plus Jakarta Sans', 'Inter', 'Noto Sans Ethiopic', system-ui, sans-serif;
   background-color: var(--app-bg);
   color: var(--text-primary);
   overscroll-behavior: none;

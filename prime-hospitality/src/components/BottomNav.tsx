@@ -2,6 +2,8 @@
 
 import { motion } from "framer-motion";
 import { Home, Search, FileText, User, LayoutDashboard, Bell } from "lucide-react";
+import { useT } from "@/lib/i18n";
+import type { TKey } from "@/lib/i18n";
 
 export type NavTab = "home" | "search" | "applications" | "notifications" | "profile" | "dashboard";
 
@@ -14,25 +16,26 @@ interface BottomNavProps {
 
 interface NavItem {
   id: NavTab;
-  label: string;
+  labelKey: TKey;
   Icon: React.ComponentType<{ size?: number; strokeWidth?: number }>;
 }
 
 const JOB_SEEKER_TABS: NavItem[] = [
-  { id: "home", label: "Home", Icon: Home },
-  { id: "search", label: "Search", Icon: Search },
-  { id: "applications", label: "Applied", Icon: FileText },
-  { id: "notifications", label: "Alerts", Icon: Bell },
-  { id: "profile", label: "Profile", Icon: User },
+  { id: "home", labelKey: "nav.home", Icon: Home },
+  { id: "search", labelKey: "nav.search", Icon: Search },
+  { id: "applications", labelKey: "nav.applications", Icon: FileText },
+  { id: "notifications", labelKey: "nav.notifications", Icon: Bell },
+  { id: "profile", labelKey: "nav.profile", Icon: User },
 ];
 
 const EMPLOYER_TABS: NavItem[] = [
-  { id: "home", label: "Home", Icon: Home },
-  { id: "search", label: "Search", Icon: Search },
-  { id: "dashboard", label: "Dashboard", Icon: LayoutDashboard },
+  { id: "home", labelKey: "nav.home", Icon: Home },
+  { id: "search", labelKey: "nav.search", Icon: Search },
+  { id: "dashboard", labelKey: "nav.dashboard", Icon: LayoutDashboard },
 ];
 
 export default function BottomNav({ activeTab, onTabChange, isEmployer = false, unreadCount = 0 }: BottomNavProps) {
+  const t = useT();
   const tabs = isEmployer ? EMPLOYER_TABS : JOB_SEEKER_TABS;
 
   return (
@@ -135,7 +138,7 @@ export default function BottomNav({ activeTab, onTabChange, isEmployer = false, 
                   zIndex: 1,
                 }}
               >
-                {tab.label}
+                {t(tab.labelKey)}
               </motion.span>
             </button>
           );

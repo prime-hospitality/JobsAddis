@@ -7,6 +7,16 @@ import { supabase } from "@/lib/supabase";
 import { Job, JobCategory, JobType, ExperienceLevel, JOB_CATEGORIES } from "@/data/jobs";
 import { SupabaseJob, mapSupabaseJobToJob } from "@/hooks/useJobs";
 import EmployerAvatar from "@/components/EmployerAvatar";
+import { useT } from "@/lib/i18n";
+import {
+  SEARCH_EXPERIENCE_OPTIONS as EXPERIENCE_OPTIONS,
+  SEARCH_EXPERIENCE_LABELS as EXPERIENCE_LABELS,
+  DATE_OPTIONS,
+  DATE_LABELS,
+  TEAM_LABELS,
+  categoryLabel,
+  categoryMatches,
+} from "@/lib/vocabulary";
 
 interface SearchScreenProps {
   onJobSelect: (job: Job) => void;
@@ -31,22 +41,6 @@ function useDebounce<T>(value: T, delay: number): T {
   return debounced;
 }
 
-
-const EXPERIENCE_OPTIONS = [
-  "Entry Level (Fresh Graduate)",
-  "Junior Level(1-3 years)",
-  "Mid Level(3-5 years)",
-  "Senior(5-8 years)",
-  "Executive(VP, Director)",
-  "Senior Executive(C Level)",
-];
-
-const DATE_OPTIONS = [
-  "Any date",
-  "Since yesterday",
-  "Last 7 days",
-  "Last 30 days"
-];
 
 const CATEGORY_TEAMS: Record<string, string[]> = {
   "Front Office": [
@@ -125,6 +119,7 @@ function FilterModal({
   children: React.ReactNode;
   onUpdate: () => void;
 }) {
+  const t = useT();
   return (
     <AnimatePresence>
       {isOpen && (
@@ -190,7 +185,7 @@ function FilterModal({
                 className="btn-primary"
                 style={{ width: "100%" }}
               >
-                Update Results
+                {t("search.updateResults")}
               </motion.button>
             </div>
 
@@ -207,6 +202,7 @@ function CategoryModal({
 }: { 
   isOpen: boolean; onClose: () => void; selected: string[]; onChange: (cats: string[]) => void;
 }) {
+  const t = useT();
   const [search, setSearch] = useState("");
   const [activeTeam, setActiveTeam] = useState<string | null>(null);
 
@@ -223,7 +219,7 @@ function CategoryModal({
   // When searching, flat-list ALL categories across every team
   const isSearching = search.trim().length > 0;
   const allCats = JOB_CATEGORIES;
-  const searchFiltered = allCats.filter(c => c.toLowerCase().includes(search.toLowerCase()));
+  const searchFiltered = allCats.filter(c => categoryMatches(c, search));
 
   // Categories for the drilled-in team
   const teamCats = activeTeam ? (CATEGORY_TEAMS[activeTeam] ?? []) : [];
@@ -244,7 +240,7 @@ function CategoryModal({
             }}
           >
             <span style={{ fontSize: 13, fontWeight: isSelected ? 700 : 500, color: isSelected ? "var(--brand)" : "var(--text-primary)", lineHeight: 1.3 }}>
-              {cat}
+              {categoryLabel(cat, t.lang)}
             </span>
             <div style={{ flexShrink: 0, width: 20, height: 20, borderRadius: 6, border: isSelected ? "none" : "2px solid var(--text-muted)", background: isSelected ? "var(--brand)" : "transparent", display: "flex", alignItems: "center", justifyContent: "center" }}>
               {isSelected && <CheckCircle size={13} color="white" />}
@@ -252,11 +248,12 @@ function CategoryModal({
           </button>
         );
       })}
-      {cats.length === 0 && <p style={{ gridColumn: "1 / -1", textAlign: "center", color: "var(--text-muted)", padding: "24px 0" }}>No roles in this team yet.</p>}
+      {cats.length === 0 && <p style={{ gridColumn: "1 / -1", textAlign: "center", color: "var(--text-muted)", padding: "24px 0" }}>{t("search.noRolesInTeam")}</p>}
     </div>
   );
 
-  const modalTitle = activeTeam && !isSearching ? activeTeam : "Select Category";
+  const teamLabel = (team: string) => (TEAM_LABELS[team] ? t(TEAM_LABELS[team]) : team);
+  const modalTitle = activeTeam && !isSearching ? teamLabel(activeTeam) : t("search.selectCategory");
 
   return (
     <FilterModal isOpen={isOpen} onClose={onClose} title={modalTitle} onUpdate={() => {}}>
@@ -266,7 +263,7 @@ function CategoryModal({
         <div style={{ display: "flex", alignItems: "center", gap: 10, background: "var(--app-bg)", border: "1px solid var(--border)", borderRadius: 12, padding: "11px 14px", marginBottom: 16 }}>
           <Search size={17} color="var(--text-muted)" />
           <input
-            placeholder="Search all categories..."
+            placeholder={t("search.searchAllCategories")}
             value={search}
             onChange={(e) => { setSearch(e.target.value); setActiveTeam(null); }}
             style={{ border: "none", outline: "none", width: "100%", fontSize: 15, background: "transparent", color: "var(--text-primary)" }}
@@ -282,7 +279,7 @@ function CategoryModal({
         {isSearching && (
           searchFiltered.length > 0
             ? <CatGrid cats={searchFiltered} />
-            : <p style={{ textAlign: "center", color: "var(--text-muted)", padding: "24px 0" }}>No categories found.</p>
+            : <p style={{ textAlign: "center", color: "var(--text-muted)", padding: "24px 0" }}>{t("search.noCategoriesFound")}</p>
         )}
 
         {/* Team drill-down: team list */}
@@ -305,9 +302,10 @@ function CategoryModal({
                       <Users size={17} color={activeCount > 0 ? "var(--brand)" : "var(--text-muted)"} />
                     </div>
                     <div style={{ textAlign: "left" }}>
-                      <p style={{ fontSize: 15, fontWeight: 600, color: activeCount > 0 ? "var(--brand)" : "var(--text-primary)", margin: 0 }}>{team}</p>
+                      <p style={{ fontSize: 15, fontWeight: 600, color: activeCount > 0 ? "var(--brand)" : "var(--text-primary)", margin: 0 }}>{teamLabel(team)}</p>
                       <p style={{ fontSize: 12, color: "var(--text-muted)", margin: 0 }}>
-                        {cats.length} {cats.length === 1 ? "role" : "roles"}{activeCount > 0 ? ` · ${activeCount} selected` : ""}
+                        {t(cats.length === 1 ? "search.roleCount" : "search.roleCountPlural", { count: cats.length })}
+                        {activeCount > 0 ? t("search.selectedSuffix", { count: activeCount }) : ""}
                       </p>
                     </div>
                   </div>
@@ -325,7 +323,7 @@ function CategoryModal({
               onClick={() => setActiveTeam(null)}
               style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", padding: "0 0 14px 0", color: "var(--brand)", fontWeight: 600, fontSize: 14 }}
             >
-              <ChevronLeft size={16} /> Back to Main Category
+              <ChevronLeft size={16} /> {t("search.backToMainCategory")}
             </button>
             <CatGrid cats={teamCats} />
           </>
@@ -342,13 +340,14 @@ function ExperienceModal({
 }: { 
   isOpen: boolean; onClose: () => void; selected: string[]; onChange: (exp: string[]) => void;
 }) {
+  const t = useT();
   const toggle = (exp: string) => {
     if (selected.includes(exp)) onChange(selected.filter(e => e !== exp));
     else onChange([...selected, exp]);
   };
 
   return (
-    <FilterModal isOpen={isOpen} onClose={onClose} title="Experience Level" onUpdate={() => {}}>
+    <FilterModal isOpen={isOpen} onClose={onClose} title={t("search.experienceChip")} onUpdate={() => {}}>
       <div style={{ padding: "8px 20px" }}>
         <div style={{ display: "flex", flexDirection: "column" }}>
           {EXPERIENCE_OPTIONS.map(exp => {
@@ -364,7 +363,7 @@ function ExperienceModal({
                 }}
               >
                 <span style={{ fontSize: 16, fontWeight: isSelected ? 700 : 500, color: isSelected ? "var(--brand)" : "var(--text-primary)" }}>
-                  {exp}
+                  {EXPERIENCE_LABELS[exp] ? t(EXPERIENCE_LABELS[exp]) : exp}
                 </span>
                 <div style={{ width: 24, height: 24, borderRadius: 6, border: isSelected ? "none" : "2px solid var(--text-muted)", background: isSelected ? "var(--brand)" : "transparent", display: "flex", alignItems: "center", justifyContent: "center" }}>
                   {isSelected && <CheckCircle size={16} color="white" />}
@@ -384,8 +383,9 @@ function DateModal({
 }: { 
   isOpen: boolean; onClose: () => void; selected: string; onChange: (date: string) => void;
 }) {
+  const t = useT();
   return (
-    <FilterModal isOpen={isOpen} onClose={onClose} title="Posted Within" onUpdate={() => {}}>
+    <FilterModal isOpen={isOpen} onClose={onClose} title={t("search.postedWithinChip")} onUpdate={() => {}}>
       <div style={{ padding: "8px 20px" }}>
         <div style={{ display: "flex", flexDirection: "column" }}>
           {DATE_OPTIONS.map(date => {
@@ -401,7 +401,7 @@ function DateModal({
                 }}
               >
                 <span style={{ fontSize: 16, fontWeight: isSelected ? 700 : 500, color: isSelected ? "var(--brand)" : "var(--text-primary)" }}>
-                  {date}
+                  {DATE_LABELS[date] ? t(DATE_LABELS[date]) : date}
                 </span>
                 <div style={{ width: 24, height: 24, borderRadius: 12, border: isSelected ? "none" : "2px solid var(--text-muted)", background: isSelected ? "var(--brand)" : "transparent", display: "flex", alignItems: "center", justifyContent: "center" }}>
                   {isSelected && <div style={{ width: 10, height: 10, borderRadius: 5, background: "white" }} />}
@@ -416,6 +416,7 @@ function DateModal({
 }
 
 export default function SearchScreen({ onJobSelect, pageSize, enableAnimations = true }: SearchScreenProps) {
+  const t = useT();
   const [query, setQuery] = useState("");
   const [selectedCategories, setSelectedCategories] = useState<JobCategory[]>([]);
   const [selectedExperience, setSelectedExperience] = useState<string[]>([]);
@@ -540,8 +541,8 @@ export default function SearchScreen({ onJobSelect, pageSize, enableAnimations =
   };
 
   const formatSalary = (min: number, max: number, currency: string) => {
-    if (min === -1) return "Per Company Scale";
-    if (min === -2) return "Negotiable";
+    if (min === -1) return t("jobDetail.salaryPerScale");
+    if (min === -2) return t("jobDetail.salaryNegotiable");
     const fmt = (n: number) =>
       n >= 1000 ? `${(n / 1000).toFixed(0)}k` : `${n}`;
     if (min === max) return `${currency} ${fmt(min)}/mo`;
@@ -573,10 +574,10 @@ export default function SearchScreen({ onJobSelect, pageSize, enableAnimations =
         >
           <div style={{ marginBottom: 16 }}>
             <h1 style={{ fontSize: 22, fontWeight: 800, color: "var(--text-primary)", letterSpacing: "-0.02em", marginBottom: 4 }}>
-              Find Your Role
+              {t("search.title")}
             </h1>
             <p style={{ fontSize: 14, color: "var(--text-secondary)" }}>
-              Search across all active hospitality jobs
+              {t("search.subtitle")}
             </p>
           </div>
         </div>
@@ -602,7 +603,7 @@ export default function SearchScreen({ onJobSelect, pageSize, enableAnimations =
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Job title, hotel, neighborhood…"
+              placeholder={t("search.placeholder")}
               autoComplete="off"
               style={{
                 flex: 1,
@@ -656,7 +657,7 @@ export default function SearchScreen({ onJobSelect, pageSize, enableAnimations =
                   color: "#EF4444",
                 }}
               >
-                <X size={14} /> Clear
+                <X size={14} /> {t("search.clear")}
               </motion.button>
             )}
             <motion.button
@@ -671,7 +672,7 @@ export default function SearchScreen({ onJobSelect, pageSize, enableAnimations =
                 color: selectedCategories.length > 0 ? "var(--brand)" : "var(--text-primary)",
               }}
             >
-              Category {selectedCategories.length > 0 && `(${selectedCategories.length})`}
+              {t("search.categoryChip")} {selectedCategories.length > 0 && `(${selectedCategories.length})`}
               <ChevronDown size={14} />
             </motion.button>
 
@@ -687,7 +688,7 @@ export default function SearchScreen({ onJobSelect, pageSize, enableAnimations =
                 color: selectedExperience.length > 0 ? "var(--brand)" : "var(--text-primary)",
               }}
             >
-              Experience Level {selectedExperience.length > 0 && `(${selectedExperience.length})`}
+              {t("search.experienceChip")} {selectedExperience.length > 0 && `(${selectedExperience.length})`}
               <ChevronDown size={14} />
             </motion.button>
 
@@ -703,7 +704,7 @@ export default function SearchScreen({ onJobSelect, pageSize, enableAnimations =
                 color: postedWithin !== "Any date" ? "var(--brand)" : "var(--text-primary)",
               }}
             >
-              {postedWithin === "Any date" ? "Posted Within" : postedWithin}
+              {postedWithin === "Any date" ? t("search.postedWithinChip") : (DATE_LABELS[postedWithin] ? t(DATE_LABELS[postedWithin]) : postedWithin)}
               <ChevronDown size={14} />
             </motion.button>
           </div>
@@ -743,7 +744,7 @@ export default function SearchScreen({ onJobSelect, pageSize, enableAnimations =
                 onClick={() => doSearch(query, selectedCategories, selectedExperience, postedWithin)}
                 style={{ fontSize: 13, fontWeight: 600, color: "var(--brand)", background: "none", border: "none", cursor: "pointer" }}
               >
-                Try again
+                {t("search.tryAgain")}
               </button>
             </motion.div>
           )}
@@ -767,10 +768,10 @@ export default function SearchScreen({ onJobSelect, pageSize, enableAnimations =
                 🔍
               </div>
               <h2 style={{ fontSize: 18, fontWeight: 700, color: "var(--text-primary)", marginBottom: 8 }}>
-                Start Searching
+                {t("search.idleHeading")}
               </h2>
               <p style={{ fontSize: 14, color: "var(--text-secondary)", lineHeight: 1.6, maxWidth: 260, margin: "0 auto" }}>
-                Type a job title, hotel name or neighborhood, or pick a category to filter.
+                {t("search.idleBody")}
               </p>
             </motion.div>
           )}
@@ -794,10 +795,10 @@ export default function SearchScreen({ onJobSelect, pageSize, enableAnimations =
                 😶
               </div>
               <h2 style={{ fontSize: 18, fontWeight: 700, color: "var(--text-primary)", marginBottom: 8 }}>
-                No Jobs Found
+                {t("search.emptyHeading")}
               </h2>
               <p style={{ fontSize: 14, color: "var(--text-secondary)", lineHeight: 1.6, maxWidth: 260, margin: "0 auto" }}>
-                Try a different keyword or remove category filters.
+                {t("search.emptyBody")}
               </p>
             </motion.div>
           )}
@@ -807,8 +808,8 @@ export default function SearchScreen({ onJobSelect, pageSize, enableAnimations =
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               {/* Result count */}
               <p style={{ fontSize: 13, color: "var(--text-muted)", fontWeight: 500, paddingTop: 4 }}>
-                {results.length} result{results.length !== 1 ? "s" : ""}
-                {selectedCategories.length > 0 ? ` · ${selectedCategories.join(", ")}` : ""}
+                {t(results.length === 1 ? "search.resultCount" : "search.resultCountPlural", { count: results.length })}
+                {selectedCategories.length > 0 ? ` · ${selectedCategories.map((c) => categoryLabel(c, t.lang)).join(", ")}` : ""}
               </p>
 
               <AnimatePresence>

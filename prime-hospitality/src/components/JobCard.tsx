@@ -5,6 +5,7 @@ import { motion, useReducedMotion } from "framer-motion";
 import { MapPin, Clock, Briefcase, AlertTriangle } from "lucide-react";
 import { Job } from "@/data/jobs";
 import EmployerAvatar from "@/components/EmployerAvatar";
+import { useT, timeAgo, type Translate } from "@/lib/i18n";
 
 interface JobCardProps {
   job: Job;
@@ -14,29 +15,18 @@ interface JobCardProps {
   skipEntranceAnimation?: boolean;
 }
 
-function timeAgo(iso: string): string {
-  const diff = Date.now() - new Date(iso).getTime();
-  const mins = Math.floor(diff / 60000);
-  const hours = Math.floor(diff / 3600000);
-  const days = Math.floor(diff / 86400000);
-  if (mins < 1) return "just now";
-  if (mins < 60) return `${mins}m ago`;
-  if (hours < 24) return `${hours}h ago`;
-  if (days === 1) return "Yesterday";
-  if (days < 7) return `${days}d ago`;
-  return `${Math.floor(days / 7)}w ago`;
-}
-
-function formatSalary(min: number, max: number): string {
-  if (min === -1) return "Per Company Scale";
-  if (min === -2) return "Negotiable";
+/** Compact salary for the card, e.g. "ETB 8k–12k/mo". */
+function formatSalary(min: number, max: number, t: Translate): string {
+  if (min === -1) return t("jobDetail.salaryPerScale");
+  if (min === -2) return t("jobDetail.salaryNegotiable");
   const fmt = (n: number) =>
     n >= 1000 ? `${(n / 1000).toFixed(0)}k` : `${n}`;
-  if (min === max) return `ETB ${fmt(min)}/mo`;
-  return `ETB ${fmt(min)}–${fmt(max)}/mo`;
+  if (min === max) return t("jobDetail.salarySingle", { amount: fmt(min) });
+  return t("jobDetail.salaryRange", { min: fmt(min), max: fmt(max) });
 }
 
 const JobCard = memo(function JobCard({ job, onClick, index, enableAnimations = true, skipEntranceAnimation = false }: JobCardProps) {
+  const t = useT();
   const shouldReduceMotion = useReducedMotion();
   const skipAnimations = !enableAnimations || shouldReduceMotion;
 
@@ -90,7 +80,7 @@ const JobCard = memo(function JobCard({ job, onClick, index, enableAnimations = 
             }}
           >
             <AlertTriangle size={10} />
-            Requirements not met
+            {t("jobCard.requirementsNotMet")}
           </div>
         )}
 
@@ -146,7 +136,7 @@ const JobCard = memo(function JobCard({ job, onClick, index, enableAnimations = 
                 }}
               >
                 <Clock size={10} />
-                Posted {timeAgo(job.postedAt)}
+                Posted {timeAgo(job.postedAt, t.lang)}
               </span>
             </div>
           </div>
@@ -171,7 +161,7 @@ const JobCard = memo(function JobCard({ job, onClick, index, enableAnimations = 
           <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
             {/* Salary */}
             <span className="badge badge-brand">
-              {formatSalary(job.salaryMin, job.salaryMax)}
+              {formatSalary(job.salaryMin, job.salaryMax, t)}
             </span>
 
             {/* Job type */}
@@ -233,7 +223,7 @@ const JobCard = memo(function JobCard({ job, onClick, index, enableAnimations = 
           }}
         >
           <AlertTriangle size={10} />
-          Requirements not met
+          {t("jobCard.requirementsNotMet")}
         </div>
       )}
 
@@ -289,7 +279,7 @@ const JobCard = memo(function JobCard({ job, onClick, index, enableAnimations = 
               }}
             >
               <Clock size={10} />
-              Posted {timeAgo(job.postedAt)}
+              Posted {timeAgo(job.postedAt, t.lang)}
             </span>
           </div>
         </div>
@@ -314,7 +304,7 @@ const JobCard = memo(function JobCard({ job, onClick, index, enableAnimations = 
         <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
           {/* Salary */}
           <span className="badge badge-brand">
-            {formatSalary(job.salaryMin, job.salaryMax)}
+            {formatSalary(job.salaryMin, job.salaryMax, t)}
           </span>
 
           {/* Job type */}

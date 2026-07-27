@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { X, Bell, CheckCircle, XCircle, MessageCircle, Sparkles, ExternalLink } from "lucide-react";
 import { fetchNotifications, markNotificationsRead, Notification } from "@/lib/api";
 import { useTelegram } from "@/hooks/useTelegram";
+import { useT, timeAgo, type Translate } from "@/lib/i18n";
 
 interface NotificationPanelProps {
   isOpen: boolean;
@@ -12,19 +13,6 @@ interface NotificationPanelProps {
   isEmployer?: boolean; // hidden — used for role-based filtering in the future
   onSelectJob?: (jobId: string) => void;
   onUnreadCleared?: () => void; // callback so parent can clear badge count
-}
-
-function timeAgo(dateStr: string): string {
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const mins = Math.floor(diff / 60000);
-  const hours = Math.floor(diff / 3600000);
-  const days = Math.floor(diff / 86400000);
-  if (mins < 1) return "just now";
-  if (mins < 60) return `${mins}m ago`;
-  if (hours < 24) return `${hours}h ago`;
-  if (days === 1) return "Yesterday";
-  if (days < 7) return `${days}d ago`;
-  return `${Math.floor(days / 7)}w ago`;
 }
 
 function NotificationIcon({ type }: { type: Notification["type"] }) {
@@ -60,23 +48,26 @@ function NotificationIcon({ type }: { type: Notification["type"] }) {
   );
 }
 
-function notificationTitle(n: Notification): string {
-  if (n.type === "shortlisted") return "You've been shortlisted! 🎉";
-  if (n.type === "rejected") return "Application update";
-  if (n.type === "vacancy_alert") return "New job match";
-  if (n.type === "broadcast") return "Announcement";
-  return "New message";
+function notificationTitle(n: Notification, t: Translate): string {
+  if (n.type === "shortlisted") return t("notificationPanel.titleShortlisted");
+  if (n.type === "rejected") return t("notificationPanel.titleRejected");
+  if (n.type === "vacancy_alert") return t("notificationPanel.titleVacancyAlert");
+  if (n.type === "broadcast") return t("notificationPanel.titleBroadcast");
+  return t("notificationPanel.titleDefault");
 }
 
-function notificationBody(n: Notification): string {
-  if (n.type === "shortlisted") return `${n.company_name} shortlisted your application for ${n.job_title}.`;
-  if (n.type === "rejected") return `${n.company_name} reviewed your application for ${n.job_title}.`;
-  if (n.type === "vacancy_alert") return `${n.company_name} is hiring a ${n.job_title}.`;
+function notificationBody(n: Notification, t: Translate): string {
+  const vars = { company: n.company_name, job: n.job_title };
+  if (n.type === "shortlisted") return t("notificationPanel.bodyShortlisted", vars);
+  if (n.type === "rejected") return t("notificationPanel.bodyRejected", vars);
+  if (n.type === "vacancy_alert") return t("notificationPanel.bodyVacancyAlert", vars);
+  // Broadcasts carry admin-authored copy in job_title; it renders as written.
   if (n.type === "broadcast") return n.job_title;
-  return `Update from ${n.company_name} regarding ${n.job_title}.`;
+  return t("notificationPanel.bodyDefault", vars);
 }
 
 export default function NotificationPanel({ isOpen, onClose, isEmployer = false, onSelectJob, onUnreadCleared }: NotificationPanelProps) {
+  const t = useT();
   const { initData } = useTelegram();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -178,9 +169,9 @@ export default function NotificationPanel({ isOpen, onClose, isEmployer = false,
                   <Bell size={16} color="var(--brand)" />
                 </div>
                 <div>
-                  <p style={{ fontSize: 16, fontWeight: 800, color: "var(--text-primary)", margin: 0 }}>Notifications</p>
+                  <p style={{ fontSize: 16, fontWeight: 800, color: "var(--text-primary)", margin: 0 }}>{t("notificationPanel.title")}</p>
                   {hasUnread && (
-                    <p style={{ fontSize: 11, color: "var(--brand)", margin: 0, fontWeight: 600 }}>New updates</p>
+                    <p style={{ fontSize: 11, color: "var(--brand)", margin: 0, fontWeight: 600 }}>{t("notificationPanel.newUpdates")}</p>
                   )}
                 </div>
               </div>
@@ -214,7 +205,7 @@ export default function NotificationPanel({ isOpen, onClose, isEmployer = false,
                   }}>
                     <Bell size={28} color="var(--text-muted)" />
                   </div>
-                  <p style={{ fontSize: 15, fontWeight: 700, color: "var(--text-primary)", margin: "0 0 6px" }}>All caught up</p>
+                  <p style={{ fontSize: 15, fontWeight: 700, color: "var(--text-primary)", margin: "0 0 6px" }}>{t("notificationPanel.allCaughtUp")}</p>
                   <p style={{ fontSize: 13, color: "var(--text-muted)", lineHeight: 1.5 }}>
                     No notifications yet. Apply to jobs to<br />start receiving updates here.
                   </p>
@@ -245,17 +236,17 @@ export default function NotificationPanel({ isOpen, onClose, isEmployer = false,
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
                           <p style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)", margin: 0, lineHeight: 1.3 }}>
-                            {notificationTitle(n)}
+                            {notificationTitle(n, t)}
                           </p>
-                          <span style={{ fontSize: 11, color: "var(--text-muted)", flexShrink: 0 }}>{timeAgo(n.created_at)}</span>
+                          <span style={{ fontSize: 11, color: "var(--text-muted)", flexShrink: 0 }}>{timeAgo(n.created_at, t.lang)}</span>
                         </div>
                         <p style={{ fontSize: 12, color: "var(--text-secondary)", margin: "4px 0 0", lineHeight: 1.5 }}>
-                          {notificationBody(n)}
+                          {notificationBody(n, t)}
                         </p>
                         {n.job_id && onSelectJob && (
                           <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 6 }}>
                             <ExternalLink size={11} color="var(--brand)" />
-                            <span style={{ fontSize: 11, color: "var(--brand)", fontWeight: 600 }}>View job</span>
+                            <span style={{ fontSize: 11, color: "var(--brand)", fontWeight: 600 }}>{t("notificationPanel.viewJob")}</span>
                           </div>
                         )}
                       </div>

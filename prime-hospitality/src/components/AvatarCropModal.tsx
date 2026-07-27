@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import { CheckCircle2, AlertTriangle, Info } from "lucide-react";
+import { useT } from "@/lib/i18n";
 
 const STAGE_SIZE = 300;
 const OUTPUT_SIZE = 512;
@@ -33,6 +34,7 @@ export default function AvatarCropModal({
   onCancel: () => void;
   onConfirm: (blob: Blob) => void;
 }) {
+  const t = useT();
   const [imgUrl] = useState(() => URL.createObjectURL(file));
   const [loaded, setLoaded] = useState(false);
   const [natural, setNatural] = useState({ width: 0, height: 0 });
@@ -144,9 +146,9 @@ export default function AvatarCropModal({
   const naturalCropSize = displayScale > 0 ? box.size / displayScale : 0;
   const quality: "good" | "okay" | "bad" = naturalCropSize >= OUTPUT_SIZE ? "good" : naturalCropSize >= OUTPUT_SIZE * 0.5 ? "okay" : "bad";
   const qualityMeta = {
-    good: { label: "Good — sharp", color: "#059669", Icon: CheckCircle2 },
-    okay: { label: "A bit soft when enlarged", color: "#d97706", Icon: Info },
-    bad: { label: "Too small — will look blurry", color: "#dc2626", Icon: AlertTriangle },
+    good: { label: t("avatarCrop.qualityGood"), color: "#059669", Icon: CheckCircle2 },
+    okay: { label: t("avatarCrop.qualityOkay"), color: "#d97706", Icon: Info },
+    bad: { label: t("avatarCrop.qualityBad"), color: "#dc2626", Icon: AlertTriangle },
   }[quality];
 
   const handleConfirm = () => {
@@ -177,9 +179,9 @@ export default function AvatarCropModal({
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.6)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 20000, padding: 16 }}>
       <div style={{ background: "#fff", borderRadius: 16, padding: 24, width: "100%", maxWidth: 380, boxShadow: "0 24px 48px -16px rgba(15,23,42,0.35)" }}>
-        <h3 style={{ margin: "0 0 4px", fontSize: 16, fontWeight: 700, color: "#0f172a" }}>Adjust Photo</h3>
+        <h3 style={{ margin: "0 0 4px", fontSize: 16, fontWeight: 700, color: "#0f172a" }}>{t("avatarCrop.title")}</h3>
         <p style={{ margin: "0 0 16px", fontSize: 12.5, color: "#64748b", lineHeight: 1.5 }}>
-          Drag the box to reposition it, drag a corner to resize. It&apos;ll be saved as a square.
+          {t("avatarCrop.instructions")}
         </p>
 
         <div
@@ -266,7 +268,7 @@ export default function AvatarCropModal({
             onClick={onCancel}
             style={{ background: "#f1f5f9", color: "#334155", border: "none", padding: "9px 16px", borderRadius: 9, fontSize: 13.5, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}
           >
-            Cancel
+            {t("common.cancel")}
           </button>
           <button
             type="button"
@@ -274,7 +276,7 @@ export default function AvatarCropModal({
             disabled={!loaded || processing}
             style={{ background: "#0284c7", color: "#fff", border: "none", padding: "9px 18px", borderRadius: 9, fontSize: 13.5, fontWeight: 700, cursor: loaded && !processing ? "pointer" : "not-allowed", opacity: loaded && !processing ? 1 : 0.6, fontFamily: "inherit" }}
           >
-            {processing ? "Saving…" : "Use Photo"}
+            {processing ? t("avatarCrop.saving") : t("avatarCrop.usePhoto")}
           </button>
         </div>
       </div>

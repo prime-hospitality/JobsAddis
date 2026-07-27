@@ -10,6 +10,7 @@ import JobCard from "@/components/JobCard";
 
 import { useJobs } from "@/hooks/useJobs";
 import { useTelegram } from "@/hooks/useTelegram";
+import { useT } from "@/lib/i18n";
 
 interface HomeScreenProps {
   onJobSelect: (job: Job) => void;
@@ -34,6 +35,7 @@ let businessAnimationHasRun = false;
 let savedScrollTop = 0;
 
 export default function HomeScreen({ onJobSelect, onSearchPress, onBellPress, unreadCount = 0, profileName, pageSize, enableAnimations }: HomeScreenProps) {
+  const t = useT();
 
   const shouldReduceMotion = useReducedMotion();
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -321,9 +323,9 @@ export default function HomeScreen({ onJobSelect, onSearchPress, onBellPress, un
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <div style={{ flex: 1 }}>
                   <h1 style={{ fontSize: 34, fontWeight: 800, color: "var(--text-primary)", lineHeight: 1.15, letterSpacing: "-0.03em" }}>
-                    Find your<br />
+                    {t("home.heroLine1")}<br />
                     <span style={{ color: "var(--brand)", position: "relative", display: "inline-block" }}>
-                      next job
+                      {t("home.heroLine2")}
                       {/* Decorative curved underline */}
                       <svg style={{ position: "absolute", bottom: -8, left: 0, width: "100%", height: 12 }} viewBox="0 0 100 12" preserveAspectRatio="none">
                         <path d="M0 8 Q 50 0 100 8" stroke="var(--brand)" strokeWidth="3" fill="none" strokeLinecap="round" />
@@ -331,7 +333,7 @@ export default function HomeScreen({ onJobSelect, onSearchPress, onBellPress, un
                     </span>
                   </h1>
                   <p style={{ fontSize: 14, color: "var(--text-secondary)", marginTop: 16, fontWeight: 500 }}>
-                    Top hospitality jobs in Ethiopia.
+                    {t("home.heroSubtitle")}
                   </p>
                 </div>
 
@@ -373,7 +375,7 @@ export default function HomeScreen({ onJobSelect, onSearchPress, onBellPress, un
               {/* Trusted By logo strip inside slide 1 */}
               <div style={{ marginTop: 20 }}>
                 <p style={{ fontSize: 10, color: "var(--text-secondary)", fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 10, opacity: 0.5 }}>
-                  Trusted by
+                  {t("home.trustedBy")}
                 </p>
                 <div style={{ 
                   display: "flex", 
@@ -471,12 +473,12 @@ export default function HomeScreen({ onJobSelect, onSearchPress, onBellPress, un
             }}>
               <div style={{ flex: 1, zIndex: 1, paddingRight: 140 }}>
                 <h1 style={{ fontSize: 22, fontWeight: 800, color: "var(--text-primary)", lineHeight: 1.2, letterSpacing: "-0.02em" }}>
-                  Discover<br/>
-                  <span style={{ color: "var(--brand)" }}>hospitality jobs</span><br/>
-                  that fit you.
+                  {t("home.hero2Line1")}<br/>
+                  <span style={{ color: "var(--brand)" }}>{t("home.hero2Line2")}</span><br/>
+                  {t("home.hero2Line3")}
                 </h1>
                 <p style={{ fontSize: 13, color: "var(--text-secondary)", marginTop: 10, marginBottom: 16, fontWeight: 500, position: "relative", zIndex: 2 }}>
-                  Find top opportunities in Ethiopia and build your future.
+                  {t("home.hero2Subtitle")}
                 </p>
                 <button 
                   onClick={onSearchPress}
@@ -494,7 +496,7 @@ export default function HomeScreen({ onJobSelect, onSearchPress, onBellPress, un
                   boxShadow: "0 4px 12px rgba(34, 197, 94, 0.3)",
                   cursor: "pointer"
                 }}>
-                  Find Jobs <span style={{ fontSize: 16 }}>→</span>
+                  {t("home.findJobs")} <span style={{ fontSize: 16 }}>→</span>
                 </button>
               </div>
               
@@ -559,7 +561,7 @@ export default function HomeScreen({ onJobSelect, onSearchPress, onBellPress, un
           >
             <Search size={18} color="var(--text-muted)" />
             <span style={{ fontSize: 15, color: "var(--text-muted)" }}>
-              Search jobs in Addis Ababa…
+              {t("home.searchPlaceholder")}
             </span>
           </motion.div>
         </div>
@@ -588,17 +590,17 @@ export default function HomeScreen({ onJobSelect, onSearchPress, onBellPress, un
             {[
               {
                 value: "1000+",
-                label: "Open Jobs",
+                label: t("home.statOpenJobs"),
                 valueColor: "var(--brand)",
               },
               {
                 value: businessCount === 200 ? "200+" : `${businessCount}`,
-                label: "Businesses",
+                label: t("home.statBusinesses"),
                 valueColor: "var(--brand)",
               },
               {
                 value: "50k+",
-                label: "Job Seekers",
+                label: t("home.statJobSeekers"),
                 valueColor: "var(--brand)",
               },
             ].map((stat) => (
@@ -652,7 +654,7 @@ export default function HomeScreen({ onJobSelect, onSearchPress, onBellPress, un
               color: "var(--text-primary)",
             }}
           >
-            All Jobs
+            {t("home.allJobs")}
           </h2>
           <button
             onClick={refetch}
@@ -665,7 +667,7 @@ export default function HomeScreen({ onJobSelect, onSearchPress, onBellPress, un
               cursor: "pointer",
             }}
           >
-            Refresh
+            {t("home.refresh")}
           </button>
         </div>
 
@@ -708,7 +710,7 @@ export default function HomeScreen({ onJobSelect, onSearchPress, onBellPress, un
                   cursor: "pointer",
                 }}
               >
-                Try again
+                {t("home.tryAgain")}
               </button>
             </div>
           )}
@@ -716,7 +718,7 @@ export default function HomeScreen({ onJobSelect, onSearchPress, onBellPress, un
           {!isLoading && !error && jobs.length === 0 && (
             <div style={{ textAlign: "center", padding: "60px 20px" }}>
               <p style={{ color: "var(--text-secondary)", fontSize: 14 }}>
-                No active jobs found.
+                {t("home.noJobs")}
               </p>
             </div>
           )}

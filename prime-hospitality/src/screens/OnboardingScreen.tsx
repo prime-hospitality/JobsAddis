@@ -8,6 +8,15 @@ import { JobCategory } from "@/data/jobs";
 import { LOCATIONS } from "@/data/locations";
 import { useTelegram } from "@/hooks/useTelegram";
 import { supabase } from "@/lib/supabase";
+import { useT, useLocale, LANGS, LANG_LABELS } from "@/lib/i18n";
+import {
+  ONBOARDING_EXPERIENCE_OPTIONS as EXPERIENCE_OPTIONS,
+  ONBOARDING_EXPERIENCE_LABELS as EXPERIENCE_LABELS,
+  categoryLabel,
+  locationLabel,
+  subCityLabel,
+  locationMatches,
+} from "@/lib/vocabulary";
 
 // --- Types ---
 interface StepProps {
@@ -20,9 +29,10 @@ interface StepProps {
 // --- Main Component ---
 export default function OnboardingScreen({ onComplete }: { onComplete: () => void }) {
   const { state, updateState, setStep, submitProfile } = useOnboarding();
+  const { lang } = useLocale();
   const shouldReduceMotion = useReducedMotion();
   const [direction, setDirection] = useState(1); // 1 for forward, -1 for backward
-  const [config, setConfig] = useState<Record<string, string>>({});
+  const [remoteConfig, setRemoteConfig] = useState<Record<string, string>>({});
 
   useEffect(() => {
     const loadConfig = async () => {
@@ -30,11 +40,15 @@ export default function OnboardingScreen({ onComplete }: { onComplete: () => voi
       if (data) {
         const c: Record<string, string> = {};
         data.forEach((d: any) => c[d.key] = d.value);
-        setConfig(c);
+        setRemoteConfig(c);
       }
     };
     loadConfig();
   }, []);
+
+  // The admin-managed onboarding_config is authored in English only. Applying it
+  // in Amharic would override the translated copy with English, so it's dropped.
+  const config = lang === "en" ? remoteConfig : {};
 
   const goNext = (targetStep: OnboardingStep) => {
     setDirection(1);
@@ -160,6 +174,8 @@ const JOB_CATEGORIES_DATA = [
 ];
 
 function Step1_JobField({ state, updateState, onNext, config }: StepProps) {
+  const t = useT();
+  const { lang, setLang } = useLocale();
   let JOB_CATEGORIES = [...JOB_CATEGORIES_DATA];
   try {
     if (config?.step1_categories) {
@@ -212,20 +228,20 @@ function Step1_JobField({ state, updateState, onNext, config }: StepProps) {
   if (otherValue.trim().length > 0) {
     const trimmed = otherValue.trim();
     if (trimmed.length < 3) {
-      otherWarning = "Role name is too short. Please type a valid job.";
+      otherWarning = t("onboarding.roleTooShort");
     } else if (trimmed.length > 40) {
-      otherWarning = "Role name is too long. Keep it under 40 characters.";
+      otherWarning = t("onboarding.roleTooLong");
     } else if (/[^a-zA-Z\s\-]/.test(trimmed)) {
-      otherWarning = "Role name shouldn't contain numbers or special characters.";
+      otherWarning = t("onboarding.roleNoSpecialChars");
     } else if (/^(.)\1{2,}$/i.test(trimmed.replace(/\s/g, ""))) {
       // All characters are the same repeated letter e.g. "ggg", "aaaa"
-      otherWarning = "That doesn't look like a real job title. Please type a valid role.";
+      otherWarning = t("onboarding.invalidRole");
     } else if (/(.)\1{3,}/i.test(trimmed)) {
       // A single letter repeated 4+ times in a row e.g. "hooootel"
-      otherWarning = "That doesn't look like a real job title. Please type a valid role.";
+      otherWarning = t("onboarding.invalidRole");
     } else if (trimmed.split("").every(c => c === trimmed[0] || c === " " || c === "-")) {
       // All letters are the same character
-      otherWarning = "That doesn't look like a real job title. Please type a valid role.";
+      otherWarning = t("onboarding.invalidRole");
     }
   }
 
@@ -236,9 +252,9 @@ function Step1_JobField({ state, updateState, onNext, config }: StepProps) {
   return (
     <div style={{ padding: "90px 16px 20px", flex: 1, display: "flex", flexDirection: "column" }}>
       <h1 style={{ fontSize: 24, fontWeight: 800, color: "var(--text-primary)", marginBottom: 6, lineHeight: 1.2 }}>
-        {config?.step1_title || config?.welcome_title || "What role are you looking for?"}
+        {config?.step1_title || config?.welcome_title || t("onboarding.step1Title")}
       </h1>
-      <p style={{ fontSize: 14, color: "var(--text-secondary)", marginBottom: 20 }}>{config?.step1_subtitle || config?.welcome_subtitle || "Select up to 3 categories."}</p>
+      <p style={{ fontSize: 14, color: "var(--text-secondary)", marginBottom: 20 }}>{config?.step1_subtitle || config?.welcome_subtitle || t("onboarding.step1Subtitle")}</p>
 
       <div style={{ display: "flex", flexWrap: "wrap", gap: "4px 4px", alignContent: "flex-start" }}>
         {JOB_CATEGORIES.map((cat) => {
@@ -291,7 +307,7 @@ function Step1_JobField({ state, updateState, onNext, config }: StepProps) {
                 transition: "color 0.2s, font-weight 0.2s",
                 display: "inline-flex", alignItems: "center",
               }}>
-                {cat.label}
+                {categoryLabel(cat.label, t.lang)}
                 {isSelected && (
                   <span style={{
                     marginLeft: 6,
@@ -335,25 +351,27 @@ function Step1_JobField({ state, updateState, onNext, config }: StepProps) {
         >
           <span style={{ fontSize: 15 }}>💡</span>
           <span style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.4 }}>
-            Can't find your role? Tap <strong style={{ color: "var(--brand)" }}>Other</strong> to type it in.
+            {t.node("onboarding.cantFindRole", {
+              other: <strong style={{ color: "var(--brand)" }}>{t("onboarding.otherLabel")}</strong>,
+            })}
           </span>
         </motion.div>
       )}
 
       {shakeId && (
         <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ color: "var(--warning)", textAlign: "center", marginTop: 16, fontSize: 14 }}>
-          You can only pick up to 3.
+          {t("onboarding.maxThree")}
         </motion.p>
       )}
 
       {(state.selectedCategories.includes("Other") || state.selectedCategories.some(c => !JOB_CATEGORIES_DATA.some(p => p.label === c))) && (
         <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} style={{ marginTop: 16 }}>
           <p style={{ fontSize: 13, fontWeight: 600, color: "var(--text-muted)", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.05em" }}>
-            Please Specify
+            {t("onboarding.pleaseSpecify")}
           </p>
           <input
             className="input-base"
-            placeholder="e.g. Hotel Manager"
+            placeholder={t("onboarding.otherPlaceholder")}
             value={otherValue}
             onChange={(e) => setOtherValue(e.target.value)}
             onFocus={(e) => {
@@ -382,31 +400,28 @@ function Step1_JobField({ state, updateState, onNext, config }: StepProps) {
 
       <div style={{ marginTop: "auto", paddingTop: 32, display: "flex", flexDirection: "column" }}>
         <p style={{ fontSize: 13, fontWeight: 600, color: "var(--text-muted)", marginBottom: 12, textTransform: "uppercase", letterSpacing: "0.05em" }}>
-          App Language
+          {t("common.appLanguage")}
         </p>
         <div style={{ display: "flex", gap: 12, marginBottom: 24 }}>
-          <button
-            style={{
-              flex: 1, padding: "12px", borderRadius: 12,
-              background: "var(--brand-subtle)", border: "1px solid var(--brand)",
-              color: "var(--brand)", fontWeight: 700, fontSize: 15,
-              display: "flex", alignItems: "center", justifyContent: "center", cursor: "default"
-            }}
-          >
-            English
-          </button>
-          <button
-            style={{
-              flex: 1, padding: "12px", borderRadius: 12,
-              background: "var(--card-hover)", border: "1px solid var(--border)",
-              color: "var(--text-muted)", fontWeight: 500, fontSize: 15,
-              display: "flex", alignItems: "center", justifyContent: "center", cursor: "not-allowed",
-              opacity: 0.7
-            }}
-            disabled
-          >
-            Amharic (Soon)
-          </button>
+          {LANGS.map((code) => {
+            const isActive = lang === code;
+            return (
+              <button
+                key={code}
+                onClick={() => setLang(code)}
+                style={{
+                  flex: 1, padding: "12px", borderRadius: 12,
+                  background: isActive ? "var(--brand-subtle)" : "var(--card-hover)",
+                  border: `1px solid ${isActive ? "var(--brand)" : "var(--border)"}`,
+                  color: isActive ? "var(--brand)" : "var(--text-muted)",
+                  fontWeight: isActive ? 700 : 500, fontSize: 15,
+                  display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer"
+                }}
+              >
+                {LANG_LABELS[code]}
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -433,7 +448,7 @@ function Step1_JobField({ state, updateState, onNext, config }: StepProps) {
                 onNext();
               }}
             >
-              Continue
+              {t("common.continue")}
             </motion.button>
           )}
         </AnimatePresence>
@@ -444,6 +459,7 @@ function Step1_JobField({ state, updateState, onNext, config }: StepProps) {
 
 // --- Step 2: Contact Sharing ---
 function Step2_Contact({ state, updateState, onNext, config }: StepProps) {
+  const t = useT();
   const { isReady } = useTelegram();
 
   const handleYes = () => {
@@ -485,10 +501,10 @@ function Step2_Contact({ state, updateState, onNext, config }: StepProps) {
         <Smartphone size={36} color="var(--brand)" />
       </div>
       <h1 style={{ fontSize: 26, fontWeight: 800, color: "var(--text-primary)", marginBottom: 12, lineHeight: 1.2 }}>
-        {config?.step2_title || "Can we share your contact with employers?"}
+        {config?.step2_title || t("onboarding.step2Title")}
       </h1>
       <p style={{ fontSize: 15, color: "var(--text-secondary)", marginBottom: 40, maxWidth: 300 }}>
-        {config?.step2_subtitle || "This helps employers reach you faster when they want to hire you."}
+        {config?.step2_subtitle || t("onboarding.step2Subtitle")}
       </p>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 16, width: "100%" }}>
@@ -504,8 +520,8 @@ function Step2_Contact({ state, updateState, onNext, config }: StepProps) {
             <CheckCircle size={20} color="#FFFFFF" />
           </div>
           <div>
-            <p style={{ fontSize: 16, fontWeight: 700, color: "var(--text-primary)", marginBottom: 4 }}>Yes, share my contact</p>
-            <p style={{ fontSize: 13, color: "var(--text-secondary)" }}>Employers can reach you directly</p>
+            <p style={{ fontSize: 16, fontWeight: 700, color: "var(--text-primary)", marginBottom: 4 }}>{t("onboarding.shareYes")}</p>
+            <p style={{ fontSize: 13, color: "var(--text-secondary)" }}>{t("onboarding.shareYesHint")}</p>
           </div>
         </motion.button>
 
@@ -521,8 +537,8 @@ function Step2_Contact({ state, updateState, onNext, config }: StepProps) {
             <Lock size={20} color="var(--text-muted)" />
           </div>
           <div>
-            <p style={{ fontSize: 16, fontWeight: 700, color: "var(--text-primary)", marginBottom: 4 }}>No, keep it private</p>
-            <p style={{ fontSize: 13, color: "var(--text-secondary)" }}>You will be contacted through the app only</p>
+            <p style={{ fontSize: 16, fontWeight: 700, color: "var(--text-primary)", marginBottom: 4 }}>{t("onboarding.shareNo")}</p>
+            <p style={{ fontSize: 13, color: "var(--text-secondary)" }}>{t("onboarding.shareNoHint")}</p>
           </div>
         </motion.button>
       </div>
@@ -531,9 +547,10 @@ function Step2_Contact({ state, updateState, onNext, config }: StepProps) {
 }
 
 // --- Step 3: Experience Level ---
-const EXPERIENCE_OPTIONS = ["No Experience", "Less than 1 year", "1 to 2 years", "3 to 5 years", "5+ years"];
+
 
 function CustomDropdown({ label, value, options, onSelect }: { label: string; value: string; options: string[]; onSelect: (val: string) => void }) {
+  const t = useT();
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -578,7 +595,7 @@ function CustomDropdown({ label, value, options, onSelect }: { label: string; va
           boxShadow: "0 2px 8px rgba(0,0,0,0.02)",
         }}
       >
-        {value || "Select experience level…"}
+        {value ? (EXPERIENCE_LABELS[value] ? t(EXPERIENCE_LABELS[value]) : value) : t("onboarding.selectExperience")}
         <motion.div animate={{ rotate: isOpen ? 180 : 0 }}>
           <ChevronDown size={18} color={value ? "var(--brand)" : "var(--text-muted)"} />
         </motion.div>
@@ -628,7 +645,7 @@ function CustomDropdown({ label, value, options, onSelect }: { label: string; va
                 onMouseEnter={(e) => (e.currentTarget.style.background = value === opt ? "rgba(34,197,94,0.06)" : "var(--card-hover)")}
                 onMouseLeave={(e) => (e.currentTarget.style.background = value === opt ? "rgba(34,197,94,0.06)" : "transparent")}
               >
-                {opt}
+                {EXPERIENCE_LABELS[opt] ? t(EXPERIENCE_LABELS[opt]) : opt}
               </button>
             ))}
           </motion.div>
@@ -639,17 +656,15 @@ function CustomDropdown({ label, value, options, onSelect }: { label: string; va
 }
 
 function SearchableLocationDropdown({ value, onSelect }: { value: string; onSelect: (val: string) => void }) {
+  const t = useT();
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState("");
 
-  const filteredLocations = LOCATIONS.filter(loc => 
-    loc.name.toLowerCase().includes(search.toLowerCase()) || 
-    loc.subCity.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredLocations = LOCATIONS.filter(loc => locationMatches(loc, search));
 
   return (
     <div>
-      <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "var(--text-secondary)", marginBottom: 8, textTransform: "uppercase" }}>Location (Neighborhood)</label>
+      <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "var(--text-secondary)", marginBottom: 8, textTransform: "uppercase" }}>{t("onboarding.locationLabel")}</label>
       <motion.button
         whileTap={{ scale: 0.98 }}
         onClick={() => setIsOpen(true)}
@@ -670,7 +685,7 @@ function SearchableLocationDropdown({ value, onSelect }: { value: string; onSele
         }}
       >
         <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-          {value || "Search your area..."}
+          {value || t("onboarding.searchYourArea")}
         </span>
         <ChevronDown size={18} color={value ? "var(--brand)" : "var(--text-muted)"} />
       </motion.button>
@@ -714,7 +729,7 @@ function SearchableLocationDropdown({ value, onSelect }: { value: string; onSele
             >
               {/* Header */}
               <div style={{ padding: "20px 20px 16px", display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid var(--border)", background: "var(--surface)" }}>
-                <h3 style={{ fontSize: 18, fontWeight: 800, color: "var(--text-primary)", margin: 0 }}>Select Location</h3>
+                <h3 style={{ fontSize: 18, fontWeight: 800, color: "var(--text-primary)", margin: 0 }}>{t("onboarding.selectLocation")}</h3>
                 <button 
                   onClick={() => setIsOpen(false)}
                   style={{ background: "transparent", border: "none", fontSize: 24, color: "var(--text-muted)", cursor: "pointer", padding: 0, lineHeight: 1 }}
@@ -728,7 +743,7 @@ function SearchableLocationDropdown({ value, onSelect }: { value: string; onSele
                 <div style={{ display: "flex", alignItems: "center", gap: 10, background: "var(--app-bg)", border: "1px solid var(--border)", borderRadius: 12, padding: "12px 16px" }}>
                   <Search size={18} color="var(--text-muted)" />
                   <input 
-                    placeholder="Search area or sub-city..."
+                    placeholder={t("onboarding.searchAreaPlaceholder")}
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     style={{
@@ -771,16 +786,16 @@ function SearchableLocationDropdown({ value, onSelect }: { value: string; onSele
                     >
                       <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                         <span style={{ fontSize: 16, fontWeight: value === loc.name ? 700 : 500, color: value === loc.name ? "var(--brand)" : "var(--text-primary)" }}>
-                          {loc.name}
+                          {locationLabel(loc.name, t.lang)}
                         </span>
-                        <span style={{ fontSize: 13, color: "var(--text-muted)" }}>{loc.subCity}</span>
+                        <span style={{ fontSize: 13, color: "var(--text-muted)" }}>{subCityLabel(loc.subCity, t.lang)}</span>
                       </div>
                       {value === loc.name && <CheckCircle size={20} color="var(--brand)" />}
                     </button>
                   ))
                 ) : (
                   <div style={{ padding: "32px 20px", textAlign: "center", color: "var(--text-muted)", fontSize: 15 }}>
-                    No locations found matching "{search}".
+                    {t("onboarding.noLocationsFound", { search })}
                   </div>
                 )}
               </div>
@@ -793,6 +808,7 @@ function SearchableLocationDropdown({ value, onSelect }: { value: string; onSele
 }
 
 function Step3_Experience({ state, updateState, onNext, config }: StepProps) {
+  const t = useT();
   let EXPERIENCES = [...EXPERIENCE_OPTIONS];
   try {
     if (config?.step3_experience_levels) {
@@ -811,10 +827,10 @@ function Step3_Experience({ state, updateState, onNext, config }: StepProps) {
   return (
     <div style={{ padding: "130px 20px 40px", flex: 1, display: "flex", flexDirection: "column" }}>
       <h1 style={{ fontSize: 24, fontWeight: 800, color: "var(--text-primary)", marginBottom: 6, lineHeight: 1.2 }}>
-        {config?.step3_title || "What is your experience level?"}
+        {config?.step3_title || t("onboarding.step3Title")}
       </h1>
       <p style={{ fontSize: 14, color: "var(--text-secondary)", marginBottom: 28 }}>
-        {config?.step3_subtitle || "Select for each of your chosen roles."}
+        {config?.step3_subtitle || t("onboarding.step3Subtitle")}
       </p>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 16, marginBottom: "auto" }}>
@@ -831,7 +847,7 @@ function Step3_Experience({ state, updateState, onNext, config }: StepProps) {
 
       {allSelected && (
         <motion.button initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="btn-primary" style={{ marginTop: 24 }} onClick={onNext}>
-          Continue
+          {t("common.continue")}
         </motion.button>
       )}
     </div>
@@ -840,6 +856,7 @@ function Step3_Experience({ state, updateState, onNext, config }: StepProps) {
 
 // --- Step 4: Personal Details ---
 function Step4_Personal({ state, updateState, onNext, config }: StepProps) {
+  const t = useT();
   const [ageError, setAgeError] = useState("");
   const [nameError, setNameError] = useState("");
 
@@ -853,16 +870,16 @@ function Step4_Personal({ state, updateState, onNext, config }: StepProps) {
     if (trimmed.length === 0) {
       setNameError("");
     } else if (trimmed.length < 3) {
-      setNameError("Name is too short.");
+      setNameError(t("onboarding.nameRequired"));
     } else if (/[^a-zA-Z\s\-\u1200-\u137F]/.test(trimmed)) {
       // Allow Latin letters, spaces, hyphens, and Ethiopic script
-      setNameError("Name should only contain letters.");
+      setNameError(t("onboarding.nameLettersOnly"));
     } else if (/^(.)\1{2,}$/i.test(trimmed.replace(/\s/g, ""))) {
-      setNameError("That doesn't look like a real name.");
+      setNameError(t("onboarding.nameNotReal"));
     } else if (/(.)\1{3,}/i.test(trimmed)) {
-      setNameError("That doesn't look like a real name.");
+      setNameError(t("onboarding.nameNotReal"));
     } else if (!trimmed.includes(" ") && trimmed.length > 30) {
-      setNameError("Please enter your full name (first and last).");
+      setNameError(t("onboarding.nameNeedsFull"));
     } else {
       setNameError("");
     }
@@ -878,7 +895,7 @@ function Step4_Personal({ state, updateState, onNext, config }: StepProps) {
     const num = parseInt(val, 10);
     if (isNaN(num)) return;
     updateState({ age: num });
-    if (num < 16 || num > 60) setAgeError("Age must be between 16 and 60.");
+    if (num < 16 || num > 60) setAgeError(t("onboarding.ageRange"));
     else setAgeError("");
   };
 
@@ -887,16 +904,16 @@ function Step4_Personal({ state, updateState, onNext, config }: StepProps) {
   return (
     <div style={{ padding: "130px 20px 40px", flex: 1, display: "flex", flexDirection: "column" }}>
       <h1 style={{ fontSize: 26, fontWeight: 800, color: "var(--text-primary)", marginBottom: 32, lineHeight: 1.2 }}>
-        {config?.step4_title || "Tell us a bit about yourself"}
+        {config?.step4_title || t("onboarding.step4Title")}
       </h1>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 20, marginBottom: "auto" }}>
         
         <div>
-          <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "var(--text-secondary)", marginBottom: 8, textTransform: "uppercase" }}>Full Name</label>
+          <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "var(--text-secondary)", marginBottom: 8, textTransform: "uppercase" }}>{t("onboarding.fullName")}</label>
           <input
             className="input-base"
-            placeholder="E.g. Abebe Kebede"
+            placeholder={t("onboarding.fullNamePlaceholder")}
             value={state.fullName}
             onChange={handleNameChange}
             style={
@@ -923,20 +940,20 @@ function Step4_Personal({ state, updateState, onNext, config }: StepProps) {
               animate={{ opacity: 1, y: 0 }}
               style={{ marginTop: 6, display: "flex", gap: 5, alignItems: "center", color: "var(--brand)", fontSize: 13 }}
             >
-              <span style={{ fontWeight: 600 }}>Looks good!</span>
+              <span style={{ fontWeight: 600 }}>{t("onboarding.looksGood")}</span>
             </motion.div>
           ) : null}
         </div>
 
         <div>
-          <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "var(--text-secondary)", marginBottom: 8, textTransform: "uppercase" }}>Age</label>
+          <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "var(--text-secondary)", marginBottom: 8, textTransform: "uppercase" }}>{t("onboarding.age")}</label>
           <input type="number" className="input-base" placeholder="18" value={state.age} onChange={handleAgeChange} />
           {ageError && <p style={{ color: "var(--warning)", fontSize: 12, marginTop: 6 }}>{ageError}</p>}
         </div>
 
         {/* Gender Selector */}
         <div>
-          <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "var(--text-secondary)", marginBottom: 12, textTransform: "uppercase" }}>Gender</label>
+          <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "var(--text-secondary)", marginBottom: 12, textTransform: "uppercase" }}>{t("onboarding.gender")}</label>
           <div style={{ display: "flex", gap: 12 }}>
             {(["male", "female"] as const).map((g) => {
               const isSelected = state.gender === g;
@@ -969,8 +986,7 @@ function Step4_Personal({ state, updateState, onNext, config }: StepProps) {
                   <span style={{
                     fontSize: 14, fontWeight: 700,
                     color: isSelected ? "var(--brand)" : "var(--text-secondary)",
-                    textTransform: "capitalize",
-                  }}>{g}</span>
+                  }}>{t(g === "male" ? "onboarding.male" : "onboarding.female")}</span>
                 </motion.button>
               );
             })}
@@ -984,8 +1000,8 @@ function Step4_Personal({ state, updateState, onNext, config }: StepProps) {
 
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "var(--card)", padding: 16, borderRadius: 16, border: "1px solid var(--border)" }}>
           <div>
-            <p style={{ fontSize: 15, fontWeight: 600, color: "var(--text-primary)" }}>Willing to relocate?</p>
-            <p style={{ fontSize: 12, color: "var(--text-secondary)" }}>Apply to jobs outside your area</p>
+            <p style={{ fontSize: 15, fontWeight: 600, color: "var(--text-primary)" }}>{t("onboarding.willingToRelocate")}</p>
+            <p style={{ fontSize: 12, color: "var(--text-secondary)" }}>{t("onboarding.willingToRelocateHint")}</p>
           </div>
           <motion.button
             whileTap={{ scale: 0.9 }}
@@ -1003,7 +1019,7 @@ function Step4_Personal({ state, updateState, onNext, config }: StepProps) {
       </div>
 
       <motion.button className="btn-primary" style={{ marginTop: 24, opacity: canProceed ? 1 : 0.5 }} disabled={!canProceed} onClick={onNext}>
-        Continue
+        {t("common.continue")}
       </motion.button>
     </div>
   );
@@ -1012,18 +1028,19 @@ function Step4_Personal({ state, updateState, onNext, config }: StepProps) {
 
 // --- Step 5: CV Upload ---
 function Step5_CV({ state, updateState, onNext, config }: StepProps) {
+  const t = useT();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       const file = e.target.files[0];
       if (file.size > 5 * 1024 * 1024) {
-        alert("File is too large. Max 5MB.");
+        alert(t("onboarding.fileTooLarge"));
         return;
       }
       // Allowed types simplified for demo
       if (!file.name.endsWith(".pdf") && !file.name.endsWith(".doc") && !file.name.endsWith(".docx")) {
-         alert("Please upload a PDF or Word document.");
+         alert(t("onboarding.wrongFileType"));
          return;
       }
       updateState({ cvFile: file, cvUploaded: true });
@@ -1033,10 +1050,10 @@ function Step5_CV({ state, updateState, onNext, config }: StepProps) {
   return (
     <div style={{ padding: "130px 20px 40px", flex: 1, display: "flex", flexDirection: "column" }}>
       <h1 style={{ fontSize: 26, fontWeight: 800, color: "var(--text-primary)", marginBottom: 8, lineHeight: 1.2 }}>
-        {config?.step5_title || "Upload your CV"}
+        {config?.step5_title || t("onboarding.step5Title")}
       </h1>
       <p style={{ fontSize: 15, color: "var(--text-secondary)", marginBottom: 32 }}>
-        {config?.step5_subtitle || "PDF or Word document. Max 5MB."}
+        {config?.step5_subtitle || t("onboarding.step5Subtitle")}
       </p>
 
       <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center" }}>
@@ -1055,12 +1072,12 @@ function Step5_CV({ state, updateState, onNext, config }: StepProps) {
             <>
               <CheckCircle size={48} color="var(--success)" style={{ marginBottom: 16 }} />
               <p style={{ fontSize: 16, fontWeight: 600, color: "var(--text-primary)", textAlign: "center", wordBreak: "break-all" }}>{state.cvFile.name}</p>
-              <p style={{ fontSize: 13, color: "var(--text-secondary)", marginTop: 8 }}>Tap to change file</p>
+              <p style={{ fontSize: 13, color: "var(--text-secondary)", marginTop: 8 }}>{t("onboarding.tapToChange")}</p>
             </>
           ) : (
             <>
               <UploadCloud size={48} color="var(--brand)" style={{ marginBottom: 16 }} />
-              <p style={{ fontSize: 16, fontWeight: 600, color: "var(--text-primary)" }}>Tap to select file</p>
+              <p style={{ fontSize: 16, fontWeight: 600, color: "var(--text-primary)" }}>{t("onboarding.tapToSelect")}</p>
             </>
           )}
         </motion.div>
@@ -1075,11 +1092,11 @@ function Step5_CV({ state, updateState, onNext, config }: StepProps) {
 
       <div style={{ display: "flex", flexDirection: "column", gap: 16, marginTop: 24 }}>
         <motion.button className="btn-primary" onClick={onNext} disabled={state.isSubmitting}>
-          {state.isSubmitting ? "Submitting..." : (state.cvFile ? "Finish Setup" : "Continue Without CV")}
+          {state.isSubmitting ? t("onboarding.submittingSetup") : (state.cvFile ? t("onboarding.finishSetup") : t("onboarding.continueWithoutCv"))}
         </motion.button>
         {!state.cvFile && !state.isSubmitting && (
            <button onClick={onNext} style={{ background: "none", border: "none", color: "var(--text-muted)", fontSize: 14, fontWeight: 600, cursor: "pointer" }}>
-             Skip for now
+             {t("onboarding.skipForNow")}
            </button>
         )}
       </div>
@@ -1089,6 +1106,7 @@ function Step5_CV({ state, updateState, onNext, config }: StepProps) {
 
 // --- Step 6: Success Screen ---
 function Step6_Success({ state, onNext, config }: { state: ReturnType<typeof useOnboarding>["state"], onNext: () => void, config?: Record<string, string> }) {
+  const t = useT();
   return (
     <div style={{ padding: "40px 20px", flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center" }}>
       <motion.div
@@ -1099,15 +1117,15 @@ function Step6_Success({ state, onNext, config }: { state: ReturnType<typeof use
       </motion.div>
       
       <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} style={{ fontSize: 32, fontWeight: 800, color: "var(--text-primary)", marginBottom: 12, lineHeight: 1.2 }}>
-        {config?.step6_headline ? config.step6_headline.replace("{name}", state.fullName.split(" ")[0]) : `Welcome ${state.fullName.split(" ")[0]}!`}
+        {config?.step6_headline ? config.step6_headline.replace("{name}", state.fullName.split(" ")[0]) : t("onboarding.step6Headline", { name: state.fullName.split(" ")[0] })}
       </motion.h1>
       
       <motion.p initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} style={{ fontSize: 16, color: "var(--text-secondary)", lineHeight: 1.6, maxWidth: 300, marginBottom: 48 }}>
-        {config?.step6_body || "Welcome to JobsAdis by Prime Hospitality. Your profile is ready. Let's find you the perfect job."}
+        {config?.step6_body || t("onboarding.step6Body")}
       </motion.p>
 
       <motion.button initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="btn-primary" onClick={onNext} style={{ width: "100%" }}>
-        Find jobs
+        {t("onboarding.findJobs")}
       </motion.button>
     </div>
   );

@@ -5,6 +5,7 @@ import { motion, AnimatePresence, LazyMotion, domAnimation } from "framer-motion
 import { FileText, MapPin, Clock, ChevronRight, RefreshCw } from "lucide-react";
 import { fetchApplications } from "@/lib/api";
 import { useTelegram } from "@/hooks/useTelegram";
+import { useT, timeAgo, type TKey } from "@/lib/i18n";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 interface Application {
@@ -47,33 +48,22 @@ interface Application {
     | null;
 }
 
-const STATUS_CONFIG: Record<Application["status"], { label: string; color: string; bg: string; border: string; emoji: string }> = {
-  pending:     { label: "Submitted",   color: "#8B9BBE",  bg: "rgba(139,155,190,0.08)", border: "rgba(139,155,190,0.2)",  emoji: "📋" },
-  reviewed:    { label: "Reviewed",    color: "#60A5FA",  bg: "rgba(96,165,250,0.08)",  border: "rgba(96,165,250,0.2)",   emoji: "👀" },
-  shortlisted: { label: "Shortlisted", color: "#4ADE80",  bg: "rgba(74,222,128,0.08)",  border: "rgba(74,222,128,0.2)",   emoji: "⭐" },
-  rejected:    { label: "Not selected",color: "#FCA5A5",  bg: "rgba(252,165,165,0.06)", border: "rgba(252,165,165,0.15)", emoji: "✗" },
+const STATUS_CONFIG: Record<Application["status"], { labelKey: TKey; color: string; bg: string; border: string; emoji: string }> = {
+  pending:     { labelKey: "applications.status.pending",     color: "#8B9BBE",  bg: "rgba(139,155,190,0.08)", border: "rgba(139,155,190,0.2)",  emoji: "📋" },
+  reviewed:    { labelKey: "applications.status.reviewed",    color: "#60A5FA",  bg: "rgba(96,165,250,0.08)",  border: "rgba(96,165,250,0.2)",   emoji: "👀" },
+  shortlisted: { labelKey: "applications.status.shortlisted", color: "#4ADE80",  bg: "rgba(74,222,128,0.08)",  border: "rgba(74,222,128,0.2)",   emoji: "⭐" },
+  rejected:    { labelKey: "applications.status.rejected",    color: "#FCA5A5",  bg: "rgba(252,165,165,0.06)", border: "rgba(252,165,165,0.15)", emoji: "✗" },
 };
-
-function timeAgo(dateStr: string): string {
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const mins = Math.floor(diff / 60000);
-  const hours = Math.floor(diff / 3600000);
-  const days = Math.floor(diff / 86400000);
-  if (mins < 1) return "just now";
-  if (mins < 60) return `${mins}m ago`;
-  if (hours < 24) return `${hours}h ago`;
-  if (days === 1) return "Yesterday";
-  if (days < 7) return `${days}d ago`;
-  return `${Math.floor(days / 7)}w ago`;
-}
 
 
 // ─── Main Screen ─────────────────────────────────────────────────────────────
 export default function ApplicationsScreen() {
+  const t = useT();
   const { initData } = useTelegram();
   const [applications, setApplications] = useState<Application[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  // Held as a flag rather than a message so the text re-translates on language change.
+  const [error, setError] = useState(false);
 
   const loadApplications = useCallback(async () => {
     // No real Telegram session (browser dev mode)
@@ -84,14 +74,14 @@ export default function ApplicationsScreen() {
     }
 
     setIsLoading(true);
-    setError(null);
+    setError(false);
 
     try {
       const result = await fetchApplications(initData);
       setApplications(result.applications as unknown as Application[]);
     } catch (err) {
       console.error("Failed to fetch applications:", err);
-      setError("Could not load your applications. Please try again.");
+      setError(true);
     } finally {
       setIsLoading(false);
     }
@@ -118,12 +108,12 @@ export default function ApplicationsScreen() {
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <div>
               <h1 style={{ fontSize: 22, fontWeight: 800, color: "var(--text-primary)", letterSpacing: "-0.02em", marginBottom: 4 }}>
-                My Applications
+                {t("applications.title")}
               </h1>
               <p style={{ fontSize: 14, color: "var(--text-secondary)" }}>
                 {applications.length > 0
-                  ? `${applications.length} application${applications.length !== 1 ? "s" : ""} submitted`
-                  : "Track your job applications here"}
+                  ? t(applications.length === 1 ? "applications.countSubtitle" : "applications.countSubtitlePlural", { count: applications.length })
+                  : t("applications.emptySubtitle")}
               </p>
             </div>
             <motion.button
@@ -168,7 +158,7 @@ export default function ApplicationsScreen() {
                 borderRadius: 14, padding: 20, textAlign: "center",
               }}
             >
-              <p style={{ color: "#FCA5A5", fontSize: 14, marginBottom: 12 }}>{error}</p>
+              <p style={{ color: "#FCA5A5", fontSize: 14, marginBottom: 12 }}>{t("applications.loadError")}</p>
               <button
                 onClick={loadApplications}
                 style={{
@@ -176,7 +166,7 @@ export default function ApplicationsScreen() {
                   background: "none", border: "none", cursor: "pointer",
                 }}
               >
-                Try again
+                {t("applications.tryAgain")}
               </button>
             </motion.div>
           )}
@@ -201,10 +191,10 @@ export default function ApplicationsScreen() {
                 <FileText size={32} color="var(--text-muted)" />
               </div>
               <h2 style={{ fontSize: 18, fontWeight: 700, color: "var(--text-primary)", marginBottom: 8 }}>
-                No applications yet
+                {t("applications.emptyHeading")}
               </h2>
               <p style={{ fontSize: 14, color: "var(--text-secondary)", lineHeight: 1.6, maxWidth: 260, margin: "0 auto" }}>
-                Find jobs and hit Apply — your applications will track here in real time.
+                {t("applications.emptyBody")}
               </p>
             </motion.div>
           )}
@@ -247,7 +237,7 @@ export default function ApplicationsScreen() {
 
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <p style={{ fontSize: 15, fontWeight: 700, color: "var(--text-primary)", marginBottom: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                            {job?.title ?? "Job"}
+                            {job?.title ?? t("applications.fallbackJobTitle")}
                           </p>
                           <p style={{ fontSize: 13, color: "var(--brand)", marginBottom: 8, fontWeight: 600 }}>
                             {emp?.business_name ?? "—"}
@@ -264,7 +254,7 @@ export default function ApplicationsScreen() {
                                 borderRadius: 100, padding: "3px 10px",
                               }}
                             >
-                              {cfg.emoji} {cfg.label}
+                              {cfg.emoji} {t(cfg.labelKey)}
                             </span>
 
                             {/* Location */}
@@ -276,7 +266,7 @@ export default function ApplicationsScreen() {
                             {/* Time */}
                             <span style={{ fontSize: 11, color: "var(--text-muted)", display: "flex", alignItems: "center", gap: 3 }}>
                               <Clock size={10} />
-                              {timeAgo(app.created_at)}
+                              {timeAgo(app.created_at, t.lang)}
                             </span>
                           </div>
                         </div>

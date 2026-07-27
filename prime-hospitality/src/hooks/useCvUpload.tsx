@@ -4,6 +4,7 @@ import { createContext, useContext, useState, ReactNode } from "react";
 import { supabase } from "@/lib/supabase";
 import { updateCv, fetchProfile } from "@/lib/api";
 import { useTelegram } from "@/hooks/useTelegram";
+import { useT } from "@/lib/i18n";
 
 interface CvUploadContextType {
   isUploadingCv: boolean;
@@ -14,17 +15,18 @@ interface CvUploadContextType {
 const CvUploadContext = createContext<CvUploadContextType | undefined>(undefined);
 
 export function CvUploadProvider({ children }: { children: ReactNode }) {
+  const t = useT();
   const { user, initData } = useTelegram();
   const [isUploadingCv, setIsUploadingCv] = useState(false);
   const [cvUploadError, setCvUploadError] = useState<string | null>(null);
 
   const uploadCv = async (file: File) => {
     if (file.size > 5 * 1024 * 1024) {
-      window.dispatchEvent(new CustomEvent("cvToast", { detail: { type: "error", message: "File is too large. Max 5MB." } }));
+      window.dispatchEvent(new CustomEvent("cvToast", { detail: { type: "error", message: t("app.cvTooLarge") } }));
       return;
     }
     if (!file.name.endsWith(".pdf") && !file.name.endsWith(".doc") && !file.name.endsWith(".docx")) {
-      window.dispatchEvent(new CustomEvent("cvToast", { detail: { type: "error", message: "Please upload a PDF or Word document." } }));
+      window.dispatchEvent(new CustomEvent("cvToast", { detail: { type: "error", message: t("app.cvWrongType") } }));
       return;
     }
 
@@ -58,13 +60,13 @@ export function CvUploadProvider({ children }: { children: ReactNode }) {
       // Dispatch events to tell ProfileScreen to refresh and show toast
       if (typeof window !== "undefined") {
         window.dispatchEvent(new Event("cvUploadSuccess"));
-        window.dispatchEvent(new CustomEvent("cvToast", { detail: { type: "success", message: "Your CV has been uploaded successfully!" } }));
+        window.dispatchEvent(new CustomEvent("cvToast", { detail: { type: "success", message: t("app.cvUploadedSuccess") } }));
       }
     } catch (err: any) {
       console.error("Error uploading CV:", err);
-      setCvUploadError(err.message || "Failed to upload CV");
+      setCvUploadError(err.message || t("app.cvUploadGenericError"));
       if (typeof window !== "undefined") {
-        window.dispatchEvent(new CustomEvent("cvToast", { detail: { type: "error", message: err.message || "Failed to upload CV" } }));
+        window.dispatchEvent(new CustomEvent("cvToast", { detail: { type: "error", message: err.message || t("app.cvUploadGenericError") } }));
       }
     } finally {
       setIsUploadingCv(false);

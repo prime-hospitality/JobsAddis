@@ -5,19 +5,8 @@ import { motion, AnimatePresence, LazyMotion, domAnimation } from "framer-motion
 import { Bell, Briefcase, CheckCircle, Clock, ExternalLink, Settings, ChevronDown, X, Check, Sparkles } from "lucide-react";
 import { fetchNotifications, markNotificationsRead, fetchProfile, updateAlertCategories, Notification } from "@/lib/api";
 import { useTelegram } from "@/hooks/useTelegram";
-
-function timeAgo(dateStr: string): string {
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const mins = Math.floor(diff / 60000);
-  const hours = Math.floor(diff / 3600000);
-  const days = Math.floor(diff / 86400000);
-  if (mins < 1) return "just now";
-  if (mins < 60) return `${mins}m ago`;
-  if (hours < 24) return `${hours}h ago`;
-  if (days === 1) return "Yesterday";
-  if (days < 7) return `${days}d ago`;
-  return `${Math.floor(days / 7)}w ago`;
-}
+import { useT, timeAgo } from "@/lib/i18n";
+import { categoryLabel, categoryMatches } from "@/lib/vocabulary";
 
 const CATEGORY_NAMES = [
   "Waiter", "Chef", "Executive Chef", "Sous Chef", "Barista", "Reception", "Night Auditor", "Guest Relations Officer", "Reservations Agent", "Housekeeper",
@@ -35,6 +24,7 @@ export interface NotificationsScreenProps {
 }
 
 export default function NotificationsScreen({ onSelectJob, isEmployer = false }: NotificationsScreenProps) {
+  const t = useT();
   const { initData } = useTelegram();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -181,7 +171,7 @@ export default function NotificationsScreen({ onSelectJob, isEmployer = false }:
   };
 
   const filteredDropdownItems = CATEGORY_NAMES.filter(n =>
-    n.toLowerCase().includes(dropdownSearch.toLowerCase()) && !tempCategories.includes(n)
+    categoryMatches(n, dropdownSearch) && !tempCategories.includes(n)
   );
 
   return (
@@ -189,7 +179,7 @@ export default function NotificationsScreen({ onSelectJob, isEmployer = false }:
       <div style={{ display: "flex", flexDirection: "column", height: "100dvh", overflowY: "auto", paddingBottom: 96 }}>
         {/* Header */}
         <div className="safe-screen-top" style={{ padding: "0 20px 20px 20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <h1 style={{ fontSize: 22, fontWeight: 800, color: "var(--text-primary)", letterSpacing: "-0.02em" }}>Notifications</h1>
+          <h1 style={{ fontSize: 22, fontWeight: 800, color: "var(--text-primary)", letterSpacing: "-0.02em" }}>{t("notifications.title")}</h1>
           <button
             onClick={handleOpenSettings}
             style={{
@@ -208,15 +198,15 @@ export default function NotificationsScreen({ onSelectJob, isEmployer = false }:
         {/* Subscribed Alerts Summary */}
         <div style={{ padding: "0 20px 16px 20px" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-            <h2 style={{ fontSize: 13, fontWeight: 700, color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Your Alerts</h2>
-            <span style={{ fontSize: 12, color: "var(--brand)", fontWeight: 600 }}>{alertCategories.length} Active</span>
+            <h2 style={{ fontSize: 13, fontWeight: 700, color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.05em" }}>{t("notifications.yourAlerts")}</h2>
+            <span style={{ fontSize: 12, color: "var(--brand)", fontWeight: 600 }}>{t("notifications.activeCount", { count: alertCategories.length })}</span>
           </div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
             {alertCategories.length > 0 ? (
               <>
                 {alertCategories.map(cat => (
                   <div key={cat} style={{ background: "rgba(139, 92, 246, 0.1)", color: "var(--brand)", padding: "4px 10px", borderRadius: 8, fontSize: 12, fontWeight: 600 }}>
-                    {cat}
+                    {categoryLabel(cat, t.lang)}
                   </div>
                 ))}
                 {alertExpLevel && (
@@ -226,7 +216,7 @@ export default function NotificationsScreen({ onSelectJob, isEmployer = false }:
                 )}
               </>
             ) : (
-              <div style={{ fontSize: 13, color: "var(--text-muted)" }}>No active alerts. Tap the gear icon to subscribe.</div>
+              <div style={{ fontSize: 13, color: "var(--text-muted)" }}>{t("notifications.noAlerts")}</div>
             )}
           </div>
         </div>
@@ -244,7 +234,7 @@ export default function NotificationsScreen({ onSelectJob, isEmployer = false }:
               <div style={{ width: 64, height: 64, borderRadius: 18, background: "var(--card)", border: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
                 <Bell size={28} color="var(--text-muted)" />
               </div>
-              <p style={{ fontSize: 16, fontWeight: 700, color: "var(--text-primary)" }}>You're all caught up!</p>
+              <p style={{ fontSize: 16, fontWeight: 700, color: "var(--text-primary)" }}>{t("notifications.allCaughtUp")}</p>
             </div>
           )}
 
@@ -290,13 +280,11 @@ export default function NotificationsScreen({ onSelectJob, isEmployer = false }:
 
                     <div style={{ flex: 1 }}>
                       <p style={{ fontSize: 14, color: "var(--text-primary)", lineHeight: 1.5, marginBottom: 6 }}>
-                        {n.type === "shortlisted" ? (
-                          <>You've been <b>shortlisted</b> by <b>{n.company_name}</b> for the <b>{n.job_title}</b> position! They will contact you soon.</>
-                        ) : n.type === "vacancy_alert" ? (
-                          <>New job opening matching your alert subscription: <b>{n.company_name}</b> is looking for a <b>{n.job_title}</b>.</>
-                        ) : (
-                          <>Update on your application for <b>{n.job_title}</b> at <b>{n.company_name}</b>.</>
-                        )}
+                        {n.type === "shortlisted"
+                          ? t.node("notifications.bodyShortlisted", { company: n.company_name, job: n.job_title })
+                          : n.type === "vacancy_alert"
+                          ? t.node("notifications.bodyVacancyAlert", { company: n.company_name, job: n.job_title })
+                          : t.node("notifications.bodyDefault", { company: n.company_name, job: n.job_title })}
                       </p>
 
                       {n.type === "vacancy_alert" && n.job_id && onSelectJob && (
@@ -311,12 +299,12 @@ export default function NotificationsScreen({ onSelectJob, isEmployer = false }:
                             color: "var(--brand)", fontSize: 13, fontWeight: 600, cursor: "pointer",
                           }}
                         >
-                          View Job <ExternalLink size={14} />
+                          {t("notifications.viewJob")} <ExternalLink size={14} />
                         </button>
                       )}
 
                       <span style={{ fontSize: 12, color: "var(--text-muted)", display: "flex", alignItems: "center", gap: 4 }}>
-                        <Clock size={12} /> {timeAgo(n.created_at)}
+                        <Clock size={12} /> {timeAgo(n.created_at, t.lang)}
                       </span>
                     </div>
                   </motion.div>
@@ -356,8 +344,8 @@ export default function NotificationsScreen({ onSelectJob, isEmployer = false }:
                   <div style={{ width: 36, height: 4, background: "var(--border)", borderRadius: 2, margin: "0 auto" }} />
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                     <div>
-                      <h2 style={{ fontSize: 18, fontWeight: 800, color: "var(--text-primary)" }}>Alert Preferences</h2>
-                      <p style={{ fontSize: 13, color: "var(--text-muted)", marginTop: 2 }}>Get notified when matching jobs are posted</p>
+                      <h2 style={{ fontSize: 18, fontWeight: 800, color: "var(--text-primary)" }}>{t("notifications.settingsTitle")}</h2>
+                      <p style={{ fontSize: 13, color: "var(--text-muted)", marginTop: 2 }}>{t("notifications.settingsSubtitle")}</p>
                     </div>
                     <button
                       onClick={() => !isSaving && setIsSettingsOpen(false)}
@@ -373,7 +361,7 @@ export default function NotificationsScreen({ onSelectJob, isEmployer = false }:
 
                   {/* ── Category Dropdown ── */}
                   <p style={{ fontSize: 12, fontWeight: 700, color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8 }}>
-                    Job Categories <span style={{ color: "var(--text-muted)", fontWeight: 500, textTransform: "none", letterSpacing: 0 }}>(up to 3)</span>
+                    {t("notifications.jobCategories")} <span style={{ color: "var(--text-muted)", fontWeight: 500, textTransform: "none", letterSpacing: 0 }}>{t("notifications.upToThree")}</span>
                   </p>
 
                   {/* Selected chips inside input */}
@@ -391,7 +379,7 @@ export default function NotificationsScreen({ onSelectJob, isEmployer = false }:
                       }}
                     >
                       {tempCategories.length === 0 && (
-                        <span style={{ fontSize: 14, color: "var(--text-muted)", flex: 1 }}>Select categories…</span>
+                        <span style={{ fontSize: 14, color: "var(--text-muted)", flex: 1 }}>{t("notifications.selectCategories")}</span>
                       )}
                       {tempCategories.map(cat => (
                         <span
@@ -403,7 +391,7 @@ export default function NotificationsScreen({ onSelectJob, isEmployer = false }:
                             fontSize: 12, fontWeight: 600,
                           }}
                         >
-                          {cat}
+                          {categoryLabel(cat, t.lang)}
                           <button
                             onClick={e => { e.stopPropagation(); handleRemoveCategory(cat); }}
                             style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.8)", display: "flex", padding: 0, lineHeight: 1 }}
@@ -439,7 +427,7 @@ export default function NotificationsScreen({ onSelectJob, isEmployer = false }:
                           <div style={{ padding: "8px 12px", borderBottom: "1px solid var(--border)" }}>
                             <input
                               type="text"
-                              placeholder="Search…"
+                              placeholder={t("notifications.searchPlaceholder")}
                               value={dropdownSearch}
                               onChange={e => setDropdownSearch(e.target.value)}
                               onClick={e => e.stopPropagation()}
@@ -454,7 +442,7 @@ export default function NotificationsScreen({ onSelectJob, isEmployer = false }:
                           <div style={{ maxHeight: 200, overflowY: "auto" }}>
                             {filteredDropdownItems.length === 0 ? (
                               <div style={{ padding: "12px 16px", fontSize: 13, color: "var(--text-muted)", textAlign: "center" }}>
-                                {tempCategories.length >= 3 ? "Max 3 categories selected" : "No results"}
+                                {tempCategories.length >= 3 ? t("notifications.maxSelected") : t("notifications.noResults")}
                               </div>
                             ) : (
                               filteredDropdownItems.map(name => (
@@ -475,9 +463,9 @@ export default function NotificationsScreen({ onSelectJob, isEmployer = false }:
                                     display: "flex", justifyContent: "space-between", alignItems: "center",
                                   }}
                                 >
-                                  {name}
+                                  {categoryLabel(name, t.lang)}
                                   {tempCategories.length >= 3 && (
-                                    <span style={{ fontSize: 11, color: "var(--text-muted)" }}>Max reached</span>
+                                    <span style={{ fontSize: 11, color: "var(--text-muted)" }}>{t("notifications.maxReached")}</span>
                                   )}
                                 </motion.button>
                               ))
@@ -491,7 +479,7 @@ export default function NotificationsScreen({ onSelectJob, isEmployer = false }:
                   {/* ── Experience Level Radio Group ── */}
                   <div style={{ marginTop: isDropdownOpen ? 220 : 24 }}>
                     <p style={{ fontSize: 12, fontWeight: 700, color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 12 }}>
-                      Experience Level
+                      {t("notifications.experienceLevel")}
                     </p>
                     <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
                       {EXPERIENCE_LEVELS.map(level => {
@@ -545,7 +533,7 @@ export default function NotificationsScreen({ onSelectJob, isEmployer = false }:
                           transition: "all 0.15s ease",
                         }} />
                         <p style={{ fontSize: 14, fontWeight: tempExpLevel === null ? 700 : 500, color: tempExpLevel === null ? "var(--brand)" : "var(--text-muted)", margin: 0 }}>
-                          Any level
+                          {t("notifications.anyLevel")}
                         </p>
                       </button>
                     </div>
@@ -569,7 +557,7 @@ export default function NotificationsScreen({ onSelectJob, isEmployer = false }:
                       transition: "background 0.2s",
                     }}
                   >
-                    {isSaving ? "Saving…" : saveSuccess ? <><Check size={18} /> Saved!</> : "Save Preferences"}
+                    {isSaving ? t("notifications.saving") : saveSuccess ? <><Check size={18} /> {t("notifications.saved")}</> : t("notifications.savePreferences")}
                   </button>
                 </div>
               </motion.div>

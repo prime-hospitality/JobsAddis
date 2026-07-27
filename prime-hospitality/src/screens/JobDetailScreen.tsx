@@ -4,6 +4,7 @@ import { motion, useReducedMotion, LazyMotion, domAnimation } from "framer-motio
 import { ArrowLeft, MapPin, Wallet, Briefcase, Calendar, CheckCircle, AlertCircle, Clock, Users } from "lucide-react";
 import { Job } from "@/data/jobs";
 import EmployerAvatar from "@/components/EmployerAvatar";
+import { useT, timeAgo, formatDate, formatNumber } from "@/lib/i18n";
 
 interface JobDetailScreenProps {
   job: Job;
@@ -20,30 +21,6 @@ function isDeadlinePassed(dateStr: string): boolean {
   if (!dateStr) return false;
   const d = new Date(dateStr);
   return !isNaN(d.getTime()) && d.getTime() < Date.now();
-}
-
-function timeAgo(iso: string): string {
-  const diff = Date.now() - new Date(iso).getTime();
-  const mins = Math.floor(diff / 60000);
-  const hours = Math.floor(diff / 3600000);
-  const days = Math.floor(diff / 86400000);
-  if (mins < 1) return "just now";
-  if (mins < 60) return `${mins}m ago`;
-  if (hours < 24) return `${hours}h ago`;
-  if (days === 1) return "Yesterday";
-  if (days < 7) return `${days}d ago`;
-  return `${Math.floor(days / 7)}w ago`;
-}
-
-function formatDeadline(dateStr: string): string {
-  if (!dateStr) return "";
-  try {
-    const d = new Date(dateStr);
-    if (isNaN(d.getTime())) return dateStr;
-    return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-  } catch {
-    return dateStr;
-  }
 }
 
 function renderWithLinks(text: string) {
@@ -74,32 +51,40 @@ function renderWithLinks(text: string) {
 }
 
 export default function JobDetailScreen({ job, isEmployer, hasApplied, applyError, onBack, onApply }: JobDetailScreenProps) {
+  const t = useT();
   const shouldReduceMotion = useReducedMotion();
   const deadlinePassed = isDeadlinePassed(job.deadline);
 
   const infoItems = [
-    { icon: MapPin, label: "Location", value: job.location },
-    { 
-      icon: Wallet, 
-      label: "Salary", 
-      value: job.salaryMin === -1 
-        ? "Per Company Scale" 
-        : job.salaryMin === -2 
-        ? "Negotiable" 
+    { icon: MapPin, label: t("jobDetail.labels.location"), value: job.location },
+    {
+      icon: Wallet,
+      label: t("jobDetail.labels.salary"),
+      value: job.salaryMin === -1
+        ? t("jobDetail.salaryPerScale")
+        : job.salaryMin === -2
+        ? t("jobDetail.salaryNegotiable")
         : job.salaryMin === job.salaryMax
-        ? `ETB ${job.salaryMin.toLocaleString()}/mo`
-        : `ETB ${job.salaryMin.toLocaleString()}–${job.salaryMax.toLocaleString()}/mo` 
+        ? t("jobDetail.salarySingle", { amount: formatNumber(job.salaryMin, t.lang) })
+        : t("jobDetail.salaryRange", {
+            min: formatNumber(job.salaryMin, t.lang),
+            max: formatNumber(job.salaryMax, t.lang),
+          })
     },
-    { icon: Briefcase, label: "Job Type", value: job.jobType },
-    { icon: Calendar, label: "Deadline", value: formatDeadline(job.deadline) },
+    { icon: Briefcase, label: t("jobDetail.labels.jobType"), value: job.jobType },
+    { icon: Calendar, label: t("jobDetail.labels.deadline"), value: formatDate(job.deadline, t.lang) },
   ];
 
   if (job.requirements?.workingHours) {
-    infoItems.push({ icon: Clock, label: "Working Hours", value: job.requirements.workingHours });
+    infoItems.push({ icon: Clock, label: t("jobDetail.labels.workingHours"), value: job.requirements.workingHours });
   }
 
   const openingsCount = (job as any).quantity ?? 1;
-  infoItems.push({ icon: Users, label: "Openings", value: `${openingsCount} position${openingsCount !== 1 ? "s" : ""}` });
+  infoItems.push({
+    icon: Users,
+    label: t("jobDetail.labels.openings"),
+    value: t(openingsCount === 1 ? "jobDetail.openingsCount" : "jobDetail.openingsCountPlural", { count: openingsCount }),
+  });
 
   const validInfoItems = infoItems.filter(item => item.value && String(item.value).trim() !== "");
 
@@ -159,7 +144,7 @@ export default function JobDetailScreen({ job, isEmployer, hasApplied, applyErro
           </motion.button>
           <div>
             <p style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 500, marginBottom: 1 }}>
-              Job Detail
+              {t("jobDetail.header")}
             </p>
             <h1
               style={{
@@ -283,10 +268,10 @@ export default function JobDetailScreen({ job, isEmployer, hasApplied, applyErro
               <AlertCircle size={16} color="#FCA5A5" style={{ flexShrink: 0, marginTop: 1 }} />
               <div>
                 <p style={{ fontSize: 13, fontWeight: 600, color: "#FCA5A5", marginBottom: 2 }}>
-                  Requirements Not Fully Met
+                  {t("jobDetail.requirementsNotMet")}
                 </p>
                 <p style={{ fontSize: 12, color: "rgba(252,165,165,0.7)", lineHeight: 1.5 }}>
-                  This role requires {job.requirements.experience} experience. You can still apply — employers may consider strong candidates.
+                  {t("jobDetail.requirementsNotMetBody", { experience: job.requirements.experience })}
                 </p>
               </div>
             </motion.div>
@@ -310,7 +295,7 @@ export default function JobDetailScreen({ job, isEmployer, hasApplied, applyErro
                   letterSpacing: "0.04em",
                 }}
               >
-                About this Job
+                {t("jobDetail.aboutHeading")}
               </h3>
               <p
                 style={{
@@ -333,11 +318,11 @@ export default function JobDetailScreen({ job, isEmployer, hasApplied, applyErro
           {/* Requirements section */}
           {(() => {
             const reqItems = [
-              { label: "Experience", value: job.requirements?.experience },
-              { label: "Education", value: job.requirements?.education },
-              { label: "Languages", value: job.requirements?.languages?.length ? job.requirements.languages.join(", ") : null },
+              { label: t("jobDetail.labels.experience"), value: job.requirements?.experience },
+              { label: t("jobDetail.labels.education"), value: job.requirements?.education },
+              { label: t("jobDetail.labels.languages"), value: job.requirements?.languages?.length ? job.requirements.languages.join(", ") : null },
               ...(job.requirements?.locationPreference
-                ? [{ label: "Location", value: job.requirements.locationPreference }]
+                ? [{ label: t("jobDetail.labels.location"), value: job.requirements.locationPreference }]
                 : []),
             ].filter(item => item.value && String(item.value).trim() !== "");
 
@@ -360,7 +345,7 @@ export default function JobDetailScreen({ job, isEmployer, hasApplied, applyErro
                     letterSpacing: "0.04em",
                   }}
                 >
-                  Requirements
+                  {t("jobDetail.requirementsHeading")}
                 </h3>
                 <div
                   style={{
@@ -413,7 +398,7 @@ export default function JobDetailScreen({ job, isEmployer, hasApplied, applyErro
           >
             <CheckCircle size={13} color="var(--success)" />
             <span style={{ fontSize: 12, color: "var(--text-muted)" }}>
-              Posted {timeAgo(job.postedAt)} · Actively hiring
+              {t("jobDetail.postedAndHiring", { when: timeAgo(job.postedAt, t.lang) })}
             </span>
           </div>
         </div>
@@ -453,7 +438,7 @@ export default function JobDetailScreen({ job, isEmployer, hasApplied, applyErro
                 disabled
                 style={{ opacity: 0.6, cursor: "default" }}
               >
-                Applied ✓
+                {t("jobDetail.applied")}
               </button>
             ) : deadlinePassed ? (
               <button
@@ -462,7 +447,7 @@ export default function JobDetailScreen({ job, isEmployer, hasApplied, applyErro
                 disabled
                 style={{ opacity: 0.6, cursor: "default" }}
               >
-                Applications Closed
+                {t("jobDetail.applicationsClosed")}
               </button>
             ) : (
               <motion.button
@@ -472,7 +457,7 @@ export default function JobDetailScreen({ job, isEmployer, hasApplied, applyErro
                 onClick={() => onApply(job)}
                 style={{ willChange: "transform" }}
               >
-                Apply Now →
+                {t("jobDetail.applyNow")}
               </motion.button>
             )}
           </div>
