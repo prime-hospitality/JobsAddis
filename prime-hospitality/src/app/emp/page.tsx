@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { checkEmployerByTelegramId, loginWithPassword, verifyEmployerAuthCode, setupEmployerPassword } from "./actions";
+import { checkEmployerByTelegramId, loginWithPassword, verifyEmployerAuthCode, setupEmployerPassword, getEmployerAccounts } from "./actions";
+import EmployerAvatar from "@/components/EmployerAvatar";
 
 const SAVED_ID_KEY = "emp_saved_telegram_id";
 const SAVED_NAME_KEY = "emp_saved_employer_name";
@@ -20,6 +21,7 @@ export default function EmployerLoginPage() {
   const [loading, setLoading] = useState(false);
   const [savedId, setSavedId] = useState<string | null>(null);
   const [savedName, setSavedName] = useState<string | null>(null);
+  const [switcherAccounts, setSwitcherAccounts] = useState<{ employerId: string; telegramId: number; businessName: string; businessType: string; logoUrl: string | null }[]>([]);
 
   // Load saved Telegram ID on mount
   useEffect(() => {
@@ -30,6 +32,25 @@ export default function EmployerLoginPage() {
       setSavedName(name);
     }
   }, []);
+
+  // Accounts already signed into this browser (from the dashboard's account
+  // switcher) -- picking one here still requires that account's password;
+  // it's a shortcut to the right Telegram ID, not a free instant switch
+  // (that only happens from inside the dashboard, where you're already
+  // authenticated).
+  useEffect(() => {
+    getEmployerAccounts().then((res) => setSwitcherAccounts(res.accounts)).catch(() => setSwitcherAccounts([]));
+  }, []);
+
+  // Every account in switcherAccounts already has a password on file (that's
+  // how it got added to the switcher in the first place), so this can skip
+  // straight to the password step instead of re-checking existence/status.
+  const handleSelectSwitcherAccount = (acc: { telegramId: number; businessName: string }) => {
+    setTelegramId(String(acc.telegramId));
+    setEmployerName(acc.businessName);
+    setError("");
+    setStep("password");
+  };
 
   const handleForgetSaved = () => {
     localStorage.removeItem(SAVED_ID_KEY);
@@ -427,8 +448,33 @@ export default function EmployerLoginPage() {
           {step === "telegram" && (
             <form onSubmit={handleCheckTelegram} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
 
-              {/* Saved account chip */}
-              {savedId && (
+              {/* Accounts already signed into this browser -- password still required */}
+              {switcherAccounts.length > 0 && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 8, animation: "fadeSlideUp 0.3s ease-out" }}>
+                  <p style={{ fontSize: 11, fontWeight: 700, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.06em", margin: 0 }}>
+                    Signed in on this browser
+                  </p>
+                  {switcherAccounts.map((acc) => (
+                    <button
+                      key={acc.employerId}
+                      type="button"
+                      onClick={() => handleSelectSwitcherAccount(acc)}
+                      style={{ display: "flex", alignItems: "center", gap: 10, background: "#f9fafb", border: "1px solid #e5e7eb", borderRadius: 12, padding: "10px 14px", cursor: "pointer", textAlign: "left" }}
+                    >
+                      <EmployerAvatar name={acc.businessName || "?"} logoUrl={acc.logoUrl} size={34} radius={17} fontSize={14} />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <p style={{ fontSize: 13, fontWeight: 700, color: "#111827", margin: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{acc.businessName}</p>
+                        <p style={{ fontSize: 12, color: "#6b7280", margin: 0 }}>ID: {acc.telegramId}</p>
+                      </div>
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+                    </button>
+                  ))}
+                  <p style={{ fontSize: 12, color: "#9ca3af", margin: "2px 0 0 0" }}>Or sign into a different account below</p>
+                </div>
+              )}
+
+              {/* Saved account chip -- only when it's not already covered by the list above */}
+              {savedId && !switcherAccounts.some((a) => String(a.telegramId) === savedId) && (
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 12, padding: "10px 14px", animation: "fadeSlideUp 0.3s ease-out" }}>
                   <button
                     type="button"
