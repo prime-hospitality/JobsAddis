@@ -46,7 +46,7 @@ export default function RenewSubscriptionButton({
   if (phase === "confirm" || phase === "sending") {
     return (
       <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-        <span style={{ fontSize: 13, color: "inherit", opacity: 0.85 }}>This request will be sent to admin.</span>
+        <span style={{ fontSize: 13, color: "inherit", opacity: 0.85 }}>This request will be sent to JobsAdis Support.</span>
         <button
           type="button"
           onClick={handleSend}
