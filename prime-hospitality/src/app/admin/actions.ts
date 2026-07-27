@@ -341,8 +341,24 @@ export async function searchEmployers(queryBusinessName: string = "", page: numb
 
   const employers = data || [];
 
+  // Active job counts are fetched separately (only for the current page of
+  // employers) since a filtered embedded count would turn this into an inner
+  // join and drop employers with zero active jobs.
+  const employerIds = employers.map((e: any) => e.id);
+  const activeJobCounts: Record<string, number> = {};
+  if (employerIds.length > 0) {
+    const { data: activeJobRows } = await getSupabase()
+      .from("jobs")
+      .select("employer_id")
+      .eq("status", "active")
+      .in("employer_id", employerIds);
+    for (const row of activeJobRows || []) {
+      activeJobCounts[row.employer_id] = (activeJobCounts[row.employer_id] || 0) + 1;
+    }
+  }
+
   return {
-    employers,
+    employers: employers.map((e: any) => ({ ...e, activeJobCount: activeJobCounts[e.id] || 0 })),
     total: count || 0,
     page,
     pageSize

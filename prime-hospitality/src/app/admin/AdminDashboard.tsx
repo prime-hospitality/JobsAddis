@@ -18,6 +18,26 @@ import ActivityLogTab from "./ActivityLogTab";
 import ReportingTab from "./ReportingTab";
 import { JobStatusBadge, JobActionButtons } from "./JobStatusActions";
 
+const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+
+// Shared status read-out for an employer's package_expires_at: what the
+// admin table/badge shows, and whether the Renew action should be enabled
+// (from 24h before expiry onward, and it stays enabled after expiry too --
+// that's exactly when renewal matters most).
+function getSubscriptionStatus(packageExpiresAt: string | null | undefined) {
+  const expiresAt = packageExpiresAt ? new Date(packageExpiresAt) : null;
+  const msLeft = expiresAt ? expiresAt.getTime() - Date.now() : -Infinity;
+  const expired = !expiresAt || msLeft <= 0;
+  const daysLeft = expiresAt ? Math.ceil(msLeft / ONE_DAY_MS) : 0;
+  return {
+    expired,
+    canRenew: expired || msLeft <= ONE_DAY_MS,
+    label: expired ? "Expired" : `${daysLeft} day${daysLeft === 1 ? "" : "s"} left`,
+    color: expired ? "#991b1b" : "#065f46",
+    bg: expired ? "#fee2e2" : "#d1fae5",
+  };
+}
+
 // ── Draggable Floating Window ──────────────────────────────────────────────
 function FloatingWindow({
   title,
@@ -663,7 +683,8 @@ export default function AdminDashboard({ initialData, initialUi = {} }: { initia
   const [userActionLoading, setUserActionLoading] = useState(false);
   const [userActionError, setUserActionError] = useState("");
 
-  const [editModal, setEditModal] = useState<{ id: string; name: string; type: string; postLimit: number; packageId: string } | null>(null);
+  const [editModal, setEditModal] = useState<{ id: string; name: string; type: string; postLimit: number; packageId: string; packageExpiresAt: string | null } | null>(null);
+  const [renewLoading, setRenewLoading] = useState(false);
   const [editName, setEditName] = useState("");
   const [editType, setEditType] = useState("");
   const [editPostLimit, setEditPostLimit] = useState<number>(15);
@@ -1019,7 +1040,7 @@ export default function AdminDashboard({ initialData, initialUi = {} }: { initia
           ...prev,
           employers: prev.employers.map((emp: any) => emp.id === editModal.id ? finalEmployer : emp)
         }));
-        setEmpResults((prev: any[]) => prev.map((emp: any) => emp.id === editModal.id ? finalEmployer : emp));
+        setEmpResults((prev: any[]) => prev.map((emp: any) => emp.id === editModal.id ? { ...emp, ...finalEmployer } : emp));
         setEditModal(null);
         setEditPassword("");
       }
@@ -1027,6 +1048,33 @@ export default function AdminDashboard({ initialData, initialUi = {} }: { initia
       setEditError(err.message || "Failed to update employer");
     } finally {
       setEditLoading(false);
+    }
+  };
+
+  // Renews the currently-selected package for a fresh cycle starting today.
+  // Runs independently of the Save Changes submit, which only touches
+  // package/expiry when the admin actually changes the dropdown selection --
+  // renewing needs to force that recompute even when the package is unchanged.
+  const handleRenewSubscription = async () => {
+    if (!editModal || !editPackageId || !editPassword) return;
+    setRenewLoading(true);
+    setEditError("");
+    try {
+      const res = await updateEmployer(editModal.id, editName, editType, editPostLimit, editPassword, editPackageId);
+      if (res.success && res.employer) {
+        const finalEmployer = res.employer;
+        setData((prev: any) => ({
+          ...prev,
+          employers: prev.employers.map((emp: any) => emp.id === editModal.id ? finalEmployer : emp)
+        }));
+        setEmpResults((prev: any[]) => prev.map((emp: any) => emp.id === editModal.id ? { ...emp, ...finalEmployer } : emp));
+        setEditModal({ ...editModal, packageExpiresAt: finalEmployer.package_expires_at || null });
+        setEditPassword("");
+      }
+    } catch (err: any) {
+      setEditError(err.message || "Failed to renew subscription");
+    } finally {
+      setRenewLoading(false);
     }
   };
 
@@ -2318,13 +2366,16 @@ export default function AdminDashboard({ initialData, initialUi = {} }: { initia
             )}
             {/* Desktop Table View */}
             <div className="hidden md:block w-full">
-              <table className="w-full text-left border-collapse min-w-[700px]">
+              <table className="w-full text-left border-collapse min-w-[960px]">
                 <thead>
                   <tr className="bg-[#f2f2f7] border-b border-[#c6c6c8]">
                     {activeTab === "employers" && empSubTab === "emp_config" && empConfigSubTab === "view_emp" && (
                       <>
                         <th style={{ padding: "12px 24px", color: "#8e8e93", fontSize: 12, textTransform: "uppercase" }}>Business Name</th>
                         <th style={{ padding: "12px 24px", color: "#8e8e93", fontSize: 12, textTransform: "uppercase" }}>Telegram ID</th>
+                        <th style={{ padding: "12px 24px", color: "#8e8e93", fontSize: 12, textTransform: "uppercase" }}>Registered</th>
+                        <th style={{ padding: "12px 24px", color: "#8e8e93", fontSize: 12, textTransform: "uppercase" }}>Active Jobs</th>
+                        <th style={{ padding: "12px 24px", color: "#8e8e93", fontSize: 12, textTransform: "uppercase" }}>Subscription</th>
                         <th style={{ padding: "12px 24px", color: "#8e8e93", fontSize: 12, textTransform: "uppercase" }}>Post Limit</th>
                         <th style={{ padding: "12px 24px", color: "#8e8e93", fontSize: 12, textTransform: "uppercase" }}>Status</th>
                         <th style={{ padding: "12px 24px", color: "#8e8e93", fontSize: 12, textTransform: "uppercase", textAlign: "right" }}>Actions</th>
@@ -2354,6 +2405,18 @@ export default function AdminDashboard({ initialData, initialUi = {} }: { initia
                         {item.business_name}
                       </td>
                       <td style={{ padding: "16px 24px", color: "#8e8e93" }}>{item.users?.telegram_id || "—"}</td>
+                      <td style={{ padding: "16px 24px", color: "#8e8e93" }}>{new Date(item.created_at).toLocaleDateString()}</td>
+                      <td style={{ padding: "16px 24px", color: "#1c1c1e" }}>{item.activeJobCount ?? 0}</td>
+                      <td style={{ padding: "16px 24px" }}>
+                        {(() => {
+                          const sub = getSubscriptionStatus(item.package_expires_at);
+                          return (
+                            <span style={{ padding: "2px 8px", borderRadius: 100, fontSize: 12, fontWeight: 600, background: sub.bg, color: sub.color }}>
+                              {sub.label}
+                            </span>
+                          );
+                        })()}
+                      </td>
                       <td style={{ padding: "16px 24px" }}>
                         <span style={{
                           padding: "2px 8px", borderRadius: 100, fontSize: 12, fontWeight: 600,
@@ -2373,7 +2436,7 @@ export default function AdminDashboard({ initialData, initialUi = {} }: { initia
                       </td>
                       <td style={{ padding: "16px 24px", textAlign: "right", display: "flex", gap: 8, justifyContent: "flex-end", alignItems: "center" }}>
                         <button
-                          onClick={() => { setEditModal({ id: item.id, name: item.business_name, type: item.business_type || "", postLimit: item.daily_post_limit ?? 15, packageId: item.active_package_id || "" }); setEditName(item.business_name); setEditType(item.business_type || ""); setEditPostLimit(item.daily_post_limit ?? 15); setEditPackageId(item.active_package_id || ""); setEditLogoFile(null); setEditError(""); setEditPassword(""); setSettingsTab("edit"); }}
+                          onClick={() => { setEditModal({ id: item.id, name: item.business_name, type: item.business_type || "", postLimit: item.daily_post_limit ?? 15, packageId: item.active_package_id || "", packageExpiresAt: item.package_expires_at || null }); setEditName(item.business_name); setEditType(item.business_type || ""); setEditPostLimit(item.daily_post_limit ?? 15); setEditPackageId(item.active_package_id || ""); setEditLogoFile(null); setEditError(""); setEditPassword(""); setSettingsTab("edit"); }}
                           style={{ background: "transparent", border: "none", cursor: "pointer", color: "#6b7280", padding: "6px", borderRadius: 6, display: "flex", alignItems: "center", justifyContent: "center" }}
                           title="Employer settings"
                         >
@@ -2459,9 +2522,23 @@ export default function AdminDashboard({ initialData, initialUi = {} }: { initia
                       </span>
                     </div>
                   </div>
+                  <div className="flex items-center justify-between text-xs text-[#8e8e93] pt-1">
+                    <span>Registered {new Date(item.created_at).toLocaleDateString()}</span>
+                    <span>{item.activeJobCount ?? 0} Active Job{(item.activeJobCount ?? 0) === 1 ? "" : "s"}</span>
+                  </div>
+                  {(() => {
+                    const sub = getSubscriptionStatus(item.package_expires_at);
+                    return (
+                      <div>
+                        <span style={{ padding: "2px 8px", borderRadius: 100, fontSize: 11, fontWeight: 600, background: sub.bg, color: sub.color }}>
+                          {sub.label}
+                        </span>
+                      </div>
+                    );
+                  })()}
                   <div className="flex gap-2 justify-end mt-2 pt-3 border-t border-[#e5e5ea]">
                     <button
-                      onClick={() => { setEditModal({ id: item.id, name: item.business_name, type: item.business_type || "", postLimit: item.daily_post_limit ?? 15, packageId: item.active_package_id || "" }); setEditName(item.business_name); setEditType(item.business_type || ""); setEditPostLimit(item.daily_post_limit ?? 15); setEditPackageId(item.active_package_id || ""); setEditLogoFile(null); setEditError(""); setEditPassword(""); setSettingsTab("edit"); }}
+                      onClick={() => { setEditModal({ id: item.id, name: item.business_name, type: item.business_type || "", postLimit: item.daily_post_limit ?? 15, packageId: item.active_package_id || "", packageExpiresAt: item.package_expires_at || null }); setEditName(item.business_name); setEditType(item.business_type || ""); setEditPostLimit(item.daily_post_limit ?? 15); setEditPackageId(item.active_package_id || ""); setEditLogoFile(null); setEditError(""); setEditPassword(""); setSettingsTab("edit"); }}
                       className="bg-[#f3f4f6] text-[#374151] border-none px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5"
                     >
                       <Gear size={14} /> Settings
@@ -3158,6 +3235,39 @@ export default function AdminDashboard({ initialData, initialUi = {} }: { initia
                       ))}
                     </select>
                   </div>
+
+                  {/* Renew Subscription */}
+                  {(() => {
+                    const sub = getSubscriptionStatus(editModal.packageExpiresAt);
+                    return (
+                      <div style={{ padding: "12px 14px", borderRadius: 10, border: "1px solid #e5e7eb", background: "#f9fafb", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+                        <div>
+                          <div style={{ fontSize: 13, fontWeight: 600, color: sub.expired ? "#991b1b" : "#1c1c1e" }}>
+                            {editModal.packageExpiresAt
+                              ? (sub.expired ? "Subscription expired" : `Expires ${new Date(editModal.packageExpiresAt).toLocaleDateString()} (${sub.label})`)
+                              : "No expiry on record"}
+                          </div>
+                          <div style={{ fontSize: 12, color: "#8e8e93", marginTop: 2 }}>
+                            {sub.canRenew ? "Starts a fresh billing cycle from today, using the selected package above." : "Renew becomes available within 24 hours of expiry."}
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={handleRenewSubscription}
+                          disabled={!sub.canRenew || renewLoading || editLoading || !editPackageId || !editPassword}
+                          title={!editPassword ? "Enter the admin password to renew" : undefined}
+                          style={{
+                            background: "#059669", color: "#fff", border: "none", padding: "8px 14px", borderRadius: 8,
+                            fontSize: 13, fontWeight: 600, whiteSpace: "nowrap",
+                            cursor: (!sub.canRenew || renewLoading || editLoading || !editPackageId || !editPassword) ? "not-allowed" : "pointer",
+                            opacity: (!sub.canRenew || renewLoading || editLoading || !editPackageId || !editPassword) ? 0.5 : 1,
+                          }}
+                        >
+                          {renewLoading ? "Renewing..." : "Renew Subscription"}
+                        </button>
+                      </div>
+                    );
+                  })()}
 
                   {/* Daily Post Limit */}
                   <div>
