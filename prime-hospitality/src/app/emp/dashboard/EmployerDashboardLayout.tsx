@@ -154,14 +154,34 @@ export default function EmployerDashboardLayout({
         .emp-topbar-btn:hover { background: #f1f5f9; color: #0f172a; }
 
         .emp-sidebar-overlay { display: none; }
+        /* Hamburger and the drawer's close button only exist on mobile. Keep
+           their visibility in CSS (never an inline style) so the media query
+           below can actually turn them on. */
+        .emp-hamburger { display: none; }
+        .emp-sidebar-close { display: none; }
         @media (max-width: 768px) {
-          .emp-sidebar { transform: translateX(-100%); transition: transform 0.25s ease; position: fixed !important; }
+          .emp-sidebar {
+            transform: translateX(-100%); transition: transform 0.25s ease;
+            position: fixed !important; top: 0; left: 0; height: 100%;
+            box-shadow: 4px 0 24px rgba(15, 23, 42, 0.15);
+          }
           .emp-sidebar.open { transform: translateX(0); }
           .emp-sidebar-overlay { display: block; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 39; }
+          .emp-hamburger { display: flex; }
+          .emp-sidebar-close { display: flex; }
+          .emp-shell { height: 100dvh !important; }
+          .emp-topbar { padding: 0 14px !important; gap: 8px; }
+          .emp-page-title { font-size: 16px !important; }
+          .emp-main { padding: 16px !important; }
+          /* The avatar alone identifies the account here; the name/type text
+             would squeeze the page title out of the top bar. */
+          .emp-profile-meta, .emp-profile-caret { display: none !important; }
+          .emp-profile-btn { padding: 4px !important; }
+          .emp-notif-panel { width: calc(100vw - 28px) !important; max-width: 320px; }
         }
       `}</style>
 
-      <div style={{ display: "flex", height: "100vh", overflow: "hidden", background: "#f8fafc" }}>
+      <div className="emp-shell" style={{ display: "flex", height: "100vh", overflow: "hidden", background: "#f8fafc" }}>
         {/* Mobile overlay */}
         {sidebarOpen && (
           <div className="emp-sidebar-overlay" onClick={() => setSidebarOpen(false)} />
@@ -193,8 +213,9 @@ export default function EmployerDashboardLayout({
             </div>
             <button
               onClick={() => setSidebarOpen(false)}
-              style={{ marginLeft: "auto", display: "none", background: "none", border: "none", cursor: "pointer", color: "#94a3b8" }}
-              className="md-hide-btn"
+              aria-label="Close navigation menu"
+              style={{ marginLeft: "auto", alignItems: "center", background: "none", border: "none", cursor: "pointer", color: "#94a3b8", padding: 4 }}
+              className="emp-sidebar-close"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
             </button>
@@ -255,13 +276,18 @@ export default function EmployerDashboardLayout({
         {/* Main content */}
         <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0, overflow: "hidden" }}>
           {/* Top bar */}
-          <header style={{ height: 64, background: "#fff", borderBottom: "1px solid #e2e8f0", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 24px", flexShrink: 0, zIndex: 10 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+          <header className="emp-topbar" style={{ height: 64, background: "#fff", borderBottom: "1px solid #e2e8f0", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 24px", flexShrink: 0, zIndex: 10 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 14, minWidth: 0 }}>
               {/* Mobile hamburger */}
-              <button className="emp-topbar-btn" onClick={() => setSidebarOpen(true)} style={{ display: "none" }} id="emp-hamburger">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+              <button
+                className="emp-topbar-btn emp-hamburger"
+                onClick={() => setSidebarOpen(true)}
+                aria-label="Open navigation menu"
+                aria-expanded={sidebarOpen}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
               </button>
-              <h1 style={{ fontSize: 20, fontWeight: 800, color: "#0f172a", letterSpacing: "-0.02em" }}>{pageTitle}</h1>
+              <h1 className="emp-page-title" style={{ fontSize: 20, fontWeight: 800, color: "#0f172a", letterSpacing: "-0.02em", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{pageTitle}</h1>
             </div>
 
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -278,7 +304,7 @@ export default function EmployerDashboardLayout({
                 {notifOpen && (
                   <>
                     <div style={{ position: "fixed", inset: 0, zIndex: 40 }} onClick={() => setNotifOpen(false)} />
-                    <div style={{ position: "absolute", right: 0, top: "calc(100% + 8px)", background: "#fff", border: "1px solid #e2e8f0", borderRadius: 16, boxShadow: "0 10px 25px -5px rgba(0,0,0,0.1)", zIndex: 50, width: 320, overflow: "hidden" }}>
+                    <div className="emp-notif-panel" style={{ position: "absolute", right: 0, top: "calc(100% + 8px)", background: "#fff", border: "1px solid #e2e8f0", borderRadius: 16, boxShadow: "0 10px 25px -5px rgba(0,0,0,0.1)", zIndex: 50, width: 320, overflow: "hidden" }}>
                       <div style={{ padding: "12px 16px", borderBottom: "1px solid #f1f5f9", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                         <span style={{ fontSize: 14, fontWeight: 700, color: "#0f172a" }}>Notifications</span>
                         {unreadCount > 0 && (
@@ -352,15 +378,16 @@ export default function EmployerDashboardLayout({
               {/* Profile dropdown */}
               <div style={{ position: "relative" }}>
                 <button
+                  className="emp-profile-btn"
                   onClick={() => setProfileOpen(!profileOpen)}
                   style={{ display: "flex", alignItems: "center", gap: 10, padding: "6px 10px 6px 6px", borderRadius: 10, border: "1px solid #e2e8f0", background: "#fff", cursor: "pointer", transition: "border-color 0.15s" }}
                 >
                   <EmployerAvatar name={session?.businessName || "?"} logoUrl={session?.logoUrl} size={30} radius={8} fontSize={13} />
-                  <div style={{ textAlign: "left" }}>
+                  <div className="emp-profile-meta" style={{ textAlign: "left" }}>
                     <div style={{ fontSize: 13, fontWeight: 700, color: "#0f172a", lineHeight: 1 }}>{session?.businessName || "Employer"}</div>
                     <div style={{ fontSize: 10, color: "#94a3b8", marginTop: 2 }}>{session?.businessType || "Company"}</div>
                   </div>
-                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                  <svg className="emp-profile-caret" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
                 </button>
 
                 {profileOpen && (
@@ -393,7 +420,7 @@ export default function EmployerDashboardLayout({
           </header>
 
           {/* Page content */}
-          <main style={{ flex: 1, overflowY: "auto", padding: "24px" }}>
+          <main className="emp-main" style={{ flex: 1, overflowY: "auto", padding: "24px" }}>
             {children}
           </main>
         </div>
