@@ -288,13 +288,13 @@ export async function validateEmployerSession() {
   return { valid: true };
 }
 
-/** Logout employer -- signs out of every saved account on this browser, not
- *  just the active one. For signing out of a single account while staying
- *  logged into others, see removeEmployerAccount. */
+/** "Sign Out": leaves the active account, but doesn't forget it -- it (and
+ *  every other account signed into this browser) stays listed on the /emp
+ *  sign-in page for quick, password-gated re-entry. To fully forget a
+ *  specific account, see removeEmployerAccount. */
 export async function logoutEmployer() {
   const jar = await cookies();
   jar.delete("employer_session");
-  jar.delete(ACCOUNTS_COOKIE);
   // Don't leave one employer's saved sub-tab position for the next login.
   jar.delete(EMPLOYER_UI_COOKIE);
 }
@@ -312,6 +312,14 @@ export async function getEmployerAccounts() {
  *  the account is still valid so a switch never lands on one that's since
  *  been deleted, rejected, or banned. */
 export async function switchEmployerAccount(employerId: string) {
+  // This is the password-free path -- it must only work while genuinely
+  // signed in as *someone* already. employer_accounts now survives Sign Out
+  // (so the list still shows on /emp for quick re-entry), so without this
+  // check a stale dashboard tab left open from before a real sign-out could
+  // hop into another saved account with no password at all.
+  const activeSession = await getEmployerSession();
+  if (!activeSession?.employerId) return { success: false, error: "Please sign in again." };
+
   const accounts = await readAccounts();
   const target = accounts.find((a) => a.employerId === employerId);
   if (!target) return { success: false, error: "Account not found. Please log in again." };
