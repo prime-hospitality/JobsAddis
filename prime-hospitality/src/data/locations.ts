@@ -29,7 +29,8 @@ export type SubCity =
   | "Nifas Silk-Lafto"
   | "Kolfe Keranio"
   | "Gullele"
-  | "Akaki Kaliti";
+  | "Akaki Kaliti"
+  | "Lemi Kura";
 
 export type LocationType =
   | "neighborhood"   // A residential/commercial area / sefer
@@ -60,6 +61,7 @@ export const SUB_CITIES: SubCityInfo[] = [
   { name: "Kolfe Keranio",     nameAm: "ቆልፈ ቀራኒዮ",        description: "Western sub-city, one of the largest and most populous." },
   { name: "Gullele",           nameAm: "ጉለሌ",              description: "Northern sub-city extending to Entoto mountain; known for eucalyptus forests." },
   { name: "Akaki Kaliti",      nameAm: "አቃቂ ቃሊቲ",         description: "Southeastern sub-city with industrial parks and the large Koye Feche condominium site." },
+  { name: "Lemi Kura",         nameAm: "ለሚ ኩራ",            description: "Established in 2020 as the 11th sub-city, carved out of eastern Bole and Yeka; covers the Ayat and CMC corridor." },
 ];
 
 // ─────────────────────────────────────────────
@@ -78,19 +80,18 @@ export const LOCATIONS: Location[] = [
   { id: "bole-atlas",             name: "Bole Atlas",               nameAm: "ቦሌ አትላስ",          subCity: "Bole", type: "neighborhood",  description: "Named after the Atlas hotel; a lively area with bars, restaurants and boutiques." },
   { id: "bole-bulbula",           name: "Bole Bulbula",             nameAm: "ቦሌ ቡልቡላ",         subCity: "Bole", type: "neighborhood",  description: "Area near the Bulbula stream, south of Bole." },
   { id: "bole-mikael",            name: "Bole Michael",             nameAm: "ቦሌ ሚካኤል",         subCity: "Bole", type: "neighborhood",  description: "Area around the Bole Michael Church; mix of housing and commerce." },
-  { id: "bole-arabsa",            name: "Bole Arabsa",              nameAm: "ቦሌ አራብሳ",         subCity: "Bole", type: "neighborhood",  description: "Quieter residential pocket within Bole sub-city." },
+  { id: "bole-arabsa",            name: "Bole Arabsa",              nameAm: "ቦሌ አራብሳ",         subCity: "Lemi Kura", type: "neighborhood",  description: "Residential area in the Ayat corridor, east of Bole." },
   { id: "bole-airport",           name: "Bole Airport Area",        nameAm: "ቦሌ አውሮፕላን ጣቢያ",  subCity: "Bole", type: "landmark",      description: "Vicinity of Bole International Airport; hub of transit, hotels and car rentals." },
   { id: "bole-lemi",              name: "Bole Lemi",                nameAm: "ቦሌ ለሚ",           subCity: "Bole", type: "neighborhood",  description: "Large industrial and residential expansion zone east of Bole." },
-  { id: "bole-lemi-kura",         name: "Bole Lemi Kura",           nameAm: "ቦሌ ለሚ ቁራ",        subCity: "Bole", type: "neighborhood",  description: "Sub-area of Bole Lemi with newer residential developments." },
+  { id: "bole-lemi-kura",         name: "Bole Lemi II",             nameAm: "ቦሌ ለሚ ሁለት",       subCity: "Bole", type: "neighborhood",  description: "Newer residential expansion of Bole Lemi. Renamed from \"Bole Lemi Kura\" to avoid confusion with the Lemi Kura sub-city." },
   { id: "gerji",                  name: "Gerji",                    nameAm: "ገርጂ",              subCity: "Bole", type: "neighborhood",  description: "Upscale residential area popular with expats and professionals; villas and modern apartments." },
   { id: "gerji-imperial",         name: "Gerji Imperial",           nameAm: "ገርጂ ኢምፔሪያል",     subCity: "Bole", type: "neighborhood",  description: "Sub-area of Gerji known for its villas." },
   { id: "megenagna",              name: "Megenagna",                nameAm: "መገናኛ",             subCity: "Bole", type: "junction",      description: "Major transport hub and commercial junction connecting Bole and Yeka." },
-  { id: "ayat",                   name: "Ayat",                     nameAm: "አያት",              subCity: "Bole", type: "neighborhood",  description: "Large, rapidly growing residential area with many condominium blocks." },
+  { id: "ayat",                   name: "Ayat",                     nameAm: "አያት",              subCity: "Lemi Kura", type: "neighborhood",  description: "Large, rapidly growing residential area with many condominium blocks." },
   { id: "hayahulet",              name: "Hayahulet (22)",           nameAm: "ሃያ ሁለት",          subCity: "Bole", type: "junction",      description: "Nicknamed '22'; major commercial and transport junction undergoing major corridor redevelopment." },
   { id: "medhanealem-roundabout", name: "Medhanealem Roundabout",   nameAm: "መድኃኒዓለም ክብ መንገድ", subCity: "Bole", type: "junction",      description: "Key roundabout near Medhane Alem Cathedral." },
   { id: "losangeles",             name: "Los Angeles (LA)",         nameAm: "ሎስ አንጀለስ",        subCity: "Bole", type: "neighborhood",  description: "Neighbourhood colloquially called 'LA'; mix of middle-class housing and small businesses." },
   { id: "figa",                   name: "Figa",                     nameAm: "ፊጋ",              subCity: "Bole", type: "neighborhood",  description: "Residential neighbourhood in the eastern part of Bole." },
-  { id: "jemo",                   name: "Jemo (Bole side)",         nameAm: "ጀሞ",              subCity: "Bole", type: "neighborhood",  description: "Part of the Jemo area bordering Bole and Nifas Silk-Lafto." },
   { id: "africa-avenue",          name: "Africa Avenue (Bole Road)",nameAm: "አፍሪካ አቬኑ",        subCity: "Bole", type: "street",        description: "The main arterial road of Bole, lined with hotels, restaurants, and offices." },
   { id: "jomo-kenyatta-ave",      name: "Jomo Kenyatta Avenue",     nameAm: "ጆሞ ኬኒያታ አቬኑ",   subCity: "Bole", type: "street",        description: "Major road running through Bole, connecting the airport area northward." },
   { id: "cameroon-street",        name: "Cameroon Street",          nameAm: "ካሜሩን ጎዳና",        subCity: "Bole", type: "street",        description: "Known street in Bole area with restaurants and residences." },
@@ -103,19 +104,18 @@ export const LOCATIONS: Location[] = [
   // YEKA SUB-CITY
   // ══════════════════════════════════════════
 
-  { id: "kotebe",                 name: "Kotebe",                   nameAm: "ቆጠቤ",             subCity: "Yeka", type: "neighborhood",  description: "Large residential area in Yeka; home to Kotebe Metropolitan University." },
-  { id: "mesalemya",              name: "Kotebe Mesalemya",         nameAm: "ቆጠቤ መሳለምያ",      subCity: "Yeka", type: "neighborhood",  description: "Sub-area of Kotebe, known locally as Mesalemya." },
-  { id: "summit",                 name: "Summit",                   nameAm: "ሱሚት",             subCity: "Yeka", type: "neighborhood",  description: "Upscale residential area popular with diplomats and NGO workers." },
+  { id: "kotebe",                 name: "Kotebe",                   nameAm: "ቆጠቤ",             subCity: "Lemi Kura", type: "neighborhood",  description: "Large residential area; home to Kotebe Metropolitan University." },
+  { id: "mesalemya",              name: "Kotebe Mesalemya",         nameAm: "ቆጠቤ መሳለምያ",      subCity: "Lemi Kura", type: "neighborhood",  description: "Sub-area of Kotebe, known locally as Mesalemya." },
+  { id: "summit",                 name: "Summit",                   nameAm: "ሱሚት",             subCity: "Lemi Kura", type: "neighborhood",  description: "Upscale residential area popular with diplomats and NGO workers." },
   { id: "ferensay-legasion",      name: "Ferensay Legasion",        nameAm: "ፈረንሳይ ለጋሲዮን",    subCity: "Yeka", type: "neighborhood",  description: "Prestigious area near the French Embassy; quiet and well-maintained." },
-  { id: "cmc",                    name: "CMC",                      nameAm: "ሲኤምሲ",            subCity: "Yeka", type: "neighborhood",  description: "Family-friendly area named after a former construction company; gated communities and condos." },
-  { id: "cmc-michael",            name: "CMC Michael",              nameAm: "ሲኤምሲ ሚካኤል",      subCity: "Yeka", type: "neighborhood",  description: "Sub-area of CMC around the Michael Church." },
+  { id: "cmc",                    name: "CMC",                      nameAm: "ሲኤምሲ",            subCity: "Lemi Kura", type: "neighborhood",  description: "Family-friendly area named after a former construction company; gated communities and condos." },
+  { id: "cmc-michael",            name: "CMC Michael",              nameAm: "ሲኤምሲ ሚካኤል",      subCity: "Lemi Kura", type: "neighborhood",  description: "Sub-area of CMC around the Michael Church." },
   { id: "yeka-michael",           name: "Yeka Michael",             nameAm: "የካ ሚካኤል",         subCity: "Yeka", type: "neighborhood",  description: "Hilly residential neighbourhood with the Yeka Michael Church." },
-  { id: "yeka-abado",             name: "Yeka Abado",               nameAm: "የካ አባዶ",           subCity: "Yeka", type: "neighborhood",  description: "Outer residential and condominium area in Yeka." },
-  { id: "bole-bulbula-yeka",      name: "Bole Bulbula (Yeka)",      nameAm: "ቦሌ ቡልቡላ",         subCity: "Yeka", type: "neighborhood",  description: "Part of the Bulbula stream area within Yeka." },
-  { id: "jemo-yeka",              name: "Jemo (Yeka side)",         nameAm: "ጀሞ",              subCity: "Yeka", type: "neighborhood",  description: "Residential section of Jemo within Yeka sub-city." },
-  { id: "wesen",                  name: "Wesen",                    nameAm: "ወሰን",             subCity: "Yeka", type: "neighborhood",  description: "Outer residential neighbourhood on the Yeka-Bole boundary." },
+  { id: "yeka-abado",             name: "Yeka Abado",               nameAm: "የካ አባዶ",           subCity: "Lemi Kura", type: "neighborhood",  description: "Outer residential and condominium area on the north-eastern edge." },
+  { id: "bole-bulbula-yeka",      name: "Bole Bulbula (Yeka)",      nameAm: "ቦሌ ቡልቡላ",         subCity: "Bole", type: "neighborhood",  description: "Part of the Bulbula stream area." },
+  { id: "wesen",                  name: "Wesen",                    nameAm: "ወሰን",             subCity: "Lemi Kura", type: "neighborhood",  description: "Outer residential neighbourhood in the east of the city." },
   { id: "gurd-shola",             name: "Gurd Shola",               nameAm: "ጉርድ ሾላ",          subCity: "Yeka", type: "neighborhood",  description: "Busy area near Megenagna; dense with apartments and commercial activity." },
-  { id: "nifas-silk-yeka",        name: "Nifas Silk (Yeka)",        nameAm: "ንፋስ ስልክ",         subCity: "Yeka", type: "neighborhood",  description: "Part of the Nifas Silk area within Yeka sub-city." },
+  { id: "nifas-silk-yeka",        name: "Nifas Silk (Yeka)",        nameAm: "ንፋስ ስልክ",         subCity: "Nifas Silk-Lafto", type: "neighborhood",  description: "Part of the wider Nifas Silk area." },
   { id: "adisu-gebeya-yeka",      name: "Adisu Gebeya (Yeka)",      nameAm: "አዲሱ ገበያ",         subCity: "Yeka", type: "commercial",    description: "Local market area within Yeka." },
 
   // ══════════════════════════════════════════
@@ -132,7 +132,6 @@ export const LOCATIONS: Location[] = [
   { id: "gotera-condominium",     name: "Gotera Condominium",       nameAm: "ጎተራ ኮንዶሚኒየም",    subCity: "Kirkos", type: "condominium",   description: "Large government condominium development near Gotera junction." },
   { id: "wollo-sefer",            name: "Wollo Sefer",              nameAm: "ወሎ ሰፈር",          subCity: "Kirkos", type: "neighborhood",  description: "Historic neighbourhood; mix of residences and small businesses." },
   { id: "lideta-kirkos",          name: "Lideta (Kirkos side)",     nameAm: "ልደታ",             subCity: "Kirkos", type: "neighborhood",  description: "Area bordering Kirkos and Lideta sub-cities." },
-  { id: "kolfe-kirkos",           name: "Kechene",                  nameAm: "ቀጨኔ",             subCity: "Kirkos", type: "neighborhood",  description: "Neighbourhood in central-south Addis." },
   { id: "joseph-tito",            name: "Joseph Tito Street",       nameAm: "ጆሴፍ ቲቶ ጎዳና",     subCity: "Kirkos", type: "street",        description: "Key thoroughfare through Kazanchis." },
   { id: "bole-road-kirkos",       name: "Bole Road (Kirkos section)",nameAm: "ቦሌ መንገድ",        subCity: "Kirkos", type: "street",        description: "Section of Bole Road running through Kirkos sub-city." },
 
@@ -172,7 +171,7 @@ export const LOCATIONS: Location[] = [
   { id: "lideta",                 name: "Lideta",                   nameAm: "ልደታ",             subCity: "Lideta", type: "neighborhood",  description: "Core area of Lideta sub-city; mix of residential and commercial." },
   { id: "balcha-hospital",        name: "Balcha Hospital Area",     nameAm: "ባልቻ ሆስፒታል አካባቢ", subCity: "Lideta", type: "landmark",      description: "One of the oldest hospitals in Ethiopia; the surrounding area is a known reference point." },
   { id: "aware",                  name: "Aware",                    nameAm: "አዋሬ",             subCity: "Lideta", type: "junction",      description: "Busy junction and neighbourhood in Lideta." },
-  { id: "kechene",                name: "Kechene",                  nameAm: "ቀጨኔ",             subCity: "Lideta", type: "neighborhood",  description: "Residential neighbourhood in Lideta." },
+  { id: "kechene",                name: "Kechene",                  nameAm: "ቀጨኔ",             subCity: "Gullele", type: "neighborhood",  description: "Historic residential area north of Piassa, known for its pottery community." },
   { id: "tor-hailoch",            name: "Tor Hailoch",              nameAm: "ጦር ሃይሎች",         subCity: "Lideta", type: "neighborhood",  description: "Area near the military headquarters; mixed residential." },
   { id: "old-airport",            name: "Old Airport Area",         nameAm: "ያረጀ አውሮፕላን ጣቢያ", subCity: "Lideta", type: "neighborhood",  description: "Area around the decommissioned Lideta Airport." },
   { id: "meri",                   name: "Meri",                     nameAm: "ሜሪ",              subCity: "Lideta", type: "neighborhood",  description: "Residential area in Lideta." },
@@ -239,6 +238,52 @@ export const LOCATIONS: Location[] = [
   { id: "addis-ababa-industrial", name: "Addis Industrial Park",    nameAm: "አዲስ ኢንዱስትሪ ፓርክ", subCity: "Akaki Kaliti", type: "commercial",    description: "Government-run industrial park in the Akaki area." },
   { id: "debre-zeit-road-akaki",  name: "Debre Zeit Road (Akaki)", nameAm: "ደብረ ዘይት ጎዳና",    subCity: "Akaki Kaliti", type: "street",        description: "Main highway corridor heading south-east through Akaki Kaliti." },
 
+
+  // ══════════════════════════════════════════
+  // ADDITIONAL WELL-KNOWN AREAS
+  // Added 2026-07-27. Sub-city assignments for areas near a boundary are
+  // best-effort and worth a local check before relying on them.
+  // ══════════════════════════════════════════
+
+  { id: "bambis",                 name: "Bambis",                   nameAm: "ባምቢስ",              subCity: "Kirkos", type: "commercial",    description: "Well-known shopping area around the former Bambis supermarket." },
+  { id: "legehar",                name: "Legehar (La Gare)",        nameAm: "ለገሃር",              subCity: "Kirkos", type: "landmark",      description: "Area around the historic railway station." },
+  { id: "stadium",                name: "Stadium",                  nameAm: "ስታዲየም",            subCity: "Kirkos", type: "landmark",      description: "Around Addis Ababa Stadium; busy transport and commercial hub." },
+  { id: "urael",                  name: "Urael",                    nameAm: "ኡራኤል",             subCity: "Kirkos", type: "neighborhood",  description: "Residential and commercial area around Urael Church." },
+  { id: "olympia",                name: "Olympia",                  nameAm: "ኦሎምፒያ",            subCity: "Kirkos", type: "junction",      description: "Major junction on Africa Avenue." },
+  { id: "filwuha",                name: "Filwuha",                  nameAm: "ፍልውሃ",              subCity: "Kirkos", type: "neighborhood",  description: "Central area known for its hot springs and hotels." },
+  { id: "kera",                   name: "Kera",                     nameAm: "ቄራ",                subCity: "Kirkos", type: "commercial",    description: "Area around the municipal abattoir; meat and food trade." },
+
+  { id: "doro-manekia",           name: "Doro Manekia",             nameAm: "ዶሮ ማነቂያ",          subCity: "Arada", type: "neighborhood",   description: "Busy old-town area near Piassa." },
+  { id: "gojam-berenda",          name: "Gojam Berenda",            nameAm: "ጎጃም በረንዳ",         subCity: "Arada", type: "commercial",     description: "Historic wholesale trading street." },
+  { id: "serategna-sefer",        name: "Serategna Sefer",          nameAm: "ሠራተኛ ሰፈር",         subCity: "Arada", type: "neighborhood",   description: "Long-established residential quarter." },
+
+  { id: "bisrate-gabriel",        name: "Bisrate Gabriel",          nameAm: "ብሥራተ ገብርኤል",      subCity: "Nifas Silk-Lafto", type: "neighborhood", description: "Residential area around Bisrate Gabriel Church." },
+  { id: "mekanisa",               name: "Mekanisa",                 nameAm: "መካኒሳ",             subCity: "Nifas Silk-Lafto", type: "neighborhood", description: "Large residential area in the south-west." },
+  { id: "hana-mariam",            name: "Hana Mariam",              nameAm: "ሐና ማርያም",          subCity: "Nifas Silk-Lafto", type: "neighborhood", description: "Residential area with condominium sites." },
+  { id: "total",                  name: "Total",                    nameAm: "ቶታል",               subCity: "Nifas Silk-Lafto", type: "junction",     description: "Junction on the road toward Bishoftu, named after the fuel station." },
+  { id: "adey-abeba",             name: "Adey Abeba",               nameAm: "አደይ አበባ",           subCity: "Nifas Silk-Lafto", type: "landmark",     description: "Area around Adey Abeba Stadium." },
+  { id: "german-square",          name: "German Square",            nameAm: "ጀርመን አደባባይ",       subCity: "Nifas Silk-Lafto", type: "junction",     description: "Well-known roundabout on the ring road." },
+
+  { id: "asko",                   name: "Asko",                     nameAm: "አስኮ",                subCity: "Kolfe Keranio", type: "neighborhood", description: "Large residential area in the west of the city." },
+  { id: "winget",                 name: "Winget",                   nameAm: "ውንጌት",              subCity: "Kolfe Keranio", type: "neighborhood", description: "Area around the Winget technical college." },
+  { id: "alem-bank",              name: "Alem Bank",                nameAm: "ዓለም ባንክ",           subCity: "Kolfe Keranio", type: "neighborhood", description: "Growing residential and commercial area on the western edge." },
+  { id: "repi",                   name: "Repi",                     nameAm: "ረፒ",                 subCity: "Kolfe Keranio", type: "neighborhood", description: "Industrial and residential area in the south-west." },
+  { id: "zenebework",             name: "Zenebework",               nameAm: "ዘነበወርቅ",           subCity: "Kolfe Keranio", type: "neighborhood", description: "Residential area along the western ring road." },
+
+  { id: "enkulal-fabrica",        name: "Enkulal Fabrica",          nameAm: "እንቁላል ፋብሪካ",      subCity: "Gullele", type: "neighborhood",  description: "Residential area named after the former egg factory." },
+  { id: "abware",                 name: "Abware",                   nameAm: "አብዋሬ",              subCity: "Gullele", type: "neighborhood",  description: "Hillside residential area toward Entoto." },
+
+  { id: "shola",                  name: "Shola",                    nameAm: "ሾላ",                 subCity: "Yeka", type: "commercial",      description: "Area around Shola Market; busy trade and transport point." },
+  { id: "hayat",                  name: "Hayat",                    nameAm: "ሃያት",               subCity: "Yeka", type: "neighborhood",     description: "Residential area around Hayat Hospital." },
+  { id: "karakore",               name: "Kara Kore",                nameAm: "ካራ ቆሬ",            subCity: "Yeka", type: "neighborhood",     description: "Area on the north-eastern edge of the city." },
+
+  { id: "goro",                   name: "Goro",                     nameAm: "ጎሮ",                 subCity: "Lemi Kura", type: "neighborhood", description: "Fast-growing area on the eastern side, near Ayat." },
+  { id: "jakros",                 name: "Jakros",                   nameAm: "ጃክሮስ",              subCity: "Lemi Kura", type: "neighborhood", description: "Residential area between Bole and Ayat." },
+  { id: "tafo",                   name: "Tafo",                     nameAm: "ጣፎ",                 subCity: "Lemi Kura", type: "neighborhood", description: "Residential area in the north-east." },
+
+  { id: "kilinto",                name: "Kilinto",                  nameAm: "ቂሊንጦ",              subCity: "Akaki Kaliti", type: "neighborhood", description: "Southern area known for the industrial park." },
+  { id: "gelan-condominium",      name: "Gelan Condominium",        nameAm: "ገላን ኮንዶሚንየም",     subCity: "Akaki Kaliti", type: "condominium",  description: "Large condominium development on the southern edge." },
+  { id: "bulbula",                name: "Bulbula",                  nameAm: "ቡልቡላ",              subCity: "Akaki Kaliti", type: "neighborhood", description: "Southern residential area with major condominium sites." },
 ];
 
 // ─────────────────────────────────────────────
