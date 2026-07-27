@@ -20,7 +20,8 @@ export interface PostingData {
   /** Date (YYYY-MM-DD) this employer's current plan runs out, or null if
    *  they have none -- caps how far out a job deadline can be set. */
   packageExpiresAt: string | null;
-  renewalRequested: boolean;
+  renewalRequestedAt: string | null;
+  renewalSeenAt: string | null;
   employerId: string;
   businessName: string;
   businessType: string;
@@ -34,7 +35,8 @@ const EMPTY: PostingData = {
   autoPublish: false,
   dailyPostLimit: 15,
   packageExpiresAt: null,
-  renewalRequested: false,
+  renewalRequestedAt: null,
+  renewalSeenAt: null,
   employerId: "",
   businessName: "Your Company",
   businessType: "",
@@ -69,7 +71,8 @@ export default function ManageJobPostingsTab({
         autoPublish: res.autoPublish,
         dailyPostLimit: res.dailyPostLimit,
         packageExpiresAt: res.packageExpiresAt ?? null,
-        renewalRequested: !!res.renewalRequested,
+        renewalRequestedAt: res.renewalRequestedAt ?? null,
+        renewalSeenAt: res.renewalSeenAt ?? null,
         employerId: res.employerId,
         businessName: res.businessName || "Your Company",
         businessType: res.businessType || "",
@@ -110,7 +113,7 @@ export default function ManageJobPostingsTab({
                 : "Once it ends, you won't be able to post, repost, or schedule new jobs until you renew."}
             </p>
           </div>
-          <RenewSubscriptionButton employerId={data.employerId} initialRequested={data.renewalRequested} />
+          <RenewSubscriptionButton employerId={data.employerId} initialRequestedAt={data.renewalRequestedAt} initialSeenAt={data.renewalSeenAt} />
         </div>
       )}
 

@@ -62,7 +62,7 @@ async function getRenewalStatus(employerId: string) {
   const supabase = getSupabase();
   const { data } = await supabase
     .from("employers")
-    .select("package_expires_at, renewal_requested")
+    .select("package_expires_at, renewal_requested_at, renewal_seen_at")
     .eq("id", employerId)
     .maybeSingle();
 
@@ -72,7 +72,7 @@ async function getRenewalStatus(employerId: string) {
   // it's actually passed -- posting stays blocked either way until renewed.
   const showNudge = !expiresAt || expiresAt.getTime() - Date.now() <= 24 * 60 * 60 * 1000;
 
-  return { isExpired, showNudge, renewalRequested: !!data?.renewal_requested };
+  return { isExpired, showNudge, renewalRequestedAt: data?.renewal_requested_at ?? null, renewalSeenAt: data?.renewal_seen_at ?? null };
 }
 
 function StatCard({ label, value, color, icon }: { label: string; value: number; color: string; icon: React.ReactNode }) {
@@ -145,7 +145,7 @@ export default async function EmployerDashboardPage() {
                 : "Once it ends, posting new jobs will be disabled until you renew."}
             </p>
           </div>
-          <RenewSubscriptionButton employerId={session.employerId} initialRequested={renewal.renewalRequested} />
+          <RenewSubscriptionButton employerId={session.employerId} initialRequestedAt={renewal.renewalRequestedAt} initialSeenAt={renewal.renewalSeenAt} />
         </div>
       )}
 

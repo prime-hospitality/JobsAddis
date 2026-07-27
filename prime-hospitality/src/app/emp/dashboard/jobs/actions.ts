@@ -12,7 +12,7 @@ import {
 async function getEmployerPublishingRules(supabase: ReturnType<typeof getSupabase>, employerId: string) {
   const { data } = await supabase
     .from("employers")
-    .select("auto_publish, daily_post_limit, package_expires_at, renewal_requested")
+    .select("auto_publish, daily_post_limit, package_expires_at, renewal_requested_at, renewal_seen_at")
     .eq("id", employerId)
     .single();
   // No package at all is treated the same as an expired one -- posting always
@@ -25,7 +25,8 @@ async function getEmployerPublishingRules(supabase: ReturnType<typeof getSupabas
     // field, which is itself a plain date with no time component.
     packageExpiresAt: data?.package_expires_at ? String(data.package_expires_at).split("T")[0] : null,
     isExpired,
-    renewalRequested: !!data?.renewal_requested,
+    renewalRequestedAt: data?.renewal_requested_at ?? null,
+    renewalSeenAt: data?.renewal_seen_at ?? null,
   };
 }
 
@@ -83,7 +84,8 @@ export async function getEmployerPostingData() {
     autoPublish: rules.autoPublish,
     dailyPostLimit: rules.dailyPostLimit,
     packageExpiresAt: rules.packageExpiresAt,
-    renewalRequested: rules.renewalRequested,
+    renewalRequestedAt: rules.renewalRequestedAt,
+    renewalSeenAt: rules.renewalSeenAt,
     employerId: session.employerId,
     businessName: session.businessName,
     businessType: session.businessType,

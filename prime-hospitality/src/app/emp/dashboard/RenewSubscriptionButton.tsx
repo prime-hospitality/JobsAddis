@@ -1,21 +1,49 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { requestEmployerRenewal } from "../actions";
+
+const COOLDOWN_MS = 5 * 60 * 60 * 1000;
 
 /** Renew Subscription button used on Billing & Plan (always shown) and, when
  *  a subscription is within 24h of expiring or has already expired, on
  *  Overview and Manage Job Postings too. Self-contained request flow: click
- *  to confirm, Send to notify the admin, Cancel to back out. */
+ *  to confirm, Send to notify JobsAdis Support, Cancel to back out. After a
+ *  successful send the button stays disabled for 5 hours so an employer
+ *  can't spam the request -- it re-activates on its own once the cooldown
+ *  lapses. Once admin acknowledges the request (acknowledgeEmployerRenewal),
+ *  the disabled state's copy switches from "waiting for admin" to "admin
+ *  has seen it and will call" -- the cooldown length is unaffected either
+ *  way. */
 export default function RenewSubscriptionButton({
   employerId,
-  initialRequested,
+  initialRequestedAt,
+  initialSeenAt,
 }: {
   employerId: string;
-  initialRequested: boolean;
+  initialRequestedAt: string | null;
+  initialSeenAt: string | null;
 }) {
-  const [phase, setPhase] = useState<"idle" | "confirm" | "sending" | "sent">(initialRequested ? "sent" : "idle");
+  const [requestedAt, setRequestedAt] = useState<number | null>(
+    initialRequestedAt ? new Date(initialRequestedAt).getTime() : null
+  );
+  const [seenAt] = useState<number | null>(initialSeenAt ? new Date(initialSeenAt).getTime() : null);
+  const [phase, setPhase] = useState<"idle" | "confirm" | "sending">("idle");
   const [error, setError] = useState("");
+  const [, forceTick] = useState(0);
+
+  // Cooldown lifts on its own without needing a page reload.
+  useEffect(() => {
+    if (!requestedAt) return;
+    const msLeft = requestedAt + COOLDOWN_MS - Date.now();
+    if (msLeft <= 0) return;
+    const id = setTimeout(() => forceTick((n) => n + 1), Math.min(msLeft, 60_000));
+    return () => clearTimeout(id);
+  });
+
+  const cooldownRemainingMs = requestedAt ? requestedAt + COOLDOWN_MS - Date.now() : 0;
+  const onCooldown = cooldownRemainingMs > 0;
+  const seen = !!seenAt && !!requestedAt && seenAt >= requestedAt;
 
   const handleSend = async () => {
     setPhase("sending");
@@ -23,25 +51,17 @@ export default function RenewSubscriptionButton({
     try {
       const res = await requestEmployerRenewal(employerId);
       if (res.success) {
-        setPhase("sent");
+        setRequestedAt(Date.now());
+        setPhase("idle");
       } else {
-        setError("Failed to notify admin. Please try again.");
+        setError("Failed to notify JobsAdis Support. Please try again.");
         setPhase("confirm");
       }
     } catch (e: any) {
-      setError(e.message || "Failed to notify admin. Please try again.");
+      setError(e.message || "Failed to notify JobsAdis Support. Please try again.");
       setPhase("confirm");
     }
   };
-
-  if (phase === "sent") {
-    return (
-      <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, fontWeight: 600, color: "#059669" }}>
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
-        Admin will be in contact shortly.
-      </div>
-    );
-  }
 
   if (phase === "confirm" || phase === "sending") {
     return (
@@ -64,6 +84,25 @@ export default function RenewSubscriptionButton({
           Cancel
         </button>
         {error && <span style={{ fontSize: 12, color: "#ef4444", width: "100%" }}>{error}</span>}
+      </div>
+    );
+  }
+
+  if (onCooldown) {
+    return (
+      <div style={{ display: "flex", flexDirection: "column", gap: 4, alignItems: "flex-start" }}>
+        <button
+          type="button"
+          disabled
+          style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "#0f172a", color: "#fff", border: "none", padding: "10px 18px", borderRadius: 10, fontSize: 14, fontWeight: 700, opacity: 0.5, cursor: "not-allowed", flexShrink: 0 }}
+        >
+          {seen ? "Seen — Waiting for Call" : "Sent — Waiting for Admin"}
+        </button>
+        <span style={{ fontSize: 12, color: "inherit", opacity: 0.75 }}>
+          {seen
+            ? "JobsAdis Support has seen your request and will call you shortly."
+            : "Your request is with JobsAdis Support."}
+        </span>
       </div>
     );
   }

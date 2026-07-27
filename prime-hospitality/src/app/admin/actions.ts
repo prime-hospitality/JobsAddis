@@ -1094,6 +1094,8 @@ export async function updateEmployer(employerId: string, businessName: string, b
     updateFields.active_package_id = packageId;
     updateFields.package_expires_at = now.toISOString();
     updateFields.renewal_requested = false;
+    updateFields.renewal_requested_at = null;
+    updateFields.renewal_seen_at = null;
     updateFields.expiry_warning_sent = false;
   }
 
@@ -1108,6 +1110,25 @@ export async function updateEmployer(employerId: string, businessName: string, b
   if (packageId !== undefined) {
     await logActivity("assign_package", employerId, { packageId });
   }
+  return { success: true, employer: data };
+}
+
+// Marks an employer's pending renewal request as seen -- tells the employer
+// their request reached admin (who'll follow up by phone) without lifting
+// the 5-hour cooldown on re-requesting, and without touching
+// renewal_requested itself (the request is still open until an admin
+// actually renews the package via updateEmployer).
+export async function acknowledgeEmployerRenewal(employerId: string) {
+  await requirePermission("manageEmployers");
+
+  const { data, error } = await getSupabase()
+    .from("employers")
+    .update({ renewal_seen_at: new Date().toISOString() })
+    .eq("id", employerId)
+    .select("*, users(telegram_id)")
+    .single();
+  if (error) throw error;
+  await logActivity("acknowledge_renewal_request", employerId);
   return { success: true, employer: data };
 }
 

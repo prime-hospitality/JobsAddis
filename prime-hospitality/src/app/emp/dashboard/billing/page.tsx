@@ -29,7 +29,7 @@ export default async function BillingPage() {
   // Fetch employer's active package
   const { data: employer } = await supabase
     .from("employers")
-    .select("active_package_id, package_expires_at, renewal_requested, packages(name, duration_days, price)")
+    .select("active_package_id, package_expires_at, renewal_requested_at, renewal_seen_at, packages(name, duration_days, price)")
     .eq("id", session.employerId)
     .maybeSingle();
 
@@ -85,7 +85,7 @@ export default async function BillingPage() {
           </p>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", color: "#fff" }}>
-          <RenewSubscriptionButton employerId={session.employerId} initialRequested={!!employer?.renewal_requested} />
+          <RenewSubscriptionButton employerId={session.employerId} initialRequestedAt={employer?.renewal_requested_at ?? null} initialSeenAt={employer?.renewal_seen_at ?? null} />
           <Link
             href="/pricing"
             style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.25)", borderRadius: 10, padding: "10px 18px", color: "#fff", fontSize: 14, fontWeight: 600, textDecoration: "none", backdropFilter: "blur(8px)", transition: "background 0.2s", flexShrink: 0 }}

@@ -252,7 +252,7 @@ export async function requestEmployerRenewal(employerId: string) {
   const supabase = getSupabase();
   const { error } = await supabase
     .from("employers")
-    .update({ renewal_requested: true })
+    .update({ renewal_requested: true, renewal_requested_at: new Date().toISOString(), renewal_seen_at: null })
     .eq("id", employerId);
   if (error) throw new Error(error.message);
   return { success: true };

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { toggleUserBan, toggleJobStatus, scheduleJobPost, repostJob, approveScheduledJob, cancelScheduledJob, logoutAdmin, addEmployer, deleteEmployer, updateEmployer, updateEmployerAutoPublish, adminUpdateEmployerLogo, deleteUser, approveSpecialRequest, getPricingConfig, updatePricingConfig, getLoggedInAdmin, createSubAdmin, updateSubAdminPermissions, deleteSubAdmin, listSubAdmins, searchUsers, getProfessionCounts, searchEmployers, getPackages, upsertPackage, deletePackage, getBusinessTypes, addBusinessType, getPlatformEmployerProfile, updatePlatformEmployerLogo, getAdminData } from "./actions";
+import { toggleUserBan, toggleJobStatus, scheduleJobPost, repostJob, approveScheduledJob, cancelScheduledJob, logoutAdmin, addEmployer, deleteEmployer, updateEmployer, updateEmployerAutoPublish, adminUpdateEmployerLogo, deleteUser, approveSpecialRequest, getPricingConfig, updatePricingConfig, getLoggedInAdmin, createSubAdmin, updateSubAdminPermissions, deleteSubAdmin, listSubAdmins, searchUsers, getProfessionCounts, searchEmployers, getPackages, upsertPackage, deletePackage, getBusinessTypes, addBusinessType, getPlatformEmployerProfile, updatePlatformEmployerLogo, getAdminData, acknowledgeEmployerRenewal } from "./actions";
 import type { AdminPermissions, SubAdmin } from "./actions";
 import { Trash2, Pencil, Image as ImageIcon, Menu, X, LayoutDashboard, Briefcase, FileText, Users, LogOut, Settings, CreditCard, CheckCircle, BookOpen, User, Building2, Hourglass, ChevronDown, Check, Plus, Megaphone, History, BarChart3 } from "lucide-react";
 import EmployerAvatar from "@/components/EmployerAvatar";
@@ -1460,6 +1460,33 @@ export default function AdminDashboard({ initialData, initialUi = {} }: { initia
     window.location.reload();
   };
 
+  // Employers with an outstanding renewal request, surfaced in the
+  // notification bell alongside special requests. Stays listed (just with
+  // a "Seen" state) until an admin actually renews the package.
+  const renewalRequests = (data.employers || []).filter((e: any) => e.renewal_requested);
+
+  const handleAcknowledgeRenewal = async (employerId: string) => {
+    try {
+      const res = await acknowledgeEmployerRenewal(employerId);
+      if (res.success && res.employer) {
+        setData((prev: any) => ({
+          ...prev,
+          employers: prev.employers.map((e: any) => e.id === employerId ? { ...e, ...res.employer } : e)
+        }));
+      }
+    } catch (err) {
+      console.error("Failed to acknowledge renewal request:", err);
+    }
+  };
+
+  const jumpToEmployerInViewEmp = (businessName: string) => {
+    setShowNotifications(false);
+    setActiveTab("employers");
+    setEmpSubTab("emp_config");
+    setEmpConfigSubTab("view_emp");
+    setEmpViewSearch(businessName);
+  };
+
   return (
     <div className="admin-shell flex h-screen overflow-hidden">
       {/* Mobile Sidebar Overlay */}
@@ -1548,7 +1575,7 @@ export default function AdminDashboard({ initialData, initialUi = {} }: { initia
                 onClick={() => setShowNotifications(!showNotifications)}
                 className="text-[#8e8e93] hover:text-[#1c1c1e] relative transition-colors cursor-pointer border-none bg-transparent flex items-center justify-center"
               >
-                {data.specialRequests && data.specialRequests.length > 0 && (
+                {((data.specialRequests && data.specialRequests.length > 0) || renewalRequests.length > 0) && (
                   <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full border border-white"></span>
                 )}
                 <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
@@ -1560,15 +1587,16 @@ export default function AdminDashboard({ initialData, initialUi = {} }: { initia
                   <div className="absolute right-0 mt-2 w-80 bg-white border border-[#c6c6c8] rounded-xl shadow-lg z-50 overflow-hidden">
                     <div className="p-3 border-b border-[#e5e5ea] bg-[#f2f2f7] flex items-center justify-between">
                       <h3 className="font-bold text-black text-sm">Notifications</h3>
-                      {data.specialRequests && data.specialRequests.length > 0 && (
+                      {((data.specialRequests && data.specialRequests.length > 0) || renewalRequests.length > 0) && (
                         <span className="bg-[#1c1c1e] text-white text-xs font-bold px-2 py-0.5 rounded-full">
-                          {data.specialRequests.length}
+                          {(data.specialRequests?.length || 0) + renewalRequests.length}
                         </span>
                       )}
                     </div>
                     <div className="max-h-80 overflow-y-auto">
-                      {data.specialRequests && data.specialRequests.length > 0 ? (
-                        data.specialRequests.map((req: any) => {
+                      {((data.specialRequests && data.specialRequests.length > 0) || renewalRequests.length > 0) ? (
+                        <>
+                          {data.specialRequests && data.specialRequests.map((req: any) => {
                           const name = req.name || "Unknown Name";
                           return (
                             <div key={req.userId} className="p-4 border-b border-gray-50 hover:bg-[#f2f2f7] transition-colors last:border-b-0">
@@ -1600,7 +1628,50 @@ export default function AdminDashboard({ initialData, initialUi = {} }: { initia
                               </div>
                             </div>
                           );
-                        })
+                        })}
+                          {renewalRequests.map((emp: any) => {
+                            const seen = !!emp.renewal_seen_at;
+                            return (
+                              <div key={`renewal-${emp.id}`} className="p-4 border-b border-gray-50 hover:bg-[#f2f2f7] transition-colors last:border-b-0">
+                                <div className="flex items-start gap-3">
+                                  <div className="mt-0.5 bg-blue-100 p-1.5 rounded-full text-blue-600 shrink-0">
+                                    <CreditCard size={14} />
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-sm font-semibold text-black leading-tight">
+                                      Renewal Requested
+                                    </p>
+                                    <p className="text-xs text-[#8e8e93] mt-1 truncate">
+                                      <span className="font-medium text-[#1c1c1e]">{emp.business_name}</span> wants to renew their subscription.
+                                    </p>
+                                    {seen && (
+                                      <p className="text-xs text-emerald-700 mt-1.5 leading-relaxed">
+                                        Marked as seen — follow up by phone.
+                                      </p>
+                                    )}
+                                    <div className="flex gap-2 mt-2.5">
+                                      <button
+                                        onClick={() => handleAcknowledgeRenewal(emp.id)}
+                                        disabled={seen}
+                                        className="text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-default px-3 py-1.5 rounded-md transition-colors flex-1 text-center"
+                                        style={{ border: "none", cursor: seen ? "default" : "pointer" }}
+                                      >
+                                        {seen ? "Received" : "Mark Received"}
+                                      </button>
+                                      <button
+                                        onClick={() => jumpToEmployerInViewEmp(emp.business_name)}
+                                        className="text-xs font-semibold text-[#1c1c1e] hover:text-[#2c2c2e] bg-[#e5e5ea] hover:bg-[#e5e5ea] px-3 py-1.5 rounded-md transition-colors flex-1 text-center"
+                                        style={{ border: "none", cursor: "pointer" }}
+                                      >
+                                        View or Fix
+                                      </button>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </>
                       ) : (
                         <div className="p-6 text-center text-[#8e8e93] text-sm">
                           No new notifications
@@ -1626,7 +1697,7 @@ export default function AdminDashboard({ initialData, initialUi = {} }: { initia
                 onClick={() => setShowNotifications(!showNotifications)}
                 className="text-[#8e8e93] hover:text-[#1c1c1e] relative transition-colors cursor-pointer border-none bg-transparent flex items-center justify-center"
               >
-                {data.specialRequests && data.specialRequests.length > 0 && (
+                {((data.specialRequests && data.specialRequests.length > 0) || renewalRequests.length > 0) && (
                   <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full border border-white"></span>
                 )}
                 <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
@@ -1638,15 +1709,16 @@ export default function AdminDashboard({ initialData, initialUi = {} }: { initia
                   <div className="absolute right-0 mt-2 w-80 bg-white border border-[#c6c6c8] rounded-xl shadow-lg z-50 overflow-hidden">
                     <div className="p-3 border-b border-[#e5e5ea] bg-[#f2f2f7] flex items-center justify-between">
                       <h3 className="font-bold text-black text-sm">Notifications</h3>
-                      {data.specialRequests && data.specialRequests.length > 0 && (
+                      {((data.specialRequests && data.specialRequests.length > 0) || renewalRequests.length > 0) && (
                         <span className="bg-[#1c1c1e] text-white text-xs font-bold px-2 py-0.5 rounded-full">
-                          {data.specialRequests.length}
+                          {(data.specialRequests?.length || 0) + renewalRequests.length}
                         </span>
                       )}
                     </div>
                     <div className="max-h-80 overflow-y-auto">
-                      {data.specialRequests && data.specialRequests.length > 0 ? (
-                        data.specialRequests.map((req: any) => {
+                      {((data.specialRequests && data.specialRequests.length > 0) || renewalRequests.length > 0) ? (
+                        <>
+                          {data.specialRequests && data.specialRequests.map((req: any) => {
                           const name = req.name || "Unknown Name";
                           return (
                             <div key={req.userId} className="p-4 border-b border-gray-50 hover:bg-[#f2f2f7] transition-colors last:border-b-0">
@@ -1678,7 +1750,50 @@ export default function AdminDashboard({ initialData, initialUi = {} }: { initia
                               </div>
                             </div>
                           );
-                        })
+                        })}
+                          {renewalRequests.map((emp: any) => {
+                            const seen = !!emp.renewal_seen_at;
+                            return (
+                              <div key={`renewal-${emp.id}`} className="p-4 border-b border-gray-50 hover:bg-[#f2f2f7] transition-colors last:border-b-0">
+                                <div className="flex items-start gap-3">
+                                  <div className="mt-0.5 bg-blue-100 p-1.5 rounded-full text-blue-600 shrink-0">
+                                    <CreditCard size={14} />
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-sm font-semibold text-black leading-tight">
+                                      Renewal Requested
+                                    </p>
+                                    <p className="text-xs text-[#8e8e93] mt-1 truncate">
+                                      <span className="font-medium text-[#1c1c1e]">{emp.business_name}</span> wants to renew their subscription.
+                                    </p>
+                                    {seen && (
+                                      <p className="text-xs text-emerald-700 mt-1.5 leading-relaxed">
+                                        Marked as seen — follow up by phone.
+                                      </p>
+                                    )}
+                                    <div className="flex gap-2 mt-2.5">
+                                      <button
+                                        onClick={() => handleAcknowledgeRenewal(emp.id)}
+                                        disabled={seen}
+                                        className="text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-default px-3 py-1.5 rounded-md transition-colors flex-1 text-center"
+                                        style={{ border: "none", cursor: seen ? "default" : "pointer" }}
+                                      >
+                                        {seen ? "Received" : "Mark Received"}
+                                      </button>
+                                      <button
+                                        onClick={() => jumpToEmployerInViewEmp(emp.business_name)}
+                                        className="text-xs font-semibold text-[#1c1c1e] hover:text-[#2c2c2e] bg-[#e5e5ea] hover:bg-[#e5e5ea] px-3 py-1.5 rounded-md transition-colors flex-1 text-center"
+                                        style={{ border: "none", cursor: "pointer" }}
+                                      >
+                                        View or Fix
+                                      </button>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </>
                       ) : (
                         <div className="p-6 text-center text-[#8e8e93] text-sm">
                           No new notifications
@@ -2411,9 +2526,16 @@ export default function AdminDashboard({ initialData, initialUi = {} }: { initia
                         {(() => {
                           const sub = getSubscriptionStatus(item.package_expires_at);
                           return (
-                            <span style={{ padding: "2px 8px", borderRadius: 100, fontSize: 12, fontWeight: 600, background: sub.bg, color: sub.color }}>
-                              {sub.label}
-                            </span>
+                            <div style={{ display: "flex", flexDirection: "column", gap: 4, alignItems: "flex-start" }}>
+                              <span style={{ padding: "2px 8px", borderRadius: 100, fontSize: 12, fontWeight: 600, background: sub.bg, color: sub.color }}>
+                                {sub.label}
+                              </span>
+                              {item.renewal_requested && (
+                                <span style={{ padding: "2px 8px", borderRadius: 100, fontSize: 11, fontWeight: 600, background: "#fef3c7", color: "#92400e" }}>
+                                  Renewal Requested
+                                </span>
+                              )}
+                            </div>
                           );
                         })()}
                       </td>
@@ -2529,10 +2651,15 @@ export default function AdminDashboard({ initialData, initialUi = {} }: { initia
                   {(() => {
                     const sub = getSubscriptionStatus(item.package_expires_at);
                     return (
-                      <div>
+                      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                         <span style={{ padding: "2px 8px", borderRadius: 100, fontSize: 11, fontWeight: 600, background: sub.bg, color: sub.color }}>
                           {sub.label}
                         </span>
+                        {item.renewal_requested && (
+                          <span style={{ padding: "2px 8px", borderRadius: 100, fontSize: 11, fontWeight: 600, background: "#fef3c7", color: "#92400e" }}>
+                            Renewal Requested
+                          </span>
+                        )}
                       </div>
                     );
                   })()}
