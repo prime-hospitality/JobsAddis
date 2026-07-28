@@ -1750,20 +1750,25 @@ export default function ProfileScreen() {
                       {/* Support Contact */}
                       <div style={{ marginTop: 8, padding: "18px", background: "var(--surface-elevated)", border: "1px solid var(--border)", borderRadius: 16 }}>
                         <p style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)", marginBottom: 14, textTransform: "uppercase", letterSpacing: "0.06em" }}>{t("profile.contactSupport")}</p>
+                        {/* The same numbers shown on /pricing -- kept in sync by hand.
+                            Tappable so a seeker on a phone can just call. */}
                         {[
-                          { icon: <HelpCircle size={16} color="var(--brand)" />, label: t("profile.supportTelegram"), value: "@JobsAddisSupport" },
-                          { icon: <Phone size={16} color="var(--brand)" />, label: t("profile.supportPhone"), value: "+251 91 234 5678" },
-                          { icon: <AlertCircle size={16} color="var(--brand)" />, label: t("profile.supportEmail"), value: "support@jobsaddis.com" },
+                          { label: t("profile.supportPhone"), display: "+251 90 488 5295", dial: "+251904885295" },
+                          { label: t("profile.supportPhone"), display: "+251 98 566 1540", dial: "+251985661540" },
                         ].map((c) => (
-                          <div key={c.label} style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
+                          <a
+                            key={c.dial}
+                            href={`tel:${c.dial}`}
+                            style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12, textDecoration: "none" }}
+                          >
                             <div style={{ width: 34, height: 34, borderRadius: 10, background: "var(--brand-subtle)", border: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                              {c.icon}
+                              <Phone size={16} color="var(--brand)" />
                             </div>
                             <div>
                               <p style={{ fontSize: 11, color: "var(--text-muted)", margin: 0, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>{c.label}</p>
-                              <p style={{ fontSize: 13, color: "var(--text-primary)", margin: 0, fontWeight: 600 }}>{c.value}</p>
+                              <p style={{ fontSize: 13, color: "var(--text-primary)", margin: 0, fontWeight: 600 }}>{c.display}</p>
                             </div>
-                          </div>
+                          </a>
                         ))}
                       </div>
 

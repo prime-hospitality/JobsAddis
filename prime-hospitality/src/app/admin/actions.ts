@@ -1648,6 +1648,75 @@ function bucketByDay(rows: { created_at: string }[], days: number) {
   return Object.entries(buckets).map(([date, count]) => ({ date, count }));
 }
 
+// ── Data Export (Agreement §17.E — backup functionality) ─────────────────────
+
+/** Tables an admin may export. Deliberately limited to core business data.
+ *  `app_config` is excluded on purpose -- it holds bcrypt password hashes for
+ *  the admin and sub-admin accounts, and a CSV of those has no business
+ *  landing in someone's Downloads folder. */
+const EXPORTABLE_TABLES = {
+  users: "id, telegram_id, role, is_banned, created_at",
+  profiles: "id, telegram_id, full_name, age, gender, location, phone_number, selected_categories, onboarding_completed, created_at",
+  employers: "id, business_name, business_type, status, authorization_number, active_package_id, package_expires_at, daily_post_limit, created_at",
+  jobs: "id, employer_id, title, category, location, neighborhood, status, quantity, deadline, created_at",
+  applications: "id, job_id, profile_id, telegram_id, status, created_at",
+} as const;
+
+export type ExportableTable = keyof typeof EXPORTABLE_TABLES;
+
+/** Serialises one value into a CSV field.
+ *
+ *  The leading-symbol guard is deliberate: Excel and Sheets execute a cell
+ *  starting with = + - or @ as a formula, so a business name like
+ *  "=cmd|..." in an exported file becomes a CSV injection attack against
+ *  whoever opens it. Prefixing a single quote makes it inert text. */
+function toCsvField(value: unknown): string {
+  if (value === null || value === undefined) return "";
+  let s = Array.isArray(value) ? value.join("; ") : String(value);
+  if (/^[=+\-@\t\r]/.test(s)) s = "'" + s;
+  if (/[",\n\r]/.test(s)) s = `"${s.replace(/"/g, '""')}"`;
+  return s;
+}
+
+/** Exports one table as a CSV string for the admin to download.
+ *
+ *  Returns the text rather than a file so the browser can trigger the download
+ *  without another round trip. Capped because this is a reporting/handover
+ *  convenience, not the disaster-recovery path -- that's the nightly dump in
+ *  .github/workflows/backup.yml. */
+export async function exportTableCsv(
+  table: ExportableTable
+): Promise<{ success: true; filename: string; csv: string; rowCount: number } | { success: false; error: string }> {
+  await requirePermission("manageReports");
+
+  const columns = EXPORTABLE_TABLES[table];
+  if (!columns) return { success: false, error: "That table cannot be exported." };
+
+  const { data, error } = await getSupabase()
+    .from(table)
+    .select(columns)
+    .order("created_at", { ascending: false })
+    .limit(10000);
+
+  if (error) return { success: false, error: error.message };
+
+  const header = columns.split(",").map((c) => c.trim());
+  const lines = [header.join(",")];
+  for (const row of (data as any[]) || []) {
+    lines.push(header.map((h) => toCsvField(row[h])).join(","));
+  }
+
+  await logActivity("export_data", table, { rowCount: data?.length ?? 0 });
+
+  return {
+    success: true,
+    filename: `jobsaddis_${table}_${new Date().toISOString().split("T")[0]}.csv`,
+    // Prepended BOM so Excel opens Amharic names as UTF-8 instead of mojibake.
+    csv: "﻿" + lines.join("\r\n"),
+    rowCount: data?.length ?? 0,
+  };
+}
+
 export async function getVacancyReport(days: number = 30) {
   await requirePermission("manageReports");
   const supabase = getSupabase();

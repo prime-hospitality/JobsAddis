@@ -1,0 +1,124 @@
+# Nightly off-platform backup.
+#
+# This project runs on the Supabase FREE plan, which has no automated backups and
+# no Point-in-Time Recovery. This workflow is therefore not a belt-and-braces
+# extra -- it is the ONLY recoverable copy of the client's data.
+#
+# It also covers Storage (CVs, logos), which no Supabase backup includes at any
+# plan tier. A database-only restore would leave cv_url values pointing at files
+# that no longer exist.
+#
+# Backups are pushed to a separate PRIVATE repository owned by the Client, so a
+# compromised or deleted Supabase project cannot take the backups with it.
+
+name: Nightly Backup
+
+on:
+  schedule:
+    # 02:00 UTC = 05:00 EAT, outside Addis working hours.
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+concurrency:
+  # Never let two backup runs push to the backup repo at once.
+  group: nightly-backup
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    # A backup should take a couple of minutes. Anything approaching this is
+    # stuck, and a hung job would otherwise sit on the runner for GitHub's
+    # 6-hour default and mask the failure.
+    timeout-minutes: 30
+    steps:
+      - name: Checkout source repo
+        uses: actions/checkout@v4
+
+      - name: Install PostgreSQL client
+        run: |
+          set -euo pipefail
+          # The dump must be taken with a pg_dump matching the server's major
+          # version, or it refuses to run. Supabase is on Postgres 17.
+          sudo sh -c 'echo "deb https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
+          curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/pgdg.gpg
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends postgresql-client-17
+
+      - name: Check out backup repo
+        uses: actions/checkout@v4
+        with:
+          # Defaulted so the workflow runs without extra setup. Override with a
+          # BACKUP_REPO repository variable if the destination ever moves.
+          # MUST stay private -- it holds applicant CVs and phone numbers.
+          repository: ${{ vars.BACKUP_REPO || 'prime-hospitality/backupadisjobs' }}
+          token: ${{ secrets.BACKUP_REPO_TOKEN }}
+          path: backup-repo
+
+      - name: Dump database
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          set -euo pipefail
+          mkdir -p backup-repo/db
+          STAMP=$(date -u +%Y%m%d)
+          # Plain SQL (not -F c) so a restore never depends on a matching
+          # pg_restore build, and so the file diffs/greps if someone needs to
+          # inspect it. Gzipped because it is mostly repetitive text.
+          #
+          # -w (--no-password) is essential: without it, a missing or wrong
+          # password makes pg_dump PROMPT on stdin, and on a runner with no
+          # terminal that hangs the job instead of failing it. With -w it exits
+          # immediately with an auth error, which pipefail then propagates.
+          pg_dump -w "$SUPABASE_DB_URL" \
+            --no-owner --no-privileges --quote-all-identifiers \
+            | gzip -9 > "backup-repo/db/backup_${STAMP}.sql.gz"
+          echo "Dump size: $(du -h "backup-repo/db/backup_${STAMP}.sql.gz" | cut -f1)"
+          # A dump that silently produced nothing is worse than a failed run,
+          # because it looks like a successful backup.
+          if [ "$(stat -c%s "backup-repo/db/backup_${STAMP}.sql.gz")" -lt 1000 ]; then
+            echo "::error::Dump is implausibly small -- treating as failed."
+            exit 1
+          fi
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Sync storage buckets
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          set -euo pipefail
+          mkdir -p backup-repo/storage
+          # Installed ad hoc rather than committed -- the backup script is the
+          # only thing at the repo root that needs a dependency.
+          npm install --no-save --no-package-lock @supabase/supabase-js@2
+          node .github/scripts/backup-storage.mjs backup-repo/storage
+
+      - name: Prune backups older than 30 days
+        run: |
+          set -euo pipefail
+          # Storage files are deliberately NOT pruned -- they are the only copy
+          # of applicant CVs, and a CV uploaded 31 days ago is still current.
+          find backup-repo/db -name 'backup_*.sql.gz' -mtime +30 -print -delete || true
+
+      - name: Commit and push
+        working-directory: backup-repo
+        run: |
+          set -euo pipefail
+          git config user.name "JobsAddis Backup Bot"
+          git config user.email "actions@github.com"
+          git add -A
+          if git diff --staged --quiet; then
+            echo "Nothing changed -- no commit needed."
+          else
+            git commit -m "Backup $(date -u +%Y-%m-%d)"
+            git push
+          fi
+
+      - name: Report
+        if: failure()
+        run: echo "::error::Nightly backup FAILED. On the Free plan this is the only backup that exists -- investigate before the next run."

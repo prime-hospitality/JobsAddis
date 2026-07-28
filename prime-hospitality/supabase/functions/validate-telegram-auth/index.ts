@@ -1,6 +1,22 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { crypto } from "https://deno.land/std@0.168.0/crypto/mod.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import { miniAppUrl } from "../_shared/telegram.ts";
+import {
+  buildJobDescription,
+  buildRequirementsJson,
+  checkCanPost,
+  coerceVacancyForm,
+  dailyLimitMessage,
+  EXPIRED_PACKAGE_MESSAGE,
+  getEmployerPublishingRules,
+  getTodayPostCount,
+  logEmployerActivity,
+  normalizeTemplateDeadline,
+  resolveEmployer,
+  resolveSalary,
+  validateVacancyForm,
+} from "../_shared/vacancy.ts";
 
 // -----------------------------------------------------------------------------
 // Constants and Configuration
@@ -95,104 +111,6 @@ function extractTelegramUser(initData: string) {
 function sanitizeHtml(text: string): string {
   if (!text) return text;
   return text.replace(/<[^>]*>?/gm, ""); // Simple regex to strip HTML tags
-}
-
-// -----------------------------------------------------------------------------
-// Helper: Send Job Announcement to Telegram Group/Channel
-// -----------------------------------------------------------------------------
-async function sendGroupAnnouncement(jobId: string, jobData: any, businessName: string) {
-  const TELEGRAM_GROUP_CHAT_ID = Deno.env.get("TELEGRAM_GROUP_CHAT_ID");
-  const TELEGRAM_MINI_APP_URL = Deno.env.get("TELEGRAM_MINI_APP_URL"); // e.g. https://t.me/AddisJobsDemobot/hoteljobs
-
-  if (!TELEGRAM_GROUP_CHAT_ID || !TELEGRAM_BOT_TOKEN) {
-    console.warn("[Telegram Group] TELEGRAM_GROUP_CHAT_ID or TELEGRAM_BOT_TOKEN is not configured.");
-    return;
-  }
-
-  // Format salary
-  let salaryText = "Negotiable / Scale";
-  const min = parseInt(jobData.salaryMin) || 0;
-  const max = parseInt(jobData.salaryMax) || 0;
-  if (min > 0 && max > 0) {
-    salaryText = `${min.toLocaleString()} - ${max.toLocaleString()} ETB`;
-  } else if (min > 0) {
-    salaryText = `${min.toLocaleString()} ETB`;
-  }
-
-  // Format deadline
-  let deadlineText = "N/A";
-  if (jobData.deadline) {
-    try {
-      deadlineText = new Date(jobData.deadline).toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-        year: "numeric"
-      });
-    } catch {
-      deadlineText = jobData.deadline;
-    }
-  }
-
-  const emojiMap: Record<string, string> = {
-    Waiter: "💁",
-    Chef: "🍳",
-    Receptionist: "🛎️",
-    Barista: "☕",
-    Housekeeper: "🧹",
-    Security: "🛡️",
-    Cashier: "💵",
-    Manager: "💼",
-  };
-  const categoryEmoji = emojiMap[jobData.category] || "🏨";
-
-  const message = `🆕 <b>New Job Opening</b>
-
-🏢 <b>${sanitizeHtml(businessName)}</b>
-${categoryEmoji} <b>${sanitizeHtml(jobData.title)}</b> (${sanitizeHtml(jobData.category)})
-📍 ${sanitizeHtml(jobData.neighborhood)}, Addis Ababa
-💰 ${salaryText} · ${sanitizeHtml(jobData.jobType)}
-👥 ${parseInt(jobData.quantity) || 1} opening(s)
-📅 Deadline: <b>${deadlineText}</b>
-
-📝 <i>${sanitizeHtml(jobData.description.substring(0, 200))}${jobData.description.length > 200 ? "..." : ""}</i>`;
-
-  // Inline Keyboard Button with deep link
-  const webAppUrl = TELEGRAM_MINI_APP_URL 
-    ? `${TELEGRAM_MINI_APP_URL}?startapp=job_${jobId}`
-    : `https://t.me/AddisJobsDemobot/hoteljobs?startapp=job_${jobId}`; // fallback
-
-  const inlineKeyboard = {
-    inline_keyboard: [
-      [
-        {
-          text: "🔍 View & Apply →",
-          url: webAppUrl,
-        }
-      ]
-    ]
-  };
-
-  try {
-    const res = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        chat_id: TELEGRAM_GROUP_CHAT_ID,
-        text: message,
-        parse_mode: "HTML",
-        reply_markup: inlineKeyboard,
-      }),
-    });
-
-    const data = await res.json();
-    if (!res.ok) {
-      console.error("[Telegram Group] Failed to send message:", data);
-    } else {
-      console.log("[Telegram Group] Message sent successfully:", data.result?.message_id);
-    }
-  } catch (err) {
-    console.error("[Telegram Group] Error sending message:", err);
-  }
 }
 
 // -----------------------------------------------------------------------------
@@ -1037,43 +955,17 @@ serve(async (req: Request) => {
 
       if (insertErr || !newJob) throw insertErr || new Error("Failed to insert job.");
 
-      // 3) Send announcement to connected Telegram group/channel (best-effort)
-      try {
-        await sendGroupAnnouncement(newJob.id, jobData, employer.business_name);
-      } catch (annErr) {
-        console.error("Failed to send Telegram group announcement:", annErr);
-      }
+      // 3) Group announcement and vacancy alerts are NOT sent here.
+      //    They're handled by announceNewlyActiveJobs in job-expiration-cron,
+      //    keyed on the job becoming `active`. Doing it at insert time meant a
+      //    job still pending admin moderation got broadcast publicly before
+      //    approval, and it only ever ran for jobs posted through this action
+      //    -- the employer web dashboard and admin platform-jobs tab announced
+      //    nothing at all. The sweep covers every route within a minute.
 
-      // 4) Send in-app vacancy alerts to subscribed users
-      try {
-        // Find users whose alert_categories contains this job's category
-        let query = supabase
-          .from("profiles")
-          .select("telegram_id")
-          .contains("alert_categories", [category]);
-
-        // Also filter by experience_level if the job has one
-        if (experience) {
-          query = query.or(`alert_experience_level.is.null,alert_experience_level.eq.${experience}`);
-        }
-
-        const { data: subscribers, error: subErr } = await query;
-
-        if (!subErr && subscribers && subscribers.length > 0) {
-          const notificationsToInsert = subscribers.map((sub: any) => ({
-            user_telegram_id: sub.telegram_id,
-            company_name: employer.business_name,
-            job_title: title,
-            type: "vacancy_alert",
-            read: false,
-            job_id: newJob.id,
-          }));
-
-          await supabase.from("notifications").insert(notificationsToInsert);
-        }
-      } catch (alertErr) {
-        console.error("Failed to insert vacancy alerts:", alertErr);
-      }
+      //    Vacancy alerts are queued there too, for the same reason -- so a
+      //    seeker is alerted about a job that is genuinely live, whichever
+      //    surface the employer posted it from.
 
       return new Response(
         JSON.stringify({
@@ -1319,9 +1211,280 @@ serve(async (req: Request) => {
       return new Response(JSON.stringify({ success: true, unread_count: count ?? 0 }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // Action: Post Job (with active status override)
-    // Note: existing post_job action above sets status: "pending" — jobs now go active immediately.
-    // The above handler is left intact; status override is controlled at the Edge Function level via the employer's trust status.
+    // ─────────────────────────────────────────────────────────────────────────
+    // Mini App employer dashboard
+    //
+    // The four actions below back the employer dashboard inside the Mini App.
+    // They are deliberately separate from the older post_job / edit_job actions
+    // above: those predate packages, auto_publish and last_posted_at, and post
+    // everything straight to "active". Everything here routes through
+    // ../_shared/vacancy.ts so a job posted from a phone is subject to exactly
+    // the same rules as one posted from the employer web dashboard --
+    // subscription validity, daily post limit, deadline defaulting/clamping,
+    // and auto_publish deciding active vs pending.
+    //
+    // Group announcements and vacancy alerts are NOT sent here. The sweep in
+    // job-expiration-cron picks up any job that becomes `active` (keyed on
+    // announced_at), so a job still awaiting review is never broadcast early.
+    // ─────────────────────────────────────────────────────────────────────────
+
+    // Action: Employer posting data — templates + the rules that govern posting
+    if (action === "get_employer_posting_data") {
+      const resolved = await resolveEmployer(supabase, telegramId);
+      if (!resolved.ok) {
+        return new Response(JSON.stringify({ error: resolved.error }), {
+          status: resolved.status,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const { employer } = resolved;
+
+      const [templatesRes, rules, todayCount] = await Promise.all([
+        supabase
+          .from("employer_vacancy_templates")
+          .select("*")
+          .eq("employer_id", employer.employerId)
+          .order("created_at", { ascending: false }),
+        getEmployerPublishingRules(supabase, employer.employerId),
+        getTodayPostCount(supabase, employer.employerId),
+      ]);
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          employer: {
+            id: employer.employerId,
+            business_name: employer.businessName,
+            business_type: employer.businessType,
+            logo_url: employer.logoUrl,
+          },
+          templates: templatesRes.data ?? [],
+          rules: {
+            autoPublish: rules.autoPublish,
+            dailyPostLimit: rules.dailyPostLimit,
+            packageExpiresAt: rules.packageExpiresAt,
+            isExpired: rules.isExpired,
+            postedToday: todayCount,
+          },
+        }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    // Action: Update an existing vacancy template.
+    // Editing only, by design -- templates are authored on the web dashboard.
+    // The Mini App is the "post it now" surface, so it refines what's already
+    // there rather than becoming a second place to build a template library.
+    if (action === "update_employer_template") {
+      const resolved = await resolveEmployer(supabase, telegramId);
+      if (!resolved.ok) {
+        return new Response(JSON.stringify({ error: resolved.error }), {
+          status: resolved.status,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const { employer } = resolved;
+
+      const templateId = payload.templateId;
+      if (!templateId) {
+        return new Response(JSON.stringify({ error: "templateId is required" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const { data: existing } = await supabase
+        .from("employer_vacancy_templates")
+        .select("id, employer_id")
+        .eq("id", templateId)
+        .maybeSingle();
+      if (!existing || existing.employer_id !== employer.employerId) {
+        return new Response(JSON.stringify({ error: "Template not found." }), {
+          status: 404,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const form = coerceVacancyForm(payload.form);
+      const rules = await getEmployerPublishingRules(supabase, employer.employerId);
+      const validationError = validateVacancyForm(form, { maxDeadline: rules.packageExpiresAt });
+      if (validationError) {
+        return new Response(JSON.stringify({ error: validationError }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const { error: updateErr } = await supabase
+        .from("employer_vacancy_templates")
+        .update({
+          title: form.title,
+          job_category: form.job_category,
+          description_template: form.description_template,
+          requirements_template: form.requirements_template,
+          location: form.location,
+          employment_type: form.employment_type,
+          salary_type: form.salary_type,
+          salary_min: form.salary_min,
+          salary_max: form.salary_max,
+          experience_required: form.experience_required,
+          experience_template: form.experience_template,
+          responsibilities_template: form.responsibilities_template,
+          benefits_template: form.benefits_template,
+          deadline: form.deadline || null,
+          quantity: form.quantity,
+          education_requirements: form.education_requirements || null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", templateId)
+        .eq("employer_id", employer.employerId);
+
+      if (updateErr) throw updateErr;
+
+      await logEmployerActivity(supabase, employer, "employer_edit_template", form.title);
+      return new Response(JSON.stringify({ success: true }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Action: One-tap post from a saved template
+    if (action === "post_job_from_template") {
+      const resolved = await resolveEmployer(supabase, telegramId);
+      if (!resolved.ok) {
+        return new Response(JSON.stringify({ error: resolved.error }), {
+          status: resolved.status,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const { employer } = resolved;
+
+      const templateId = payload.templateId;
+      if (!templateId) {
+        return new Response(JSON.stringify({ error: "templateId is required" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const { data: tpl } = await supabase
+        .from("employer_vacancy_templates")
+        .select("*")
+        .eq("id", templateId)
+        .maybeSingle();
+      if (!tpl || tpl.employer_id !== employer.employerId) {
+        return new Response(JSON.stringify({ error: "Template not found." }), {
+          status: 404,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const rules = await getEmployerPublishingRules(supabase, employer.employerId);
+      if (rules.isExpired) {
+        return new Response(JSON.stringify({ error: EXPIRED_PACKAGE_MESSAGE }), {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      if (rules.dailyPostLimit !== -1) {
+        const postedToday = await getTodayPostCount(supabase, employer.employerId);
+        if (postedToday >= rules.dailyPostLimit) {
+          return new Response(JSON.stringify({ error: dailyLimitMessage(rules.dailyPostLimit) }), {
+            status: 403,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+      }
+
+      const form = coerceVacancyForm(tpl);
+      if (!form.title || !form.description_template) {
+        return new Response(
+          JSON.stringify({ error: "This template is missing a title or description. Edit it before posting." }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
+      const description = buildJobDescription(form);
+      const { salary_min, salary_max } = resolveSalary(form);
+      const deadline = normalizeTemplateDeadline(tpl.deadline, rules.packageExpiresAt);
+      const status = rules.autoPublish ? "active" : "pending";
+
+      const { error: insertErr } = await supabase.from("jobs").insert({
+        employer_id: employer.employerId,
+        title: form.title,
+        category: form.job_category,
+        location: form.location || "Addis Ababa",
+        neighborhood: form.location || "Addis Ababa",
+        job_type: form.employment_type,
+        salary_min,
+        salary_max,
+        currency: tpl.salary_currency || "ETB",
+        description,
+        full_description: description,
+        requirements: buildRequirementsJson(form),
+        deadline,
+        quantity: form.quantity,
+        status,
+      });
+
+      if (insertErr) throw insertErr;
+
+      await logEmployerActivity(supabase, employer, "employer_post_from_template", form.title, { status });
+      return new Response(JSON.stringify({ success: true, status, deadline }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Action: Post a job written from scratch in the Mini App
+    if (action === "create_employer_job") {
+      const resolved = await resolveEmployer(supabase, telegramId);
+      if (!resolved.ok) {
+        return new Response(JSON.stringify({ error: resolved.error }), {
+          status: resolved.status,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const { employer } = resolved;
+
+      const form = coerceVacancyForm(payload.form);
+      const gate = await checkCanPost(supabase, employer.employerId, form);
+      if (!gate.ok) {
+        return new Response(JSON.stringify({ error: gate.error }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const description = buildJobDescription(form);
+      const { salary_min, salary_max } = resolveSalary(form);
+
+      const { error: insertErr } = await supabase.from("jobs").insert({
+        employer_id: employer.employerId,
+        title: form.title,
+        category: form.job_category,
+        location: form.location || "Addis Ababa",
+        neighborhood: form.location || "Addis Ababa",
+        job_type: form.employment_type,
+        salary_min,
+        salary_max,
+        currency: "ETB",
+        description,
+        full_description: description,
+        requirements: buildRequirementsJson(form),
+        deadline: gate.deadline,
+        quantity: form.quantity,
+        status: gate.status,
+      });
+
+      if (insertErr) throw insertErr;
+
+      await logEmployerActivity(supabase, employer, "employer_post_job", form.title, { status: gate.status });
+      return new Response(JSON.stringify({ success: true, status: gate.status, deadline: gate.deadline }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     return new Response(JSON.stringify({ error: "Unknown action" }), {
       status: 400,

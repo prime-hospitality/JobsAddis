@@ -1,7 +1,222 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { escapeHtml, sendDirectMessage, sendGroupAnnouncement } from "../_shared/telegram.ts";
 
-// This edge function is meant to be called on a schedule (e.g. daily) via pg_cron or Vercel Cron.
+// The every-minute platform sweep, invoked by pg_cron (see migration
+// 20260723000000). Despite the name it does more than expiration: it publishes
+// scheduled posts on their scheduled minute, expires jobs and subscriptions,
+// sends expiry warnings, and dispatches pending Telegram DMs. The name is kept
+// because the pg_cron entry and the deployed function URL both depend on it.
+
+/** Notification types that earn a Telegram DM. Deliberately narrow: a Mini App
+ *  user's chat is a scarce resource, and over-messaging gets the bot muted or
+ *  blocked, which then costs us the alerts that do matter. Everything outside
+ *  this set stays in-app only.
+ *
+ *  - vacancy_alert -- a job in a category the seeker explicitly subscribed to
+ *  - shortlisted   -- the outcome they're waiting on (good news only; declines
+ *                     stay silent by design, see 20260726000000)
+ *  - broadcast     -- deliberate, infrequent, admin-initiated announcements */
+const DM_ELIGIBLE_TYPES = ["vacancy_alert", "shortlisted", "broadcast"] as const;
+
+/** Cap per sweep. A broadcast to every user inserts one row per recipient at
+ *  once; this keeps a single run inside the function's wall clock and lets the
+ *  remainder drain over the following minutes. */
+const DM_BATCH_LIMIT = 400;
+
+function buildDmText(row: any): string {
+  const company = escapeHtml(row.company_name || "");
+  const title = escapeHtml(row.job_title || "");
+
+  switch (row.type) {
+    case "vacancy_alert":
+      return `🔔 <b>New vacancy in your field</b>\n\n<b>${title}</b>\n🏢 ${company}`;
+    case "shortlisted":
+      return `🎉 <b>You've been shortlisted!</b>\n\n${company} shortlisted your application for <b>${title}</b>.`;
+    case "broadcast":
+      // Broadcasts carry their message body in job_title (the notifications
+      // table has no dedicated body column; see sendBroadcast in admin actions).
+      return `📢 <b>JobsAddis</b>\n\n${title}`;
+    default:
+      return `<b>JobsAddis</b>\n\n${title}`;
+  }
+}
+
+/** Announces newly-active jobs to the Telegram group and queues vacancy alerts
+ *  for subscribed seekers.
+ *
+ *  Keyed on "the job became active", not "the job was created", because a job
+ *  can reach seekers down four different routes -- employer web post, admin
+ *  approval, scheduled publish, and the Telegram-surface post_job action --
+ *  and previously only the last of those announced or alerted anything. It
+ *  also means a `pending` job is never broadcast before an admin approves it.
+ *
+ *  Claim-then-act, exactly like dispatchPendingDms: overlapping sweeps must not
+ *  post the same vacancy to the group twice. */
+async function announceNewlyActiveJobs(supabase: any) {
+  const ANNOUNCE_BATCH_LIMIT = 20;
+
+  const { data: candidates, error } = await supabase
+    .from("jobs")
+    .select("id")
+    .eq("status", "active")
+    .is("announced_at", null)
+    .order("created_at", { ascending: true })
+    .limit(ANNOUNCE_BATCH_LIMIT);
+
+  if (error) {
+    console.error("[Announce] Failed to load unannounced jobs:", error);
+    return { announced: 0, alerted: 0 };
+  }
+  if (!candidates || candidates.length === 0) return { announced: 0, alerted: 0 };
+
+  const { data: claimed, error: claimErr } = await supabase
+    .from("jobs")
+    .update({ announced_at: new Date().toISOString() })
+    .in("id", candidates.map((c: any) => c.id))
+    .is("announced_at", null)
+    .select("id, title, category, neighborhood, job_type, salary_min, salary_max, quantity, deadline, description, requirements, employer_id, employers(business_name)");
+
+  if (claimErr) {
+    console.error("[Announce] Failed to claim jobs:", claimErr);
+    return { announced: 0, alerted: 0 };
+  }
+
+  let announced = 0;
+  let alerted = 0;
+
+  for (const job of claimed || []) {
+    const emp = (job as any).employers;
+    const businessName = (Array.isArray(emp) ? emp[0]?.business_name : emp?.business_name) || "JobsAddis";
+
+    try {
+      if (await sendGroupAnnouncement(job as any, businessName)) announced++;
+    } catch (err) {
+      console.error(`[Announce] Group post failed for job ${job.id}:`, err);
+    }
+
+    // Queue vacancy alerts for seekers subscribed to this category. Only the
+    // notification rows are written here -- dispatchPendingDms below turns them
+    // into Telegram DMs on this same sweep.
+    try {
+      let query = supabase
+        .from("profiles")
+        .select("telegram_id")
+        .contains("alert_categories", [job.category]);
+
+      // Respect the seeker's experience-level preference where the job states
+      // one. `requirements` is jsonb shaped { experience, education, ... }.
+      // A seeker with no preference set (null) matches everything.
+      const experience = (job as any).requirements?.experience;
+      if (experience) {
+        query = query.or(`alert_experience_level.is.null,alert_experience_level.eq.${experience}`);
+      }
+
+      const { data: subscribers, error: subErr } = await query;
+      if (subErr) throw subErr;
+
+      if (subscribers && subscribers.length > 0) {
+        const rows = subscribers.map((s: any) => ({
+          user_telegram_id: s.telegram_id,
+          company_name: businessName,
+          job_title: job.title,
+          type: "vacancy_alert",
+          read: false,
+          job_id: job.id,
+        }));
+        const { error: insErr } = await supabase.from("notifications").insert(rows);
+        if (insErr) throw insErr;
+        alerted += rows.length;
+      }
+    } catch (err) {
+      console.error(`[Announce] Vacancy alerts failed for job ${job.id}:`, err);
+    }
+  }
+
+  return { announced, alerted };
+}
+
+/** Sends the bot DM for notification rows that are due and not yet dispatched.
+ *  Every failure mode is swallowed: notifications are a best-effort nudge on
+ *  top of the in-app row, which remains the source of truth. */
+async function dispatchPendingDms(supabase: any, now: string) {
+  // Step 1 -- find candidates.
+  const { data: candidates, error } = await supabase
+    .from("notifications")
+    .select("id")
+    .is("dm_sent_at", null)
+    .in("type", DM_ELIGIBLE_TYPES)
+    .or(`deliver_after.is.null,deliver_after.lte.${now}`)
+    .order("created_at", { ascending: true })
+    .limit(DM_BATCH_LIMIT);
+
+  if (error) {
+    console.error("[DM dispatch] Failed to load pending notifications:", error);
+    return { attempted: 0, sent: 0 };
+  }
+  if (!candidates || candidates.length === 0) return { attempted: 0, sent: 0 };
+
+  // Step 2 -- claim them before sending anything.
+  // pg_cron fires this sweep every minute and does not wait for the previous
+  // run to finish, so two runs can overlap. Marking rows dispatched *after*
+  // sending would let both runs select the same rows and message the same
+  // person twice. The `.is("dm_sent_at", null)` guard makes the UPDATE the
+  // atomic claim: only rows this run actually flipped come back, so a
+  // concurrent sweep gets nothing and sends nothing.
+  //
+  // The cost is that a crash between claiming and sending drops those DMs.
+  // That is the same trade-off already made below (rows are marked whether or
+  // not delivery succeeded), and losing a best-effort nudge is much cheaper
+  // than double-messaging users.
+  const { data: claimed, error: claimErr } = await supabase
+    .from("notifications")
+    .update({ dm_sent_at: new Date().toISOString() })
+    .in("id", candidates.map((c: any) => c.id))
+    .is("dm_sent_at", null)
+    .select("id, user_telegram_id, company_name, job_title, type, job_id");
+
+  if (claimErr) {
+    console.error("[DM dispatch] Failed to claim notifications:", claimErr);
+    return { attempted: 0, sent: 0 };
+  }
+  const pending = claimed || [];
+  if (pending.length === 0) return { attempted: 0, sent: 0 };
+
+  // Step 3 -- send the claimed rows.
+  let sent = 0;
+
+  // Chunked to stay inside Telegram's ~30 messages/second bot limit.
+  const CHUNK = 25;
+  for (let i = 0; i < pending.length; i += CHUNK) {
+    const chunk = pending.slice(i, i + CHUNK);
+    const startedAt = Date.now();
+
+    const results = await Promise.all(
+      chunk.map((row: any) =>
+        sendDirectMessage(row.user_telegram_id, buildDmText(row), {
+          buttonText: row.job_id ? "View & Apply →" : "Open JobsAddis →",
+          startParam: row.job_id ? `job_${row.job_id}` : undefined,
+        })
+      )
+    );
+
+    // Rows are already marked dispatched by the claim above, so nothing to
+    // update here. A blocked or never-started chat is a permanent condition,
+    // and a transient failure isn't worth retrying at the cost of risking a
+    // duplicate message later.
+    for (const res of results) {
+      if (res.ok) sent++;
+    }
+
+    if (i + CHUNK < pending.length) {
+      const elapsed = Date.now() - startedAt;
+      if (elapsed < 1000) await new Promise((r) => setTimeout(r, 1000 - elapsed));
+    }
+  }
+
+  return { attempted: pending.length, sent };
+}
+
 serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -184,6 +399,30 @@ serve(async (req) => {
       }
     }
 
+    // 5. Announce newly-active jobs and queue their vacancy alerts.
+    // Runs after step 0 so a scheduled job published this very minute is
+    // announced on the same sweep, and before the DM dispatch below so the
+    // alerts it queues go out immediately rather than a minute later.
+    let announceResult = { announced: 0, alerted: 0 };
+    try {
+      announceResult = await announceNewlyActiveJobs(supabase);
+    } catch (annErr) {
+      console.error("[Announce] Unexpected failure:", annErr);
+    }
+
+    // 6. Dispatch pending Telegram DMs.
+    // Runs last so notifications created earlier in this same sweep (expiry
+    // warnings and the vacancy alerts just queued above) go out without
+    // waiting a further minute. Never allowed to fail the sweep -- job and
+    // subscription state is the important work here, messaging is best-effort
+    // on top of it.
+    let dmResult = { attempted: 0, sent: 0 };
+    try {
+      dmResult = await dispatchPendingDms(supabase, new Date().toISOString());
+    } catch (dmErr) {
+      console.error("[DM dispatch] Unexpected failure:", dmErr);
+    }
+
     return new Response(JSON.stringify({
       success: true,
       publishedCount,
@@ -191,7 +430,11 @@ serve(async (req) => {
       expiredEmployerJobsCount,
       expiredDeadlineCount,
       warningsSent: expiringWarningsSent,
-      subscriptionExpiryWarningsSent
+      subscriptionExpiryWarningsSent,
+      jobsAnnounced: announceResult.announced,
+      vacancyAlertsQueued: announceResult.alerted,
+      dmAttempted: dmResult.attempted,
+      dmSent: dmResult.sent
     }), {
       headers: { "Content-Type": "application/json" },
       status: 200,
