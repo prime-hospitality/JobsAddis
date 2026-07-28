@@ -13,7 +13,7 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
  * step with SHORTLIST_NOTICE_DELAY_MINUTES in
  * src/app/emp/dashboard/applicants/actions.ts — change both together.
  */
-const SHORTLIST_NOTICE_DELAY_MINUTES = 5;
+const SHORTLIST_NOTICE_DELAY_MINUTES = 2;
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",

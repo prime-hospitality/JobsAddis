@@ -117,9 +117,9 @@ check, any employer could act on another's applicants by guessing an application
 
 | Action | Payload | Effect |
 |---|---|---|
-| `shortlist` | `applicationId` | Status → `shortlisted`. Queues a `shortlisted` notification with `deliver_after` set **5 minutes out**, so a misclick can be undone before the seeker is told anything |
+| `shortlist` | `applicationId` | Status → `shortlisted`. Queues a `shortlisted` notification with `deliver_after` set **2 minutes out**, so a misclick can be undone before the seeker is told anything. The DM sweep runs once a minute, so the seeker hears 2–3 minutes after the click |
 | `decline` | `applicationId` | Status → `declined`. **Silent by design** — no notification, no DM |
-| `unshortlist` | `applicationId` | Status → `reviewed`. Deletes the pending notice if still inside the 5-minute window; a delivered one is left alone rather than silently retracted |
+| `unshortlist` | `applicationId` | Status → `reviewed`. Deletes the pending notice if still inside the undo window; a delivered one is left alone rather than silently retracted |
 
 ---
 

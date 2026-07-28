@@ -42,6 +42,15 @@ function buildDmText(row: any): string {
   }
 }
 
+/** Label for the button under the DM. Only a vacancy alert is an invitation to
+ *  apply — a shortlisted seeker applied already, and telling them to "Apply"
+ *  for the job they were just shortlisted for reads as a mistake. Every button
+ *  deep-links to the job itself, so the wording tracks that. */
+function buildDmButtonText(row: any): string {
+  if (!row.job_id) return "Open JobsAddis →";
+  return row.type === "vacancy_alert" ? "View & Apply →" : "View Job →";
+}
+
 /** Announces newly-active jobs to the Telegram group and queues vacancy alerts
  *  for subscribed seekers.
  *
@@ -246,7 +255,7 @@ async function dispatchPendingDms(supabase: any, now: string) {
     const results = await Promise.all(
       chunk.map((row: any) =>
         sendDirectMessage(row.user_telegram_id, buildDmText(row), {
-          buttonText: row.job_id ? "View & Apply →" : "Open JobsAddis →",
+          buttonText: buildDmButtonText(row),
           startParam: row.job_id ? `job_${row.job_id}` : undefined,
         })
       )

@@ -11,9 +11,10 @@
 -- Delivery is centralised in the notification dispatcher inside
 -- job-expiration-cron (the every-minute sweep) rather than fired from each
 -- call site, for two reasons:
---   1. `deliver_after` -- a shortlist notice is held for a 5 minute undo
---      window (see 20260726000000). A DM sent at click time could not be
---      taken back, so delivery must wait for that window to lapse.
+--   1. `deliver_after` -- a shortlist notice is held for a short undo window
+--      (see 20260726000000; length lives in SHORTLIST_NOTICE_DELAY_MINUTES).
+--      A DM sent at click time could not be taken back, so delivery must wait
+--      for that window to lapse.
 --   2. Idempotency -- `dm_sent_at` marks a row as dispatched so a retried or
 --      overlapping sweep can't message the same person twice.
 --
