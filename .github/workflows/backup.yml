@@ -45,6 +45,13 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y --no-install-recommends postgresql-client-17
 
+          # Installing v17 is not enough. On Debian/Ubuntu, /usr/bin/pg_dump is
+          # a postgresql-common wrapper that picks a version, and the runner
+          # image already ships client 16 -- so the wrapper kept resolving to
+          # 16.14 and pg_dump aborted with "server version mismatch". Put the
+          # real v17 binaries first on PATH for every subsequent step.
+          echo "/usr/lib/postgresql/17/bin" >> "$GITHUB_PATH"
+
       - name: Check out backup repo
         env:
           # Defaulted so the workflow runs without extra setup. Override with a
@@ -74,6 +81,11 @@ jobs:
           set -euo pipefail
           mkdir -p backup-repo/db
           STAMP=$(date -u +%Y%m%d)
+
+          # Surface which pg_dump actually won the PATH race. A silent fallback
+          # to an older client is what broke the first real backup run.
+          echo "Using: $(command -v pg_dump)"
+          pg_dump --version
           # Plain SQL (not -F c) so a restore never depends on a matching
           # pg_restore build, and so the file diffs/greps if someone needs to
           # inspect it. Gzipped because it is mostly repetitive text.
