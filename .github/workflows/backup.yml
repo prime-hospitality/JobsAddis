@@ -108,7 +108,9 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          # 22, not 20: Node 20 is deprecated on GitHub runners, and the older
+          # pin is what surfaced the WebSocket crash this script no longer has.
+          node-version: '22'
 
       - name: Sync storage buckets
         env:
@@ -117,9 +119,9 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p backup-repo/storage
-          # Installed ad hoc rather than committed -- the backup script is the
-          # only thing at the repo root that needs a dependency.
-          npm install --no-save --no-package-lock @supabase/supabase-js@2
+          # No install step: backup-storage.mjs is dependency-free by design,
+          # so there is no npm resolution that can fail between us and the only
+          # copy of the client's CVs.
           node .github/scripts/backup-storage.mjs backup-repo/storage
 
       - name: Prune backups older than 30 days

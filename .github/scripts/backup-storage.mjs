@@ -4,13 +4,19 @@
 // and employer logos have no copy anywhere. Restoring the database alone would
 // leave every `cv_url` pointing at a file that no longer exists.
 //
-// Incremental by design: a file already present locally at the same byte size
-// is skipped, so a nightly run costs one listing call plus whatever is new.
-// That keeps the backup repo from re-committing hundreds of unchanged PDFs.
+// Deliberately dependency-free, using the Storage REST API over plain fetch.
+// It previously used @supabase/supabase-js, but that constructs a realtime
+// WebSocket client on import -- which crashes on Node < 22 (no native
+// WebSocket) despite this script never opening a socket. A backup that must
+// not fail should not carry a dependency it doesn't use, nor an `npm install`
+// step that can break on its own.
+//
+// Incremental: a file already present locally at the same byte size is
+// skipped, so a nightly run costs one listing call plus whatever is new. That
+// keeps the backup repo from re-committing hundreds of unchanged PDFs.
 //
 // Usage: node backup-storage.mjs <output-dir>
 
-import { createClient } from "@supabase/supabase-js";
 import { mkdir, writeFile, stat } from "node:fs/promises";
 import { dirname, join } from "node:path";
 
@@ -20,41 +26,52 @@ if (!OUT) {
   process.exit(1);
 }
 
-const url = process.env.SUPABASE_URL;
-const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-if (!url || !key) {
+const SUPABASE_URL = (process.env.SUPABASE_URL || "").replace(/\/+$/, "");
+const KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
+if (!SUPABASE_URL || !KEY) {
   console.error("SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required.");
   process.exit(1);
 }
 
 // Service role, because `resumes` is a private bucket (migration 20260725120000).
-const supabase = createClient(url, key);
+const authHeaders = { Authorization: `Bearer ${KEY}`, apikey: KEY };
 
 const BUCKETS = ["resumes", "logos"];
 const PAGE = 100;
 
 /** Storage list() is not recursive -- it returns one directory level, where an
- *  entry with no `id` is a folder. Walk it depth-first. */
+ *  entry with a null `id` is a folder. Walk it depth-first. */
 async function* walk(bucket, prefix = "") {
   let offset = 0;
   for (;;) {
-    const { data, error } = await supabase.storage
-      .from(bucket)
-      .list(prefix, { limit: PAGE, offset, sortBy: { column: "name", order: "asc" } });
+    const res = await fetch(`${SUPABASE_URL}/storage/v1/object/list/${bucket}`, {
+      method: "POST",
+      headers: { ...authHeaders, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        prefix,
+        limit: PAGE,
+        offset,
+        sortBy: { column: "name", order: "asc" },
+      }),
+    });
 
-    if (error) throw new Error(`list ${bucket}/${prefix}: ${error.message}`);
-    if (!data || data.length === 0) return;
+    if (!res.ok) {
+      throw new Error(`list ${bucket}/${prefix}: HTTP ${res.status} ${await res.text()}`);
+    }
 
-    for (const entry of data) {
+    const entries = await res.json();
+    if (!Array.isArray(entries) || entries.length === 0) return;
+
+    for (const entry of entries) {
       const path = prefix ? `${prefix}/${entry.name}` : entry.name;
-      if (entry.id === null) {
+      if (entry.id === null || entry.id === undefined) {
         yield* walk(bucket, path);
       } else {
         yield { path, size: entry.metadata?.size ?? null };
       }
     }
 
-    if (data.length < PAGE) return;
+    if (entries.length < PAGE) return;
     offset += PAGE;
   }
 }
@@ -85,16 +102,20 @@ for (const bucket of BUCKETS) {
         }
       }
 
-      const { data, error } = await supabase.storage.from(bucket).download(file.path);
-      if (error || !data) {
+      const res = await fetch(
+        `${SUPABASE_URL}/storage/v1/object/${bucket}/${file.path.split("/").map(encodeURIComponent).join("/")}`,
+        { headers: authHeaders },
+      );
+
+      if (!res.ok) {
         // One unreadable file must not abandon the rest of the backup.
-        console.error(`  FAILED ${file.path}: ${error?.message ?? "no data"}`);
+        console.error(`  FAILED ${file.path}: HTTP ${res.status}`);
         failed++;
         continue;
       }
 
       await mkdir(dirname(dest), { recursive: true });
-      await writeFile(dest, Buffer.from(await data.arrayBuffer()));
+      await writeFile(dest, Buffer.from(await res.arrayBuffer()));
       downloaded++;
     }
     console.log(`  ${seen} file(s) in bucket`);
