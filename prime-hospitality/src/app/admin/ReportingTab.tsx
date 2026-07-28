@@ -1,9 +1,9 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { getVacancyReport, getApplicationReport, getUserGrowthReport, getPackagePerformanceReport } from "./actions";
+import { getVacancyReport, getApplicationReport, getUserGrowthReport, getPackagePerformanceReport, exportTableCsv, type ExportableTable } from "./actions";
 import { runSilently } from "@/lib/silentFetch";
-import { BarChart3 } from "lucide-react";
+import { BarChart3, Download } from "lucide-react";
 
 type Report = {
   vacancy: Awaited<ReturnType<typeof getVacancyReport>> | null;
@@ -46,6 +46,78 @@ function HorizontalBar({ label, count, max, color }: { label: string; count: num
         <div style={{ width: `${max > 0 ? (count / max) * 100 : 0}%`, background: color }} className="h-full rounded-full transition-all" />
       </div>
       <span className="text-xs font-bold text-[#1c1c1e] w-8 text-right shrink-0">{count}</span>
+    </div>
+  );
+}
+
+const EXPORT_TABLES: { key: ExportableTable; label: string; note: string }[] = [
+  { key: "users", label: "Users", note: "Accounts and roles" },
+  { key: "profiles", label: "Job Seekers", note: "Profiles and contact details" },
+  { key: "employers", label: "Employers", note: "Companies, packages, expiry" },
+  { key: "jobs", label: "Vacancies", note: "All postings and status" },
+  { key: "applications", label: "Applications", note: "Who applied to what" },
+];
+
+/** On-demand CSV export of the core business tables (Agreement §17.E).
+ *
+ *  This is the reporting/handover convenience, NOT the disaster-recovery path.
+ *  Recovery is the nightly dump in .github/workflows/backup.yml, which also
+ *  captures the CV and logo files that no CSV can contain -- worth knowing,
+ *  because on the Supabase Free plan that dump is the only backup there is. */
+function ExportDataSection() {
+  const [busy, setBusy] = useState<string | null>(null);
+  const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null);
+
+  const download = async (table: ExportableTable, label: string) => {
+    setBusy(table);
+    setMsg(null);
+    try {
+      const res = await exportTableCsv(table);
+      if (!res.success) {
+        setMsg({ text: `${label} export failed: ${res.error}`, ok: false });
+        return;
+      }
+      // Blob + object URL so the CSV never has to round-trip through a route.
+      const url = URL.createObjectURL(new Blob([res.csv], { type: "text/csv;charset=utf-8;" }));
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = res.filename;
+      a.click();
+      URL.revokeObjectURL(url);
+      setMsg({ text: `${label}: ${res.rowCount} row(s) exported.`, ok: true });
+    } catch (e: unknown) {
+      setMsg({ text: e instanceof Error ? e.message : "Export failed.", ok: false });
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  return (
+    <div className="border-t border-[#e5e5ea] pt-6">
+      <h4 className="text-sm font-bold text-[#1c1c1e] uppercase tracking-wider mb-1">Export Data</h4>
+      <p className="text-xs text-[#8e8e93] mb-3">
+        Download a snapshot as CSV. For reporting and handover — the automatic nightly
+        backup is what protects against data loss, and it also covers uploaded CVs.
+      </p>
+      <div className="flex flex-wrap gap-2">
+        {EXPORT_TABLES.map((t) => (
+          <button
+            key={t.key}
+            onClick={() => download(t.key, t.label)}
+            disabled={busy !== null}
+            title={t.note}
+            className="flex items-center gap-2 rounded-lg border border-[#e5e5ea] bg-white px-3 py-2 text-xs font-semibold text-[#1c1c1e] transition-colors hover:bg-[#f2f2f7] disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <Download size={14} />
+            {busy === t.key ? "Preparing…" : t.label}
+          </button>
+        ))}
+      </div>
+      {msg && (
+        <p className={`mt-3 text-xs font-medium ${msg.ok ? "text-emerald-600" : "text-red-600"}`}>
+          {msg.text}
+        </p>
+      )}
     </div>
   );
 }
@@ -154,6 +226,8 @@ export default function ReportingTab() {
             ))
           )}
         </div>
+
+        <ExportDataSection />
       </div>
     </div>
   );

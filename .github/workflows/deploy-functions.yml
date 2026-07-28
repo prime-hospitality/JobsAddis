@@ -1,3 +1,11 @@
+# Deploys the Supabase Edge Functions on every push to main that touches them.
+#
+# This file MUST live at the repository root (.github/workflows/). It previously
+# sat at prime-hospitality/.github/workflows/, where GitHub Actions never reads
+# it -- so it had never run once, despite the README claiming deploys were
+# automatic. Paths below are therefore repo-root relative, and the CLI steps run
+# from prime-hospitality/ because that's where the supabase/ directory lives.
+
 name: Deploy Edge Functions
 
 on:
@@ -5,11 +13,18 @@ on:
     branches:
       - main
     paths:
-      - 'supabase/functions/**'
+      - 'prime-hospitality/supabase/functions/**'
+      - '.github/workflows/deploy-functions.yml'
+  # Lets a deploy be triggered by hand from the Actions tab, e.g. after
+  # rotating the bot token or any other Edge Function secret.
+  workflow_dispatch:
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: prime-hospitality
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v4
@@ -21,8 +36,14 @@ jobs:
 
       - name: Deploy Edge Functions
         run: |
-          for fn in validate-telegram-auth telegram-webhook send-telegram-notification shortlist-applicant job-expiration-cron; do
-            supabase functions deploy "$fn" --project-ref rrypxbkipixmuufzkdxp --use-api
+          set -euo pipefail
+          # _shared/ is not a function -- it is bundled automatically into each
+          # function that imports it, so it is not listed here.
+          for fn in validate-telegram-auth telegram-webhook shortlist-applicant job-expiration-cron; do
+            echo "::group::Deploying $fn"
+            supabase functions deploy "$fn" --project-ref "$SUPABASE_PROJECT_REF" --use-api
+            echo "::endgroup::"
           done
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_REF: rrypxbkipixmuufzkdxp

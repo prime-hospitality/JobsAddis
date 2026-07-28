@@ -1,0 +1,116 @@
+// Mirrors Supabase Storage buckets to a local directory for the nightly backup.
+//
+// No Supabase backup covers Storage at any plan tier, so without this the CVs
+// and employer logos have no copy anywhere. Restoring the database alone would
+// leave every `cv_url` pointing at a file that no longer exists.
+//
+// Incremental by design: a file already present locally at the same byte size
+// is skipped, so a nightly run costs one listing call plus whatever is new.
+// That keeps the backup repo from re-committing hundreds of unchanged PDFs.
+//
+// Usage: node backup-storage.mjs <output-dir>
+
+import { createClient } from "@supabase/supabase-js";
+import { mkdir, writeFile, stat } from "node:fs/promises";
+import { dirname, join } from "node:path";
+
+const OUT = process.argv[2];
+if (!OUT) {
+  console.error("Usage: node backup-storage.mjs <output-dir>");
+  process.exit(1);
+}
+
+const url = process.env.SUPABASE_URL;
+const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+if (!url || !key) {
+  console.error("SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required.");
+  process.exit(1);
+}
+
+// Service role, because `resumes` is a private bucket (migration 20260725120000).
+const supabase = createClient(url, key);
+
+const BUCKETS = ["resumes", "logos"];
+const PAGE = 100;
+
+/** Storage list() is not recursive -- it returns one directory level, where an
+ *  entry with no `id` is a folder. Walk it depth-first. */
+async function* walk(bucket, prefix = "") {
+  let offset = 0;
+  for (;;) {
+    const { data, error } = await supabase.storage
+      .from(bucket)
+      .list(prefix, { limit: PAGE, offset, sortBy: { column: "name", order: "asc" } });
+
+    if (error) throw new Error(`list ${bucket}/${prefix}: ${error.message}`);
+    if (!data || data.length === 0) return;
+
+    for (const entry of data) {
+      const path = prefix ? `${prefix}/${entry.name}` : entry.name;
+      if (entry.id === null) {
+        yield* walk(bucket, path);
+      } else {
+        yield { path, size: entry.metadata?.size ?? null };
+      }
+    }
+
+    if (data.length < PAGE) return;
+    offset += PAGE;
+  }
+}
+
+let downloaded = 0;
+let skipped = 0;
+let failed = 0;
+
+for (const bucket of BUCKETS) {
+  console.log(`\n── ${bucket} ──`);
+  let seen = 0;
+
+  try {
+    for await (const file of walk(bucket)) {
+      seen++;
+      const dest = join(OUT, bucket, file.path);
+
+      // Skip if we already hold an identically sized copy.
+      if (file.size !== null) {
+        try {
+          const existing = await stat(dest);
+          if (existing.size === file.size) {
+            skipped++;
+            continue;
+          }
+        } catch {
+          // Not present locally -- fall through and download.
+        }
+      }
+
+      const { data, error } = await supabase.storage.from(bucket).download(file.path);
+      if (error || !data) {
+        // One unreadable file must not abandon the rest of the backup.
+        console.error(`  FAILED ${file.path}: ${error?.message ?? "no data"}`);
+        failed++;
+        continue;
+      }
+
+      await mkdir(dirname(dest), { recursive: true });
+      await writeFile(dest, Buffer.from(await data.arrayBuffer()));
+      downloaded++;
+    }
+    console.log(`  ${seen} file(s) in bucket`);
+  } catch (err) {
+    // A bucket that doesn't exist yet is not a failure -- `logos` may be empty
+    // on a fresh project.
+    console.error(`  Could not fully read bucket: ${err.message}`);
+  }
+}
+
+console.log(`\nDownloaded ${downloaded}, skipped ${skipped} unchanged, ${failed} failed.`);
+
+// Fail the run if files were found but none could be read -- that usually means
+// the service role key is wrong, and a silently empty backup is the worst
+// possible outcome.
+if (failed > 0 && downloaded === 0) {
+  console.error("::error::Every storage download failed -- check SUPABASE_SERVICE_ROLE_KEY.");
+  process.exit(1);
+}
