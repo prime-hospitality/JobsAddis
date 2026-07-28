@@ -46,14 +46,26 @@ jobs:
           sudo apt-get install -y --no-install-recommends postgresql-client-17
 
       - name: Check out backup repo
-        uses: actions/checkout@v4
-        with:
+        env:
           # Defaulted so the workflow runs without extra setup. Override with a
           # BACKUP_REPO repository variable if the destination ever moves.
           # MUST stay private -- it holds applicant CVs and phone numbers.
-          repository: ${{ vars.BACKUP_REPO || 'prime-hospitality/backupadisjobs' }}
-          token: ${{ secrets.BACKUP_REPO_TOKEN }}
-          path: backup-repo
+          BACKUP_REPO: ${{ vars.BACKUP_REPO || 'prime-hospitality/backupadisjobs' }}
+          BACKUP_REPO_TOKEN: ${{ secrets.BACKUP_REPO_TOKEN }}
+        run: |
+          set -euo pipefail
+          # Deliberately `git clone` rather than actions/checkout. A brand new
+          # backup repo has no commits, so it has no `main` branch, and
+          # actions/checkout hard-fails with "couldn't find remote ref
+          # refs/heads/main". git clone handles that case: it warns about an
+          # empty repository and leaves an unborn branch, which the commit step
+          # below turns into the first real commit.
+          git clone "https://x-access-token:${BACKUP_REPO_TOKEN}@github.com/${BACKUP_REPO}.git" backup-repo
+          cd backup-repo
+          # Normalise the branch name. On an empty clone the unborn branch
+          # follows whatever the runner's init.defaultBranch is, which is not
+          # guaranteed to be `main`.
+          git checkout -B main
 
       - name: Dump database
         env:
@@ -112,11 +124,14 @@ jobs:
           git config user.name "JobsAddis Backup Bot"
           git config user.email "actions@github.com"
           git add -A
-          if git diff --staged --quiet; then
+          # `git diff --staged --quiet` errors on a repo with no HEAD yet, so
+          # the very first backup is handled explicitly.
+          if git rev-parse HEAD >/dev/null 2>&1 && git diff --staged --quiet; then
             echo "Nothing changed -- no commit needed."
           else
             git commit -m "Backup $(date -u +%Y-%m-%d)"
-            git push
+            # -u sets upstream on the first push into an empty repo.
+            git push -u origin main
           fi
 
       - name: Report
