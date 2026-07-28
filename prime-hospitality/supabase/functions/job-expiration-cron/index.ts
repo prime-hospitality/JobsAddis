@@ -52,9 +52,20 @@ function buildDmText(row: any): string {
  *  also means a `pending` job is never broadcast before an admin approves it.
  *
  *  Claim-then-act, exactly like dispatchPendingDms: overlapping sweeps must not
- *  post the same vacancy to the group twice. */
+ *  post the same vacancy to the group twice.
+ *
+ *  Unlike a DM, though, a failed claim here is not written off. dispatchPendingDms
+ *  can drop a nudge because the in-app notification row still carries it; a group
+ *  post has no such backstop -- lose it and the vacancy simply never appears in
+ *  the group. So a failed post releases the claim (`announced_at` back to null)
+ *  for the next sweep to retry, bounded by `announce_attempts` so a job Telegram
+ *  rejects for a permanent reason doesn't retry every minute forever. */
 async function announceNewlyActiveJobs(supabase: any) {
   const ANNOUNCE_BATCH_LIMIT = 20;
+  /** Sweeps to try before giving up. sendGroupAnnouncement already retries the
+   *  HTTP call a few times within one sweep, so this is the outer bound on top
+   *  of that: minutes of transient outage tolerated, not seconds. */
+  const MAX_ANNOUNCE_ATTEMPTS = 3;
 
   const { data: candidates, error } = await supabase
     .from("jobs")
@@ -75,7 +86,7 @@ async function announceNewlyActiveJobs(supabase: any) {
     .update({ announced_at: new Date().toISOString() })
     .in("id", candidates.map((c: any) => c.id))
     .is("announced_at", null)
-    .select("id, title, category, neighborhood, job_type, salary_min, salary_max, quantity, deadline, description, requirements, employer_id, employers(business_name)");
+    .select("id, title, category, neighborhood, job_type, salary_min, salary_max, quantity, deadline, description, requirements, employer_id, announce_attempts, alerts_queued_at, employers(business_name)");
 
   if (claimErr) {
     console.error("[Announce] Failed to claim jobs:", claimErr);
@@ -89,15 +100,49 @@ async function announceNewlyActiveJobs(supabase: any) {
     const emp = (job as any).employers;
     const businessName = (Array.isArray(emp) ? emp[0]?.business_name : emp?.business_name) || "JobsAddis";
 
+    let posted = false;
     try {
-      if (await sendGroupAnnouncement(job as any, businessName)) announced++;
+      posted = await sendGroupAnnouncement(job as any, businessName);
     } catch (err) {
-      console.error(`[Announce] Group post failed for job ${job.id}:`, err);
+      console.error(`[Announce] Group post threw for job ${job.id}:`, err);
+    }
+
+    if (posted) {
+      announced++;
+    } else {
+      // Release the claim so the next sweep picks this job up again, unless
+      // we've now burned the attempt budget -- at which point announced_at
+      // stays set and the job is written off rather than retried forever.
+      const attempts = (Number((job as any).announce_attempts) || 0) + 1;
+      const exhausted = attempts >= MAX_ANNOUNCE_ATTEMPTS;
+      const { error: releaseErr } = await supabase
+        .from("jobs")
+        .update({
+          announce_attempts: attempts,
+          ...(exhausted ? {} : { announced_at: null }),
+        })
+        .eq("id", job.id);
+
+      if (releaseErr) {
+        console.error(`[Announce] Failed to release claim on job ${job.id}:`, releaseErr);
+      } else if (exhausted) {
+        console.error(
+          `[Announce] Job ${job.id} ("${job.title}") gave up after ${attempts} sweeps -- ` +
+            `it will NOT appear in the group. Announce it manually or clear announced_at to retry.`,
+        );
+      } else {
+        console.warn(`[Announce] Job ${job.id} will retry next sweep (attempt ${attempts}/${MAX_ANNOUNCE_ATTEMPTS}).`);
+      }
     }
 
     // Queue vacancy alerts for seekers subscribed to this category. Only the
     // notification rows are written here -- dispatchPendingDms below turns them
     // into Telegram DMs on this same sweep.
+    //
+    // Tracked separately from announced_at: a retried group post must not fan a
+    // second DM out to everyone who was already alerted on the first pass. Runs
+    // even when the group post failed, since the two are independent deliveries.
+    if ((job as any).alerts_queued_at) continue;
     try {
       let query = supabase
         .from("profiles")
@@ -128,6 +173,13 @@ async function announceNewlyActiveJobs(supabase: any) {
         if (insErr) throw insErr;
         alerted += rows.length;
       }
+
+      // Marked even when nobody matched, so a retried group post doesn't re-run
+      // the subscriber query for a job whose alerts are settled.
+      await supabase
+        .from("jobs")
+        .update({ alerts_queued_at: new Date().toISOString() })
+        .eq("id", job.id);
     } catch (err) {
       console.error(`[Announce] Vacancy alerts failed for job ${job.id}:`, err);
     }
