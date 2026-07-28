@@ -195,12 +195,15 @@ export default function HomeScreen({ onJobSelect, onSearchPress, onBellPress, un
           overflowX: "hidden",
         }}
       >
+        {/* Holds the Telegram-header band open, then stays pinned there so the
+            brand row can scroll away underneath it rather than through it. */}
+        <div className="safe-top-cover" />
+
         {/* ── HEADER ── */}
         <motion.div
           initial={shouldReduceMotion ? false : { opacity: 0, y: -12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3 }}
-          className="safe-screen-top"
           style={{
             paddingLeft: 20,
             paddingRight: 20,
@@ -541,8 +544,9 @@ export default function HomeScreen({ onJobSelect, onSearchPress, onBellPress, un
           `}} />
         </motion.div>
 
-        {/* STICKY SEARCH BAR */}
-        <div style={{ position: "sticky", top: 0, zIndex: 50, background: "var(--app-bg)", padding: "12px 20px 4px" }}>
+        {/* STICKY SEARCH BAR — parks just below the Telegram header, not under
+            it, so it stays tappable however far the feed scrolls. */}
+        <div style={{ position: "sticky", top: "var(--safe-top)", zIndex: 50, background: "var(--app-bg)", padding: "12px 20px 4px" }}>
           <motion.div
             whileTap={{ scale: 0.98 }}
             onClick={onSearchPress}

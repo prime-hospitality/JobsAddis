@@ -87,8 +87,28 @@ body {
 }
 
 /* ── Telegram Fullscreen Safe-Area helpers ── */
+/* The band at the top of the viewport that Telegram's own header (close /
+   menu buttons) and the device notch sit over. Nothing interactive may live
+   here — taps land on Telegram's chrome, not on us. */
+:root {
+  --safe-top: max(84px, calc(env(safe-area-inset-top) + 32px));
+}
+
 .safe-screen-top {
-  padding-top: max(84px, calc(env(safe-area-inset-top) + 32px)) !important;
+  padding-top: var(--safe-top) !important;
+}
+
+/* Opaque filler that holds the unsafe band open in flow and stays pinned to
+   the top of its scroller, so content scrolling past it is masked instead of
+   sliding under Telegram's chrome. Pair it with `top: var(--safe-top)` on any
+   sticky bar below, which is where that bar then parks. */
+.safe-top-cover {
+  position: sticky;
+  top: 0;
+  z-index: 60;
+  flex-shrink: 0;
+  height: var(--safe-top);
+  background: var(--app-bg);
 }
 
 /* Scrollbars */
