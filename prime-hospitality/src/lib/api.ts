@@ -468,6 +468,94 @@ export async function getUnreadCount(
 }
 
 // ---------------------------------------------------------------------------
+// Mini App employer dashboard: templates + posting
+//
+// These four back the employer dashboard tab. Every rule that governs a job
+// posted from the employer web dashboard is enforced server-side in the Edge
+// Function (subscription validity, daily post limit, deadline clamping to the
+// plan end date, and auto_publish deciding whether a job goes live or to
+// review). The values returned by fetchEmployerPostingData are for telling the
+// employer what will happen — never the gate itself.
+// ---------------------------------------------------------------------------
+
+/** Rules the dashboard displays so an employer knows, before tapping Post,
+ *  whether the job goes live immediately and how many posts they have left. */
+export interface EmployerPostingRules {
+  autoPublish: boolean;
+  /** -1 means unlimited. */
+  dailyPostLimit: number;
+  /** YYYY-MM-DD, or null when the employer has no package at all. */
+  packageExpiresAt: string | null;
+  isExpired: boolean;
+  postedToday: number;
+}
+
+export interface EmployerPostingData {
+  success: boolean;
+  employer: {
+    id: string;
+    business_name: string;
+    business_type: string | null;
+    logo_url: string | null;
+  };
+  templates: Array<Record<string, any>>;
+  rules: EmployerPostingRules;
+}
+
+export async function fetchEmployerPostingData(
+  initData: string | null
+): Promise<EmployerPostingData> {
+  return callEdgeFunction<EmployerPostingData>(initData, {
+    action: "get_employer_posting_data",
+  });
+}
+
+/** Result of any action that creates a job. `status` reflects the employer's
+ *  auto_publish flag: "active" is live now, "pending" is queued for review.
+ *  `deadline` is what the server actually stored after defaulting/clamping. */
+export interface PostJobResult {
+  success: boolean;
+  status: "active" | "pending";
+  deadline: string;
+}
+
+/** One-tap post from a saved template. */
+export async function postJobFromTemplate(
+  initData: string | null,
+  templateId: string
+): Promise<PostJobResult> {
+  return callEdgeFunction<PostJobResult>(initData, {
+    action: "post_job_from_template",
+    templateId,
+  });
+}
+
+/** Post a job written from scratch. `form` is a VacancyFormState. */
+export async function createEmployerJobPost(
+  initData: string | null,
+  form: Record<string, unknown>
+): Promise<PostJobResult> {
+  return callEdgeFunction<PostJobResult>(initData, {
+    action: "create_employer_job",
+    form,
+  });
+}
+
+/** Edit an existing template. Templates are created on the web dashboard —
+ *  the Mini App can refine one, but not add to the library. */
+export async function updateEmployerTemplate(
+  initData: string | null,
+  templateId: string,
+  form: Record<string, unknown>
+): Promise<{ success: boolean }> {
+  return callEdgeFunction(initData, {
+    action: "update_employer_template",
+    templateId,
+    form,
+  });
+}
+
+// ---------------------------------------------------------------------------
 // Action: Update alert categories for vacancy subscriptions
 // ---------------------------------------------------------------------------
 export async function updateAlertCategories(
