@@ -14,6 +14,18 @@
 
 const TELEGRAM_BOT_TOKEN = Deno.env.get("TELEGRAM_BOT_TOKEN") || "";
 
+/** Strips the bot token out of anything headed for the logs.
+ *
+ *  The token is a path segment of every Bot API URL, and Deno's fetch puts the
+ *  whole URL in its error message -- so `console.error(err)` on a network
+ *  failure writes the live token into the log stream in plaintext, where it
+ *  stays for the retention window. Every log call in this file goes through
+ *  here. */
+function redact(value: unknown): string {
+  const text = value instanceof Error ? `${value.name}: ${value.message}` : String(value);
+  return TELEGRAM_BOT_TOKEN ? text.replaceAll(TELEGRAM_BOT_TOKEN, "<bot-token>") : text;
+}
+
 /** Escapes text for Telegram's HTML parse mode. Telegram only recognises a
  *  small tag set, so `&`, `<` and `>` are all that need encoding -- but they
  *  must be encoded, or a job title containing "R&D" or "<Chef>" silently
@@ -117,12 +129,12 @@ export async function sendDirectMessage(
     // same situation reported under a different status.
     const blocked = res.status === 403 || /chat not found/i.test(description);
     if (!blocked) {
-      console.error(`[Telegram] DM to ${telegramId} failed: ${description}`);
+      console.error(`[Telegram] DM to ${telegramId} failed: ${redact(description)}`);
     }
     return { ok: false, blocked, error: description };
   } catch (err) {
-    console.error(`[Telegram] DM to ${telegramId} threw:`, err);
-    return { ok: false, blocked: false, error: String(err) };
+    console.error(`[Telegram] DM to ${telegramId} threw: ${redact(err)}`);
+    return { ok: false, blocked: false, error: redact(err) };
   }
 }
 
@@ -213,29 +225,54 @@ ${emoji} <b>${escapeHtml(job.title)}</b> (${escapeHtml(job.category)})
     ? { inline_keyboard: [[{ text: "🔍 View & Apply →", url: webAppUrl }]] }
     : undefined;
 
-  try {
-    const res = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        chat_id: chatId,
-        text: message,
-        parse_mode: "HTML",
-        reply_markup: replyMarkup,
-      }),
-    });
+  // A group post is a one-shot event -- unlike a DM there is no second chance
+  // later from a different notification -- and the failure that prompted this
+  // was a bare TCP reset, which the very next attempt would have survived. So
+  // retry transient failures here rather than leaving them to the next sweep a
+  // minute later. 4xx other than 429 is the payload being wrong; retrying that
+  // just posts the same rejected message three times.
+  const MAX_ATTEMPTS = 3;
 
-    const data = await res.json();
-    if (!res.ok) {
-      console.error("[Telegram Group] Failed to send message:", data);
-      return false;
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    if (attempt > 1) {
+      await new Promise((r) => setTimeout(r, 500 * 2 ** (attempt - 2)));
     }
-    console.log("[Telegram Group] Announced job", job.id, "msg", data.result?.message_id);
-    return true;
-  } catch (err) {
-    console.error("[Telegram Group] Error sending message:", err);
-    return false;
+
+    try {
+      const res = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          chat_id: chatId,
+          text: message,
+          parse_mode: "HTML",
+          reply_markup: replyMarkup,
+        }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) {
+        console.log("[Telegram Group] Announced job", job.id, "msg", data.result?.message_id);
+        return true;
+      }
+
+      const retriable = res.status === 429 || res.status >= 500;
+      console.error(
+        `[Telegram Group] Job ${job.id} rejected (attempt ${attempt}/${MAX_ATTEMPTS}, HTTP ${res.status}): ` +
+          redact(data?.description || "no description"),
+      );
+      if (!retriable) return false;
+    } catch (err) {
+      // Network-level failure: connection reset, DNS, TLS. Always worth another
+      // go -- nothing about the request itself is wrong.
+      console.error(
+        `[Telegram Group] Job ${job.id} send threw (attempt ${attempt}/${MAX_ATTEMPTS}): ${redact(err)}`,
+      );
+    }
   }
+
+  console.error(`[Telegram Group] Giving up on job ${job.id} after ${MAX_ATTEMPTS} attempts.`);
+  return false;
 }
 
 export interface FanOutSummary {
