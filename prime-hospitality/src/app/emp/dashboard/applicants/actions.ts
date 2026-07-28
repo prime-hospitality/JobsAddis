@@ -149,8 +149,14 @@ async function loadOwnedApplication(
  * How long a shortlist notification sits invisible before the seeker can see it.
  * An employer who shortlists by mistake and clicks back within this window
  * retracts it before anyone is told.
+ *
+ * The DM dispatcher sweeps once a minute, so the seeker actually hears between
+ * this many minutes and one minute later. Kept short deliberately: a misclick
+ * is noticed and undone in seconds, while every extra minute here is a minute
+ * the employer stares at a shortlisted applicant who has been told nothing —
+ * which reads as the feature being broken.
  */
-const SHORTLIST_NOTICE_DELAY_MINUTES = 5;
+const SHORTLIST_NOTICE_DELAY_MINUTES = 2;
 
 /** The seeker's shortlist notification for this job, and whether they can see it yet. */
 async function findShortlistNotice(
