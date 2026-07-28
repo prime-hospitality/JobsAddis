@@ -4,10 +4,35 @@ import React, { useState } from "react";
 import { Save, X, Briefcase, MapPin, CreditCard, ClipboardList, CalendarClock } from "lucide-react";
 import { searchLocations } from "@/data/locations";
 import { VacancyFormState, validateVacancyForm } from "./vacancyShared";
-import { DEPARTMENTS } from "@/data/job-categories";
+import { HOTEL_JOB_CATEGORIES, JOB_ROLE_NAMES, detectCategoryFromTitle } from "@/data/job-categories";
 import FilterSelect from "@/components/FilterSelect";
 
-const DEPARTMENT_OPTIONS = DEPARTMENTS.map((d) => ({ value: d, label: d }));
+/**
+ * The employer picks the **role**, not the department.
+ *
+ * This field used to offer DEPARTMENTS ("Front Office", "IT", …) while seekers
+ * filtered on role names ("Receptionist", "Waiter", …), so the two vocabularies
+ * never intersected and the seeker's Category filter matched nothing. Both
+ * sides now read the same list; the department is derived from the role.
+ *
+ * Grouped by department and labelled with the longer descriptive name, since
+ * this dropdown has room for it — unlike the seeker's chip grid.
+ */
+const ROLE_OPTIONS = HOTEL_JOB_CATEGORIES.map((c) => ({
+  value: c.name,
+  label: `${c.fullName ?? c.name} · ${c.department}`,
+}));
+
+/**
+ * Suggests a role from the job title as the employer types, but only while the
+ * role is still untouched at its "Other" default — once a role has been chosen
+ * deliberately, typing in the title must never overwrite it.
+ */
+function withDetectedRole(title: string, currentRole: string): { title: string; job_category?: string } {
+  if (currentRole && currentRole !== "Other") return { title };
+  const detected = detectCategoryFromTitle(title);
+  return detected ? { title, job_category: detected } : { title };
+}
 
 const CHEVRON =
   "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='m6 9 6 6 6-6'/></svg>\")";
@@ -135,10 +160,13 @@ export default function VacancyFormModal({
   const [locationSuggestionsOpen, setLocationSuggestionsOpen] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<{ title?: string; description_template?: string; deadline?: string }>({});
 
-  const departmentOptions =
-    value.job_category && !DEPARTMENTS.includes(value.job_category as any)
-      ? [{ value: value.job_category, label: value.job_category }, ...DEPARTMENT_OPTIONS]
-      : DEPARTMENT_OPTIONS;
+  // Jobs saved before the role list was consolidated can carry a category that
+  // is no longer an option (a department name, or a free-typed value). Keep it
+  // selectable so opening an old job for edit doesn't silently reassign it.
+  const roleOptions =
+    value.job_category && !JOB_ROLE_NAMES.includes(value.job_category)
+      ? [{ value: value.job_category, label: `${value.job_category} (legacy)` }, ...ROLE_OPTIONS]
+      : ROLE_OPTIONS;
 
   const set = (patch: Partial<VacancyFormState>) => {
     onChange({ ...value, ...patch });
@@ -194,7 +222,7 @@ export default function VacancyFormModal({
                     className={`vfm-input${fieldErrors.title ? " error" : ""}`}
                     type="text"
                     value={value.title}
-                    onChange={(e) => set({ title: e.target.value })}
+                    onChange={(e) => set(withDetectedRole(e.target.value, value.job_category))}
                     placeholder="e.g. Senior Bartender"
                   />
                   {fieldErrors.title && <p className="vfm-error-text">{fieldErrors.title}</p>}
@@ -202,16 +230,16 @@ export default function VacancyFormModal({
 
                 <div className="vfm-row2">
                   <div className="vfm-field">
-                    <label className="vfm-label">Department</label>
+                    <label className="vfm-label">Job Role</label>
                     <FilterSelect
                       value={value.job_category}
                       onChange={(v) => set({ job_category: v })}
                       fullWidth
                       minWidth={0}
-                      searchable={false}
+                      searchable
                       maxMenuHeight={224}
-                      ariaLabel="Department"
-                      options={departmentOptions}
+                      ariaLabel="Job role"
+                      options={roleOptions}
                     />
                   </div>
                   <div className="vfm-field">

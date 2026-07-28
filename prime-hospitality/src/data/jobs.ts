@@ -1,3 +1,5 @@
+import { JOB_ROLE_NAMES } from "@/data/job-categories";
+
 export type JobType = "Full Time" | "Part Time" | "Contract";
 export type ExperienceLevel = "Entry Level" | "Mid Level" | "Senior Level";
 export type JobCategory = string;
@@ -251,47 +253,9 @@ export const JOBS: Job[] = [
   },
 ];
 
-export const JOB_CATEGORIES: JobCategory[] = [
-  "Waiter",
-  "Chef",
-  "Executive Chef",
-  "Sous Chef",
-  "Cook",
-  "Traditional Cook",
-  "Barista",
-  "Receptionist",
-  "Night Auditor",
-  "Guest Relations Officer",
-  "Reservations Agent",
-  "Housekeeper",
-  "Security",
-  "Cashier",
-  "Bellboy",
-  "Delivery",
-  "Driver",
-  "Manager",
-  "General Manager",
-  "F&B",
-  "Marketing & Sales",
-  "Banquet",
-  "Phone Operator",
-  "Store Keeper",
-  "Maintenance",
-  "Painter",
-  "Chief Engineer",
-  "Finance",
-  "Accountant",
-  "Cost Control",
-  "IT Officer",
-  "Spa Attendant",
-  "Gym Trainer",
-  "Lifeguard",
-  "Steward",
-  "Kitchen Assistant",
-  "HR Manager",
-  "HR Officer",
-  "Recruiter",
-  "Training & Development Officer",
-  "Payroll Officer",
-  "Other",
-];
+/**
+ * Re-exported from the single role taxonomy so the seeker filter, the employer
+ * post form and the profile editor can never drift apart again. Kept as a named
+ * export here because several screens already import it from this module.
+ */
+export const JOB_CATEGORIES: JobCategory[] = JOB_ROLE_NAMES;

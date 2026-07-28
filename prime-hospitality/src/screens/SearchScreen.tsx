@@ -2,20 +2,23 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence, LazyMotion, domAnimation } from "framer-motion";
-import { Search, X, SlidersHorizontal, MapPin, Clock, ChevronDown, CheckCircle, ChevronLeft, ChevronRight, Users, Briefcase } from "lucide-react";
+import { Search, X, MapPin, Clock, ChevronDown, CheckCircle, ChevronLeft, ChevronRight, Users, Briefcase, Building2 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
-import { Job, JobCategory, JobType, ExperienceLevel, JOB_CATEGORIES } from "@/data/jobs";
+import { Job, JobCategory, JOB_CATEGORIES } from "@/data/jobs";
+import { DEPARTMENTS_WITH_ROLES, ROLES_BY_DEPARTMENT } from "@/data/job-categories";
 import { SupabaseJob, mapSupabaseJobToJob } from "@/hooks/useJobs";
 import EmployerAvatar from "@/components/EmployerAvatar";
 import { useT } from "@/lib/i18n";
 import {
-  SEARCH_EXPERIENCE_OPTIONS as EXPERIENCE_OPTIONS,
-  SEARCH_EXPERIENCE_LABELS as EXPERIENCE_LABELS,
+  JOB_EXPERIENCE_OPTIONS as EXPERIENCE_OPTIONS,
+  JOB_EXPERIENCE_LABELS as EXPERIENCE_LABELS,
   DATE_OPTIONS,
   DATE_LABELS,
-  TEAM_LABELS,
+  DEPARTMENT_LABELS,
   categoryLabel,
   categoryMatches,
+  businessTypeLabel,
+  businessTypeMatches,
 } from "@/lib/vocabulary";
 
 interface SearchScreenProps {
@@ -23,14 +26,6 @@ interface SearchScreenProps {
   pageSize?: number;
   enableAnimations?: boolean;
 }
-
-const CATEGORY_EMOJIS: Record<string, string> = {
-  Waiter: "💁", Chef: "🍳", Receptionist: "🛎️", Barista: "☕",
-  Housekeeper: "🧹", Security: "🛡️", Cashier: "💵", Manager: "💼",
-  "Marketing & Sales": "📈", "F&B": "🍹", Finance: "💰", "Cost Control": "📊",
-  Accountant: "🧮", Bellboy: "🧳", "Store Keeper": "📦", "Phone Operator": "📞",
-  Maintenance: "🔧",
-};
 
 function useDebounce<T>(value: T, delay: number): T {
   const [debounced, setDebounced] = useState(value);
@@ -42,68 +37,119 @@ function useDebounce<T>(value: T, delay: number): T {
 }
 
 
-const CATEGORY_TEAMS: Record<string, string[]> = {
-  "Front Office": [
-    "Receptionist",
-    "Night Auditor",
-    "Guest Relations Officer",
-    "Reservations Agent",
-    "Phone Operator",
-    "Bellboy",
-  ],
-  "Housekeeping": [
-    "Housekeeper",
-  ],
-  "Food & Beverage": [
-    "F&B",
-    "Waiter",
-    "Chef",
-    "Executive Chef",
-    "Sous Chef",
-    "Cook",
-    "Traditional Cook",
-    "Kitchen Assistant",
-    "Steward",
-    "Barista",
-    "Banquet",
-  ],
-  "Marketing": [
-    "Marketing & Sales",
-  ],
-  "Human Resources": [
-    "HR Manager",
-    "HR Officer",
-    "Recruiter",
-    "Training & Development Officer",
-    "Payroll Officer",
-  ],
-  "Engineering & Maintenance": [
-    "Chief Engineer",
-    "Maintenance",
-    "Painter",
-    "IT Officer",
-  ],
-  "Finance & Accounting": [
-    "Finance",
-    "Accountant",
-    "Cost Control",
-    "Cashier",
-    "Store Keeper",
-  ],
-  "Unassigned": [
-    "Manager",
-    "General Manager",
-    "Security",
-    "Driver",
-    "Delivery",
-    "Spa Attendant",
-    "Gym Trainer",
-    "Lifeguard",
-    "Other",
-  ],
-};
+// Department groupings come from the role taxonomy itself. They used to be a
+// hand-maintained map here whose "Unassigned" bucket was filtered out of the
+// drill-down, quietly making nine roles — Manager, Security, Driver and others
+// — reachable only by typing their name into the modal's search box.
+const TEAM_NAMES = DEPARTMENTS_WITH_ROLES;
 
-const TEAM_NAMES = Object.keys(CATEGORY_TEAMS).filter(t => t !== "Unassigned");
+/**
+ * The business types offered by the Type filter.
+ *
+ * Two sources, unioned, because neither alone is complete:
+ *  - `business_types` is the lookup table the admin console and the employer
+ *    profile "Other" flow write to, so it carries every type that has been
+ *    *created*, whether or not anyone is hiring under it.
+ *  - Employers predating that table (or edited around it) can carry a
+ *    `business_type` string that was never inserted into the lookup. Reading
+ *    the types off live jobs guarantees no active vacancy is unreachable
+ *    through the filter.
+ *
+ * Lookup order is preserved (Hotel, Restaurant, Cafe first — the seeded rows),
+ * with any orphaned types appended alphabetically.
+ */
+function useBusinessTypes() {
+  const [types, setTypes] = useState<string[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    (async () => {
+      const [lookupRes, liveRes] = await Promise.all([
+        supabase.from("business_types").select("name").order("created_at", { ascending: true }),
+        supabase.from("jobs").select("employers!inner(business_type)").eq("status", "active"),
+      ]);
+
+      if (cancelled) return;
+
+      if (lookupRes.error) console.error("Failed to load business types:", lookupRes.error);
+      if (liveRes.error) console.error("Failed to load business types from jobs:", liveRes.error);
+
+      const ordered: string[] = [];
+      const seen = new Set<string>();
+      const add = (raw: unknown) => {
+        const name = typeof raw === "string" ? raw.trim() : "";
+        // Dedupe case-insensitively: the lookup is UNIQUE on `name`, but an
+        // employer's free-text `business_type` may differ only in casing.
+        if (!name || seen.has(name.toLowerCase())) return;
+        seen.add(name.toLowerCase());
+        ordered.push(name);
+      };
+
+      (lookupRes.data ?? []).forEach((row) => add(row.name));
+
+      const orphans: string[] = [];
+      (liveRes.data ?? []).forEach((row) => {
+        const emp = row.employers as unknown;
+        const list = Array.isArray(emp) ? emp : [emp];
+        list.forEach((e) => {
+          const name = (e as { business_type?: string } | null)?.business_type?.trim();
+          if (name && !seen.has(name.toLowerCase())) orphans.push(name);
+        });
+      });
+      orphans.sort((a, b) => a.localeCompare(b)).forEach(add);
+
+      setTypes(ordered);
+      setIsLoading(false);
+    })();
+
+    return () => { cancelled = true; };
+  }, []);
+
+  return { types, isLoading };
+}
+
+/**
+ * PostgREST parses `or=(...)` as a comma-delimited logic tree, so an unescaped
+ * comma, parenthesis or backslash in the keyword makes the whole request 400
+ * rather than returning no rows. Wrapping the value in double quotes lets
+ * PostgREST treat it as one literal; `%` stays unescaped so it keeps acting as
+ * the ilike wildcard we wrap the term in.
+ */
+function quoteForOrFilter(term: string): string {
+  return `"${term.replace(/["\\]/g, (ch) => `\\${ch}`)}"`;
+}
+
+/** Used when the device tier hasn't reported a page size. */
+const DEFAULT_PAGE_SIZE = 20;
+
+/** Only well-formed uuids get interpolated into the `in(...)` list below. */
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * Ids of employers whose business name matches the keyword.
+ *
+ * The search box promises to match hotel names, but PostgREST cannot put a
+ * condition on an embedded table inside a top-level `or(...)`, so
+ * `employers.business_name.ilike.*` is a parse error. Resolving the ids first
+ * and folding them back in as `employer_id.in.(...)` gets the same result for
+ * one extra round trip and no schema change.
+ */
+async function matchingEmployerIds(term: string): Promise<string[]> {
+  const { data, error } = await supabase
+    .from("employers")
+    .select("id")
+    .ilike("business_name", `%${term}%`)
+    .limit(100);
+
+  if (error) {
+    // Non-fatal: fall back to title/description/neighborhood matching only.
+    console.error("Employer name lookup failed:", error);
+    return [];
+  }
+  return (data ?? []).map((e) => e.id).filter((id): id is string => UUID_RE.test(id));
+}
 
 // Helper Modal Component
 function FilterModal({ 
@@ -196,8 +242,97 @@ function FilterModal({
   );
 }
 
+// Business Type Modal
+function TypeModal({
+  isOpen, onClose, options, isLoading, selected, onChange
+}: {
+  isOpen: boolean; onClose: () => void; options: string[]; isLoading: boolean;
+  selected: string[]; onChange: (types: string[]) => void;
+}) {
+  const t = useT();
+  const [search, setSearch] = useState("");
+
+  useEffect(() => {
+    if (!isOpen) setSearch("");
+  }, [isOpen]);
+
+  const toggle = (type: string) => {
+    if (selected.includes(type)) onChange(selected.filter(x => x !== type));
+    else onChange([...selected, type]);
+  };
+
+  const filtered = options.filter(o => businessTypeMatches(o, search));
+  // The search field only earns its space once the list outgrows a glance.
+  const showSearch = options.length > 8;
+
+  return (
+    <FilterModal isOpen={isOpen} onClose={onClose} title={t("search.selectType")} onUpdate={() => {}}>
+      <div style={{ padding: "16px 20px" }}>
+
+        {showSearch && (
+          <div style={{ display: "flex", alignItems: "center", gap: 10, background: "var(--app-bg)", border: "1px solid var(--border)", borderRadius: 12, padding: "11px 14px", marginBottom: 16 }}>
+            <Search size={17} color="var(--text-muted)" />
+            <input
+              placeholder={t("search.searchAllTypes")}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              style={{ border: "none", outline: "none", width: "100%", fontSize: 15, background: "transparent", color: "var(--text-primary)" }}
+            />
+            {search && (
+              <button onClick={() => setSearch("")} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, lineHeight: 0 }}>
+                <X size={15} color="var(--text-muted)" />
+              </button>
+            )}
+          </div>
+        )}
+
+        {isLoading && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {[1, 2, 3].map(i => <div key={i} className="shimmer" style={{ height: 56, borderRadius: 12 }} />)}
+          </div>
+        )}
+
+        {!isLoading && filtered.length === 0 && (
+          <p style={{ textAlign: "center", color: "var(--text-muted)", padding: "24px 0" }}>{t("search.noTypesFound")}</p>
+        )}
+
+        {!isLoading && filtered.length > 0 && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {filtered.map(type => {
+              const isSelected = selected.includes(type);
+              return (
+                <button
+                  key={type}
+                  onClick={() => toggle(type)}
+                  style={{
+                    width: "100%", padding: "14px 14px", textAlign: "left", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12,
+                    background: isSelected ? "var(--brand-subtle)" : "var(--surface-elevated)",
+                    border: isSelected ? "1px solid var(--brand)" : "1px solid var(--border)",
+                    borderRadius: 12, cursor: "pointer",
+                  }}
+                >
+                  <span style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
+                    <Building2 size={18} color={isSelected ? "var(--brand)" : "var(--text-muted)"} style={{ flexShrink: 0 }} />
+                    <span style={{ fontSize: 15, fontWeight: isSelected ? 700 : 500, color: isSelected ? "var(--brand)" : "var(--text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {businessTypeLabel(type, t.lang)}
+                    </span>
+                  </span>
+                  <div style={{ flexShrink: 0, width: 22, height: 22, borderRadius: 6, border: isSelected ? "none" : "2px solid var(--text-muted)", background: isSelected ? "var(--brand)" : "transparent", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    {isSelected && <CheckCircle size={14} color="white" />}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+      </div>
+    </FilterModal>
+  );
+}
+
 // Category Modal
-function CategoryModal({ 
+function CategoryModal({
   isOpen, onClose, selected, onChange 
 }: { 
   isOpen: boolean; onClose: () => void; selected: string[]; onChange: (cats: string[]) => void;
@@ -222,7 +357,7 @@ function CategoryModal({
   const searchFiltered = allCats.filter(c => categoryMatches(c, search));
 
   // Categories for the drilled-in team
-  const teamCats = activeTeam ? (CATEGORY_TEAMS[activeTeam] ?? []) : [];
+  const teamCats = activeTeam ? (ROLES_BY_DEPARTMENT[activeTeam] ?? []) : [];
 
   const CatGrid = ({ cats }: { cats: string[] }) => (
     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
@@ -252,7 +387,7 @@ function CategoryModal({
     </div>
   );
 
-  const teamLabel = (team: string) => (TEAM_LABELS[team] ? t(TEAM_LABELS[team]) : team);
+  const teamLabel = (team: string) => (DEPARTMENT_LABELS[team] ? t(DEPARTMENT_LABELS[team]) : team);
   const modalTitle = activeTeam && !isSearching ? teamLabel(activeTeam) : t("search.selectCategory");
 
   return (
@@ -286,7 +421,7 @@ function CategoryModal({
         {!isSearching && !activeTeam && (
           <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
             {TEAM_NAMES.map(team => {
-              const cats = CATEGORY_TEAMS[team] ?? [];
+              const cats = ROLES_BY_DEPARTMENT[team] ?? [];
               const activeCount = cats.filter(c => selected.includes(c)).length;
               return (
                 <button
@@ -418,17 +553,27 @@ function DateModal({
 export default function SearchScreen({ onJobSelect, pageSize, enableAnimations = true }: SearchScreenProps) {
   const t = useT();
   const [query, setQuery] = useState("");
+  const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
   const [selectedCategories, setSelectedCategories] = useState<JobCategory[]>([]);
   const [selectedExperience, setSelectedExperience] = useState<string[]>([]);
   const [postedWithin, setPostedWithin] = useState<string>("Any date");
-  const [activeModal, setActiveModal] = useState<"category" | "experience" | "date" | null>(null);
+  const [activeModal, setActiveModal] = useState<"type" | "category" | "experience" | "date" | null>(null);
+  const { types: businessTypes, isLoading: typesLoading } = useBusinessTypes();
   const [results, setResults] = useState<Job[]>([]);
+  const [totalCount, setTotalCount] = useState<number | null>(null);
+  const [page, setPage] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  // Guards against out-of-order responses: only the newest search may write
+  // state. Without it a slow page-1 request can land after a newer one and
+  // repopulate the list with results for filters the seeker already changed.
+  const requestIdRef = useRef(0);
 
   const debouncedQuery = useDebounce(query, 350);
+  const limit = pageSize && pageSize > 0 ? pageSize : DEFAULT_PAGE_SIZE;
 
   useEffect(() => {
     // Autofocus on mount
@@ -438,47 +583,64 @@ export default function SearchScreen({ onJobSelect, pageSize, enableAnimations =
   }, []);
 
   const doSearch = useCallback(async (
-    kw: string, 
-    cats: JobCategory[], 
-    exp: string[], 
-    posted: string
+    kw: string,
+    types: string[],
+    cats: JobCategory[],
+    exp: string[],
+    posted: string,
+    nextPage = 0
   ) => {
     const trimmed = kw.trim();
-    if (!trimmed && cats.length === 0 && exp.length === 0 && posted === "Any date") {
+    if (!trimmed && types.length === 0 && cats.length === 0 && exp.length === 0 && posted === "Any date") {
+      requestIdRef.current += 1; // cancel anything in flight
       setResults([]);
+      setTotalCount(null);
+      setPage(0);
       setHasSearched(false);
+      setError(null);
       return;
     }
 
-    setIsLoading(true);
+    const requestId = ++requestIdRef.current;
+    const isFirstPage = nextPage === 0;
+
+    if (isFirstPage) setIsLoading(true);
+    else setIsLoadingMore(true);
     setError(null);
     setHasSearched(true);
 
     try {
+      const employerIds = trimmed ? await matchingEmployerIds(trimmed) : [];
+      if (requestId !== requestIdRef.current) return;
+
+      const from = nextPage * limit;
+
+      // `!inner` rather than a plain embed so `employers.business_type` is
+      // filterable. Safe as a default: `jobs.employer_id` is NOT NULL with an
+      // FK, so every job has exactly one employer row either way.
+      // `count: "exact"` makes the result line honest about how many jobs
+      // match rather than how many happened to fit on this page.
       let q = supabase
         .from("jobs")
         .select(`
           id, employer_id, title, category, location, neighborhood,
           job_type, salary_min, salary_max, currency, description,
           full_description, requirements, deadline, status, created_at,
-          quantity,
-          employers ( business_name, business_type, logo_url )
-        `)
+          last_posted_at, quantity,
+          employers!inner ( business_name, business_type, logo_url )
+        `, { count: "exact" })
         .eq("status", "active")
         .order("created_at", { ascending: false })
-        .limit(50);
+        .range(from, from + limit - 1);
+
+      if (types.length > 0) q = q.in("employers.business_type", types);
 
       if (cats.length > 0) q = q.in("category", cats);
 
-      // Filtering by experience level assuming a column exists or filtering on the client if necessary.
-      // For this implementation, we will assume an experience_level column or requirements->>'experience'.
-      // If backend doesn't support it yet, we just pass the filter to the DB and it will return 0 if column is missing,
-      // but assuming the backend has been aligned. (Using .in("experience_level", exp))
-      // Actually, since we don't know if 'experience_level' column exists on supabase yet, 
-      // it's safer to filter client-side after fetch, but let's try the DB level first:
-      // We will filter client side to avoid breaking the DB if the column isn't there.
-      // Wait, let's just do DB filtering for dates, and client-side for experience if it fails, OR just assume DB has it.
-      // I'll filter dates via DB, and we'll filter experience on client just to be 100% safe against DB schema crashes.
+      // Experience lives in the `requirements` jsonb, not its own column.
+      // Filtering it here rather than client-side matters: a client-side pass
+      // could only ever filter the rows already on this page.
+      if (exp.length > 0) q = q.in("requirements->>experience", exp);
 
       if (posted !== "Any date") {
         const now = new Date();
@@ -495,50 +657,64 @@ export default function SearchScreen({ onJobSelect, pageSize, enableAnimations =
       }
 
       if (trimmed) {
-        q = q.or(`title.ilike.%${trimmed}%,description.ilike.%${trimmed}%,neighborhood.ilike.%${trimmed}%`);
+        const term = quoteForOrFilter(`%${trimmed}%`);
+        const conditions = [
+          `title.ilike.${term}`,
+          `description.ilike.${term}`,
+          `neighborhood.ilike.${term}`,
+        ];
+        if (employerIds.length > 0) conditions.push(`employer_id.in.(${employerIds.join(",")})`);
+        q = q.or(conditions.join(","));
       }
 
-      if (pageSize) {
-        q = q.limit(pageSize);
-      }
-
-      const { data, error: fetchError } = await q;
+      const { data, count, error: fetchError } = await q;
       if (fetchError) throw fetchError;
+      if (requestId !== requestIdRef.current) return;
 
-      let finalData = ((data ?? []) as SupabaseJob[]).map(mapSupabaseJobToJob);
-      if (exp.length > 0) {
-        // If requirements.experience maps roughly, or we just mock filter it for now.
-        // Actually, we'll just filter if requirements.experience matches.
-        // But the requested strings ("Junior Level(1-3 years)") don't exactly match the type ExperienceLevel.
-        // We'll just do a fuzzy match or substring match.
-        finalData = finalData.filter(job => {
-           if (!job.requirements?.experience) return false;
-           return exp.some(e => e.toLowerCase().includes(job.requirements.experience.toLowerCase().replace(" level", "")));
-        });
-        // If no match works perfectly because DB data is old, it might return 0. But that's how filters work.
-      }
-      setResults(finalData);
+      const mapped = ((data ?? []) as unknown as SupabaseJob[]).map(mapSupabaseJobToJob);
+      setResults((prev) => (isFirstPage ? mapped : [...prev, ...mapped]));
+      setTotalCount(count ?? null);
+      setPage(nextPage);
     } catch (err) {
       console.error("Search failed:", err);
-      setError("Search failed. Please try again.");
+      if (requestId === requestIdRef.current) setError(t("search.failed"));
     } finally {
-      setIsLoading(false);
+      if (requestId === requestIdRef.current) {
+        setIsLoading(false);
+        setIsLoadingMore(false);
+      }
     }
-  }, [pageSize]);
+  }, [limit, t]);
 
   useEffect(() => {
-    doSearch(debouncedQuery, selectedCategories, selectedExperience, postedWithin);
-  }, [debouncedQuery, selectedCategories, selectedExperience, postedWithin, doSearch]);
+    doSearch(debouncedQuery, selectedTypes, selectedCategories, selectedExperience, postedWithin, 0);
+  }, [debouncedQuery, selectedTypes, selectedCategories, selectedExperience, postedWithin, doSearch]);
+
+  const hasMore = totalCount !== null && results.length < totalCount;
+
+  const loadMore = () => {
+    if (isLoading || isLoadingMore || !hasMore) return;
+    doSearch(debouncedQuery, selectedTypes, selectedCategories, selectedExperience, postedWithin, page + 1);
+  };
 
   const clearSearch = () => {
     setQuery("");
+    setSelectedTypes([]);
     setSelectedCategories([]);
     setSelectedExperience([]);
     setPostedWithin("Any date");
     setResults([]);
+    setTotalCount(null);
+    setPage(0);
     setHasSearched(false);
     inputRef.current?.focus();
   };
+
+  const hasActiveFilters =
+    selectedTypes.length > 0 ||
+    selectedCategories.length > 0 ||
+    selectedExperience.length > 0 ||
+    postedWithin !== "Any date";
 
   const formatSalary = (min: number, max: number, currency: string) => {
     if (min === -1) return t("jobDetail.salaryPerScale");
@@ -561,9 +737,12 @@ export default function SearchScreen({ onJobSelect, pageSize, enableAnimations =
           overflowX: "hidden",
         }}
       >
+        {/* Holds the Telegram-header band open, then stays pinned there so the
+            title can scroll away underneath it rather than through it. */}
+        <div className="safe-top-cover" />
+
         {/* ── HEADER ── */}
         <div
-          className="safe-screen-top"
           style={{
             paddingLeft: 20,
             paddingRight: 20,
@@ -582,8 +761,9 @@ export default function SearchScreen({ onJobSelect, pageSize, enableAnimations =
           </div>
         </div>
 
-        {/* STICKY SEARCH & FILTERS */}
-        <div style={{ position: "sticky", top: 0, zIndex: 50, background: "var(--app-bg)", padding: "0 20px 12px" }}>
+        {/* STICKY SEARCH & FILTERS — parks just below the Telegram header, not
+            under it, so the field stays tappable however far the list scrolls. */}
+        <div style={{ position: "sticky", top: "var(--safe-top)", zIndex: 50, background: "var(--app-bg)", padding: "0 20px 12px" }}>
           {/* Search input */}
           <div
             style={{
@@ -615,7 +795,7 @@ export default function SearchScreen({ onJobSelect, pageSize, enableAnimations =
                 fontFamily: "inherit",
               }}
             />
-            {(query || selectedCategories.length > 0 || selectedExperience.length > 0 || postedWithin !== "Any date") && (
+            {(query || hasActiveFilters) && (
               <motion.button
                 initial={{ opacity: 0, scale: 0.7 }}
                 animate={{ opacity: 1, scale: 1 }}
@@ -637,13 +817,14 @@ export default function SearchScreen({ onJobSelect, pageSize, enableAnimations =
 
           {/* Filter Chips */}
           <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 10, scrollbarWidth: "none", WebkitOverflowScrolling: "touch" }}>
-            {(selectedCategories.length > 0 || selectedExperience.length > 0 || postedWithin !== "Any date") && (
+            {hasActiveFilters && (
               <motion.button
                 initial={{ opacity: 0, scale: 0.8, width: 0 }}
                 animate={{ opacity: 1, scale: 1, width: "auto" }}
                 exit={{ opacity: 0, scale: 0.8, width: 0 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => {
+                  setSelectedTypes([]);
                   setSelectedCategories([]);
                   setSelectedExperience([]);
                   setPostedWithin("Any date");
@@ -660,6 +841,25 @@ export default function SearchScreen({ onJobSelect, pageSize, enableAnimations =
                 <X size={14} /> {t("search.clear")}
               </motion.button>
             )}
+            <motion.button
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setActiveModal("type")}
+              style={{
+                display: "flex", alignItems: "center", gap: 6,
+                padding: "8px 14px", borderRadius: 100,
+                fontSize: 13, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0,
+                background: selectedTypes.length > 0 ? "var(--brand-subtle)" : "var(--surface-elevated)",
+                border: selectedTypes.length > 0 ? "2px solid var(--brand)" : "2px solid #9CA3AF",
+                color: selectedTypes.length > 0 ? "var(--brand)" : "var(--text-primary)",
+              }}
+            >
+              {/* One selection reads better as the type itself; past that, a count. */}
+              {selectedTypes.length === 1
+                ? businessTypeLabel(selectedTypes[0], t.lang)
+                : `${t("search.typeChip")}${selectedTypes.length > 1 ? ` (${selectedTypes.length})` : ""}`}
+              <ChevronDown size={14} />
+            </motion.button>
+
             <motion.button
               whileTap={{ scale: 0.95 }}
               onClick={() => setActiveModal("category")}
@@ -741,7 +941,7 @@ export default function SearchScreen({ onJobSelect, pageSize, enableAnimations =
             >
               <p style={{ color: "#FCA5A5", fontSize: 14, marginBottom: 12 }}>{error}</p>
               <button
-                onClick={() => doSearch(query, selectedCategories, selectedExperience, postedWithin)}
+                onClick={() => doSearch(query, selectedTypes, selectedCategories, selectedExperience, postedWithin, 0)}
                 style={{ fontSize: 13, fontWeight: 600, color: "var(--brand)", background: "none", border: "none", cursor: "pointer" }}
               >
                 {t("search.tryAgain")}
@@ -808,7 +1008,11 @@ export default function SearchScreen({ onJobSelect, pageSize, enableAnimations =
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               {/* Result count */}
               <p style={{ fontSize: 13, color: "var(--text-muted)", fontWeight: 500, paddingTop: 4 }}>
-                {t(results.length === 1 ? "search.resultCount" : "search.resultCountPlural", { count: results.length })}
+                {/* Counts the whole match set, not just the page on screen. */}
+                {totalCount !== null && totalCount > results.length
+                  ? t("search.resultCountShowing", { shown: results.length, total: totalCount })
+                  : t(results.length === 1 ? "search.resultCount" : "search.resultCountPlural", { count: results.length })}
+                {selectedTypes.length > 0 ? ` · ${selectedTypes.map((x) => businessTypeLabel(x, t.lang)).join(", ")}` : ""}
                 {selectedCategories.length > 0 ? ` · ${selectedCategories.map((c) => categoryLabel(c, t.lang)).join(", ")}` : ""}
               </p>
 
@@ -909,12 +1113,40 @@ export default function SearchScreen({ onJobSelect, pageSize, enableAnimations =
                   );
                 })}
               </AnimatePresence>
+
+              {hasMore && (
+                <motion.button
+                  whileTap={{ scale: 0.97 }}
+                  onClick={loadMore}
+                  disabled={isLoadingMore}
+                  style={{
+                    width: "100%", padding: "14px 0", marginTop: 4,
+                    borderRadius: 14,
+                    background: "var(--surface-elevated)",
+                    border: "1px solid var(--border)",
+                    color: isLoadingMore ? "var(--text-muted)" : "var(--brand)",
+                    fontSize: 14, fontWeight: 700,
+                    cursor: isLoadingMore ? "default" : "pointer",
+                    fontFamily: "inherit",
+                  }}
+                >
+                  {isLoadingMore ? t("search.loadingMore") : t("search.loadMore")}
+                </motion.button>
+              )}
             </div>
           )}
         </div>
       </div>
       {/* Modals */}
-      <CategoryModal 
+      <TypeModal
+        isOpen={activeModal === "type"}
+        onClose={() => setActiveModal(null)}
+        options={businessTypes}
+        isLoading={typesLoading}
+        selected={selectedTypes}
+        onChange={setSelectedTypes}
+      />
+      <CategoryModal
         isOpen={activeModal === "category"} 
         onClose={() => setActiveModal(null)} 
         selected={selectedCategories} 

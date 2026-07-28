@@ -6,17 +6,15 @@ import { Bell, Briefcase, CheckCircle, Clock, ExternalLink, Settings, ChevronDow
 import { fetchNotifications, markNotificationsRead, fetchProfile, updateAlertCategories, Notification } from "@/lib/api";
 import { useTelegram } from "@/hooks/useTelegram";
 import { useT, timeAgo } from "@/lib/i18n";
-import { categoryLabel, categoryMatches } from "@/lib/vocabulary";
+import { categoryLabel, categoryMatches, JOB_EXPERIENCE_OPTIONS } from "@/lib/vocabulary";
+import { JOB_ROLE_NAMES } from "@/data/job-categories";
 
-const CATEGORY_NAMES = [
-  "Waiter", "Chef", "Executive Chef", "Sous Chef", "Barista", "Reception", "Night Auditor", "Guest Relations Officer", "Reservations Agent", "Housekeeper",
-  "Security", "Cashier", "Cook", "Traditional Cook", "Delivery", "Driver",
-  "Manager", "General Manager", "Marketing & Sales", "F&B", "Finance", "Cost Control",
-  "Accountant", "Bellboy", "Phone Operator", "Store Keeper", "Maintenance", "Painter", "Chief Engineer",
-  "IT Officer", "Spa Attendant", "Gym Trainer", "Lifeguard", "Banquet", "Steward", "Kitchen Assistant", "Other",
-];
+// Alerts fire by comparing these against jobs.category, so they have to be the
+// same role names employers post under. This was a separate hand-kept copy that
+// had drifted — it listed "Reception", which is not a role any job can have.
+const CATEGORY_NAMES = JOB_ROLE_NAMES;
 
-const EXPERIENCE_LEVELS = ["Entry level", "Junior", "Intermediate", "Senior", "Expert"];
+const EXPERIENCE_LEVELS = JOB_EXPERIENCE_OPTIONS;
 
 export interface NotificationsScreenProps {
   onSelectJob?: (jobId: string) => void;

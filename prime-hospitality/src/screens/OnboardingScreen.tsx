@@ -141,8 +141,13 @@ export default function OnboardingScreen({ onComplete }: { onComplete: () => voi
 }
 
 // --- Step 1: Job Field Selection ---
+// A curated, emoji-decorated subset of the role taxonomy — admins can override
+// it via content management (config.step1_categories). Every `label` must be a
+// canonical role name from `job-categories.ts`, because what the seeker picks
+// here is stored in profiles.selected_categories and later matched against
+// jobs.category. ("Reception" used to sit here and matched no job role.)
 const JOB_CATEGORIES_DATA = [
-  { label: "Reception", emoji: "🛎️" },
+  { label: "Receptionist", emoji: "🛎️" },
   { label: "Waiter", emoji: "🍽️" },
   { label: "Chef", emoji: "👨‍🍳" },
   { label: "IT Officer", emoji: "💻" },

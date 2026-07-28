@@ -13,8 +13,8 @@ import { JOB_CATEGORIES } from "@/data/jobs";
 import { LOCATIONS, LOCATIONS_BY_SUB_CITY } from "@/data/locations";
 import { useT, useLocale, LANGS, LANG_LABELS, type TKey } from "@/lib/i18n";
 import {
-  SEARCH_EXPERIENCE_OPTIONS as EXPERIENCE_OPTIONS,
-  SEARCH_EXPERIENCE_LABELS as EXPERIENCE_LABELS,
+  PROFILE_EXPERIENCE_OPTIONS as EXPERIENCE_OPTIONS,
+  PROFILE_EXPERIENCE_LABELS as EXPERIENCE_LABELS,
   categoryLabel,
   categoryMatches,
   locationLabel,
