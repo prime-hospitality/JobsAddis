@@ -318,7 +318,7 @@ export default function VacancyFormModal({
                       café, so the label never travelled between employers; the
                       number does. Put the seniority wording in the job title. */}
                   <div className="vfm-field">
-                    <label className="vfm-label">Minimum years of experience</label>
+                    <label className="vfm-label">Experience</label>
                     <FilterSelect
                       value={String(value.min_years_experience ?? "")}
                       onChange={(v) => set({ min_years_experience: v === "" ? null : Number(v) })}
@@ -326,7 +326,7 @@ export default function VacancyFormModal({
                       minWidth={0}
                       searchable={false}
                       maxMenuHeight={224}
-                      ariaLabel="Minimum years of experience"
+                      ariaLabel="Experience"
                       options={[
                         { value: "", label: "Any" },
                         ...YEARS_OPTIONS.map((y) => ({

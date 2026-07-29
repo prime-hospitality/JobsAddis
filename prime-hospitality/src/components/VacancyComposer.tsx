@@ -198,8 +198,8 @@ export default function VacancyComposer({
           />
 
           <SheetSelect
-            label="Minimum years of experience"
-            title="Minimum years of experience"
+            label="Experience"
+            title="Experience"
             value={String(value.min_years_experience ?? "")}
             onChange={(v) => set({ min_years_experience: v === "" ? null : Number(v) })}
             options={EXPERIENCE_OPTIONS}
