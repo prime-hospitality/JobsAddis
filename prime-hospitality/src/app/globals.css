@@ -186,6 +186,39 @@ body {
   color: var(--brand-light);
 }
 
+/* Experience advisory on the job detail page.
+   Purple rather than the neutral card surface: sitting on --surface-elevated
+   like everything around it, the note was there but nobody saw it. Muted
+   rather than the vivid #8B5CF6 used elsewhere -- this is a quiet aside about
+   fit, not an alert, and it must not shout over the job description.
+   Both themes are set explicitly: a single rgba tint that survives a white
+   background washes out on a dark one. */
+.experience-note {
+  background: rgba(124, 58, 237, 0.06);
+  border: 1px solid rgba(124, 58, 237, 0.20);
+  color: #5B4491;
+}
+
+[data-theme="dark"] .experience-note {
+  background: rgba(167, 139, 250, 0.09);
+  border-color: rgba(167, 139, 250, 0.24);
+  color: #C3B5EA;
+}
+
+/* The compact tag beside the job title. Same hue, a touch stronger, since it
+   has to register at 11px against a bold 20px heading. */
+.experience-tag {
+  background: rgba(124, 58, 237, 0.10);
+  border: 1px solid rgba(124, 58, 237, 0.26);
+  color: #5B4491;
+}
+
+[data-theme="dark"] .experience-tag {
+  background: rgba(167, 139, 250, 0.14);
+  border-color: rgba(167, 139, 250, 0.30);
+  color: #C3B5EA;
+}
+
 .badge-navy {
   background: var(--surface-elevated);
   color: var(--text-secondary);
