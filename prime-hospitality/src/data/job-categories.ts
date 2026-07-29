@@ -559,6 +559,13 @@ const FUZZY_EDIT_THRESHOLD = 0.72;
 const MAX_FUZZY_LENGTH_GAP = 3;
 
 /**
+ * Bar for "did you mean". Higher than it first looks it needs to be: at 0.5 a
+ * misspelt "wieter" suggested Painter and Bartender alongside Waiter, which
+ * reads as the app guessing wildly rather than helping.
+ */
+const SUGGEST_THRESHOLD = 0.62;
+
+/**
  * Fuzzy match, compared token by token rather than across the whole string.
  *
  * Whole-string edit distance treats "IT officer" and "HR officer" as 80%
@@ -651,6 +658,58 @@ export function rolesMatchingKeyword(query: string): string[] {
   }
 
   return [...matches];
+}
+
+/**
+ * Roles a keyword *nearly* matched, for the "did you mean" prompt on an empty
+ * result.
+ *
+ * Scored on the same fields as rolesMatchingKeyword but ranked rather than
+ * thresholded, and deliberately more forgiving: this runs only when a search
+ * already found nothing, so a loose guess costs the seeker nothing and a
+ * dead end costs them the search. "wieter" clears nothing in the strict pass
+ * yet still points at Waiter here.
+ *
+ * Roles the strict pass already matched are excluded — suggesting the thing
+ * that just returned no jobs would read as a bug.
+ */
+export function suggestRoles(query: string, limit = 2): string[] {
+  const raw = (query ?? "").trim();
+  const q = normalizeSearchText(raw);
+  if (q.length < MIN_SUBSTRING_QUERY_LENGTH) return [];
+
+  // If the keyword already resolved to a role, the app understood it — there
+  // simply are no jobs in it. Offering unrelated near-misses on top of that
+  // reads as a wrong guess, so say nothing and let "roles hiring now" answer.
+  const alreadyMatched = new Set(rolesMatchingKeyword(raw));
+  if (alreadyMatched.size > 0) return [];
+  const queryTokens = q.split(/\s+/).filter(Boolean);
+
+  const scored: { name: string; score: number }[] = [];
+
+  for (const cat of HOTEL_JOB_CATEGORIES) {
+    if (alreadyMatched.has(cat.name)) continue;
+
+    const fields = [cat.name, cat.fullName ?? "", ...cat.keywords]
+      .filter(Boolean)
+      .map(normalizeSearchText);
+
+    let best = 0;
+    for (const f of fields) {
+      const fieldTokens = f.split(/\s+/).filter(Boolean);
+      for (const qt of queryTokens) {
+        for (const ft of fieldTokens) {
+          best = Math.max(best, bigramSimilarity(qt, ft), editSimilarity(qt, ft));
+        }
+      }
+    }
+    if (best >= SUGGEST_THRESHOLD) scored.push({ name: cat.name, score: best });
+  }
+
+  return scored
+    .sort((a, b) => b.score - a.score)
+    .slice(0, limit)
+    .map((s) => s.name);
 }
 
 /**
