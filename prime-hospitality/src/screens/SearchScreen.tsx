@@ -45,6 +45,8 @@ interface SearchScreenProps {
   onJobSelect: (job: Job) => void;
   /** Signed-in seeker's role -> years. Drives the advisory experience badge. */
   seekerYears?: SeekerYears;
+  /** The roles this seeker signed up for. Pre-selects the Category filter. */
+  seekerCategories?: string[];
   pageSize?: number;
   enableAnimations?: boolean;
 }
@@ -559,7 +561,7 @@ function DateModal({
   );
 }
 
-export default function SearchScreen({ onJobSelect, seekerYears, pageSize, enableAnimations = true }: SearchScreenProps) {
+export default function SearchScreen({ onJobSelect, seekerYears, seekerCategories, pageSize, enableAnimations = true }: SearchScreenProps) {
   const seekerYearsKey = JSON.stringify(seekerYears ?? {});
   const t = useT();
   const { lang } = useLocale();
@@ -597,6 +599,23 @@ export default function SearchScreen({ onJobSelect, seekerYears, pageSize, enabl
       inputRef.current?.focus();
     }, 100);
   }, []);
+
+  /**
+   * Open Search already filtered to the roles this seeker signed up for, so the
+   * screen opens on jobs they could actually take rather than on an empty
+   * prompt asking them to describe what they want a second time.
+   *
+   * Seeded once per visit, guarded by a ref: the profile arrives asynchronously,
+   * and without the guard a seeker who cleared the filter would have it snap
+   * back the moment any later render re-ran this. Clearing has to stick.
+   */
+  const didSeedCategories = useRef(false);
+  useEffect(() => {
+    if (didSeedCategories.current) return;
+    if (!seekerCategories || seekerCategories.length === 0) return;
+    didSeedCategories.current = true;
+    setSelectedCategories(seekerCategories.filter(Boolean));
+  }, [seekerCategories]);
 
   const doSearch = useCallback(async (
     kw: string,
@@ -1088,9 +1107,13 @@ export default function SearchScreen({ onJobSelect, seekerYears, pageSize, enabl
               <p style={{ fontSize: 14, color: "var(--text-secondary)", lineHeight: 1.6, maxWidth: 280, margin: "0 auto" }}>
                 {countWithoutFilters !== null
                   ? t(
-                      countWithoutFilters === 1
-                        ? "search.emptyBecauseFilters"
-                        : "search.emptyBecauseFiltersPlural",
+                      debouncedQuery.trim()
+                        ? (countWithoutFilters === 1
+                            ? "search.emptyBecauseFilters"
+                            : "search.emptyBecauseFiltersPlural")
+                        : (countWithoutFilters === 1
+                            ? "search.emptyFilteredNoKeyword"
+                            : "search.emptyFilteredNoKeywordPlural"),
                       { count: countWithoutFilters }
                     )
                   : t("search.emptyBody")}
@@ -1115,7 +1138,7 @@ export default function SearchScreen({ onJobSelect, seekerYears, pageSize, enabl
                     cursor: "pointer", fontFamily: "inherit",
                   }}
                 >
-                  {t("search.clearFiltersAction")}
+                  {debouncedQuery.trim() ? t("search.clearFiltersAction") : t("search.showAllJobsAction")}
                 </motion.button>
               )}
 
