@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { motion, AnimatePresence, LazyMotion, domAnimation } from "framer-motion";
 import { Search, X, MapPin, Clock, ChevronDown, CheckCircle, ChevronLeft, ChevronRight, Users, Briefcase, Building2 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { Job, JobCategory, JOB_CATEGORIES } from "@/data/jobs";
-import { DEPARTMENTS_WITH_ROLES, ROLES_BY_DEPARTMENT, rolesMatchingKeyword, normalizeSearchText } from "@/data/job-categories";
+import { DEPARTMENTS_WITH_ROLES, ROLES_BY_DEPARTMENT, rolesMatchingKeyword, suggestRoles, normalizeSearchText } from "@/data/job-categories";
 import { LOCATIONS } from "@/data/locations";
 import { SupabaseJob, mapSupabaseJobToJob, type SeekerYears } from "@/hooks/useJobs";
 import { useBusinessTypes } from "@/hooks/useBusinessTypes";
@@ -45,6 +45,8 @@ interface SearchScreenProps {
   onJobSelect: (job: Job) => void;
   /** Signed-in seeker's role -> years. Drives the advisory experience badge. */
   seekerYears?: SeekerYears;
+  /** The roles this seeker signed up for. Pre-selects the Category filter. */
+  seekerCategories?: string[];
   pageSize?: number;
   enableAnimations?: boolean;
 }
@@ -559,9 +561,10 @@ function DateModal({
   );
 }
 
-export default function SearchScreen({ onJobSelect, seekerYears, pageSize, enableAnimations = true }: SearchScreenProps) {
+export default function SearchScreen({ onJobSelect, seekerYears, seekerCategories, pageSize, enableAnimations = true }: SearchScreenProps) {
   const seekerYearsKey = JSON.stringify(seekerYears ?? {});
   const t = useT();
+  const { lang } = useLocale();
   const [query, setQuery] = useState("");
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
   const [selectedCategories, setSelectedCategories] = useState<JobCategory[]>([]);
@@ -578,6 +581,9 @@ export default function SearchScreen({ onJobSelect, seekerYears, pageSize, enabl
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Only populated on an empty result, so the dead end can offer a way out.
+  const [rolesHiring, setRolesHiring] = useState<{ category: string; job_count: number }[]>([]);
+  const [countWithoutFilters, setCountWithoutFilters] = useState<number | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   // Guards against out-of-order responses: only the newest search may write
   // state. Without it a slow page-1 request can land after a newer one and
@@ -593,6 +599,23 @@ export default function SearchScreen({ onJobSelect, seekerYears, pageSize, enabl
       inputRef.current?.focus();
     }, 100);
   }, []);
+
+  /**
+   * Open Search already filtered to the roles this seeker signed up for, so the
+   * screen opens on jobs they could actually take rather than on an empty
+   * prompt asking them to describe what they want a second time.
+   *
+   * Seeded once per visit, guarded by a ref: the profile arrives asynchronously,
+   * and without the guard a seeker who cleared the filter would have it snap
+   * back the moment any later render re-ran this. Clearing has to stick.
+   */
+  const didSeedCategories = useRef(false);
+  useEffect(() => {
+    if (didSeedCategories.current) return;
+    if (!seekerCategories || seekerCategories.length === 0) return;
+    didSeedCategories.current = true;
+    setSelectedCategories(seekerCategories.filter(Boolean));
+  }, [seekerCategories]);
 
   const doSearch = useCallback(async (
     kw: string,
@@ -693,6 +716,42 @@ export default function SearchScreen({ onJobSelect, seekerYears, pageSize, enabl
       setResults((prev) => (isFirstPage ? mapped : [...prev, ...mapped]));
       setTotalCount(count);
       setPage(nextPage);
+
+      // Nothing matched — find out what the seeker could do instead. Both
+      // lookups are deliberately confined to this branch: a search that
+      // succeeded pays nothing for them.
+      if (isFirstPage && rows.length === 0) {
+        const hasFilters =
+          types.length > 0 || cats.length > 0 || exp.length > 0 ||
+          locs.length > 0 || posted !== "Any date";
+
+        const [rolesRes, unfilteredRes] = await Promise.all([
+          supabase.rpc("active_job_categories"),
+          // Would the keyword alone have found something? If so the filters are
+          // what emptied the page, and saying so is more use than a suggestion.
+          hasFilters
+            ? supabase.rpc("search_jobs", {
+                p_keyword: trimmed || null,
+                p_keyword_categories: keywordCategories.length ? keywordCategories : null,
+                p_limit: 1,
+                p_offset: 0,
+              })
+            : Promise.resolve({ data: null, error: null }),
+        ]);
+
+        if (requestId !== requestIdRef.current) return;
+
+        setRolesHiring(
+          ((rolesRes.data ?? []) as { category: string; job_count: number }[]).slice(0, 6)
+        );
+        const unfilteredRows = (unfilteredRes.data ?? []) as SearchJobRow[];
+        setCountWithoutFilters(
+          hasFilters && unfilteredRows.length > 0 ? Number(unfilteredRows[0].total_count) : null
+        );
+      } else if (isFirstPage) {
+        setRolesHiring([]);
+        setCountWithoutFilters(null);
+      }
     } catch (err) {
       console.error("Search failed:", err);
       if (requestId === requestIdRef.current) setError(t("search.failed"));
@@ -711,6 +770,13 @@ export default function SearchScreen({ onJobSelect, seekerYears, pageSize, enabl
   useEffect(() => {
     doSearch(debouncedQuery, selectedTypes, selectedCategories, selectedExperience, selectedLocations, postedWithin, 0);
   }, [debouncedQuery, selectedTypes, selectedCategories, selectedExperience, selectedLocations, postedWithin, doSearch]);
+
+  // Only consulted by the empty state, but computed here so the render stays
+  // declarative. Keyed on the debounced query, not the raw one.
+  const didYouMean = useMemo(
+    () => (debouncedQuery.trim() ? suggestRoles(debouncedQuery, 2) : []),
+    [debouncedQuery]
+  );
 
   const hasMore = totalCount !== null && results.length < totalCount;
 
@@ -1038,9 +1104,106 @@ export default function SearchScreen({ onJobSelect, seekerYears, pageSize, enabl
               <h2 style={{ fontSize: 18, fontWeight: 700, color: "var(--text-primary)", marginBottom: 8 }}>
                 {t("search.emptyHeading")}
               </h2>
-              <p style={{ fontSize: 14, color: "var(--text-secondary)", lineHeight: 1.6, maxWidth: 260, margin: "0 auto" }}>
-                {t("search.emptyBody")}
+              <p style={{ fontSize: 14, color: "var(--text-secondary)", lineHeight: 1.6, maxWidth: 280, margin: "0 auto" }}>
+                {countWithoutFilters !== null
+                  ? t(
+                      debouncedQuery.trim()
+                        ? (countWithoutFilters === 1
+                            ? "search.emptyBecauseFilters"
+                            : "search.emptyBecauseFiltersPlural")
+                        : (countWithoutFilters === 1
+                            ? "search.emptyFilteredNoKeyword"
+                            : "search.emptyFilteredNoKeywordPlural"),
+                      { count: countWithoutFilters }
+                    )
+                  : t("search.emptyBody")}
               </p>
+
+              {/* The filters, not the keyword, emptied the page — so offer the
+                  one action that fixes it rather than advice about wording. */}
+              {countWithoutFilters !== null && (
+                <motion.button
+                  whileTap={{ scale: 0.96 }}
+                  onClick={() => {
+                    setSelectedTypes([]);
+                    setSelectedCategories([]);
+                    setSelectedExperience([]);
+                    setSelectedLocations([]);
+                    setPostedWithin("Any date");
+                  }}
+                  style={{
+                    marginTop: 18, padding: "11px 20px", borderRadius: 100,
+                    background: "var(--brand)", color: "white",
+                    border: "none", fontSize: 14, fontWeight: 700,
+                    cursor: "pointer", fontFamily: "inherit",
+                  }}
+                >
+                  {debouncedQuery.trim() ? t("search.clearFiltersAction") : t("search.showAllJobsAction")}
+                </motion.button>
+              )}
+
+              {/* Did you mean — roles the keyword nearly matched. */}
+              {countWithoutFilters === null && didYouMean.length > 0 && (
+                <div style={{ marginTop: 26 }}>
+                  <p style={{ fontSize: 12, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 10 }}>
+                    {t("search.didYouMean")}
+                  </p>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8, justifyContent: "center" }}>
+                    {didYouMean.map((role) => (
+                      <motion.button
+                        key={role}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => setQuery(role)}
+                        style={{
+                          padding: "8px 14px", borderRadius: 100,
+                          background: "var(--brand-subtle)",
+                          border: "1px solid var(--brand)",
+                          color: "var(--brand)",
+                          fontSize: 13, fontWeight: 600,
+                          cursor: "pointer", fontFamily: "inherit",
+                        }}
+                      >
+                        {categoryLabel(role, lang)}
+                      </motion.button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Where the jobs actually are. Tapping a role filters by it and
+                  drops the keyword, so the seeker lands on real results rather
+                  than a second empty page. */}
+              {countWithoutFilters === null && rolesHiring.length > 0 && (
+                <div style={{ marginTop: 26 }}>
+                  <p style={{ fontSize: 12, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 10 }}>
+                    {t("search.rolesHiringNow")}
+                  </p>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8, justifyContent: "center" }}>
+                    {rolesHiring.map((r) => (
+                      <motion.button
+                        key={r.category}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => {
+                          setQuery("");
+                          setSelectedCategories([r.category]);
+                        }}
+                        style={{
+                          display: "flex", alignItems: "center", gap: 6,
+                          padding: "8px 14px", borderRadius: 100,
+                          background: "var(--surface-elevated)",
+                          border: "1px solid var(--border)",
+                          color: "var(--text-primary)",
+                          fontSize: 13, fontWeight: 600,
+                          cursor: "pointer", fontFamily: "inherit",
+                        }}
+                      >
+                        {categoryLabel(r.category, lang)}
+                        <span style={{ color: "var(--text-muted)", fontWeight: 500 }}>{r.job_count}</span>
+                      </motion.button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </motion.div>
           )}
 

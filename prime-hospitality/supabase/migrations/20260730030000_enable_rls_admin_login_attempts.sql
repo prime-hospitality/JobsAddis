@@ -1,0 +1,11 @@
+-- Row Level Security was missed when admin_login_attempts was created in
+-- 20260727020000_add_login_rate_limiting.sql, leaving the table reachable
+-- through PostgREST with the public anon key. That let anyone delete their
+-- own lockout row between guesses (defeating the rate limit this table
+-- exists to enforce), write a lockout for a real admin, or enumerate admin
+-- usernames.
+--
+-- Both readers (loginAdmin in admin/actions.ts and the lockout screen in
+-- idp/actions.ts) use the service role key, which bypasses RLS, so no
+-- policies are needed -- RLS on with zero policies means server-only.
+ALTER TABLE public.admin_login_attempts ENABLE ROW LEVEL SECURITY;
