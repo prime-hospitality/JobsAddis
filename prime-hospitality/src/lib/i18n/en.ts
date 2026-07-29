@@ -64,22 +64,18 @@ export const en = {
     salaryRange: "ETB {min}–{max}/mo",
     openingsCount: "{count} position",
     openingsCountPlural: "{count} positions",
-    // Advisory only — Apply stays enabled. States both numbers plainly rather
-    // than judging the seeker, because years at a large property and years at a
-    // small one are not the same thing and only the employer can weigh that.
-    requirementsNotMet: "Asks for more experience",
-    requirementsNotMetBody:
-      "This role asks for {min}+ years. Your profile shows {actual} as {role}. You can still apply.",
+    // Advisory only, and worded as one. Years at a large property and years at
+    // a small one are not the same thing, so this states both figures and
+    // leaves the judgement to the employer rather than making it here.
+    experienceGapTag: "{min}+ yrs listed",
+    experienceNote:
+      "This position lists {min}+ years of experience. Your profile records {actual} as {role}. You are welcome to apply — employers assess each candidate individually.",
     aboutHeading: "About this Job",
     requirementsHeading: "Requirements",
     postedAndHiring: "Posted {when} · Actively hiring",
     applied: "Applied ✓",
     applicationsClosed: "Applications Closed",
     applyNow: "Apply Now →",
-  },
-
-  jobCard: {
-    requirementsNotMet: "Asks {min}+ yrs",
   },
 
   notificationPanel: {
@@ -295,16 +291,12 @@ export const en = {
     clear: "Clear",
     typeChip: "Type",
     categoryChip: "Category",
-    locationChip: "Location",
     experienceChip: "Experience",
     postedWithinChip: "Posted Within",
     updateResults: "Update Results",
     selectType: "Select Business Type",
     searchAllTypes: "Search business types...",
     noTypesFound: "No business types found.",
-    noAreasFound: "No areas found.",
-    selectLocation: "Select Location",
-    searchAllLocations: "Search areas...",
     selectCategory: "Select Category",
     searchAllCategories: "Search all categories...",
     noCategoriesFound: "No categories found.",

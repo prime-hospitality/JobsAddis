@@ -59,19 +59,15 @@ export const am: DeepPartial<Catalog> = {
     salaryRange: "{min}–{max} ብር/ወር",
     openingsCount: "{count} ክፍት ቦታ",
     openingsCountPlural: "{count} ክፍት ቦታዎች",
-    requirementsNotMet: "ተጨማሪ ልምድ ይጠይቃል",
-    requirementsNotMetBody:
-      "ይህ ሥራ {min}+ ዓመታት ይጠይቃል። መገለጫዎ በ{role} {actual} ያሳያል። አሁንም ማመልከት ይችላሉ።",
+    experienceGapTag: "{min}+ ዓመት ተጠቅሷል",
+    experienceNote:
+      "ይህ ሥራ {min}+ ዓመታት ልምድ ተጠቅሷል። መገለጫዎ በ{role} {actual} ያሳያል። ማመልከት ይችላሉ — ቀጣሪዎች እያንዳንዱን አመልካች በተናጠል ይገመግማሉ።",
     aboutHeading: "ስለዚህ ሥራ",
     requirementsHeading: "መስፈርቶች",
     postedAndHiring: "የተለጠፈው {when} · በንቃት እየቀጠሩ ነው",
     applied: "አመልክተዋል ✓",
     applicationsClosed: "ማመልከቻ ተዘግቷል",
     applyNow: "አሁን ያመልክቱ →",
-  },
-
-  jobCard: {
-    requirementsNotMet: "{min}+ ዓመት ይጠይቃል",
   },
 
   notificationPanel: {
@@ -287,16 +283,12 @@ export const am: DeepPartial<Catalog> = {
     clear: "አጽዳ",
     typeChip: "ዓይነት",
     categoryChip: "ዘርፍ",
-    locationChip: "አካባቢ",
     experienceChip: "የሥራ ልምድ",
     postedWithinChip: "የተለጠፈበት ጊዜ",
     updateResults: "ውጤቶችን አዘምን",
     selectType: "የድርጅት ዓይነት ይምረጡ",
     searchAllTypes: "የድርጅት ዓይነቶችን ይፈልጉ...",
     noTypesFound: "ምንም የድርጅት ዓይነት አልተገኘም።",
-    noAreasFound: "ምንም አካባቢ አልተገኘም።",
-    selectLocation: "አካባቢ ይምረጡ",
-    searchAllLocations: "አካባቢዎችን ይፈልጉ...",
     selectCategory: "ዘርፍ ይምረጡ",
     searchAllCategories: "ሁሉንም ዘርፎች ይፈልጉ...",
     noCategoriesFound: "ምንም ዘርፍ አልተገኘም።",
