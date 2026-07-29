@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { escapeHtml, sendDirectMessage, sendGroupAnnouncement } from "../_shared/telegram.ts";
+import { serviceKey } from "../_shared/serviceKey.ts";
 
 // The every-minute platform sweep, invoked by pg_cron (see migration
 // 20260723000000). Despite the name it does more than expiration: it publishes
@@ -284,10 +285,9 @@ async function dispatchPendingDms(supabase: any, now: string) {
 serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    
+
     // Create a Supabase client with the service role key to bypass RLS
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    const supabase = createClient(supabaseUrl, serviceKey());
     
     const now = new Date().toISOString();
     console.log(`Starting job expiration sweep at ${now}`);
