@@ -207,15 +207,13 @@ export default function JobDetailScreen({ job, isEmployer, seekerYears, hasAppli
                     qualifies the role, so it belongs where the role is named. */}
                 {!job.qualificationsMet && (
                   <span
+                    className="experience-tag"
                     style={{
                       marginLeft: 8,
                       verticalAlign: "middle",
                       display: "inline-block",
                       padding: "2px 8px",
                       borderRadius: 6,
-                      background: "var(--surface-elevated)",
-                      border: "1px solid var(--border)",
-                      color: "var(--text-secondary)",
                       fontSize: 11,
                       fontWeight: 600,
                       letterSpacing: 0,
@@ -275,10 +273,12 @@ export default function JobDetailScreen({ job, isEmployer, seekerYears, hasAppli
           </motion.div>
 
           {/* Experience note.
-              Deliberately quiet: neutral surface colours rather than a warning
-              palette, no icon, one sentence. The amber it replaced was unreadable
+              A muted purple, not a warning palette, and no icon: this is an
+              aside about fit, not an alert. The amber it replaced was unreadable
               on a light background and framed a difference of opinion about
-              seniority as a problem with the candidate.
+              seniority as a problem with the candidate. Neutral surface colours
+              were tried in between and were worse in a quieter way -- identical
+              to every card around them, so nobody spotted the note at all.
 
               Shown only when the seeker has actually claimed this job's role.
               Someone who listed Waiter, Spa Attendant and Banquet gets nothing
@@ -290,15 +290,14 @@ export default function JobDetailScreen({ job, isEmployer, seekerYears, hasAppli
               initial={shouldReduceMotion ? false : { opacity: 0, y: 6 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.25, delay: 0.12 }}
+              className="experience-note"
               style={{
-                background: "var(--surface-elevated)",
-                border: "1px solid var(--border)",
                 borderRadius: 12,
                 padding: "12px 14px",
                 marginBottom: 20,
               }}
             >
-              <p style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.6 }}>
+              <p style={{ fontSize: 13, lineHeight: 1.6 }}>
                 {t("jobDetail.experienceNote", {
                   min: job.minYearsExperience ?? 0,
                   actual: yearsLabel(seekerYears?.[job.category] ?? null, t),
