@@ -458,6 +458,202 @@ export function departmentForRole(name: string): string | null {
 }
 
 /**
+ * Lowercases and strips Latin accents, so "Café" and "cafe" compare equal.
+ * Mirrors public.search_norm() in the database, which normalises the stored
+ * side the same way. Amharic has no case or combining accents, so it passes
+ * through untouched.
+ */
+export function normalizeSearchText(text: string): string {
+  return (text ?? "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .trim();
+}
+
+/**
+ * Optimal string alignment distance — Levenshtein plus adjacent transposition.
+ *
+ * The transposition case is the whole reason this exists alongside the bigram
+ * score: "wiater" for "waiter" is one swap, but shares only two bigrams with it
+ * ("te", "er"), so Dice rates it 0.40 and would reject it. Counted as a single
+ * edit it lands at 0.83.
+ */
+function osaDistance(a: string, b: string): number {
+  const m = a.length;
+  const n = b.length;
+  if (m === 0) return n;
+  if (n === 0) return m;
+
+  let prev2: number[] = [];
+  let prev: number[] = Array.from({ length: n + 1 }, (_, j) => j);
+  let curr: number[] = new Array(n + 1);
+
+  for (let i = 1; i <= m; i++) {
+    curr[0] = i;
+    for (let j = 1; j <= n; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      curr[j] = Math.min(curr[j - 1] + 1, prev[j] + 1, prev[j - 1] + cost);
+      if (i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) {
+        curr[j] = Math.min(curr[j], prev2[j - 2] + 1);
+      }
+    }
+    prev2 = prev;
+    prev = curr;
+    curr = new Array(n + 1);
+  }
+  return prev[n];
+}
+
+/** OSA distance expressed as a 0..1 similarity. */
+function editSimilarity(a: string, b: string): number {
+  const longest = Math.max(a.length, b.length);
+  if (longest === 0) return 1;
+  return 1 - osaDistance(a, b) / longest;
+}
+
+/** Dice coefficient over character bigrams — cheap fuzzy string similarity. */
+function bigramSimilarity(a: string, b: string): number {
+  if (a === b) return 1;
+  if (a.length < 2 || b.length < 2) return 0;
+
+  const bigrams = (s: string) => {
+    const out = new Map<string, number>();
+    for (let i = 0; i < s.length - 1; i++) {
+      const g = s.slice(i, i + 2);
+      out.set(g, (out.get(g) ?? 0) + 1);
+    }
+    return out;
+  };
+
+  const ga = bigrams(a);
+  const gb = bigrams(b);
+  let shared = 0;
+  for (const [g, countA] of ga) {
+    const countB = gb.get(g);
+    if (countB) shared += Math.min(countA, countB);
+  }
+  return (2 * shared) / (a.length - 1 + b.length - 1);
+}
+
+/**
+ * Below this many characters a query is matched only exactly or by prefix.
+ *
+ * Substring and fuzzy matching on a 1-2 character query is meaningless: "it"
+ * is inside "kitchen", "waiter" and "security", so it would drag in most of the
+ * taxonomy and every job attached to it.
+ */
+const MIN_FUZZY_QUERY_LENGTH = 4;
+const MIN_SUBSTRING_QUERY_LENGTH = 3;
+
+/** How close a typo has to be before it counts as the intended word. */
+const FUZZY_BIGRAM_THRESHOLD = 0.55;
+const FUZZY_EDIT_THRESHOLD = 0.72;
+
+/**
+ * Fuzzy matching is skipped when the two strings differ this much in length.
+ *
+ * Without it a long query drifts into short unrelated fields — the guard that
+ * stops "waiter" being read as a fuzzy hit on the "IT" department.
+ */
+const MAX_FUZZY_LENGTH_GAP = 3;
+
+/**
+ * Fuzzy match, compared token by token rather than across the whole string.
+ *
+ * Whole-string edit distance treats "IT officer" and "HR officer" as 80%
+ * similar — ten characters, two edits — because the shared word "officer"
+ * dominates. Requiring every query token to find its own fuzzy counterpart
+ * makes the comparison turn on the distinctive word instead: "it" against
+ * "hr" shares nothing and the role is correctly rejected.
+ *
+ * Tokens shorter than the fuzzy minimum must match exactly or by prefix; there
+ * is no such thing as a plausible typo of a two-letter word.
+ */
+function fuzzyTokenMatch(queryTokens: string[], field: string): boolean {
+  const fieldTokens = field.split(/\s+/).filter(Boolean);
+  if (fieldTokens.length === 0) return false;
+
+  return queryTokens.every((qt) => {
+    if (qt.length < MIN_FUZZY_QUERY_LENGTH) {
+      return fieldTokens.some((ft) => ft === qt || ft.startsWith(qt));
+    }
+    return fieldTokens.some(
+      (ft) =>
+        Math.abs(qt.length - ft.length) <= MAX_FUZZY_LENGTH_GAP &&
+        (bigramSimilarity(qt, ft) >= FUZZY_BIGRAM_THRESHOLD ||
+          editSimilarity(qt, ft) >= FUZZY_EDIT_THRESHOLD)
+    );
+  });
+}
+
+/** True when `needle` appears in `haystack` as a whole word or phrase.
+ *
+ *  Plain substring containment in this direction is what made "waiter" match
+ *  the IT department: the letters "it" sit inside "waiter". Anchoring to word
+ *  boundaries keeps the useful case — "senior accountant" finding the
+ *  "accountant" keyword — without the accidental ones. */
+function containsWord(haystack: string, needle: string): boolean {
+  if (needle.length < MIN_SUBSTRING_QUERY_LENGTH) return false;
+  const escaped = needle.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return new RegExp(`(^|\\s)${escaped}(\\s|$)`).test(haystack);
+}
+
+/**
+ * Role names a free-text search keyword should also match, used to widen the
+ * seeker's job search beyond literal title text.
+ *
+ * This is what makes "waiter" find a job titled "Night shift waitress", "front
+ * desk" find a Receptionist posting, "wiater" survive the typo, and "አስተናጋጅ"
+ * work at all — none of which the old `title ILIKE '%term%'` query could do.
+ * The result is handed to the search_jobs RPC as p_keyword_categories, so the
+ * taxonomy stays defined in exactly one place: this file.
+ *
+ * Matching is deliberately tiered, strongest signal first, because a role that
+ * matches only fuzzily should not be as trusted as one matched outright.
+ */
+export function rolesMatchingKeyword(query: string): string[] {
+  const raw = (query ?? "").trim();
+  const q = normalizeSearchText(raw);
+  if (!q) return [];
+
+  const allowSubstring = q.length >= MIN_SUBSTRING_QUERY_LENGTH;
+  const allowFuzzy = q.length >= MIN_FUZZY_QUERY_LENGTH;
+  const queryTokens = q.split(/\s+/).filter(Boolean);
+
+  const matches = new Set<string>();
+
+  for (const cat of HOTEL_JOB_CATEGORIES) {
+    // Amharic is compared on the raw query: normalising it is a no-op, and the
+    // stored nameAm is never lowercased.
+    if (raw && (cat.nameAm === raw || (raw.length >= 2 && cat.nameAm.includes(raw)))) {
+      matches.add(cat.name);
+      continue;
+    }
+
+    const fields = [cat.name, cat.fullName ?? "", cat.department, ...cat.keywords]
+      .filter(Boolean)
+      .map(normalizeSearchText);
+
+    let hit = false;
+    for (const f of fields) {
+      // Exact, then prefix — always allowed, so a two-letter query like "it"
+      // still reaches "IT Officer".
+      if (f === q || f.startsWith(q)) { hit = true; break; }
+
+      // The field contains the query ("waiter" inside "head waiter"), or the
+      // query contains the field as a whole word ("senior accountant").
+      if (allowSubstring && (f.includes(q) || containsWord(q, f))) { hit = true; break; }
+
+      if (allowFuzzy && fuzzyTokenMatch(queryTokens, f)) { hit = true; break; }
+    }
+    if (hit) matches.add(cat.name);
+  }
+
+  return [...matches];
+}
+
+/**
  * Searches roles by canonical name, descriptive name, Amharic name, department
  * or keyword, so "front desk" finds Receptionist and "አስተናጋጅ" finds Waiter.
  */
