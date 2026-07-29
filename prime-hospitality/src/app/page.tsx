@@ -517,7 +517,7 @@ export default function App() {
           />
         );
       case "search":
-        return <SearchScreen key="search" onJobSelect={handleJobSelect} seekerYears={userProfile?.experience_years} pageSize={pageSize} enableAnimations={enableAnimations} />;
+        return <SearchScreen key="search" onJobSelect={handleJobSelect} seekerYears={userProfile?.experience_years} seekerCategories={userProfile?.selected_categories} pageSize={pageSize} enableAnimations={enableAnimations} />;
       case "applications":
         return <ApplicationsScreen key="applications" />;
       case "notifications":
