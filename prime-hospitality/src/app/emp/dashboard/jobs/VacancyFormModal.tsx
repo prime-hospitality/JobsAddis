@@ -3,7 +3,8 @@
 import React, { useState } from "react";
 import { Save, X, Briefcase, MapPin, CreditCard, ClipboardList, CalendarClock } from "lucide-react";
 import { searchLocations } from "@/data/locations";
-import { VacancyFormState, validateVacancyForm } from "./vacancyShared";
+import { VacancyFormState, VacancyFormErrors, validateVacancyForm } from "./vacancyShared";
+import { YEARS_OPTIONS, MAX_YEARS } from "@/lib/vocabulary";
 import { HOTEL_JOB_CATEGORIES, JOB_ROLE_NAMES, detectCategoryFromTitle, departmentForRole } from "@/data/job-categories";
 import FilterSelect from "@/components/FilterSelect";
 
@@ -190,7 +191,8 @@ export default function VacancyFormModal({
 }) {
   const [requirementsTab, setRequirementsTab] = useState<"skill" | "experience" | "education">("skill");
   const [locationSuggestionsOpen, setLocationSuggestionsOpen] = useState(false);
-  const [fieldErrors, setFieldErrors] = useState<{ title?: string; description_template?: string; deadline?: string }>({});
+  // Typed off the shared validator so a new rule there can't silently render nowhere.
+  const [fieldErrors, setFieldErrors] = useState<VacancyFormErrors>({});
 
   // Jobs saved before the role list was consolidated can carry a category that
   // is no longer an option (a department name, or a free-typed value). Keep it
@@ -311,18 +313,31 @@ export default function VacancyFormModal({
                       options={["Full Time", "Part Time", "Contract", "Internship", "Freelance"].map((v) => ({ value: v, label: v }))}
                     />
                   </div>
+                  {/* A minimum in years, not a seniority label. "Senior" means
+                      something different at a 300-room hotel than at a 20-seat
+                      café, so the label never travelled between employers; the
+                      number does. Put the seniority wording in the job title. */}
                   <div className="vfm-field">
-                    <label className="vfm-label">Experience</label>
+                    <label className="vfm-label">Minimum years of experience</label>
                     <FilterSelect
-                      value={value.experience_required}
-                      onChange={(v) => set({ experience_required: v })}
+                      value={String(value.min_years_experience ?? "")}
+                      onChange={(v) => set({ min_years_experience: v === "" ? null : Number(v) })}
                       fullWidth
                       minWidth={0}
                       searchable={false}
                       maxMenuHeight={224}
-                      ariaLabel="Experience required"
-                      options={["Entry level", "Junior", "Intermediate", "Senior", "Expert"].map((v) => ({ value: v, label: v }))}
+                      ariaLabel="Minimum years of experience"
+                      options={[
+                        { value: "", label: "Any" },
+                        ...YEARS_OPTIONS.map((y) => ({
+                          value: String(y),
+                          label: y === 0 ? "No experience" : y >= MAX_YEARS ? `${MAX_YEARS}+ years` : `${y}+ ${y === 1 ? "year" : "years"}`,
+                        })),
+                      ]}
                     />
+                    {fieldErrors.min_years_experience && (
+                      <p className="vfm-error-text">{fieldErrors.min_years_experience}</p>
+                    )}
                   </div>
                 </div>
 

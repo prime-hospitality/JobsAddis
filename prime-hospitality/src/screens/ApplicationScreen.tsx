@@ -10,6 +10,7 @@ import { useTelegram } from "@/hooks/useTelegram";
 import { submitApplication, ApiError } from "@/lib/api";
 import { formatPhoneForDisplay } from "@/lib/phone";
 import { useT } from "@/lib/i18n";
+import { yearsLabel, businessTypeLabel } from "@/lib/vocabulary";
 
 const COVER_NOTE_MAX = 300;
 
@@ -181,7 +182,11 @@ export default function ApplicationScreen({
                 icon={<Briefcase size={14} color="var(--brand)" />}
                 label={t("apply.experienceLevel")}
                 preFilledLabel={t("apply.preFilled")}
-                value={profile.experienceLevel}
+                value={
+                  profile.experienceContext
+                    ? `${yearsLabel(profile.experienceYears, t)} · ${businessTypeLabel(profile.experienceContext, t.lang)}`
+                    : yearsLabel(profile.experienceYears, t)
+                }
               />
 
               {/* Location */}

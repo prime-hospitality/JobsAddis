@@ -16,7 +16,8 @@ export interface ApplicantProfile {
   phone_number: string | null;
   secondary_phone: string | null;
   selected_categories: string[] | null;
-  experience_levels: Record<string, string> | null;
+  experience_years: Record<string, number> | null;
+  experience_context: Record<string, string> | null;
   cv_url: string | null;
 }
 
@@ -46,7 +47,7 @@ function profileScore(p: ApplicantProfile | null): number {
   if (
     p.selected_categories &&
     p.selected_categories.length > 0 &&
-    p.selected_categories.every((c) => p.experience_levels?.[c])
+    p.selected_categories.every((c) => p.experience_years?.[c] != null)
   ) {
     score += 20;
   }
@@ -82,7 +83,7 @@ export async function getApplicants(jobId?: string): Promise<{
     .select(
       `id, job_id, status, cover_note, created_at,
        jobs!inner ( id, title, employer_id ),
-       profiles ( full_name, age, gender, location, willing_to_relocate, phone_number, secondary_phone, selected_categories, experience_levels, cv_url )`
+       profiles ( full_name, age, gender, location, willing_to_relocate, phone_number, secondary_phone, selected_categories, experience_years, experience_context, cv_url )`
     )
     .eq("jobs.employer_id", session.employerId)
     .order("created_at", { ascending: false });

@@ -113,6 +113,45 @@ function sanitizeHtml(text: string): string {
   return text.replace(/<[^>]*>?/gm, ""); // Simple regex to strip HTML tags
 }
 
+/** Upper bound on a stored year count. Mirrors MAX_YEARS_INPUT in src/lib/vocabulary.ts. */
+const MAX_YEARS_INPUT = 50;
+
+/** Coerces client input to a whole year count, or null when unusable. */
+function coerceYears(value: unknown): number | null {
+  if (value === null || value === undefined || value === "") return null;
+  const n = Math.floor(Number(value));
+  if (!Number.isFinite(n) || n < 0) return null;
+  return Math.min(n, MAX_YEARS_INPUT);
+}
+
+/**
+ * Sanitises the role -> years map. Entries whose value will not coerce to a
+ * year count are dropped rather than defaulted to 0: we would rather store
+ * nothing for a role than assert "no experience" about someone on the strength
+ * of an unparseable value.
+ */
+function coerceYearsMap(raw: unknown): Record<string, number> {
+  const out: Record<string, number> = {};
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return out;
+  for (const [role, value] of Object.entries(raw as Record<string, unknown>)) {
+    const years = coerceYears(value);
+    if (years !== null) out[sanitizeHtml(role)] = years;
+  }
+  return out;
+}
+
+/** Sanitises the role -> establishment-type map, dropping blank entries. */
+function coerceContextMap(raw: unknown): Record<string, string> {
+  const out: Record<string, string> = {};
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return out;
+  for (const [role, value] of Object.entries(raw as Record<string, unknown>)) {
+    if (typeof value !== "string") continue;
+    const clean = sanitizeHtml(value).trim().slice(0, 60);
+    if (clean) out[sanitizeHtml(role)] = clean;
+  }
+  return out;
+}
+
 // -----------------------------------------------------------------------------
 // Main Edge Function Handler
 // -----------------------------------------------------------------------------
@@ -171,7 +210,8 @@ serve(async (req: Request) => {
             contact_shared: profileData.contactShared,
             selected_categories: profileData.selectedCategories,
             alert_categories: profileData.selectedCategories,
-            experience_levels: profileData.experienceLevels,
+            experience_years: coerceYearsMap(profileData.experienceYears),
+            experience_context: coerceContextMap(profileData.experienceContext),
             cv_url: cvUrl,
             onboarding_completed: true,
           });
@@ -454,7 +494,8 @@ serve(async (req: Request) => {
         contact_shared: profileData.contactShared,
         selected_categories: profileData.selectedCategories,
         alert_categories: profileData.selectedCategories,
-        experience_levels: profileData.experienceLevels,
+        experience_years: coerceYearsMap(profileData.experienceYears),
+        experience_context: coerceContextMap(profileData.experienceContext),
         cv_url: cvUrl,
         onboarding_completed: true,
       });
@@ -476,10 +517,11 @@ serve(async (req: Request) => {
 
     // Action: Update CV
     if (action === "update_alert_categories") {
-      const { categories, experience_level } = payload;
+      const { categories, max_years } = payload;
       const { error: updateError } = await supabase
         .from("profiles")
-        .update({ alert_categories: categories, alert_experience_level: experience_level ?? null })
+        // null = alert me regardless of how much experience a job asks for.
+        .update({ alert_categories: categories, alert_max_years: coerceYears(max_years) })
         .eq("telegram_id", telegramId);
 
       if (updateError) throw updateError;
@@ -1161,7 +1203,7 @@ serve(async (req: Request) => {
 
       const { data: apps, error: appsErr } = await supabase
         .from("applications")
-        .select("id, telegram_id, status, cover_note, created_at, profiles(full_name, location, experience_levels, gender, age, willing_to_relocate, selected_categories, phone_number, secondary_phone, cv_url)")
+        .select("id, telegram_id, status, cover_note, created_at, profiles(full_name, location, experience_years, experience_context, gender, age, willing_to_relocate, selected_categories, phone_number, secondary_phone, cv_url)")
         .eq("job_id", jobId)
         .order("created_at", { ascending: true });
 
@@ -1327,7 +1369,7 @@ serve(async (req: Request) => {
           salary_type: form.salary_type,
           salary_min: form.salary_min,
           salary_max: form.salary_max,
-          experience_required: form.experience_required,
+          min_years_experience: form.min_years_experience,
           experience_template: form.experience_template,
           responsibilities_template: form.responsibilities_template,
           benefits_template: form.benefits_template,
@@ -1422,6 +1464,7 @@ serve(async (req: Request) => {
         description,
         full_description: description,
         requirements: buildRequirementsJson(form),
+        min_years_experience: form.min_years_experience,
         deadline,
         quantity: form.quantity,
         status,
@@ -1472,6 +1515,7 @@ serve(async (req: Request) => {
         description,
         full_description: description,
         requirements: buildRequirementsJson(form),
+        min_years_experience: form.min_years_experience,
         deadline: gate.deadline,
         quantity: form.quantity,
         status: gate.status,

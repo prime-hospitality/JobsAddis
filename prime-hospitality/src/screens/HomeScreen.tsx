@@ -18,6 +18,8 @@ interface HomeScreenProps {
   onBellPress?: () => void;
   unreadCount?: number;
   profileName?: string;
+  /** Signed-in seeker's role -> years. Drives the advisory experience badge. */
+  seekerYears?: Record<string, number>;
   pageSize?: number;
   enableAnimations?: boolean;
 }
@@ -34,7 +36,7 @@ let businessAnimationHasRun = false;
  */
 let savedScrollTop = 0;
 
-export default function HomeScreen({ onJobSelect, onSearchPress, onBellPress, unreadCount = 0, profileName, pageSize, enableAnimations }: HomeScreenProps) {
+export default function HomeScreen({ onJobSelect, onSearchPress, onBellPress, unreadCount = 0, profileName, seekerYears, pageSize, enableAnimations }: HomeScreenProps) {
   const t = useT();
 
   const shouldReduceMotion = useReducedMotion();
@@ -116,7 +118,7 @@ export default function HomeScreen({ onJobSelect, onSearchPress, onBellPress, un
   }, [shouldReduceMotion]);
 
   // Load real active jobs from Supabase
-  const { jobs, isLoading, error, refetch } = useJobs(null, pageSize);
+  const { jobs, isLoading, error, refetch } = useJobs(null, pageSize, seekerYears);
 
   // Track dark mode to handle hero illustration visibility
   const [isDark, setIsDark] = useState<boolean>(() => {

@@ -377,7 +377,9 @@ function ApplicantDetail({
                 {categories.map((c) => (
                   <span key={c} style={{ background: "#f1f5f9", borderRadius: 20, padding: "5px 12px", fontSize: 12, fontWeight: 600, color: "#0f172a" }}>
                     {c}
-                    {p?.experience_levels?.[c] ? ` · ${p.experience_levels[c]}` : ""}
+                    {p?.experience_years?.[c] != null
+                      ? ` · ${p.experience_years[c]} yr${p.experience_years[c] === 1 ? "" : "s"}${p?.experience_context?.[c] ? ` · ${p.experience_context[c]}` : ""}`
+                      : ""}
                   </span>
                 ))}
               </div>

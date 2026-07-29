@@ -46,6 +46,10 @@ const JobCard = memo(function JobCard({ job, onClick, index, enableAnimations = 
     },
   };
 
+  // Advisory: the card is never dimmed, hidden, or made unclickable by this.
+  // Someone with two years at a large hotel can be exactly the right hire at a
+  // smaller one, and that judgement belongs to the employer reading the
+  // application, not to a badge on a list.
   const isUnqualified = !job.qualificationsMet;
 
   if (!enableAnimations) {
@@ -54,11 +58,6 @@ const JobCard = memo(function JobCard({ job, onClick, index, enableAnimations = 
         onClick={() => onClick(job)}
         style={{ position: "relative" }}
       >
-        {/* Dim overlay for unqualified jobs */}
-        {isUnqualified && (
-          <div className="qualification-dim" />
-        )}
-
         {/* Unqualified badge */}
         {isUnqualified && (
           <div
@@ -70,17 +69,17 @@ const JobCard = memo(function JobCard({ job, onClick, index, enableAnimations = 
               display: "flex",
               alignItems: "center",
               gap: 4,
-              background: "rgba(239, 68, 68, 0.15)",
-              border: "1px solid rgba(239, 68, 68, 0.3)",
+              background: "rgba(245, 158, 11, 0.15)",
+              border: "1px solid rgba(245, 158, 11, 0.32)",
               borderRadius: 100,
               padding: "3px 8px",
               fontSize: 10,
               fontWeight: 600,
-              color: "#FCA5A5",
+              color: "#FCD34D",
             }}
           >
             <AlertTriangle size={10} />
-            {t("jobCard.requirementsNotMet")}
+            {t("jobCard.requirementsNotMet", { min: job.minYearsExperience ?? 0 })}
           </div>
         )}
 
@@ -197,11 +196,6 @@ const JobCard = memo(function JobCard({ job, onClick, index, enableAnimations = 
       onClick={() => onClick(job)}
       style={{ willChange: "transform", position: "relative" }}
     >
-      {/* Dim overlay for unqualified jobs */}
-      {isUnqualified && (
-        <div className="qualification-dim" />
-      )}
-
       {/* Unqualified badge */}
       {isUnqualified && (
         <div
@@ -213,17 +207,17 @@ const JobCard = memo(function JobCard({ job, onClick, index, enableAnimations = 
             display: "flex",
             alignItems: "center",
             gap: 4,
-            background: "rgba(239, 68, 68, 0.15)",
-            border: "1px solid rgba(239, 68, 68, 0.3)",
+            background: "rgba(245, 158, 11, 0.15)",
+            border: "1px solid rgba(245, 158, 11, 0.32)",
             borderRadius: 100,
             padding: "3px 8px",
             fontSize: 10,
             fontWeight: 600,
-            color: "#FCA5A5",
+            color: "#FCD34D",
           }}
         >
           <AlertTriangle size={10} />
-          {t("jobCard.requirementsNotMet")}
+          {t("jobCard.requirementsNotMet", { min: job.minYearsExperience ?? 0 })}
         </div>
       )}
 

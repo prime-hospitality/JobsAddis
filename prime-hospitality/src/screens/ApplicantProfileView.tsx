@@ -3,6 +3,8 @@
 import { motion, AnimatePresence, LazyMotion, domAnimation } from "framer-motion";
 import { ArrowLeft, MapPin, Briefcase, Phone, FileText, CheckCircle, Star, X, Loader2 } from "lucide-react";
 import { formatPhoneForDisplay } from "@/lib/phone";
+import { useT } from "@/lib/i18n";
+import { yearsLabel, businessTypeLabel } from "@/lib/vocabulary";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 export interface ApplicantProfile {
@@ -16,7 +18,8 @@ export interface ApplicantProfile {
     gender: string;
     age: number;
     willing_to_relocate: boolean;
-    experience_levels: Record<string, string> | null;
+    experience_years: Record<string, number> | null;
+    experience_context: Record<string, string> | null;
     selected_categories: string[] | null;
     phone_number?: string | null;
     secondary_phone?: string | null;
@@ -60,6 +63,7 @@ export default function ApplicantProfileView({
   onUnshortlist,
   actionLoading,
 }: ApplicantProfileViewProps) {
+  const t = useT();
   const p = applicant.profiles;
   const name = p?.full_name ?? "Unknown Applicant";
   const isLoading = actionLoading?.id === applicant.id;
@@ -68,7 +72,8 @@ export default function ApplicantProfileView({
   const isUnshortlisting = isLoading && actionLoading?.type === "unshortlist";
   const isShortlisted = applicant.status === "shortlisted";
 
-  const expLevels = p?.experience_levels ?? {};
+  const expYears = p?.experience_years ?? {};
+  const expContext = p?.experience_context ?? {};
   const categories = p?.selected_categories ?? [];
 
   return (
@@ -268,7 +273,12 @@ export default function ApplicantProfileView({
               {categories.length > 0 ? (
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 8, paddingLeft: 22 }}>
                   {categories.map((cat) => {
-                    const exp = expLevels[cat] || "Entry Level";
+                    // No beginner default: an unset role is unknown, not zero.
+                    const years = expYears[cat] ?? null;
+                    const where = expContext[cat];
+                    const exp = where
+                      ? `${yearsLabel(years, t)} · ${businessTypeLabel(where, t.lang)}`
+                      : yearsLabel(years, t);
                     return (
                       <div
                         key={cat}

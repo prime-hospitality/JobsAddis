@@ -15,7 +15,7 @@ export interface MockApplicant {
   profile_id: string;
   full_name: string;
   location: string;
-  experience_level: string;
+  experience_years: number;
   gender: "male" | "female";
   status: "pending" | "shortlisted" | "rejected";
   created_at: string;
@@ -78,7 +78,7 @@ export const MOCK_EMPLOYERS: MockEmployer[] = [
         applicants: [
           {
             id: "app-sl-1-1", profile_id: "p-sl-1-1", full_name: "Abebe Girma",
-            location: "Bole", experience_level: "Mid Level", gender: "male",
+            location: "Bole", experience_years: 3, gender: "male",
             status: "pending", telegram_id: 201001, age: 26,
             willing_to_relocate: true, education: "Diploma",
             languages: ["Amharic", "English"],
@@ -86,7 +86,7 @@ export const MOCK_EMPLOYERS: MockEmployer[] = [
           },
           {
             id: "app-sl-1-2", profile_id: "p-sl-1-2", full_name: "Tigist Alemu",
-            location: "Kazanchis", experience_level: "Senior Level", gender: "female",
+            location: "Kazanchis", experience_years: 5, gender: "female",
             status: "pending", telegram_id: 201002, age: 31,
             willing_to_relocate: false, education: "Degree",
             languages: ["Amharic", "English"],
@@ -94,7 +94,7 @@ export const MOCK_EMPLOYERS: MockEmployer[] = [
           },
           {
             id: "app-sl-1-3", profile_id: "p-sl-1-3", full_name: "Dawit Bekele",
-            location: "CMC", experience_level: "Entry Level", gender: "male",
+            location: "CMC", experience_years: 0, gender: "male",
             status: "pending", telegram_id: 201003, age: 22,
             willing_to_relocate: true, education: "High School",
             languages: ["Amharic"],
@@ -102,7 +102,7 @@ export const MOCK_EMPLOYERS: MockEmployer[] = [
           },
           {
             id: "app-sl-1-4", profile_id: "p-sl-1-4", full_name: "Hana Tesfaye",
-            location: "Megenagna", experience_level: "Mid Level", gender: "female",
+            location: "Megenagna", experience_years: 3, gender: "female",
             status: "pending", telegram_id: 201004, age: 28,
             willing_to_relocate: true, education: "Diploma",
             languages: ["Amharic", "English"],
@@ -110,7 +110,7 @@ export const MOCK_EMPLOYERS: MockEmployer[] = [
           },
           {
             id: "app-sl-1-5", profile_id: "p-sl-1-5", full_name: "Yonas Haile",
-            location: "Sarbet", experience_level: "Mid Level", gender: "male",
+            location: "Sarbet", experience_years: 3, gender: "male",
             status: "pending", telegram_id: 201005, age: 27,
             willing_to_relocate: false, education: "Diploma",
             languages: ["Amharic", "English"],
@@ -118,7 +118,7 @@ export const MOCK_EMPLOYERS: MockEmployer[] = [
           },
           {
             id: "app-sl-1-6", profile_id: "p-sl-1-6", full_name: "Meron Tadesse",
-            location: "Gerji", experience_level: "Entry Level", gender: "female",
+            location: "Gerji", experience_years: 0, gender: "female",
             status: "pending", telegram_id: 201006, age: 23,
             willing_to_relocate: true, education: "High School",
             languages: ["Amharic"],
@@ -141,7 +141,7 @@ export const MOCK_EMPLOYERS: MockEmployer[] = [
         applicants: [
           {
             id: "app-sl-2-1", profile_id: "p-sl-2-1", full_name: "Bereket Solomon",
-            location: "Piassa", experience_level: "Senior Level", gender: "male",
+            location: "Piassa", experience_years: 5, gender: "male",
             status: "pending", telegram_id: 201007, age: 38,
             willing_to_relocate: false, education: "Degree",
             languages: ["Amharic", "English"],
@@ -149,7 +149,7 @@ export const MOCK_EMPLOYERS: MockEmployer[] = [
           },
           {
             id: "app-sl-2-2", profile_id: "p-sl-2-2", full_name: "Liya Kebede",
-            location: "Bole", experience_level: "Senior Level", gender: "female",
+            location: "Bole", experience_years: 5, gender: "female",
             status: "pending", telegram_id: 201008, age: 34,
             willing_to_relocate: true, education: "Degree",
             languages: ["Amharic", "English"],
@@ -157,7 +157,7 @@ export const MOCK_EMPLOYERS: MockEmployer[] = [
           },
           {
             id: "app-sl-2-3", profile_id: "p-sl-2-3", full_name: "Kaleab Desta",
-            location: "Kirkos", experience_level: "Mid Level", gender: "male",
+            location: "Kirkos", experience_years: 3, gender: "male",
             status: "pending", telegram_id: 201009, age: 30,
             willing_to_relocate: true, education: "Diploma",
             languages: ["Amharic"],
@@ -203,7 +203,7 @@ export const MOCK_EMPLOYERS: MockEmployer[] = [
         applicants: [
           {
             id: "app-rb-1-1", profile_id: "p-rb-1-1", full_name: "Selam Hailu",
-            location: "Kazanchis", experience_level: "Mid Level", gender: "female",
+            location: "Kazanchis", experience_years: 3, gender: "female",
             status: "pending", telegram_id: 202001, age: 25,
             willing_to_relocate: false, education: "Diploma",
             languages: ["Amharic", "English"],
@@ -211,7 +211,7 @@ export const MOCK_EMPLOYERS: MockEmployer[] = [
           },
           {
             id: "app-rb-1-2", profile_id: "p-rb-1-2", full_name: "Nahom Yilma",
-            location: "Megenagna", experience_level: "Entry Level", gender: "male",
+            location: "Megenagna", experience_years: 0, gender: "male",
             status: "pending", telegram_id: 202002, age: 21,
             willing_to_relocate: true, education: "High School",
             languages: ["Amharic"],
@@ -219,7 +219,7 @@ export const MOCK_EMPLOYERS: MockEmployer[] = [
           },
           {
             id: "app-rb-1-3", profile_id: "p-rb-1-3", full_name: "Rahel Assefa",
-            location: "Bole", experience_level: "Mid Level", gender: "female",
+            location: "Bole", experience_years: 3, gender: "female",
             status: "pending", telegram_id: 202003, age: 27,
             willing_to_relocate: true, education: "Diploma",
             languages: ["Amharic", "English"],
@@ -227,7 +227,7 @@ export const MOCK_EMPLOYERS: MockEmployer[] = [
           },
           {
             id: "app-rb-1-4", profile_id: "p-rb-1-4", full_name: "Fitsum Girma",
-            location: "Gerji", experience_level: "Senior Level", gender: "male",
+            location: "Gerji", experience_years: 5, gender: "male",
             status: "pending", telegram_id: 202004, age: 32,
             willing_to_relocate: false, education: "Diploma",
             languages: ["Amharic", "English"],
@@ -235,7 +235,7 @@ export const MOCK_EMPLOYERS: MockEmployer[] = [
           },
           {
             id: "app-rb-1-5", profile_id: "p-rb-1-5", full_name: "Ayantu Bekele",
-            location: "Ayat", experience_level: "Entry Level", gender: "female",
+            location: "Ayat", experience_years: 0, gender: "female",
             status: "pending", telegram_id: 202005, age: 20,
             willing_to_relocate: true, education: "High School",
             languages: ["Amharic"],

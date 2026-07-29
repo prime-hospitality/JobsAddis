@@ -84,13 +84,14 @@ export default function VacancyTemplateTab({ data, loading, reload }: { data: Po
       postedAt: new Date().toISOString(),
       description: desc,
       fullDescription: desc,
+      minYearsExperience: (tpl.min_years_experience as number | null) ?? null,
       requirements: {
-        experience: (tpl.experience_required as any) || "Entry Level",
         education: tpl.education_requirements || "",
         languages: [],
         locationPreference: null,
       },
       deadline: tpl.deadline || new Date().toISOString(),
+      // Preview only — there is no seeker in scope to compare years against.
       qualificationsMet: true,
       locationMismatch: false,
     });

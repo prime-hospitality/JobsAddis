@@ -6,7 +6,7 @@ import { Bell, Briefcase, CheckCircle, Clock, ExternalLink, Settings, ChevronDow
 import { fetchNotifications, markNotificationsRead, fetchProfile, updateAlertCategories, Notification } from "@/lib/api";
 import { useTelegram } from "@/hooks/useTelegram";
 import { useT, timeAgo } from "@/lib/i18n";
-import { categoryLabel, categoryMatches, JOB_EXPERIENCE_OPTIONS } from "@/lib/vocabulary";
+import { categoryLabel, categoryMatches, YEARS_OPTIONS, minYearsLabel } from "@/lib/vocabulary";
 import { JOB_ROLE_NAMES } from "@/data/job-categories";
 
 // Alerts fire by comparing these against jobs.category, so they have to be the
@@ -14,7 +14,10 @@ import { JOB_ROLE_NAMES } from "@/data/job-categories";
 // had drifted — it listed "Reception", which is not a role any job can have.
 const CATEGORY_NAMES = JOB_ROLE_NAMES;
 
-const EXPERIENCE_LEVELS = JOB_EXPERIENCE_OPTIONS;
+// Caps how much experience an alerted job may ask for. Compared numerically
+// against jobs.min_years_experience -- the old version matched two different
+// label vocabularies with string equality, so most preferences matched nothing.
+const EXPERIENCE_LEVELS = YEARS_OPTIONS;
 
 export interface NotificationsScreenProps {
   onSelectJob?: (jobId: string) => void;
@@ -29,7 +32,7 @@ export default function NotificationsScreen({ onSelectJob, isEmployer = false }:
 
   // Saved preferences
   const [alertCategories, setAlertCategories] = useState<string[]>([]);
-  const [alertExpLevel, setAlertExpLevel] = useState<string | null>(null);
+  const [alertExpLevel, setAlertExpLevel] = useState<number | null>(null);
 
   // Modal state
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -38,7 +41,7 @@ export default function NotificationsScreen({ onSelectJob, isEmployer = false }:
 
   // Temp state inside modal
   const [tempCategories, setTempCategories] = useState<string[]>([]);
-  const [tempExpLevel, setTempExpLevel] = useState<string | null>(null);
+  const [tempExpLevel, setTempExpLevel] = useState<number | null>(null);
 
   // Dropdown state
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -98,7 +101,7 @@ export default function NotificationsScreen({ onSelectJob, isEmployer = false }:
             ? p.alert_categories
             : (p.selected_categories || []);
           setAlertCategories(cats);
-          setAlertExpLevel(p.alert_experience_level ?? null);
+          setAlertExpLevel(p.alert_max_years ?? null);
         }
       } catch (err) {
         console.error("Failed to load profile for alerts preferences:", err);
@@ -207,9 +210,9 @@ export default function NotificationsScreen({ onSelectJob, isEmployer = false }:
                     {categoryLabel(cat, t.lang)}
                   </div>
                 ))}
-                {alertExpLevel && (
+                {alertExpLevel != null && (
                   <div style={{ background: "rgba(139, 92, 246, 0.06)", color: "var(--text-secondary)", padding: "4px 10px", borderRadius: 8, fontSize: 12, fontWeight: 500, border: "1px solid var(--border)" }}>
-                    {alertExpLevel}
+                    {minYearsLabel(alertExpLevel, t)}
                   </div>
                 )}
               </>
@@ -505,7 +508,7 @@ export default function NotificationsScreen({ onSelectJob, isEmployer = false }:
                             }} />
                             <div>
                               <p style={{ fontSize: 14, fontWeight: isSelected ? 700 : 500, color: isSelected ? "var(--brand)" : "var(--text-primary)", margin: 0 }}>
-                                {level}
+                                {minYearsLabel(level, t)}
                               </p>
                             </div>
                           </button>

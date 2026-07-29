@@ -414,13 +414,14 @@ export default function ContentManagementTab({
                         postedAt: new Date().toISOString(),
                         description: desc,
                         fullDescription: desc,
+                        minYearsExperience: (tpl.min_years_experience as number | null) ?? null,
                         requirements: {
-                          experience: (tpl.experience_required as any) || "Entry Level",
                           education: tpl.education_requirements || "",
                           languages: [],
                           locationPreference: null,
                         },
                         deadline: tpl.deadline || new Date().toISOString(),
+                        // Preview only — no seeker in scope to compare years against.
                         qualificationsMet: true,
                         locationMismatch: false,
                       });
@@ -694,7 +695,7 @@ export default function ContentManagementTab({
 
             <div className="space-y-6 max-w-3xl">
               {data.onboardingConfig.filter(cfg => cfg.key.startsWith(`step${activeOnboardingStep}_`)).map((cfg) => {
-                const isJson = cfg.key.includes("categories") || cfg.key.includes("experience_levels");
+                const isJson = cfg.key.includes("categories");
                 
                 if (isJson) {
                   let parsedArray: any[] = [];

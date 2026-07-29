@@ -11,7 +11,10 @@ export interface OnboardingState {
   selectedCategories: string[];
   contactShared: boolean | null;
   phoneNumber: string;
-  experienceLevels: Record<string, string>;
+  /** Role -> whole years worked. Integers, never a seniority label. */
+  experienceYears: Record<string, number>;
+  /** Role -> kind of establishment those years were earned at. Optional. */
+  experienceContext: Record<string, string>;
   fullName: string;
   age: number | "";
   location: string;
@@ -28,7 +31,8 @@ const initialState: OnboardingState = {
   selectedCategories: [],
   contactShared: null,
   phoneNumber: "",
-  experienceLevels: {},
+  experienceYears: {},
+  experienceContext: {},
   fullName: "",
   age: "",
   location: "",
@@ -117,7 +121,8 @@ export function useOnboarding() {
           contactShared: state.contactShared,
           phoneNumber: state.phoneNumber,
           selectedCategories: state.selectedCategories,
-          experienceLevels: state.experienceLevels,
+          experienceYears: state.experienceYears,
+          experienceContext: state.experienceContext,
         },
         cvUrl,
       });

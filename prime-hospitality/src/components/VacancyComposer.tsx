@@ -5,11 +5,22 @@ import { MapPin, Minus, Plus } from "lucide-react";
 import { DEPARTMENTS } from "@/data/job-categories";
 import { searchLocations } from "@/data/locations";
 import type { VacancyFormState, VacancyFormErrors } from "@/app/emp/dashboard/jobs/vacancyShared";
+import { YEARS_OPTIONS, MAX_YEARS } from "@/lib/vocabulary";
 import SheetSelect from "@/components/SheetSelect";
 
 const DEPARTMENT_OPTIONS = DEPARTMENTS.map((d) => ({ value: d, label: d }));
 const EMPLOYMENT_OPTIONS = ["Full Time", "Part Time", "Contract", "Internship", "Freelance"].map((v) => ({ value: v, label: v }));
-const EXPERIENCE_OPTIONS = ["Entry level", "Junior", "Intermediate", "Senior", "Expert"].map((v) => ({ value: v, label: v }));
+/** A minimum in years, not a seniority label: "Senior" means something
+ *  different at a 300-room hotel than at a 20-seat café, so the label never
+ *  travelled between employers. Built from the same YEARS_OPTIONS the seeker
+ *  picker uses, so both sides of the match share one scale. */
+const EXPERIENCE_OPTIONS = [
+  { value: "", label: "Any" },
+  ...YEARS_OPTIONS.map((y) => ({
+    value: String(y),
+    label: y === 0 ? "No experience" : y >= MAX_YEARS ? `${MAX_YEARS}+ years` : `${y}+ ${y === 1 ? "year" : "years"}`,
+  })),
+];
 
 const SALARY_OPTIONS: { value: string; label: string }[] = [
   { value: "fixed", label: "Fixed" },
@@ -187,10 +198,10 @@ export default function VacancyComposer({
           />
 
           <SheetSelect
-            label="Experience needed"
-            title="Experience needed"
-            value={value.experience_required}
-            onChange={(v) => set({ experience_required: v })}
+            label="Minimum years of experience"
+            title="Minimum years of experience"
+            value={String(value.min_years_experience ?? "")}
+            onChange={(v) => set({ min_years_experience: v === "" ? null : Number(v) })}
             options={EXPERIENCE_OPTIONS}
           />
 

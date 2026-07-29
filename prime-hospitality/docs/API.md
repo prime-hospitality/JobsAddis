@@ -68,12 +68,12 @@ Errors return `{ "error": "<human-readable message>" }`.
 | Action | Payload | Returns |
 |---|---|---|
 | `create_profile` | `profileData`, `cvUrl?` | `{ success }` — creates `users` + `profiles` rows and completes onboarding |
-| `get_profile` | — | Full profile, including `alert_categories` and `alert_experience_level` |
+| `get_profile` | — | Full profile, including `experience_years`, `experience_context`, `alert_categories` and `alert_max_years` |
 | `update_cv` | `cvUrl` | `{ success }` — replaces the stored CV; the previous file is removed from storage |
 | `update_phone` | `phoneNumber` | `{ success }` |
 | `update_secondary_phone` | `secondaryPhone` | `{ success }` |
 | `get_own_cv_url` | — | `{ url }` — short-lived signed URL. The `resumes` bucket is private (`20260725120000`), so CVs are never served from a public URL |
-| `update_alert_categories` | `categories: string[]`, `experience_level: string \| null` | `{ success }` — the vacancy-alert subscription |
+| `update_alert_categories` | `categories: string[]`, `max_years: number \| null` | `{ success }` — the vacancy-alert subscription. `max_years` caps how much experience an alerted job may ask for; `null` = any |
 
 ### Jobs & applications (seeker)
 
