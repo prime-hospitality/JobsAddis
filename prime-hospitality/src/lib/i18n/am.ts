@@ -61,7 +61,7 @@ export const am: DeepPartial<Catalog> = {
     openingsCountPlural: "{count} ክፍት ቦታዎች",
     experienceGapTag: "{min}+ ዓመት ተጠቅሷል",
     experienceNote:
-      "ይህ ሥራ {min}+ ዓመታት ልምድ ተጠቅሷል። መገለጫዎ በ{role} {actual} ያሳያል። ማመልከት ይችላሉ — ቀጣሪዎች እያንዳንዱን አመልካች በተናጠል ይገመግማሉ።",
+      "ይህ ሥራ {min}+ ዓመታት ልምድ ተጠቅሷል። መገለጫዎ በ{role} {actual} ያሳያል።",
     aboutHeading: "ስለዚህ ሥራ",
     requirementsHeading: "መስፈርቶች",
     postedAndHiring: "የተለጠፈው {when} · በንቃት እየቀጠሩ ነው",

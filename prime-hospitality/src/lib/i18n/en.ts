@@ -64,12 +64,14 @@ export const en = {
     salaryRange: "ETB {min}–{max}/mo",
     openingsCount: "{count} position",
     openingsCountPlural: "{count} positions",
-    // Advisory only, and worded as one. Years at a large property and years at
-    // a small one are not the same thing, so this states both figures and
-    // leaves the judgement to the employer rather than making it here.
+    // Two figures and nothing else. Earlier drafts closed with reassurance
+    // ("you are welcome to apply") and with advice about the CV; both address
+    // the reader, and anything that addresses the reader here reads as a
+    // verdict on them. Years at a large property and years at a small one are
+    // not the same thing, so the comparison is presented and left alone.
     experienceGapTag: "{min}+ yrs listed",
     experienceNote:
-      "This position lists {min}+ years of experience. Your profile records {actual} as {role}. You are welcome to apply — employers assess each candidate individually.",
+      "This position lists {min}+ years of experience. Your profile records {actual} as {role}.",
     aboutHeading: "About this Job",
     requirementsHeading: "Requirements",
     postedAndHiring: "Posted {when} · Actively hiring",
