@@ -203,6 +203,28 @@ export default function JobDetailScreen({ job, isEmployer, seekerYears, hasAppli
                 }}
               >
                 {job.title}
+                {/* Sits with the title rather than in a banner of its own: it
+                    qualifies the role, so it belongs where the role is named. */}
+                {!job.qualificationsMet && (
+                  <span
+                    style={{
+                      marginLeft: 8,
+                      verticalAlign: "middle",
+                      display: "inline-block",
+                      padding: "2px 8px",
+                      borderRadius: 6,
+                      background: "var(--surface-elevated)",
+                      border: "1px solid var(--border)",
+                      color: "var(--text-secondary)",
+                      fontSize: 11,
+                      fontWeight: 600,
+                      letterSpacing: 0,
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {t("jobDetail.experienceGapTag", { min: job.minYearsExperience ?? 0 })}
+                  </span>
+                )}
               </h2>
               {job.businessName && (
                 <p style={{ fontSize: 14, color: "var(--brand)", fontWeight: 600 }}>
@@ -252,36 +274,37 @@ export default function JobDetailScreen({ job, isEmployer, seekerYears, hasAppli
             ))}
           </motion.div>
 
-          {/* Qualification warning */}
+          {/* Experience note.
+              Deliberately quiet: neutral surface colours rather than a warning
+              palette, no icon, one sentence. The amber it replaced was unreadable
+              on a light background and framed a difference of opinion about
+              seniority as a problem with the candidate.
+
+              Shown only when the seeker has actually claimed this job's role.
+              Someone who listed Waiter, Spa Attendant and Banquet gets nothing
+              here on a Chef posting -- we have no basis to comment on experience
+              they never claimed. meetsExperience() returns true for an unknown
+              role, so that case never reaches this branch. */}
           {!job.qualificationsMet && (
             <motion.div
-              initial={shouldReduceMotion ? false : { opacity: 0, scale: 0.97 }}
-              animate={{ opacity: 1, scale: 1 }}
+              initial={shouldReduceMotion ? false : { opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.25, delay: 0.12 }}
               style={{
-                background: "rgba(245,158,11,0.08)",
-                border: "1px solid rgba(245,158,11,0.22)",
+                background: "var(--surface-elevated)",
+                border: "1px solid var(--border)",
                 borderRadius: 12,
                 padding: "12px 14px",
-                display: "flex",
-                gap: 10,
                 marginBottom: 20,
-                alignItems: "flex-start",
               }}
             >
-              <AlertCircle size={16} color="#FCD34D" style={{ flexShrink: 0, marginTop: 1 }} />
-              <div>
-                <p style={{ fontSize: 13, fontWeight: 600, color: "#FCD34D", marginBottom: 2 }}>
-                  {t("jobDetail.requirementsNotMet")}
-                </p>
-                <p style={{ fontSize: 12, color: "rgba(252,211,77,0.75)", lineHeight: 1.5 }}>
-                  {t("jobDetail.requirementsNotMetBody", {
-                    min: job.minYearsExperience ?? 0,
-                    actual: yearsLabel(seekerYears?.[job.category] ?? null, t),
-                    role: categoryLabel(job.category, t.lang),
-                  })}
-                </p>
-              </div>
+              <p style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.6 }}>
+                {t("jobDetail.experienceNote", {
+                  min: job.minYearsExperience ?? 0,
+                  actual: yearsLabel(seekerYears?.[job.category] ?? null, t),
+                  role: categoryLabel(job.category, t.lang),
+                })}
+              </p>
             </motion.div>
           )}
 
@@ -322,6 +345,7 @@ export default function JobDetailScreen({ job, isEmployer, seekerYears, hasAppli
               </p>
             </motion.section>
           )}
+
 
           {/* Requirements section */}
           {(() => {

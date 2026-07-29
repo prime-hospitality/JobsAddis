@@ -5,17 +5,14 @@ import { motion, AnimatePresence, LazyMotion, domAnimation } from "framer-motion
 import { Search, X, MapPin, Clock, ChevronDown, CheckCircle, ChevronLeft, ChevronRight, Users, Briefcase, Building2 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { Job, JobCategory, JOB_CATEGORIES } from "@/data/jobs";
-import { DEPARTMENTS_WITH_ROLES, ROLES_BY_DEPARTMENT, rolesMatchingKeyword, suggestRoles, normalizeSearchText } from "@/data/job-categories";
-import { LOCATIONS } from "@/data/locations";
+import { DEPARTMENTS_WITH_ROLES, ROLES_BY_DEPARTMENT, rolesMatchingKeyword, suggestRoles } from "@/data/job-categories";
 import { SupabaseJob, mapSupabaseJobToJob, type SeekerYears } from "@/hooks/useJobs";
 import { useBusinessTypes } from "@/hooks/useBusinessTypes";
-import { useJobLocations } from "@/hooks/useJobLocations";
 import EmployerAvatar from "@/components/EmployerAvatar";
 import { useT, useLocale } from "@/lib/i18n";
 import {
   EXPERIENCE_BANDS,
   bandById,
-  type ExperienceBand,
   DATE_OPTIONS,
   DATE_LABELS,
   DEPARTMENT_LABELS,
@@ -23,8 +20,6 @@ import {
   categoryMatches,
   businessTypeLabel,
   businessTypeMatches,
-  locationLabel,
-  locationMatches,
 } from "@/lib/vocabulary";
 
 /** Used when the device tier hasn't reported a page size. */
@@ -385,99 +380,6 @@ function CategoryModal({
   );
 }
 
-// Location Modal
-function LocationModal({
-  isOpen, onClose, options, isLoading, selected, onChange
-}: {
-  isOpen: boolean; onClose: () => void; options: string[]; isLoading: boolean;
-  selected: string[]; onChange: (locations: string[]) => void;
-}) {
-  const t = useT();
-  const { lang } = useLocale();
-  const [search, setSearch] = useState("");
-
-  useEffect(() => {
-    if (!isOpen) setSearch("");
-  }, [isOpen]);
-
-  const toggle = (loc: string) => {
-    if (selected.includes(loc)) onChange(selected.filter(x => x !== loc));
-    else onChange([...selected, loc]);
-  };
-
-  // Areas in data/locations.ts match on their Amharic name and sub-city too;
-  // employer-typed areas absent from that list ("Haile garment", "Joseph Tito
-  // Street") fall back to a plain accent-folded substring test so they stay
-  // findable rather than dropping out of the picker entirely.
-  const filtered = options.filter((o) => {
-    const known = LOCATIONS.find((l) => l.name.toLowerCase() === o.toLowerCase());
-    if (known) return locationMatches(known, search);
-    return normalizeSearchText(o).includes(normalizeSearchText(search));
-  });
-  const showSearch = options.length > 8;
-
-  return (
-    <FilterModal isOpen={isOpen} onClose={onClose} title={t("search.selectLocation")} onUpdate={() => {}}>
-      <div style={{ padding: "16px 20px" }}>
-        {showSearch && (
-          <div style={{ display: "flex", alignItems: "center", gap: 10, background: "var(--app-bg)", border: "1px solid var(--border)", borderRadius: 12, padding: "11px 14px", marginBottom: 16 }}>
-            <Search size={17} color="var(--text-muted)" />
-            <input
-              placeholder={t("search.searchAllLocations")}
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              style={{ border: "none", outline: "none", width: "100%", fontSize: 15, background: "transparent", color: "var(--text-primary)" }}
-            />
-            {search && (
-              <button onClick={() => setSearch("")} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, lineHeight: 0 }}>
-                <X size={15} color="var(--text-muted)" />
-              </button>
-            )}
-          </div>
-        )}
-
-        {isLoading && (
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            {[1, 2, 3].map(i => <div key={i} className="shimmer" style={{ height: 56, borderRadius: 12 }} />)}
-          </div>
-        )}
-
-        {!isLoading && filtered.length === 0 && (
-          <p style={{ textAlign: "center", color: "var(--text-muted)", padding: "24px 0" }}>{t("search.noAreasFound")}</p>
-        )}
-
-        {!isLoading && filtered.length > 0 && (
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            {filtered.map(loc => {
-              const isSelected = selected.includes(loc);
-              return (
-                <button
-                  key={loc}
-                  onClick={() => toggle(loc)}
-                  style={{
-                    width: "100%", padding: "14px 14px", textAlign: "left", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12,
-                    background: isSelected ? "var(--brand-subtle)" : "var(--surface-elevated)",
-                    border: isSelected ? "1px solid var(--brand)" : "1px solid var(--border)",
-                    borderRadius: 12, cursor: "pointer", fontFamily: "inherit",
-                  }}
-                >
-                  <span style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 15, fontWeight: isSelected ? 700 : 500, color: isSelected ? "var(--brand)" : "var(--text-primary)" }}>
-                    <MapPin size={16} color={isSelected ? "var(--brand)" : "var(--text-muted)"} />
-                    {locationLabel(loc, lang)}
-                  </span>
-                  <div style={{ width: 22, height: 22, borderRadius: 6, flexShrink: 0, border: isSelected ? "none" : "2px solid var(--text-muted)", background: isSelected ? "var(--brand)" : "transparent", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    {isSelected && <CheckCircle size={14} color="white" />}
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        )}
-      </div>
-    </FilterModal>
-  );
-}
-
 // Experience Modal
 function ExperienceModal({ 
   isOpen, onClose, selected, onChange 
@@ -569,10 +471,8 @@ export default function SearchScreen({ onJobSelect, seekerYears, seekerCategorie
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
   const [selectedCategories, setSelectedCategories] = useState<JobCategory[]>([]);
   const [selectedExperience, setSelectedExperience] = useState<string[]>([]);
-  const [selectedLocations, setSelectedLocations] = useState<string[]>([]);
   const [postedWithin, setPostedWithin] = useState<string>("Any date");
-  const [activeModal, setActiveModal] = useState<"type" | "category" | "experience" | "location" | "date" | null>(null);
-  const { locations: jobLocations, isLoading: locationsLoading } = useJobLocations();
+  const [activeModal, setActiveModal] = useState<"type" | "category" | "experience" | "date" | null>(null);
   const { types: businessTypes, isLoading: typesLoading } = useBusinessTypes();
   const [results, setResults] = useState<Job[]>([]);
   const [totalCount, setTotalCount] = useState<number | null>(null);
@@ -622,14 +522,13 @@ export default function SearchScreen({ onJobSelect, seekerYears, seekerCategorie
     types: string[],
     cats: JobCategory[],
     exp: string[],
-    locs: string[],
     posted: string,
     nextPage = 0
   ) => {
     const trimmed = kw.trim();
     if (
       !trimmed && types.length === 0 && cats.length === 0 &&
-      exp.length === 0 && locs.length === 0 && posted === "Any date"
+      exp.length === 0 && posted === "Any date"
     ) {
       requestIdRef.current += 1; // cancel anything in flight
       setResults([]);
@@ -685,7 +584,6 @@ export default function SearchScreen({ onJobSelect, seekerYears, seekerCategorie
         p_categories: cats.length ? cats : null,
         p_business_types: types.length ? types : null,
         p_years: years.length ? years : null,
-        p_locations: locs.length ? locs : null,
         p_posted_after: postedAfter,
         p_limit: limit,
         p_offset: nextPage * limit,
@@ -723,7 +621,7 @@ export default function SearchScreen({ onJobSelect, seekerYears, seekerCategorie
       if (isFirstPage && rows.length === 0) {
         const hasFilters =
           types.length > 0 || cats.length > 0 || exp.length > 0 ||
-          locs.length > 0 || posted !== "Any date";
+          posted !== "Any date";
 
         const [rolesRes, unfilteredRes] = await Promise.all([
           supabase.rpc("active_job_categories"),
@@ -768,8 +666,8 @@ export default function SearchScreen({ onJobSelect, seekerYears, seekerCategorie
   }, [limit, t, seekerYearsKey]);
 
   useEffect(() => {
-    doSearch(debouncedQuery, selectedTypes, selectedCategories, selectedExperience, selectedLocations, postedWithin, 0);
-  }, [debouncedQuery, selectedTypes, selectedCategories, selectedExperience, selectedLocations, postedWithin, doSearch]);
+    doSearch(debouncedQuery, selectedTypes, selectedCategories, selectedExperience, postedWithin, 0);
+  }, [debouncedQuery, selectedTypes, selectedCategories, selectedExperience, postedWithin, doSearch]);
 
   // Only consulted by the empty state, but computed here so the render stays
   // declarative. Keyed on the debounced query, not the raw one.
@@ -782,7 +680,7 @@ export default function SearchScreen({ onJobSelect, seekerYears, seekerCategorie
 
   const loadMore = () => {
     if (isLoading || isLoadingMore || !hasMore) return;
-    doSearch(debouncedQuery, selectedTypes, selectedCategories, selectedExperience, selectedLocations, postedWithin, page + 1);
+    doSearch(debouncedQuery, selectedTypes, selectedCategories, selectedExperience, postedWithin, page + 1);
   };
 
   const clearSearch = () => {
@@ -790,7 +688,6 @@ export default function SearchScreen({ onJobSelect, seekerYears, seekerCategorie
     setSelectedTypes([]);
     setSelectedCategories([]);
     setSelectedExperience([]);
-    setSelectedLocations([]);
     setPostedWithin("Any date");
     setResults([]);
     setTotalCount(null);
@@ -803,7 +700,6 @@ export default function SearchScreen({ onJobSelect, seekerYears, seekerCategorie
     selectedTypes.length > 0 ||
     selectedCategories.length > 0 ||
     selectedExperience.length > 0 ||
-    selectedLocations.length > 0 ||
     postedWithin !== "Any date";
 
   const formatSalary = (min: number, max: number, currency: string) => {
@@ -917,8 +813,7 @@ export default function SearchScreen({ onJobSelect, seekerYears, seekerCategorie
                   setSelectedTypes([]);
                   setSelectedCategories([]);
                   setSelectedExperience([]);
-                  setSelectedLocations([]);
-                  setPostedWithin("Any date");
+                                setPostedWithin("Any date");
                 }}
                 style={{
                   display: "flex", alignItems: "center", gap: 4,
@@ -967,21 +862,6 @@ export default function SearchScreen({ onJobSelect, seekerYears, seekerCategorie
               <ChevronDown size={14} />
             </motion.button>
 
-            <motion.button
-              whileTap={{ scale: 0.95 }}
-              onClick={() => setActiveModal("location")}
-              style={{
-                display: "flex", alignItems: "center", gap: 6,
-                padding: "8px 14px", borderRadius: 100,
-                fontSize: 13, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0,
-                background: selectedLocations.length > 0 ? "var(--brand-subtle)" : "var(--surface-elevated)",
-                border: selectedLocations.length > 0 ? "2px solid var(--brand)" : "2px solid #9CA3AF",
-                color: selectedLocations.length > 0 ? "var(--brand)" : "var(--text-primary)",
-              }}
-            >
-              {t("search.locationChip")} {selectedLocations.length > 0 && `(${selectedLocations.length})`}
-              <ChevronDown size={14} />
-            </motion.button>
 
             <motion.button
               whileTap={{ scale: 0.95 }}
@@ -1048,7 +928,7 @@ export default function SearchScreen({ onJobSelect, seekerYears, seekerCategorie
             >
               <p style={{ color: "#FCA5A5", fontSize: 14, marginBottom: 12 }}>{error}</p>
               <button
-                onClick={() => doSearch(query, selectedTypes, selectedCategories, selectedExperience, selectedLocations, postedWithin, 0)}
+                onClick={() => doSearch(query, selectedTypes, selectedCategories, selectedExperience, postedWithin, 0)}
                 style={{ fontSize: 13, fontWeight: 600, color: "var(--brand)", background: "none", border: "none", cursor: "pointer" }}
               >
                 {t("search.tryAgain")}
@@ -1128,8 +1008,7 @@ export default function SearchScreen({ onJobSelect, seekerYears, seekerCategorie
                     setSelectedTypes([]);
                     setSelectedCategories([]);
                     setSelectedExperience([]);
-                    setSelectedLocations([]);
-                    setPostedWithin("Any date");
+                                    setPostedWithin("Any date");
                   }}
                   style={{
                     marginTop: 18, padding: "11px 20px", borderRadius: 100,
@@ -1349,14 +1228,6 @@ export default function SearchScreen({ onJobSelect, seekerYears, seekerCategorie
         isLoading={typesLoading}
         selected={selectedTypes}
         onChange={setSelectedTypes}
-      />
-      <LocationModal
-        isOpen={activeModal === "location"}
-        onClose={() => setActiveModal(null)}
-        options={jobLocations}
-        isLoading={locationsLoading}
-        selected={selectedLocations}
-        onChange={setSelectedLocations}
       />
       <CategoryModal
         isOpen={activeModal === "category"} 
