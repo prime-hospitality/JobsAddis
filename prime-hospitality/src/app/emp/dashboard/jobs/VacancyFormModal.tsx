@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { Save, X, Briefcase, MapPin, CreditCard, ClipboardList, CalendarClock } from "lucide-react";
 import { searchLocations } from "@/data/locations";
 import { VacancyFormState, validateVacancyForm } from "./vacancyShared";
-import { HOTEL_JOB_CATEGORIES, JOB_ROLE_NAMES, detectCategoryFromTitle } from "@/data/job-categories";
+import { HOTEL_JOB_CATEGORIES, JOB_ROLE_NAMES, detectCategoryFromTitle, departmentForRole } from "@/data/job-categories";
 import FilterSelect from "@/components/FilterSelect";
 
 /**
@@ -15,12 +15,17 @@ import FilterSelect from "@/components/FilterSelect";
  * never intersected and the seeker's Category filter matched nothing. Both
  * sides now read the same list; the department is derived from the role.
  *
- * Grouped by department and labelled with the longer descriptive name, since
- * this dropdown has room for it — unlike the seeker's chip grid.
+ * Labelled with the longer descriptive name, with the department on the option's
+ * second line rather than concatenated into the label. The two used to share one
+ * string ("Housekeeper / Room Attendant · Housekeeping & Laundry", 53 chars) in a
+ * control barely 145px wide, so the department was cut off on every option — it
+ * was never once visible. FilterSelect searches `hint` as well as `label`, so
+ * typing a department still finds its roles.
  */
 const ROLE_OPTIONS = HOTEL_JOB_CATEGORIES.map((c) => ({
   value: c.name,
-  label: `${c.fullName ?? c.name} · ${c.department}`,
+  label: c.fullName ?? c.name,
+  hint: c.department,
 }));
 
 /**
@@ -44,14 +49,21 @@ const STYLES = `
   .vfm-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 18px 22px; border-bottom: 1px solid #eef2f7; flex-shrink: 0; }
   .vfm-header-l { display: flex; align-items: center; gap: 13px; min-width: 0; }
   .vfm-header-ico { width: 42px; height: 42px; border-radius: 12px; background: #e6f2fa; border: 1.5px solid #0369a1; color: #0369a1; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-  .vfm-title { font-size: 18px; font-weight: 800; color: #0f172a; letter-spacing: -.02em; margin: 0; line-height: 1.2; }
+  /* Guard only — no header title is long enough today, but both ancestors
+     already carry min-width: 0, so it costs nothing to make it safe. The
+     subtitle below is deliberately left to wrap. */
+  .vfm-title { font-size: 18px; font-weight: 800; color: #0f172a; letter-spacing: -.02em; margin: 0; line-height: 1.2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .vfm-sub { font-size: 12.5px; color: #64748b; margin: 2px 0 0 0; }
   .vfm-close { width: 36px; height: 36px; border-radius: 9px; border: 1px solid #e2e8f0; background: #fff; color: #94a3b8; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all .15s ease; flex-shrink: 0; }
   .vfm-close:hover { background: #f1f5f9; color: #0f172a; }
 
   .vfm-body { flex: 1; overflow-y: auto; padding: 20px 22px; background: #f8fafc; }
   .vfm-cols { display: grid; grid-template-columns: 1fr; gap: 16px; align-items: stretch; }
-  @media (min-width: 860px) { .vfm-cols { grid-template-columns: 340px 1fr; } }
+  /* 360px, not 340: the Application Deadline label plus its "Plan ends …" pill
+     needs ~279px and the pill cannot shrink, so at 340 it wrapped to two lines.
+     Do not push past ~378px — the right panel runs out of room at the 860px
+     breakpoint and overflows. */
+  @media (min-width: 860px) { .vfm-cols { grid-template-columns: 360px 1fr; } }
 
   .vfm-panel { background: #fff; border: 1px solid #e9eef4; border-radius: 14px; padding: 18px; display: flex; flex-direction: column; gap: 18px; }
 
@@ -63,14 +75,21 @@ const STYLES = `
   .vfm-sec-h.green { color: #059669; }
   .vfm-divider { height: 1px; background: #eef2f7; }
 
-  .vfm-field { display: flex; flex-direction: column; gap: 6px; }
-  .vfm-row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  /* min-width: 0 on the field and minmax(0,1fr) on the track are both needed:
+     the first drops the item's content-based minimum, the second drops the
+     track's. Without them a number or date input — whose intrinsic width is
+     ~170px, wider than the ~145px cell this panel allows — expands its own
+     column and squeezes the field beside it. */
+  .vfm-field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+  .vfm-row2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
   .vfm-label { font-size: 12.5px; font-weight: 600; color: #334155; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
   .vfm-req { color: #ef4444; font-weight: 700; }
   .vfm-error-text { font-size: 11.5px; font-weight: 600; color: #dc2626; margin: -2px 0 0; }
 
+  /* min-width: 0 again here, not just on .vfm-field — the publish date and time
+     inputs are bare grid children with no field wrapper to inherit it from. */
   .vfm-input, .vfm-select, .vfm-textarea {
-    width: 100%; background: #fff; border: 1px solid #dbe3ec; border-radius: 10px;
+    width: 100%; min-width: 0; background: #fff; border: 1px solid #dbe3ec; border-radius: 10px;
     padding: 10px 12px; font-size: 13.5px; color: #0f172a; font-family: inherit;
     outline: none; transition: border-color .15s ease, box-shadow .15s ease;
   }
@@ -89,7 +108,12 @@ const STYLES = `
   .vfm-money-cur { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 12px; font-weight: 600; color: #94a3b8; pointer-events: none; }
   .vfm-money .vfm-input { padding-left: 44px; }
 
-  .vfm-seg { display: flex; background: #eef2f7; border: 1px solid #e4e9f0; border-radius: 10px; padding: 3px; gap: 3px; }
+  /* Scrolls rather than truncates: the tabs are nowrap by design ("Requirement
+     Sk…" would be worse than a scroll), but leaving them unscrollable set a
+     ~346px min-content floor that pushed the right panel wider than its track
+     and clipped the salary tabs on narrow screens. */
+  .vfm-seg { display: flex; background: #eef2f7; border: 1px solid #e4e9f0; border-radius: 10px; padding: 3px; gap: 3px; overflow-x: auto; scrollbar-width: none; }
+  .vfm-seg::-webkit-scrollbar { display: none; }
   .vfm-seg-btn { flex: 1; border: none; background: transparent; color: #64748b; font-size: 12px; font-weight: 700; padding: 7px 8px; border-radius: 7px; cursor: pointer; transition: all .15s ease; font-family: inherit; white-space: nowrap; }
   .vfm-seg-btn:hover:not(.active) { color: #334155; }
   .vfm-seg-btn.active { background: #fff; color: #0284c7; box-shadow: 0 1px 2px rgba(16,24,40,0.14); }
@@ -97,13 +121,21 @@ const STYLES = `
   .vfm-seg.inline .vfm-seg-btn { flex: 0 0 auto; padding: 6px 14px; }
 
   .vfm-hint { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: #94a3b8; background: #eef2f7; padding: 2px 8px; border-radius: 999px; flex-shrink: 0; }
+  /* The derived-department pill. Sentence case because "Management &
+     Administration" is ~182px uppercase-with-tracking against ~146px plain, and
+     the label only has ~250px to spare. Blue-on-pale-blue (the .vfm-header-ico
+     pair) marks it as something the system worked out, not an instruction like
+     the grey hints. It shrinks and ellipsises rather than wrapping the label. */
+  .vfm-hint.dept { text-transform: none; letter-spacing: 0; font-size: 10.5px; color: #0369a1; background: #e6f2fa; flex-shrink: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-  .vfm-suggest { position: absolute; top: 100%; left: 0; right: 0; margin-top: 6px; background: #fff; border: 1px solid #e6ebf2; border-radius: 10px; box-shadow: 0 14px 34px -12px rgba(15,23,42,0.28); z-index: 60; max-height: 224px; overflow-y: auto; }
+  .vfm-suggest { position: absolute; top: 100%; left: 0; right: 0; margin-top: 6px; background: #fff; border: 1px solid #e6ebf2; border-radius: 10px; box-shadow: 0 14px 34px -12px rgba(15,23,42,0.28); z-index: 60; max-height: 224px; overflow-y: auto; overflow-x: hidden; }
   .vfm-suggest-item { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 9px 12px; border: none; border-bottom: 1px solid #f1f5f9; background: #fff; cursor: pointer; text-align: left; font-family: inherit; transition: background .12s ease; }
   .vfm-suggest-item:last-child { border-bottom: none; }
   .vfm-suggest-item:hover { background: #f0f9ff; }
-  .vfm-suggest-name { font-size: 13px; font-weight: 600; color: #0f172a; }
-  .vfm-suggest-meta { font-size: 11px; color: #94a3b8; background: #f1f5f9; padding: 1px 8px; border-radius: 999px; white-space: nowrap; }
+  /* flex-basis auto, not 0, so a long name and a long sub-city label shrink in
+     proportion instead of the name collapsing first. */
+  .vfm-suggest-name { font-size: 13px; font-weight: 600; color: #0f172a; flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .vfm-suggest-meta { font-size: 11px; color: #94a3b8; background: #f1f5f9; padding: 1px 8px; border-radius: 999px; white-space: nowrap; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 
   .vfm-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 22px; border-top: 1px solid #eef2f7; background: #fff; flex-shrink: 0; }
   .vfm-foot-note { font-size: 12px; color: #94a3b8; }
@@ -165,8 +197,18 @@ export default function VacancyFormModal({
   // selectable so opening an old job for edit doesn't silently reassign it.
   const roleOptions =
     value.job_category && !JOB_ROLE_NAMES.includes(value.job_category)
-      ? [{ value: value.job_category, label: `${value.job_category} (legacy)` }, ...ROLE_OPTIONS]
+      ? [
+          { value: value.job_category, label: `${value.job_category} (legacy)`, hint: "No longer in the role list" },
+          ...ROLE_OPTIONS,
+        ]
       : ROLE_OPTIONS;
+
+  // The department is derived from the role, never chosen — show it beside the
+  // label so the employer can confirm it without opening the menu. Suppressed
+  // when it would only echo the role ("Other" sits in the "Other" department)
+  // and for legacy values, which resolve to null.
+  const roleDepartment = departmentForRole(value.job_category);
+  const showRoleDepartment = roleDepartment && roleDepartment !== value.job_category;
 
   const set = (patch: Partial<VacancyFormState>) => {
     onChange({ ...value, ...patch });
@@ -228,20 +270,32 @@ export default function VacancyFormModal({
                   {fieldErrors.title && <p className="vfm-error-text">{fieldErrors.title}</p>}
                 </div>
 
+                {/* Job Role gets the full panel width: its options run to ~28
+                    characters, which no half-width cell can show. */}
+                <div className="vfm-field">
+                  <label className="vfm-label">
+                    <span>Job Role</span>
+                    {showRoleDepartment && (
+                      <span className="vfm-hint dept" title={roleDepartment}>{roleDepartment}</span>
+                    )}
+                  </label>
+                  <FilterSelect
+                    value={value.job_category}
+                    onChange={(v) => set({ job_category: v })}
+                    fullWidth
+                    minWidth={0}
+                    searchable
+                    // Taller than the other selects because these options carry a
+                    // second line for the department, so each row is ~50px not ~33px.
+                    maxMenuHeight={264}
+                    ariaLabel="Job role"
+                    options={roleOptions}
+                  />
+                </div>
+
+                {/* Paired because both are short fixed lists in the same control,
+                    so they fit a half-width cell and read as a matched set. */}
                 <div className="vfm-row2">
-                  <div className="vfm-field">
-                    <label className="vfm-label">Job Role</label>
-                    <FilterSelect
-                      value={value.job_category}
-                      onChange={(v) => set({ job_category: v })}
-                      fullWidth
-                      minWidth={0}
-                      searchable
-                      maxMenuHeight={224}
-                      ariaLabel="Job role"
-                      options={roleOptions}
-                    />
-                  </div>
                   <div className="vfm-field">
                     <label className="vfm-label">Employment Type</label>
                     <FilterSelect
@@ -257,20 +311,6 @@ export default function VacancyFormModal({
                       options={["Full Time", "Part Time", "Contract", "Internship", "Freelance"].map((v) => ({ value: v, label: v }))}
                     />
                   </div>
-                </div>
-
-                <div className="vfm-row2">
-                  <div className="vfm-field">
-                    <label className="vfm-label">No. of Openings</label>
-                    <input
-                      className="vfm-input"
-                      type="number"
-                      min={1}
-                      value={value.quantity}
-                      onChange={(e) => set({ quantity: Math.max(1, Number(e.target.value)) })}
-                      placeholder="1"
-                    />
-                  </div>
                   <div className="vfm-field">
                     <label className="vfm-label">Experience</label>
                     <FilterSelect
@@ -284,6 +324,21 @@ export default function VacancyFormModal({
                       options={["Entry level", "Junior", "Intermediate", "Senior", "Expert"].map((v) => ({ value: v, label: v }))}
                     />
                   </div>
+                </div>
+
+                <div className="vfm-field">
+                  <label className="vfm-label">No. of Openings</label>
+                  <input
+                    className="vfm-input"
+                    type="number"
+                    min={1}
+                    value={value.quantity}
+                    onChange={(e) => set({ quantity: Math.max(1, Number(e.target.value)) })}
+                    placeholder="1"
+                    // A full-bleed number field reads as an empty trough; this is
+                    // the width the value actually needs.
+                    style={{ maxWidth: 132 }}
+                  />
                 </div>
 
                 <div className="vfm-field" style={{ position: "relative" }}>
