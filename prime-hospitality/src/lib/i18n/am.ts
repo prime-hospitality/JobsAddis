@@ -29,6 +29,17 @@ export const am: DeepPartial<Catalog> = {
     loading: "በመጫን ላይ…",
   },
 
+  experience: {
+    none: "ልምድ የለም",
+    year: "{years} ዓመት",
+    years: "{years} ዓመታት",
+    yearsPlus: "{years}+ ዓመታት",
+    notSpecified: "አልተገለጸም",
+    anyExperience: "ማንኛውም ልምድ",
+    earnedAt: "ይህን ልምድ የት አገኙት?",
+    earnedAtShort: "የሥራ ቦታ ዓይነት",
+  },
+
   jobDetail: {
     header: "የሥራ ዝርዝር",
     labels: {
@@ -48,9 +59,9 @@ export const am: DeepPartial<Catalog> = {
     salaryRange: "{min}–{max} ብር/ወር",
     openingsCount: "{count} ክፍት ቦታ",
     openingsCountPlural: "{count} ክፍት ቦታዎች",
-    requirementsNotMet: "መስፈርቶቹን ሙሉ በሙሉ አላሟሉም",
+    requirementsNotMet: "ተጨማሪ ልምድ ይጠይቃል",
     requirementsNotMetBody:
-      "ይህ ሥራ {experience} የሥራ ልምድ ይጠይቃል። አሁንም ማመልከት ይችላሉ — ቀጣሪዎች ብቁ አመልካቾችን ሊመለከቱ ይችላሉ።",
+      "ይህ ሥራ {min}+ ዓመታት ይጠይቃል። መገለጫዎ በ{role} {actual} ያሳያል። አሁንም ማመልከት ይችላሉ።",
     aboutHeading: "ስለዚህ ሥራ",
     requirementsHeading: "መስፈርቶች",
     postedAndHiring: "የተለጠፈው {when} · በንቃት እየቀጠሩ ነው",
@@ -60,7 +71,7 @@ export const am: DeepPartial<Catalog> = {
   },
 
   jobCard: {
-    requirementsNotMet: "መስፈርቶቹን አላሟሉም",
+    requirementsNotMet: "{min}+ ዓመት ይጠይቃል",
   },
 
   notificationPanel: {
@@ -118,7 +129,7 @@ export const am: DeepPartial<Catalog> = {
       personal: "የግል መረጃ አልተሟላም",
       contact: "የስልክ ቁጥር አልተጋራም",
       roles: "ምንም የሥራ ዘርፍ አልተመረጠም",
-      experience: "የልምድ ደረጃ አልተቀመጠም",
+      experience: "የሥራ ልምድ ዓመታት አልተቀመጠም",
       cv: "ሲቪ አልተጫነም",
     },
 
@@ -165,17 +176,9 @@ export const am: DeepPartial<Catalog> = {
     maxThreeRoles: "እስከ 3 የሥራ ዘርፎች ብቻ መምረጥ ይችላሉ።",
     saving: "በማስቀመጥ ላይ...",
     saveChanges: "ለውጦችን አስቀምጥ",
-    selectExperienceForRole: "ለዚህ ሥራ የልምድ ደረጃዎን ይምረጡ።",
-    pickExperience: "እባክዎ የልምድ ደረጃ ይምረጡ።",
+    selectExperienceForRole: "በዚህ ሥራ ስንት ዓመት ሠርተዋል?",
+    pickExperience: "እባክዎ የዓመታት ብዛት ይምረጡ።",
     updateExperience: "ልምድ አዘምን",
-    experience: {
-      entry: "የመጀመሪያ ደረጃ (አዲስ ተመራቂ)",
-      junior: "ጀማሪ ደረጃ (1-3 ዓመት)",
-      mid: "መካከለኛ ደረጃ (3-5 ዓመት)",
-      senior: "ከፍተኛ (5-8 ዓመት)",
-      executive: "ሥራ አስፈጻሚ (ምክትል ፕሬዝዳንት፣ ዳይሬክተር)",
-      seniorExecutive: "ከፍተኛ ሥራ አስፈጻሚ (C ደረጃ)",
-    },
     searchLocation: "አካባቢ ይፈልጉ...",
     noLocationsFound: "ምንም አካባቢ አልተገኘም።",
     saveLocation: "አካባቢ አስቀምጥ",
@@ -235,16 +238,10 @@ export const am: DeepPartial<Catalog> = {
     shareNo: "አይ፣ ሚስጥር ይሁን",
     shareNoHint: "በመተግበሪያው በኩል ብቻ ይገናኙዎታል",
 
-    step3Title: "የሥራ ልምድ ደረጃዎ ምንድን ነው?",
-    step3Subtitle: "ለመረጡት ለእያንዳንዱ ሥራ ይምረጡ።",
-    selectExperience: "የልምድ ደረጃ ይምረጡ…",
-    experience: {
-      none: "ልምድ የለኝም",
-      lessThanOne: "ከ1 ዓመት በታች",
-      oneToTwo: "ከ1 እስከ 2 ዓመት",
-      threeToFive: "ከ3 እስከ 5 ዓመት",
-      fivePlus: "ከ5 ዓመት በላይ",
-    },
+    step3Title: "ስንት ዓመት ሠርተዋል?",
+    step3Subtitle:
+      "ለእያንዳንዱ ሥራ የዓመታት ብዛት ይስጡ። የሥራ መጠሪያዎች ከቦታ ቦታ ስለሚለያዩ ዓመታትን እንጠይቃለን።",
+    selectExperience: "ዓመታት ይምረጡ…",
 
     step4Title: "ስለ እርስዎ ጥቂት ይንገሩን",
     fullName: "ሙሉ ስም",
@@ -290,7 +287,7 @@ export const am: DeepPartial<Catalog> = {
     clear: "አጽዳ",
     typeChip: "ዓይነት",
     categoryChip: "ዘርፍ",
-    experienceChip: "የሥራ ልምድ ደረጃ",
+    experienceChip: "የሥራ ልምድ",
     postedWithinChip: "የተለጠፈበት ጊዜ",
     updateResults: "ውጤቶችን አዘምን",
     selectType: "የድርጅት ዓይነት ይምረጡ",
@@ -316,11 +313,10 @@ export const am: DeepPartial<Catalog> = {
     loadingMore: "በመጫን ላይ…",
     failed: "ፍለጋው አልተሳካም። እባክዎ እንደገና ይሞክሩ።",
     experience: {
-      entry: "የመነሻ ደረጃ",
-      junior: "ጀማሪ",
-      intermediate: "መካከለኛ",
-      senior: "ከፍተኛ",
-      expert: "ባለሙያ",
+      none: "ልምድ አያስፈልግም",
+      oneToTwo: "1–2 ዓመታት",
+      threeToFive: "3–5 ዓመታት",
+      sixPlus: "6+ ዓመታት",
     },
     date: {
       any: "ማንኛውም ቀን",
@@ -366,8 +362,8 @@ export const am: DeepPartial<Catalog> = {
     maxSelected: "ከፍተኛው 3 ዘርፎች ተመርጠዋል",
     noResults: "ምንም ውጤት የለም",
     maxReached: "ገደቡ ደርሷል",
-    experienceLevel: "የሥራ ልምድ ደረጃ",
-    anyLevel: "ማንኛውም ደረጃ",
+    experienceLevel: "እስከዚህ ዓመት የሚጠይቁ ሥራዎችን ብቻ አሳውቀኝ",
+    anyLevel: "ማንኛውም መጠን",
     saving: "በማስቀመጥ ላይ…",
     saved: "ተቀምጧል!",
     savePreferences: "ምርጫዎችን አስቀምጥ",
@@ -400,7 +396,7 @@ export const am: DeepPartial<Catalog> = {
     yourInformation: "የእርስዎ መረጃ",
     fullName: "ሙሉ ስም",
     phoneNumber: "ስልክ ቁጥር",
-    experienceLevel: "የሥራ ልምድ ደረጃ",
+    experienceLevel: "የሥራ ልምድ",
     location: "ቦታ",
     locationValue: "{neighborhood}, አዲስ አበባ",
     locationMismatch: "⚠️ አይዛመድም",

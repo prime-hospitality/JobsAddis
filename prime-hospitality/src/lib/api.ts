@@ -122,7 +122,8 @@ export interface CreateProfileParams {
     contactShared: boolean | null;
     phoneNumber: string;
     selectedCategories: string[];
-    experienceLevels: Record<string, string>;
+    experienceYears: Record<string, number>;
+    experienceContext: Record<string, string>;
   };
   cvUrl: string | null;
 }
@@ -558,14 +559,15 @@ export async function updateEmployerTemplate(
 // ---------------------------------------------------------------------------
 // Action: Update alert categories for vacancy subscriptions
 // ---------------------------------------------------------------------------
+/** `maxYears` caps how much experience an alerted job may ask for; null = any. */
 export async function updateAlertCategories(
   initData: string | null,
   categories: string[],
-  experienceLevel: string | null
+  maxYears: number | null
 ): Promise<{ success: boolean; message: string }> {
   return callEdgeFunction(initData, {
     action: "update_alert_categories",
     categories,
-    experience_level: experienceLevel,
+    max_years: maxYears,
   });
 }

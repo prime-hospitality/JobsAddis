@@ -17,7 +17,10 @@ export interface VacancyFormState {
   salary_type: string;
   salary_min: number | null;
   salary_max: number | null;
-  experience_required: string;
+  /** Minimum whole years asked for. null = no minimum stated, which reads as
+   *  "any" everywhere rather than as zero. Stored on its own `jobs` column,
+   *  not inside `requirements`, so the search filter can range-query it. */
+  min_years_experience: number | null;
   experience_template: string;
   responsibilities_template: string;
   benefits_template: string;
@@ -37,7 +40,7 @@ export function emptyVacancyForm(): VacancyFormState {
     salary_type: "fixed",
     salary_min: null,
     salary_max: null,
-    experience_required: "Entry level",
+    min_years_experience: 0,
     experience_template: "",
     responsibilities_template: "",
     benefits_template: "",
@@ -47,22 +50,50 @@ export function emptyVacancyForm(): VacancyFormState {
   };
 }
 
+/** Upper bound on a stored year count. Mirrors MAX_YEARS_INPUT in src/lib/vocabulary.ts. */
+export const MAX_YEARS_INPUT = 50;
+
+/**
+ * Coerces form/DB input to a whole year count, or null when unusable.
+ *
+ * Duplicated from clampYears() in src/lib/vocabulary.ts rather than imported,
+ * because this file is mirrored verbatim into supabase/functions/_shared/vacancy.ts
+ * for Deno, which cannot resolve the `@/` alias.
+ */
+export function coerceYears(value: unknown): number | null {
+  if (value === null || value === undefined || value === "") return null;
+  const n = Math.floor(Number(value));
+  if (!Number.isFinite(n) || n < 0) return null;
+  return Math.min(n, MAX_YEARS_INPUT);
+}
+
 export interface VacancyFormErrors {
   title?: string;
   description_template?: string;
   deadline?: string;
+  min_years_experience?: string;
 }
 
 /** Single source of truth for job-form validation, shared by the employer
  *  and admin dashboards (both the client-side modal and every server action
  *  that persists a VacancyFormState). */
 export function validateVacancyForm(
-  form: Pick<VacancyFormState, "title" | "description_template" | "deadline">,
+  form: Pick<VacancyFormState, "title" | "description_template" | "deadline"> &
+    Partial<Pick<VacancyFormState, "min_years_experience">>,
   opts?: { requireDeadline?: boolean; maxDeadline?: string | null }
 ): VacancyFormErrors | null {
   const errors: VacancyFormErrors = {};
   if (!form.title?.trim()) errors.title = "Job Title is required.";
   if (!form.description_template?.trim()) errors.description_template = "Job Description is required.";
+
+  // Blank means "no minimum stated" and is fine; a value that is present but
+  // nonsensical is not. Catches typos like 200 before they reach the column.
+  const years = form.min_years_experience;
+  if (years != null) {
+    if (!Number.isFinite(years) || years < 0 || years > MAX_YEARS_INPUT) {
+      errors.min_years_experience = `Years of experience must be between 0 and ${MAX_YEARS_INPUT}.`;
+    }
+  }
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -165,9 +196,10 @@ export function inferSalaryType(salary_min: number | null | undefined): "fixed" 
   return "fixed";
 }
 
-export function buildRequirementsJson(form: Pick<VacancyFormState, "experience_required" | "education_requirements">) {
+/** Experience is deliberately absent: it now lives on `jobs.min_years_experience`
+ *  as a real integer column. This jsonb keeps only the free-text fields. */
+export function buildRequirementsJson(form: Pick<VacancyFormState, "education_requirements">) {
   return {
-    experience: form.experience_required || "Entry Level",
     education: form.education_requirements || "",
     languages: [] as string[],
     locationPreference: null as string | null,
@@ -190,7 +222,7 @@ export function jobRowToForm(job: any): VacancyFormState {
     salary_type: inferSalaryType(job.salary_min),
     salary_min: job.salary_min != null && job.salary_min >= 0 ? job.salary_min : null,
     salary_max: job.salary_max != null && job.salary_max >= 0 ? job.salary_max : null,
-    experience_required: requirements.experience || "Entry level",
+    min_years_experience: coerceYears(job.min_years_experience),
     experience_template: split.experience_template,
     responsibilities_template: split.responsibilities_template,
     benefits_template: split.benefits_template,
@@ -213,7 +245,7 @@ export function templateRowToForm(tpl: any): VacancyFormState {
     salary_type: tpl.salary_type || "fixed",
     salary_min: tpl.salary_min,
     salary_max: tpl.salary_max,
-    experience_required: tpl.experience_required || "Entry level",
+    min_years_experience: coerceYears(tpl.min_years_experience),
     experience_template: tpl.experience_template || "",
     responsibilities_template: tpl.responsibilities_template || "",
     benefits_template: tpl.benefits_template || "",

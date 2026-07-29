@@ -10,13 +10,13 @@ import { useTelegram } from "@/hooks/useTelegram";
 import { supabase } from "@/lib/supabase";
 import { useT, useLocale, LANGS, LANG_LABELS } from "@/lib/i18n";
 import {
-  ONBOARDING_EXPERIENCE_OPTIONS as EXPERIENCE_OPTIONS,
-  ONBOARDING_EXPERIENCE_LABELS as EXPERIENCE_LABELS,
   categoryLabel,
   locationLabel,
   subCityLabel,
   locationMatches,
 } from "@/lib/vocabulary";
+import { useBusinessTypes } from "@/hooks/useBusinessTypes";
+import YearsPicker from "@/components/YearsPicker";
 
 // --- Types ---
 interface StepProps {
@@ -551,115 +551,6 @@ function Step2_Contact({ state, updateState, onNext, config }: StepProps) {
   );
 }
 
-// --- Step 3: Experience Level ---
-
-
-function CustomDropdown({ label, value, options, onSelect }: { label: string; value: string; options: string[]; onSelect: (val: string) => void }) {
-  const t = useT();
-  const [isOpen, setIsOpen] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handleOutside = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setIsOpen(false);
-      }
-    };
-    if (isOpen) {
-      document.addEventListener("mousedown", handleOutside);
-    }
-    return () => document.removeEventListener("mousedown", handleOutside);
-  }, [isOpen]);
-
-  return (
-    <div ref={containerRef} style={{ position: "relative" }}>
-      <label style={{
-        display: "block", fontSize: 13, fontWeight: 700,
-        color: "var(--brand)", marginBottom: 8,
-        textTransform: "uppercase", letterSpacing: "0.04em"
-      }}>
-        {label}
-      </label>
-      <motion.button
-        whileTap={{ scale: 0.98 }}
-        onClick={() => setIsOpen(!isOpen)}
-        style={{
-          width: "100%",
-          padding: "14px 16px",
-          borderRadius: 12,
-          border: value ? "1.5px solid var(--brand)" : "1px solid var(--border)",
-          background: value ? "rgba(34,197,94,0.06)" : "var(--card)",
-          color: value ? "var(--text-primary)" : "var(--text-muted)",
-          fontSize: 15,
-          fontWeight: value ? 600 : 400,
-          textAlign: "left",
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          cursor: "pointer",
-          boxShadow: "0 2px 8px rgba(0,0,0,0.02)",
-        }}
-      >
-        {value ? (EXPERIENCE_LABELS[value] ? t(EXPERIENCE_LABELS[value]) : value) : t("onboarding.selectExperience")}
-        <motion.div animate={{ rotate: isOpen ? 180 : 0 }}>
-          <ChevronDown size={18} color={value ? "var(--brand)" : "var(--text-muted)"} />
-        </motion.div>
-      </motion.button>
-
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: -10, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -10, scale: 0.95 }}
-            transition={{ type: "spring", stiffness: 400, damping: 30 }}
-            style={{
-              position: "absolute",
-              top: "100%",
-              left: 0,
-              right: 0,
-              marginTop: 8,
-              background: "var(--surface-elevated)",
-              borderRadius: 12,
-              border: "1px solid var(--border)",
-              boxShadow: "0 12px 32px rgba(0,0,0,0.12)",
-              zIndex: 100,
-              overflow: "hidden",
-              display: "flex",
-              flexDirection: "column",
-            }}
-          >
-            {options.map((opt, i) => (
-              <button
-                key={opt}
-                onClick={() => {
-                  onSelect(opt);
-                  setIsOpen(false);
-                }}
-                style={{
-                  padding: "14px 16px",
-                  textAlign: "left",
-                  fontSize: 15,
-                  fontWeight: 500,
-                  color: value === opt ? "var(--brand)" : "var(--text-primary)",
-                  background: value === opt ? "rgba(34,197,94,0.06)" : "transparent",
-                  borderBottom: i < options.length - 1 ? "1px solid var(--border)" : "none",
-                  cursor: "pointer",
-                  transition: "background 0.2s",
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.background = value === opt ? "rgba(34,197,94,0.06)" : "var(--card-hover)")}
-                onMouseLeave={(e) => (e.currentTarget.style.background = value === opt ? "rgba(34,197,94,0.06)" : "transparent")}
-              >
-                {EXPERIENCE_LABELS[opt] ? t(EXPERIENCE_LABELS[opt]) : opt}
-              </button>
-            ))}
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
-  );
-}
-
 function SearchableLocationDropdown({ value, onSelect }: { value: string; onSelect: (val: string) => void }) {
   const t = useT();
   const [isOpen, setIsOpen] = useState(false);
@@ -814,20 +705,27 @@ function SearchableLocationDropdown({ value, onSelect }: { value: string; onSele
 
 function Step3_Experience({ state, updateState, onNext, config }: StepProps) {
   const t = useT();
-  let EXPERIENCES = [...EXPERIENCE_OPTIONS];
-  try {
-    if (config?.step3_experience_levels) {
-      EXPERIENCES = JSON.parse(config.step3_experience_levels);
-    }
-  } catch (e) {}
+  const { lang } = useLocale();
+  const { types: establishmentTypes } = useBusinessTypes();
 
-  const handleSelect = (category: string, level: string) => {
+  const handleYears = (category: string, years: number) => {
     updateState({
-      experienceLevels: { ...state.experienceLevels, [category]: level }
+      experienceYears: { ...state.experienceYears, [category]: years },
     });
   };
 
-  const allSelected = state.selectedCategories.every(cat => state.experienceLevels[cat]);
+  const handleContext = (category: string, context: string) => {
+    const next = { ...state.experienceContext };
+    if (context) next[category] = context;
+    else delete next[category];
+    updateState({ experienceContext: next });
+  };
+
+  // Only the year count gates the step. Where it was earned is useful context
+  // for employers, not something to hold a seeker's onboarding hostage to.
+  const allSelected = state.selectedCategories.every(
+    (cat) => state.experienceYears[cat] != null
+  );
 
   return (
     <div style={{ padding: "130px 20px 40px", flex: 1, display: "flex", flexDirection: "column" }}>
@@ -838,14 +736,17 @@ function Step3_Experience({ state, updateState, onNext, config }: StepProps) {
         {config?.step3_subtitle || t("onboarding.step3Subtitle")}
       </p>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 16, marginBottom: "auto" }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 24, marginBottom: "auto" }}>
         {state.selectedCategories.map(cat => (
-          <CustomDropdown
+          <YearsPicker
             key={cat}
-            label={cat}
-            value={state.experienceLevels[cat] || ""}
-            options={EXPERIENCES}
-            onSelect={(val) => handleSelect(cat, val)}
+            role={cat}
+            roleLabel={categoryLabel(cat, lang)}
+            years={state.experienceYears[cat] ?? null}
+            context={state.experienceContext[cat] ?? ""}
+            establishmentTypes={establishmentTypes}
+            onYearsChange={handleYears}
+            onContextChange={handleContext}
           />
         ))}
       </div>

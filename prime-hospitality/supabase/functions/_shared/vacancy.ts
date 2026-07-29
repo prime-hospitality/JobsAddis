@@ -33,7 +33,10 @@ export interface VacancyFormState {
   salary_type: string;
   salary_min: number | null;
   salary_max: number | null;
-  experience_required: string;
+  /** Minimum whole years asked for. null = no minimum stated, which reads as
+   *  "any" everywhere rather than as zero. Stored on `jobs.min_years_experience`,
+   *  not inside `requirements`, so the search filter can range-query it. */
+  min_years_experience: number | null;
   experience_template: string;
   responsibilities_template: string;
   benefits_template: string;
@@ -47,6 +50,18 @@ export interface VacancyFormState {
 function stripTags(text: unknown): string {
   if (typeof text !== "string") return "";
   return text.replace(/<[^>]*>?/gm, "");
+}
+
+/** Upper bound on a stored year count. Mirrors MAX_YEARS_INPUT in vacancyShared.ts. */
+export const MAX_YEARS_INPUT = 50;
+
+/** Coerces untrusted input to a whole year count, or null when unusable.
+ *  Mirrors coerceYears() in vacancyShared.ts. */
+export function coerceYears(value: unknown): number | null {
+  if (value === null || value === undefined || value === "") return null;
+  const n = Math.floor(Number(value));
+  if (!Number.isFinite(n) || n < 0) return null;
+  return Math.min(n, MAX_YEARS_INPUT);
 }
 
 /** Coerces an untrusted JSON payload into a VacancyFormState, sanitizing every
@@ -69,7 +84,7 @@ export function coerceVacancyForm(raw: Record<string, unknown> | null | undefine
     salary_type: stripTags(r.salary_type).trim() || "fixed",
     salary_min: num(r.salary_min),
     salary_max: num(r.salary_max),
-    experience_required: stripTags(r.experience_required).trim() || "Entry level",
+    min_years_experience: coerceYears(r.min_years_experience),
     experience_template: stripTags(r.experience_template),
     responsibilities_template: stripTags(r.responsibilities_template),
     benefits_template: stripTags(r.benefits_template),
@@ -125,9 +140,10 @@ export function resolveSalary(form: { salary_type?: string | null; salary_min?: 
   return { salary_min, salary_max };
 }
 
-export function buildRequirementsJson(form: { experience_required?: string | null; education_requirements?: string | null }) {
+/** Experience is deliberately absent: it now lives on `jobs.min_years_experience`
+ *  as a real integer column. This jsonb keeps only the free-text fields. */
+export function buildRequirementsJson(form: { education_requirements?: string | null }) {
   return {
-    experience: form.experience_required || "Entry Level",
     education: form.education_requirements || "",
     languages: [] as string[],
     locationPreference: null as string | null,
@@ -141,11 +157,19 @@ export function buildRequirementsJson(form: { experience_required?: string | nul
  *  validateVacancyForm() in vacancyShared.ts. Returns the first problem as a
  *  user-facing sentence, or null when the form is good. */
 export function validateVacancyForm(
-  form: Pick<VacancyFormState, "title" | "description_template" | "deadline">,
+  form: Pick<VacancyFormState, "title" | "description_template" | "deadline"> &
+    Partial<Pick<VacancyFormState, "min_years_experience">>,
   opts?: { requireDeadline?: boolean; maxDeadline?: string | null },
 ): string | null {
   if (!form.title?.trim()) return "Job Title is required.";
   if (!form.description_template?.trim()) return "Job Description is required.";
+
+  // Blank means "no minimum stated" and is fine; a value that is present but
+  // nonsensical is not. Catches typos like 200 before they reach the column.
+  const years = form.min_years_experience;
+  if (years != null && (!Number.isFinite(years) || years < 0 || years > MAX_YEARS_INPUT)) {
+    return `Years of experience must be between 0 and ${MAX_YEARS_INPUT}.`;
+  }
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);

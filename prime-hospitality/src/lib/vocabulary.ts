@@ -1,4 +1,4 @@
-import type { Lang, TKey } from "@/lib/i18n";
+import type { Lang, TKey, Translate } from "@/lib/i18n";
 import { LOCATIONS, SUB_CITIES } from "@/data/locations";
 import { HOTEL_JOB_CATEGORIES, roleByName } from "@/data/job-categories";
 
@@ -9,71 +9,147 @@ import { HOTEL_JOB_CATEGORIES, roleByName } from "@/data/job-categories";
  */
 
 /**
- * The experience scale the search filter queries against.
+ * Experience is a count of years, never a seniority label.
  *
- * These are exactly the values the employer post form writes to
- * `jobs.requirements->>'experience'` (see VacancyFormModal's Experience
- * select). They have to match character-for-character — the filter is a
- * straight `in()` against that column, so a seeker-only wording like
- * "Junior Level(1-3 years)" would match nothing.
+ * Hospitality titles are relative to the property that awarded them: two years
+ * at a large hotel is that hotel's "junior", and those same two years are a
+ * manager-grade hire at a small restaurant. A label therefore stops meaning
+ * anything the moment it leaves the employer who wrote it, while a year count
+ * travels intact. So we store the fact and let each employer apply their own
+ * judgement to it.
  *
- * Distinct from PROFILE_EXPERIENCE_OPTIONS below: that one describes how much
- * experience the *seeker* has, this one describes what the *job* asks for.
+ * Seeker side: `profiles.experience_years` maps role -> years, with
+ * `profiles.experience_context` mapping role -> the kind of establishment those
+ * years were earned at, because a year at a hotel and a year at a kiosk are
+ * different facts. Job side: `jobs.min_years_experience` is the minimum asked
+ * for. Both are plain integers, so every comparison in the app is numeric.
  */
-export const JOB_EXPERIENCE_OPTIONS = [
-  "Entry level",
-  "Junior",
-  "Intermediate",
-  "Senior",
-  "Expert",
+
+/** Top of the seeker picker; stored as-is and rendered open-ended ("10+"). */
+export const MAX_YEARS = 10;
+
+/** Upper bound accepted from the employer form, to reject typos like 200. */
+export const MAX_YEARS_INPUT = 50;
+
+/** The chip row a seeker taps, one per selected role. */
+export const YEARS_OPTIONS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, MAX_YEARS];
+
+/**
+ * Renders a year count. The single place a number turns into words — keep it
+ * that way, so "10+" and the singular/plural split can never disagree between
+ * two screens the way the old label lists did.
+ */
+export function yearsLabel(years: number | null | undefined, t: Translate): string {
+  if (years == null) return t("experience.notSpecified");
+  if (years <= 0) return t("experience.none");
+  if (years >= MAX_YEARS) return t("experience.yearsPlus", { years: MAX_YEARS });
+  if (years === 1) return t("experience.year", { years });
+  return t("experience.years", { years });
+}
+
+/** What a job asks for, e.g. "3+ years". */
+export function minYearsLabel(years: number | null | undefined, t: Translate): string {
+  if (years == null) return t("experience.anyExperience");
+  if (years <= 0) return t("experience.none");
+  return t("experience.yearsPlus", { years });
+}
+
+/**
+ * Search filter buckets over `jobs.min_years_experience`. `max` is inclusive;
+ * the open-ended band uses MAX_YEARS_INPUT rather than Infinity so it can go
+ * straight into a PostgREST range filter.
+ */
+export interface ExperienceBand {
+  id: string;
+  min: number;
+  max: number;
+  labelKey: TKey;
+}
+
+export const EXPERIENCE_BANDS: ExperienceBand[] = [
+  { id: "0", min: 0, max: 0, labelKey: "search.experience.none" },
+  { id: "1-2", min: 1, max: 2, labelKey: "search.experience.oneToTwo" },
+  { id: "3-5", min: 3, max: 5, labelKey: "search.experience.threeToFive" },
+  { id: "6+", min: 6, max: MAX_YEARS_INPUT, labelKey: "search.experience.sixPlus" },
 ];
 
-export const JOB_EXPERIENCE_LABELS: Record<string, TKey> = {
-  "Entry level": "search.experience.entry",
-  "Junior": "search.experience.junior",
-  "Intermediate": "search.experience.intermediate",
-  "Senior": "search.experience.senior",
-  "Expert": "search.experience.expert",
+export function bandById(id: string): ExperienceBand | undefined {
+  return EXPERIENCE_BANDS.find((b) => b.id === id);
+}
+
+/**
+ * Whether a seeker's years clear a job's minimum.
+ *
+ * Unknown on either side is deliberately *not* a failure: a seeker who has not
+ * filled in that role yet, or a job that never stated a minimum, must read as
+ * neutral. Treating unknown as zero would open a fresh profile onto a wall of
+ * "requirements not met" warnings.
+ *
+ * The result is advisory only — nothing in the app blocks an application on it,
+ * which is the point: the whole reason for counting years is that one property's
+ * yardstick should not decide who may apply somewhere else.
+ */
+export function meetsExperience(
+  seekerYears: number | null | undefined,
+  jobMinYears: number | null | undefined
+): boolean {
+  if (seekerYears == null || jobMinYears == null) return true;
+  return seekerYears >= jobMinYears;
+}
+
+/** Coerces form/API input to a stored year count, or null when unusable. */
+export function clampYears(value: unknown): number | null {
+  if (value === null || value === undefined || value === "") return null;
+  const n = Math.floor(Number(value));
+  if (!Number.isFinite(n) || n < 0) return null;
+  return Math.min(n, MAX_YEARS_INPUT);
+}
+
+/**
+ * Conservative floor mapping from the four legacy label scales to years.
+ *
+ * Every label maps to the *lowest* year count it could have meant, so the
+ * migration can never exclude someone from a job they actually qualify for.
+ * Deliberately lossy: "Senior" never had a year value, and pretending otherwise
+ * would invent precision the old data never carried.
+ *
+ * Keys are lowercased and whitespace-collapsed because the old writers
+ * disagreed on casing ("Entry level" from the option list vs "Entry Level" from
+ * buildRequirementsJson's default).
+ */
+const LEGACY_EXPERIENCE_YEARS: Record<string, number> = {
+  "entry level": 0,
+  "entry level (fresh graduate)": 0,
+  "no experience": 0,
+  "less than 1 year": 0,
+  "junior": 1,
+  "junior level(1-3 years)": 1,
+  "1 to 2 years": 1,
+  "intermediate": 3,
+  "mid level": 3,
+  "mid level(3-5 years)": 3,
+  "3 to 5 years": 3,
+  "senior": 5,
+  "senior level": 5,
+  "senior(5-8 years)": 5,
+  "5+ years": 5,
+  "expert": 8,
+  "executive(vp, director)": 8,
+  "senior executive(c level)": 10,
 };
 
 /**
- * The seeker's self-reported level per role, stored in
- * `profiles.experience_levels`. Only the profile role editor writes these.
+ * Legacy label -> years, or null when unrecognised.
+ *
+ * Null rather than 0 on purpose: an unparseable string means we do not know,
+ * and asserting "no experience" about someone we failed to parse is worse than
+ * admitting the gap. Callers render null as "not specified".
  */
-export const PROFILE_EXPERIENCE_OPTIONS = [
-  "Entry Level (Fresh Graduate)",
-  "Junior Level(1-3 years)",
-  "Mid Level(3-5 years)",
-  "Senior(5-8 years)",
-  "Executive(VP, Director)",
-  "Senior Executive(C Level)",
-];
-
-export const PROFILE_EXPERIENCE_LABELS: Record<string, TKey> = {
-  "Entry Level (Fresh Graduate)": "profile.experience.entry",
-  "Junior Level(1-3 years)": "profile.experience.junior",
-  "Mid Level(3-5 years)": "profile.experience.mid",
-  "Senior(5-8 years)": "profile.experience.senior",
-  "Executive(VP, Director)": "profile.experience.executive",
-  "Senior Executive(C Level)": "profile.experience.seniorExecutive",
-};
-
-/** Onboarding uses a shorter, plainer scale than the search filter. */
-export const ONBOARDING_EXPERIENCE_OPTIONS = [
-  "No Experience",
-  "Less than 1 year",
-  "1 to 2 years",
-  "3 to 5 years",
-  "5+ years",
-];
-
-export const ONBOARDING_EXPERIENCE_LABELS: Record<string, TKey> = {
-  "No Experience": "onboarding.experience.none",
-  "Less than 1 year": "onboarding.experience.lessThanOne",
-  "1 to 2 years": "onboarding.experience.oneToTwo",
-  "3 to 5 years": "onboarding.experience.threeToFive",
-  "5+ years": "onboarding.experience.fivePlus",
-};
+export function legacyExperienceToYears(label: string | null | undefined): number | null {
+  if (!label) return null;
+  const key = label.trim().toLowerCase().replace(/\s+/g, " ");
+  return LEGACY_EXPERIENCE_YEARS[key] ?? null;
+}
 
 export const DATE_OPTIONS = [
   "Any date",

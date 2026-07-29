@@ -26,8 +26,8 @@ async function testInsert() {
     currency: "ETB",
     description: "Test description",
     full_description: "Test description",
+    min_years_experience: 0,
     requirements: {
-      experience: "Entry Level",
       education: "",
       languages: [],
       locationPreference: null,

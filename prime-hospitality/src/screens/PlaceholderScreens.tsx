@@ -136,7 +136,7 @@ export function ProfileScreen() {
           <h2 style={{ fontSize: 18, fontWeight: 800, color: "var(--text-primary)", marginBottom: 2 }}>
             Biruk Tadesse
           </h2>
-          <p style={{ fontSize: 13, color: "var(--brand)", marginBottom: 4 }}>Waiter · Mid Level</p>
+          <p style={{ fontSize: 13, color: "var(--brand)", marginBottom: 4 }}>Waiter · 4 years</p>
           <span className="badge badge-success">✓ Profile Complete</span>
         </div>
       </motion.div>

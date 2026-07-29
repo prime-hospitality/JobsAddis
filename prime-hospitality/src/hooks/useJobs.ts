@@ -2,7 +2,11 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
-import { Job, JobCategory, JobType, ExperienceLevel } from "@/data/jobs";
+import { Job, JobCategory, JobType } from "@/data/jobs";
+import { meetsExperience } from "@/lib/vocabulary";
+
+/** Role -> whole years, as stored on `profiles.experience_years`. */
+export type SeekerYears = Record<string, number>;
 
 // ---------------------------------------------------------------------------
 // Types — mirrors the `jobs` table columns returned from Supabase
@@ -20,15 +24,15 @@ export interface SupabaseJob {
   currency: string;
   description: string;
   full_description: string;
+  min_years_experience: number | null;
   requirements: {
-    experience: string;
     education: string;
     languages: string[];
     locationPreference: string | null;
     workingHours?: string;
   };
   deadline: string;
-  status: "pending" | "active" | "closed" | "rejected";
+  status: "pending" | "active" | "closed" | "rejected" | "expired" | "scheduled";
   created_at: string;
   last_posted_at: string | null;
   quantity: number;
@@ -55,7 +59,13 @@ interface UseJobsReturn {
 // ---------------------------------------------------------------------------
 // Helper: Map Supabase DB Job to Frontend UI Job
 // ---------------------------------------------------------------------------
-export function mapSupabaseJobToJob(sj: SupabaseJob): Job {
+/**
+ * `seekerYears` is the signed-in seeker's role -> years map. Omit it (server
+ * rendering, previews, any context with no seeker) and every job comes back
+ * qualified, which is the correct neutral reading rather than a claim that the
+ * viewer falls short.
+ */
+export function mapSupabaseJobToJob(sj: SupabaseJob, seekerYears?: SeekerYears): Job {
   const categoryEmojiMap: Record<string, string> = {
     Waiter: "💁",
     Chef: "🍳",
@@ -88,15 +98,15 @@ export function mapSupabaseJobToJob(sj: SupabaseJob): Job {
     postedAt: sj.last_posted_at ?? sj.created_at,
     description: sj.description,
     fullDescription: sj.full_description,
+    minYearsExperience: sj.min_years_experience ?? null,
     requirements: {
-      experience: sj.requirements.experience as ExperienceLevel,
-      education: sj.requirements.education,
-      languages: sj.requirements.languages,
-      locationPreference: sj.requirements.locationPreference,
-      workingHours: sj.requirements.workingHours,
+      education: sj.requirements?.education ?? "",
+      languages: sj.requirements?.languages ?? [],
+      locationPreference: sj.requirements?.locationPreference ?? null,
+      workingHours: sj.requirements?.workingHours,
     },
     deadline: sj.deadline,
-    qualificationsMet: true, // simplified or resolved per-profile in checking screens
+    qualificationsMet: meetsExperience(seekerYears?.[sj.category], sj.min_years_experience),
     locationMismatch: false,
     quantity: sj.quantity ?? 1,
   };
@@ -111,8 +121,15 @@ export function mapSupabaseJobToJob(sj: SupabaseJob): Job {
 // ---------------------------------------------------------------------------
 let jobsCache: Record<string, Job[]> = {};
 
-export function useJobs(category?: string | null, limit?: number): UseJobsReturn {
-  const categoryKey = `${category || "all"}-${limit || "all"}`;
+export function useJobs(category?: string | null, limit?: number, seekerYears?: SeekerYears): UseJobsReturn {
+  // The map object is rebuilt on every profile fetch, so depending on its
+  // identity would refetch the whole feed on each render. Its contents are what
+  // the badge depends on.
+  const seekerYearsKey = JSON.stringify(seekerYears ?? {});
+  // Part of the cache key, not just the effect deps: cached rows carry a
+  // resolved `qualificationsMet`, so a seeker who edits their years must not be
+  // served badges computed against the old ones.
+  const categoryKey = `${category || "all"}-${limit || "all"}-${seekerYearsKey}`;
   const [jobs, setJobs] = useState<Job[]>(jobsCache[categoryKey] ?? []);
   const [isLoading, setIsLoading] = useState(!jobsCache[categoryKey]);
   const [error, setError] = useState<string | null>(null);
@@ -143,6 +160,7 @@ export function useJobs(category?: string | null, limit?: number): UseJobsReturn
           currency,
           description,
           full_description,
+          min_years_experience,
           requirements,
           deadline,
           status,
@@ -170,7 +188,10 @@ export function useJobs(category?: string | null, limit?: number): UseJobsReturn
       const { data, error: fetchError } = await query;
 
       if (fetchError) throw fetchError;
-      const mappedJobs = ((data ?? []) as unknown as SupabaseJob[]).map(mapSupabaseJobToJob);
+      const years = JSON.parse(seekerYearsKey) as SeekerYears;
+      const mappedJobs = ((data ?? []) as unknown as SupabaseJob[]).map((sj) =>
+        mapSupabaseJobToJob(sj, years)
+      );
       jobsCache[categoryKey] = mappedJobs;
       setJobs(mappedJobs);
     } catch (err: unknown) {
@@ -180,7 +201,7 @@ export function useJobs(category?: string | null, limit?: number): UseJobsReturn
     } finally {
       setIsLoading(false);
     }
-  }, [category, categoryKey]);
+  }, [category, categoryKey, seekerYearsKey]);
 
   useEffect(() => {
     fetchJobs(false);

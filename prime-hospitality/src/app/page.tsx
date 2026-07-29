@@ -454,6 +454,7 @@ export default function App() {
           key="jobDetail"
           job={view.job}
           isEmployer={isEmployer}
+          seekerYears={userProfile?.experience_years}
           hasApplied={appliedJobIds.has(view.job.id)}
           applyError={applyError}
           onBack={goBackToList}
@@ -510,12 +511,13 @@ export default function App() {
             onBellPress={() => setNotifPanelOpen(true)}
             unreadCount={unreadCount}
             profileName={userProfile?.full_name}
+            seekerYears={userProfile?.experience_years}
             pageSize={pageSize}
             enableAnimations={enableAnimations}
           />
         );
       case "search":
-        return <SearchScreen key="search" onJobSelect={handleJobSelect} pageSize={pageSize} enableAnimations={enableAnimations} />;
+        return <SearchScreen key="search" onJobSelect={handleJobSelect} seekerYears={userProfile?.experience_years} pageSize={pageSize} enableAnimations={enableAnimations} />;
       case "applications":
         return <ApplicationsScreen key="applications" />;
       case "notifications":
@@ -533,6 +535,7 @@ export default function App() {
             onBellPress={() => setNotifPanelOpen(true)}
             unreadCount={unreadCount}
             profileName={userProfile?.full_name}
+            seekerYears={userProfile?.experience_years}
             pageSize={pageSize}
             enableAnimations={enableAnimations}
           />

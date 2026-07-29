@@ -7,6 +7,8 @@ import { useTelegram } from "@/hooks/useTelegram";
 import { fetchJobApplicants, shortlistApplicant, declineApplicant, unshortlistApplicant } from "@/lib/api";
 import { getMockEmployer } from "@/data/employers";
 import ApplicantProfileView from "@/screens/ApplicantProfileView";
+import { useT } from "@/lib/i18n";
+import { yearsLabel } from "@/lib/vocabulary";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface Applicant {
@@ -20,7 +22,8 @@ interface Applicant {
     gender: string;
     age: number;
     willing_to_relocate: boolean;
-    experience_levels: Record<string, string> | null;
+    experience_years: Record<string, number> | null;
+    experience_context: Record<string, string> | null;
     selected_categories: string[] | null;
     phone_number?: string | null;
     secondary_phone?: string | null;
@@ -55,7 +58,7 @@ function getApplicantScore(a: Applicant): number {
   if (
     p.selected_categories &&
     p.selected_categories.length > 0 &&
-    p.selected_categories.every((c) => !!p.experience_levels?.[c])
+    p.selected_categories.every((c) => p.experience_years?.[c] != null)
   ) score += 20;                                                  // experience levels
   if (p.cv_url) score += 20;                                     // CV
   return score;
@@ -81,15 +84,18 @@ function ApplicantCard({
   actionLoading: { id: string; type: "shortlist" | "decline" | "unshortlist" } | null;
   score: number;
 }) {
+  const t = useT();
   const p = applicant.profiles;
   const name = p?.full_name ?? "Unknown";
   const isLoading = actionLoading?.id === applicant.id;
   const isShortlisting = isLoading && actionLoading?.type === "shortlist";
   const isDeclining = isLoading && actionLoading?.type === "decline";
   const isUnshortlisting = isLoading && actionLoading?.type === "unshortlist";
-  const expLevel = p?.experience_levels
-    ? Object.values(p.experience_levels)[0] ?? "Not specified"
-    : "Not specified";
+  // The card shows one line, so surface the seeker's strongest role rather
+  // than an arbitrary map entry -- an employer scanning a list wants their best
+  // number, and the full per-role breakdown is one tap away on the profile.
+  const yearValues = Object.values(p?.experience_years ?? {});
+  const expLevel = yearValues.length > 0 ? yearsLabel(Math.max(...yearValues), t) : t("experience.notSpecified");
 
   return (
     <motion.div
@@ -266,7 +272,7 @@ export default function ApplicantManagementScreen({
             gender: a.gender,
             age: a.age,
             willing_to_relocate: a.willing_to_relocate,
-            experience_levels: { "": a.experience_level },
+            experience_years: { "": a.experience_years },
             selected_categories: null,
           },
         }));

@@ -6,12 +6,14 @@ import { Search, X, MapPin, Clock, ChevronDown, CheckCircle, ChevronLeft, Chevro
 import { supabase } from "@/lib/supabase";
 import { Job, JobCategory, JOB_CATEGORIES } from "@/data/jobs";
 import { DEPARTMENTS_WITH_ROLES, ROLES_BY_DEPARTMENT } from "@/data/job-categories";
-import { SupabaseJob, mapSupabaseJobToJob } from "@/hooks/useJobs";
+import { SupabaseJob, mapSupabaseJobToJob, type SeekerYears } from "@/hooks/useJobs";
+import { useBusinessTypes } from "@/hooks/useBusinessTypes";
 import EmployerAvatar from "@/components/EmployerAvatar";
 import { useT } from "@/lib/i18n";
 import {
-  JOB_EXPERIENCE_OPTIONS as EXPERIENCE_OPTIONS,
-  JOB_EXPERIENCE_LABELS as EXPERIENCE_LABELS,
+  EXPERIENCE_BANDS,
+  bandById,
+  type ExperienceBand,
   DATE_OPTIONS,
   DATE_LABELS,
   DEPARTMENT_LABELS,
@@ -23,6 +25,8 @@ import {
 
 interface SearchScreenProps {
   onJobSelect: (job: Job) => void;
+  /** Signed-in seeker's role -> years. Drives the advisory experience badge. */
+  seekerYears?: SeekerYears;
   pageSize?: number;
   enableAnimations?: boolean;
 }
@@ -42,73 +46,6 @@ function useDebounce<T>(value: T, delay: number): T {
 // drill-down, quietly making nine roles — Manager, Security, Driver and others
 // — reachable only by typing their name into the modal's search box.
 const TEAM_NAMES = DEPARTMENTS_WITH_ROLES;
-
-/**
- * The business types offered by the Type filter.
- *
- * Two sources, unioned, because neither alone is complete:
- *  - `business_types` is the lookup table the admin console and the employer
- *    profile "Other" flow write to, so it carries every type that has been
- *    *created*, whether or not anyone is hiring under it.
- *  - Employers predating that table (or edited around it) can carry a
- *    `business_type` string that was never inserted into the lookup. Reading
- *    the types off live jobs guarantees no active vacancy is unreachable
- *    through the filter.
- *
- * Lookup order is preserved (Hotel, Restaurant, Cafe first — the seeded rows),
- * with any orphaned types appended alphabetically.
- */
-function useBusinessTypes() {
-  const [types, setTypes] = useState<string[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    (async () => {
-      const [lookupRes, liveRes] = await Promise.all([
-        supabase.from("business_types").select("name").order("created_at", { ascending: true }),
-        supabase.from("jobs").select("employers!inner(business_type)").eq("status", "active"),
-      ]);
-
-      if (cancelled) return;
-
-      if (lookupRes.error) console.error("Failed to load business types:", lookupRes.error);
-      if (liveRes.error) console.error("Failed to load business types from jobs:", liveRes.error);
-
-      const ordered: string[] = [];
-      const seen = new Set<string>();
-      const add = (raw: unknown) => {
-        const name = typeof raw === "string" ? raw.trim() : "";
-        // Dedupe case-insensitively: the lookup is UNIQUE on `name`, but an
-        // employer's free-text `business_type` may differ only in casing.
-        if (!name || seen.has(name.toLowerCase())) return;
-        seen.add(name.toLowerCase());
-        ordered.push(name);
-      };
-
-      (lookupRes.data ?? []).forEach((row) => add(row.name));
-
-      const orphans: string[] = [];
-      (liveRes.data ?? []).forEach((row) => {
-        const emp = row.employers as unknown;
-        const list = Array.isArray(emp) ? emp : [emp];
-        list.forEach((e) => {
-          const name = (e as { business_type?: string } | null)?.business_type?.trim();
-          if (name && !seen.has(name.toLowerCase())) orphans.push(name);
-        });
-      });
-      orphans.sort((a, b) => a.localeCompare(b)).forEach(add);
-
-      setTypes(ordered);
-      setIsLoading(false);
-    })();
-
-    return () => { cancelled = true; };
-  }, []);
-
-  return { types, isLoading };
-}
 
 /**
  * PostgREST parses `or=(...)` as a comma-delimited logic tree, so an unescaped
@@ -476,21 +413,23 @@ function ExperienceModal({
   isOpen: boolean; onClose: () => void; selected: string[]; onChange: (exp: string[]) => void;
 }) {
   const t = useT();
-  const toggle = (exp: string) => {
-    if (selected.includes(exp)) onChange(selected.filter(e => e !== exp));
-    else onChange([...selected, exp]);
+  /** `selected` holds band ids ("1-2", "6+"), not labels — the numeric ranges
+   *  live on EXPERIENCE_BANDS, so translating a label can't break the query. */
+  const toggle = (id: string) => {
+    if (selected.includes(id)) onChange(selected.filter(e => e !== id));
+    else onChange([...selected, id]);
   };
 
   return (
     <FilterModal isOpen={isOpen} onClose={onClose} title={t("search.experienceChip")} onUpdate={() => {}}>
       <div style={{ padding: "8px 20px" }}>
         <div style={{ display: "flex", flexDirection: "column" }}>
-          {EXPERIENCE_OPTIONS.map(exp => {
-            const isSelected = selected.includes(exp);
+          {EXPERIENCE_BANDS.map(band => {
+            const isSelected = selected.includes(band.id);
             return (
               <button
-                key={exp}
-                onClick={() => toggle(exp)}
+                key={band.id}
+                onClick={() => toggle(band.id)}
                 style={{
                   width: "100%", padding: "16px 0", textAlign: "left", display: "flex", alignItems: "center", justifyContent: "space-between",
                   background: "transparent", borderTop: "none", borderRight: "none", borderLeft: "none",
@@ -498,7 +437,7 @@ function ExperienceModal({
                 }}
               >
                 <span style={{ fontSize: 16, fontWeight: isSelected ? 700 : 500, color: isSelected ? "var(--brand)" : "var(--text-primary)" }}>
-                  {EXPERIENCE_LABELS[exp] ? t(EXPERIENCE_LABELS[exp]) : exp}
+                  {t(band.labelKey)}
                 </span>
                 <div style={{ width: 24, height: 24, borderRadius: 6, border: isSelected ? "none" : "2px solid var(--text-muted)", background: isSelected ? "var(--brand)" : "transparent", display: "flex", alignItems: "center", justifyContent: "center" }}>
                   {isSelected && <CheckCircle size={16} color="white" />}
@@ -550,7 +489,8 @@ function DateModal({
   );
 }
 
-export default function SearchScreen({ onJobSelect, pageSize, enableAnimations = true }: SearchScreenProps) {
+export default function SearchScreen({ onJobSelect, seekerYears, pageSize, enableAnimations = true }: SearchScreenProps) {
+  const seekerYearsKey = JSON.stringify(seekerYears ?? {});
   const t = useT();
   const [query, setQuery] = useState("");
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
@@ -625,7 +565,7 @@ export default function SearchScreen({ onJobSelect, pageSize, enableAnimations =
         .select(`
           id, employer_id, title, category, location, neighborhood,
           job_type, salary_min, salary_max, currency, description,
-          full_description, requirements, deadline, status, created_at,
+          full_description, min_years_experience, requirements, deadline, status, created_at,
           last_posted_at, quantity,
           employers!inner ( business_name, business_type, logo_url )
         `, { count: "exact" })
@@ -637,10 +577,20 @@ export default function SearchScreen({ onJobSelect, pageSize, enableAnimations =
 
       if (cats.length > 0) q = q.in("category", cats);
 
-      // Experience lives in the `requirements` jsonb, not its own column.
-      // Filtering it here rather than client-side matters: a client-side pass
+      // Selected bands become an OR of inclusive numeric ranges over the real
+      // `min_years_experience` column. An OR of ranges rather than one min/max
+      // span because the bands need not be adjacent — picking "0" and "6+"
+      // must not silently drag in everything between them.
+      //
+      // Filtering here rather than client-side matters: a client-side pass
       // could only ever filter the rows already on this page.
-      if (exp.length > 0) q = q.in("requirements->>experience", exp);
+      if (exp.length > 0) {
+        const ranges = exp
+          .map(bandById)
+          .filter((b): b is ExperienceBand => !!b)
+          .map((b) => `and(min_years_experience.gte.${b.min},min_years_experience.lte.${b.max})`);
+        if (ranges.length > 0) q = q.or(ranges.join(","));
+      }
 
       if (posted !== "Any date") {
         const now = new Date();
@@ -671,7 +621,9 @@ export default function SearchScreen({ onJobSelect, pageSize, enableAnimations =
       if (fetchError) throw fetchError;
       if (requestId !== requestIdRef.current) return;
 
-      const mapped = ((data ?? []) as unknown as SupabaseJob[]).map(mapSupabaseJobToJob);
+      const mapped = ((data ?? []) as unknown as SupabaseJob[]).map((sj) =>
+        mapSupabaseJobToJob(sj, JSON.parse(seekerYearsKey) as SeekerYears)
+      );
       setResults((prev) => (isFirstPage ? mapped : [...prev, ...mapped]));
       setTotalCount(count ?? null);
       setPage(nextPage);
@@ -684,7 +636,11 @@ export default function SearchScreen({ onJobSelect, pageSize, enableAnimations =
         setIsLoadingMore(false);
       }
     }
-  }, [limit, t]);
+    // Keyed on contents, not identity: the map is a fresh object on every
+    // profile fetch, so depending on the object itself would re-run the search
+    // on each render — but a seeker who edits their years must still get
+    // badges recomputed rather than served against the old numbers.
+  }, [limit, t, seekerYearsKey]);
 
   useEffect(() => {
     doSearch(debouncedQuery, selectedTypes, selectedCategories, selectedExperience, postedWithin, 0);

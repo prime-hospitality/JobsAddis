@@ -5,10 +5,14 @@ import { ArrowLeft, MapPin, Wallet, Briefcase, Calendar, CheckCircle, AlertCircl
 import { Job } from "@/data/jobs";
 import EmployerAvatar from "@/components/EmployerAvatar";
 import { useT, timeAgo, formatDate, formatNumber } from "@/lib/i18n";
+import { minYearsLabel, yearsLabel, categoryLabel } from "@/lib/vocabulary";
+import type { SeekerYears } from "@/hooks/useJobs";
 
 interface JobDetailScreenProps {
   job: Job;
   isEmployer?: boolean;
+  /** Signed-in seeker's role -> years, so the advisory banner can name the gap. */
+  seekerYears?: SeekerYears;
   /** True when this seeker already has an application on file for this job. */
   hasApplied?: boolean;
   /** Surfaced when the apply flow can't start (e.g. the profile failed to load). */
@@ -50,7 +54,7 @@ function renderWithLinks(text: string) {
   });
 }
 
-export default function JobDetailScreen({ job, isEmployer, hasApplied, applyError, onBack, onApply }: JobDetailScreenProps) {
+export default function JobDetailScreen({ job, isEmployer, seekerYears, hasApplied, applyError, onBack, onApply }: JobDetailScreenProps) {
   const t = useT();
   const shouldReduceMotion = useReducedMotion();
   const deadlinePassed = isDeadlinePassed(job.deadline);
@@ -255,8 +259,8 @@ export default function JobDetailScreen({ job, isEmployer, hasApplied, applyErro
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.25, delay: 0.12 }}
               style={{
-                background: "rgba(239,68,68,0.08)",
-                border: "1px solid rgba(239,68,68,0.2)",
+                background: "rgba(245,158,11,0.08)",
+                border: "1px solid rgba(245,158,11,0.22)",
                 borderRadius: 12,
                 padding: "12px 14px",
                 display: "flex",
@@ -265,13 +269,17 @@ export default function JobDetailScreen({ job, isEmployer, hasApplied, applyErro
                 alignItems: "flex-start",
               }}
             >
-              <AlertCircle size={16} color="#FCA5A5" style={{ flexShrink: 0, marginTop: 1 }} />
+              <AlertCircle size={16} color="#FCD34D" style={{ flexShrink: 0, marginTop: 1 }} />
               <div>
-                <p style={{ fontSize: 13, fontWeight: 600, color: "#FCA5A5", marginBottom: 2 }}>
+                <p style={{ fontSize: 13, fontWeight: 600, color: "#FCD34D", marginBottom: 2 }}>
                   {t("jobDetail.requirementsNotMet")}
                 </p>
-                <p style={{ fontSize: 12, color: "rgba(252,165,165,0.7)", lineHeight: 1.5 }}>
-                  {t("jobDetail.requirementsNotMetBody", { experience: job.requirements.experience })}
+                <p style={{ fontSize: 12, color: "rgba(252,211,77,0.75)", lineHeight: 1.5 }}>
+                  {t("jobDetail.requirementsNotMetBody", {
+                    min: job.minYearsExperience ?? 0,
+                    actual: yearsLabel(seekerYears?.[job.category] ?? null, t),
+                    role: categoryLabel(job.category, t.lang),
+                  })}
                 </p>
               </div>
             </motion.div>
@@ -318,7 +326,7 @@ export default function JobDetailScreen({ job, isEmployer, hasApplied, applyErro
           {/* Requirements section */}
           {(() => {
             const reqItems = [
-              { label: t("jobDetail.labels.experience"), value: job.requirements?.experience },
+              { label: t("jobDetail.labels.experience"), value: minYearsLabel(job.minYearsExperience, t) },
               { label: t("jobDetail.labels.education"), value: job.requirements?.education },
               { label: t("jobDetail.labels.languages"), value: job.requirements?.languages?.length ? job.requirements.languages.join(", ") : null },
               ...(job.requirements?.locationPreference

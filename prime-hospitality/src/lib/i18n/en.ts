@@ -31,6 +31,20 @@ export const en = {
     loading: "Loading…",
   },
 
+  // Year counts, rendered only through yearsLabel()/minYearsLabel() in
+  // vocabulary.ts. Experience is stored as an integer, so these are the only
+  // place it becomes words — there is deliberately no seniority wording here.
+  experience: {
+    none: "No experience",
+    year: "{years} year",
+    years: "{years} years",
+    yearsPlus: "{years}+ years",
+    notSpecified: "Not specified",
+    anyExperience: "Any experience",
+    earnedAt: "Where did you get this experience?",
+    earnedAtShort: "Type of workplace",
+  },
+
   jobDetail: {
     header: "Job Detail",
     labels: {
@@ -50,9 +64,12 @@ export const en = {
     salaryRange: "ETB {min}–{max}/mo",
     openingsCount: "{count} position",
     openingsCountPlural: "{count} positions",
-    requirementsNotMet: "Requirements Not Fully Met",
+    // Advisory only — Apply stays enabled. States both numbers plainly rather
+    // than judging the seeker, because years at a large property and years at a
+    // small one are not the same thing and only the employer can weigh that.
+    requirementsNotMet: "Asks for more experience",
     requirementsNotMetBody:
-      "This role requires {experience} experience. You can still apply — employers may consider strong candidates.",
+      "This role asks for {min}+ years. Your profile shows {actual} as {role}. You can still apply.",
     aboutHeading: "About this Job",
     requirementsHeading: "Requirements",
     postedAndHiring: "Posted {when} · Actively hiring",
@@ -62,7 +79,7 @@ export const en = {
   },
 
   jobCard: {
-    requirementsNotMet: "Requirements not met",
+    requirementsNotMet: "Asks {min}+ yrs",
   },
 
   notificationPanel: {
@@ -120,7 +137,7 @@ export const en = {
       personal: "Personal information incomplete",
       contact: "Contact number not shared",
       roles: "No job roles selected",
-      experience: "Experience levels not set",
+      experience: "Years of experience not set",
       cv: "Resume (CV) not uploaded",
     },
 
@@ -167,19 +184,9 @@ export const en = {
     maxThreeRoles: "You can only select up to 3 job roles.",
     saving: "Saving...",
     saveChanges: "Save Changes",
-    selectExperienceForRole: "Select your experience level for this role.",
-    pickExperience: "Please select an experience level.",
+    selectExperienceForRole: "How many years have you worked in this role?",
+    pickExperience: "Please choose how many years.",
     updateExperience: "Update Experience",
-    // How much experience the seeker has. Distinct from search.experience,
-    // which is what a job asks for. Values are persisted in English.
-    experience: {
-      entry: "Entry Level (Fresh Graduate)",
-      junior: "Junior Level(1-3 years)",
-      mid: "Mid Level(3-5 years)",
-      senior: "Senior(5-8 years)",
-      executive: "Executive(VP, Director)",
-      seniorExecutive: "Senior Executive(C Level)",
-    },
     searchLocation: "Search location...",
     noLocationsFound: "No locations found.",
     saveLocation: "Save Location",
@@ -239,16 +246,10 @@ export const en = {
     shareNo: "No, keep it private",
     shareNoHint: "You will be contacted through the app only",
 
-    step3Title: "What is your experience level?",
-    step3Subtitle: "Select for each of your chosen roles.",
-    selectExperience: "Select experience level…",
-    experience: {
-      none: "No Experience",
-      lessThanOne: "Less than 1 year",
-      oneToTwo: "1 to 2 years",
-      threeToFive: "3 to 5 years",
-      fivePlus: "5+ years",
-    },
+    step3Title: "How many years have you worked?",
+    step3Subtitle:
+      "Give the number of years for each role. Job titles differ from place to place, so we ask for years instead.",
+    selectExperience: "Select years…",
 
     step4Title: "Tell us a bit about yourself",
     fullName: "Full Name",
@@ -294,7 +295,7 @@ export const en = {
     clear: "Clear",
     typeChip: "Type",
     categoryChip: "Category",
-    experienceChip: "Experience Level",
+    experienceChip: "Experience",
     postedWithinChip: "Posted Within",
     updateResults: "Update Results",
     selectType: "Select Business Type",
@@ -319,15 +320,14 @@ export const en = {
     loadMore: "Load more jobs",
     loadingMore: "Loading…",
     failed: "Search failed. Please try again.",
-    // Filter values are persisted/queried in English; only these labels translate.
-    // Mirrors the employer post form's Experience options exactly — these are
-    // matched against jobs.requirements->>'experience', not just displayed.
+    // Bands over jobs.min_years_experience. Labels only — the numeric ranges
+    // live on EXPERIENCE_BANDS in vocabulary.ts and are what the query uses,
+    // so translating these can no longer break the filter.
     experience: {
-      entry: "Entry level",
-      junior: "Junior",
-      intermediate: "Intermediate",
-      senior: "Senior",
-      expert: "Expert",
+      none: "No experience needed",
+      oneToTwo: "1–2 years",
+      threeToFive: "3–5 years",
+      sixPlus: "6+ years",
     },
     date: {
       any: "Any date",
@@ -375,8 +375,10 @@ export const en = {
     maxSelected: "Max 3 categories selected",
     noResults: "No results",
     maxReached: "Max reached",
-    experienceLevel: "Experience Level",
-    anyLevel: "Any level",
+    // Caps how much experience an alerted job may ask for, so a seeker is not
+    // notified about roles far above what they have.
+    experienceLevel: "Only alert me about jobs asking up to",
+    anyLevel: "Any amount",
     saving: "Saving…",
     saved: "Saved!",
     savePreferences: "Save Preferences",
@@ -409,7 +411,7 @@ export const en = {
     yourInformation: "Your Information",
     fullName: "Full Name",
     phoneNumber: "Phone Number",
-    experienceLevel: "Experience Level",
+    experienceLevel: "Experience",
     location: "Location",
     locationValue: "{neighborhood}, Addis Ababa",
     locationMismatch: "⚠️ Mismatch",

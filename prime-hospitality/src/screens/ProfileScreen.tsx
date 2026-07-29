@@ -13,14 +13,16 @@ import { JOB_CATEGORIES } from "@/data/jobs";
 import { LOCATIONS, LOCATIONS_BY_SUB_CITY } from "@/data/locations";
 import { useT, useLocale, LANGS, LANG_LABELS, type TKey } from "@/lib/i18n";
 import {
-  PROFILE_EXPERIENCE_OPTIONS as EXPERIENCE_OPTIONS,
-  PROFILE_EXPERIENCE_LABELS as EXPERIENCE_LABELS,
   categoryLabel,
   categoryMatches,
   locationLabel,
   subCityLabel,
   locationMatches,
+  yearsLabel,
+  businessTypeLabel,
 } from "@/lib/vocabulary";
+import { useBusinessTypes } from "@/hooks/useBusinessTypes";
+import YearsPicker from "@/components/YearsPicker";
 
 // ── Profile completion helpers ──────────────────────────────────────────────
 interface CompletionSection {
@@ -54,7 +56,7 @@ function getCompletionSections(profile: Profile): CompletionSection[] {
       key: "experience",
       labelKey: "profile.completion.experience",
       done: !!(profile.selected_categories && profile.selected_categories.length > 0 &&
-        profile.selected_categories.every((c) => !!profile.experience_levels?.[c])),
+        profile.selected_categories.every((c) => profile.experience_years?.[c] != null)),
       weight: 20,
     },
     {
@@ -82,7 +84,8 @@ interface Profile {
   secondary_phone: string | null;
   contact_shared: boolean;
   selected_categories: string[];
-  experience_levels: Record<string, string>;
+  experience_years: Record<string, number>;
+  experience_context: Record<string, string>;
   cv_url: string | null;
   created_at: string;
 }
@@ -97,6 +100,7 @@ export default function ProfileScreen() {
   const [privacyDismissed, setPrivacyDismissed] = useState<boolean>(() => {
     try { return localStorage.getItem("profile_privacy_dismissed") === "true"; } catch { return false; }
   });
+  const { types: establishmentTypes } = useBusinessTypes();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [settingsView, setSettingsView] = useState<null | 'roles_overview' | 'experience' | 'location' | 'faq'>(null);
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
@@ -123,7 +127,8 @@ export default function ProfileScreen() {
 
   // Editable copies while settings panel is open
   const [editRoles, setEditRoles] = useState<string[]>([]);
-  const [editExperience, setEditExperience] = useState<Record<string, string>>({});
+  const [editExperience, setEditExperience] = useState<Record<string, number>>({});
+  const [editContext, setEditContext] = useState<Record<string, string>>({});
   const [editLocation, setEditLocation] = useState("");
   const [locationSearch, setLocationSearch] = useState("");
   const [roleSearch, setRoleSearch] = useState("");
@@ -287,7 +292,8 @@ export default function ProfileScreen() {
 
   const openSettings = () => {
     setEditRoles(profile?.selected_categories ?? []);
-    setEditExperience(profile?.experience_levels ?? {});
+    setEditExperience(profile?.experience_years ?? {});
+    setEditContext(profile?.experience_context ?? {});
     setEditLocation(profile?.location ?? "");
     setSettingsView(null);
     setRoleSearch("");
@@ -303,10 +309,19 @@ export default function ProfileScreen() {
     try {
       const { error } = await supabase
         .from("profiles")
-        .update({ selected_categories: editRoles, experience_levels: editExperience })
+        .update({
+          selected_categories: editRoles,
+          experience_years: editExperience,
+          experience_context: editContext,
+        })
         .eq("telegram_id", profile.telegram_id);
       if (error) throw error;
-      setProfile(prev => prev ? { ...prev, selected_categories: editRoles, experience_levels: editExperience } : prev);
+      setProfile(prev => prev ? {
+        ...prev,
+        selected_categories: editRoles,
+        experience_years: editExperience,
+        experience_context: editContext,
+      } : prev);
       showToast("success", t("profile.rolesUpdated"));
       setSettingsView(null);
     } catch (err: any) {
@@ -1078,7 +1093,13 @@ export default function ProfileScreen() {
                   </span>
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 8, paddingLeft: 22 }}>
                     {profile.selected_categories.map((cat) => {
-                      const exp = profile.experience_levels[cat] || "Entry Level";
+                      // No "Entry Level" fallback: an unset role reads as "not
+                      // specified" rather than being asserted as a beginner.
+                      const years = profile.experience_years?.[cat] ?? null;
+                      const where = profile.experience_context?.[cat];
+                      const exp = where
+                        ? `${yearsLabel(years, t)} · ${businessTypeLabel(where, t.lang)}`
+                        : yearsLabel(years, t);
                       return (
                         <div
                           key={cat}
@@ -1431,6 +1452,9 @@ export default function ProfileScreen() {
                     const newExp = { ...editExperience };
                     delete newExp[cat];
                     setEditExperience(newExp);
+                    const newCtx = { ...editContext };
+                    delete newCtx[cat];
+                    setEditContext(newCtx);
                     if (pendingRole === cat) setPendingRole(null);
                   };
 
@@ -1473,7 +1497,9 @@ export default function ProfileScreen() {
                               }}>
                                 <div>
                                   <p style={{ fontSize: 14, fontWeight: 700, color: "var(--brand)", margin: 0 }}>{categoryLabel(role, t.lang)}</p>
-                                  <p style={{ fontSize: 11, color: "var(--text-muted)", margin: 0 }}>Exp: {editExperience[role] || t("profile.notSet")}</p>
+                                  <p style={{ fontSize: 11, color: "var(--text-muted)", margin: 0 }}>
+                                    {editExperience[role] != null ? yearsLabel(editExperience[role], t) : t("profile.notSet")}
+                                  </p>
                                 </div>
                                 <div style={{ display: "flex", gap: 8 }}>
                                   <button onClick={() => { setPendingRole(role); setSettingsView("experience"); }} style={{ padding: "6px 10px", background: "var(--brand)", color: "white", borderRadius: 8, fontSize: 11, fontWeight: 700, border: "none", cursor: "pointer" }}>{t("profile.editExp")}</button>
@@ -1579,7 +1605,7 @@ export default function ProfileScreen() {
                   if (!currentRole) return null;
 
                   const handleSaveExperience = () => {
-                    if (!editExperience[currentRole]) {
+                    if (editExperience[currentRole] == null) {
                       showToast("error", t("profile.pickExperience"));
                       return;
                     }
@@ -1594,29 +1620,29 @@ export default function ProfileScreen() {
 
                   return (
                     <div style={{ padding: "16px" }}>
-                      <p style={{ fontSize: 16, fontWeight: 700, color: "var(--text-primary)", marginBottom: 4 }}>{categoryLabel(currentRole, t.lang)}</p>
                       <p style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 20 }}>{t("profile.selectExperienceForRole")}</p>
-                      
-                      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                        {EXPERIENCE_OPTIONS.map(opt => {
-                          const isSel = editExperience[currentRole] === opt;
-                          return (
-                            <button key={opt} onClick={() => setEditExperience(prev => ({ ...prev, [currentRole]: opt }))} style={{
-                              width: "100%", padding: "13px 14px",
-                              display: "flex", alignItems: "center", justifyContent: "space-between",
-                              background: isSel ? "var(--brand-subtle)" : "var(--surface-elevated)",
-                              border: isSel ? "1px solid var(--brand)" : "1px solid var(--border)",
-                              borderRadius: 12, cursor: "pointer",
-                            }}>
-                              <span style={{ fontSize: 13, fontWeight: isSel ? 700 : 500, color: isSel ? "var(--brand)" : "var(--text-primary)", textAlign: "left" }}>{t(EXPERIENCE_LABELS[opt])}</span>
-                              <div style={{ width: 20, height: 20, borderRadius: "50%", border: isSel ? "none" : "2px solid var(--text-muted)", background: isSel ? "var(--brand)" : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                                {isSel && <CheckCircle size={13} color="white" />}
-                              </div>
-                            </button>
-                          );
-                        })}
-                      </div>
-                      
+
+                      {/* Same picker as onboarding, so the two screens can no
+                          longer write different shapes to the same column. */}
+                      <YearsPicker
+                        role={currentRole}
+                        roleLabel={categoryLabel(currentRole, t.lang)}
+                        years={editExperience[currentRole] ?? null}
+                        context={editContext[currentRole] ?? ""}
+                        establishmentTypes={establishmentTypes}
+                        onYearsChange={(role, years) =>
+                          setEditExperience(prev => ({ ...prev, [role]: years }))
+                        }
+                        onContextChange={(role, ctx) =>
+                          setEditContext(prev => {
+                            const next = { ...prev };
+                            if (ctx) next[role] = ctx;
+                            else delete next[role];
+                            return next;
+                          })
+                        }
+                      />
+
                       <motion.button
                         whileTap={{ scale: 0.97 }}
                         onClick={handleSaveExperience}

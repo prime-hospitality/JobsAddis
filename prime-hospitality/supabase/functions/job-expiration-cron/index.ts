@@ -95,7 +95,7 @@ async function announceNewlyActiveJobs(supabase: any) {
     .update({ announced_at: new Date().toISOString() })
     .in("id", candidates.map((c: any) => c.id))
     .is("announced_at", null)
-    .select("id, title, category, neighborhood, job_type, salary_min, salary_max, quantity, deadline, description, requirements, employer_id, announce_attempts, alerts_queued_at, employers(business_name)");
+    .select("id, title, category, neighborhood, job_type, salary_min, salary_max, quantity, deadline, description, min_years_experience, requirements, employer_id, announce_attempts, alerts_queued_at, employers(business_name)");
 
   if (claimErr) {
     console.error("[Announce] Failed to claim jobs:", claimErr);
@@ -158,12 +158,15 @@ async function announceNewlyActiveJobs(supabase: any) {
         .select("telegram_id")
         .contains("alert_categories", [job.category]);
 
-      // Respect the seeker's experience-level preference where the job states
-      // one. `requirements` is jsonb shaped { experience, education, ... }.
-      // A seeker with no preference set (null) matches everything.
-      const experience = (job as any).requirements?.experience;
-      if (experience) {
-        query = query.or(`alert_experience_level.is.null,alert_experience_level.eq.${experience}`);
+      // Respect the seeker's cap on how much experience an alerted job may ask
+      // for. A seeker with no cap set (null) matches everything.
+      //
+      // Numeric, and guarded: this used to interpolate a raw label straight
+      // into the PostgREST filter, and compared the job's scale against the
+      // seeker's — two different label vocabularies — with string equality.
+      const minYears = Number((job as any).min_years_experience);
+      if (Number.isFinite(minYears)) {
+        query = query.or(`alert_max_years.is.null,alert_max_years.gte.${minYears}`);
       }
 
       const { data: subscribers, error: subErr } = await query;
