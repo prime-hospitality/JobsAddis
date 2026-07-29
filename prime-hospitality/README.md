@@ -31,6 +31,27 @@ npm run dev
 
 Requires **Node.js >= 20.9.0** (Next.js 16 will not build on older versions).
 
+### Enable the secret-scanning hook (do this once per clone)
+
+```bash
+git config core.hooksPath .githooks   # from the repository root
+```
+
+Git does not version `.git/hooks`, so this line is what activates
+[`.githooks/pre-commit`](../.githooks/pre-commit). It refuses any commit whose
+added lines contain a Supabase key, a Telegram bot token, a database URL with a
+password, or a secret-shaped variable assigned a long literal. Placeholders of
+the `your_..._here` and `<password>` kind are recognised and allowed, so
+`.env.example` and the docs still commit normally.
+
+This is not optional hygiene. The repository is public, and the Supabase
+`service_role` key — which bypasses row level security entirely — was committed
+in four scratch scripts on 2026-07-18 and stayed publicly readable for eleven
+days. The hook exists so the next one is caught before it leaves the machine.
+
+If a commit is blocked and the string genuinely is not a secret, `git commit
+--no-verify` overrides it.
+
 ### Environment variables
 
 Copy `.env.example` (repo root) to `prime-hospitality/.env.local` and fill in real values:
