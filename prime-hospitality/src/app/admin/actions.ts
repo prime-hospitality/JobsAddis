@@ -1309,6 +1309,33 @@ export async function approveSpecialRequest(userId: string, passwordAttempt: str
   return { success: true };
 }
 
+// Marks a special request as seen by an admin -- purely an internal read
+// marker for the notification bell's unread count. Unlike renewal requests,
+// nothing here is shown back to the requesting user, so it's safe to fire
+// this the moment an admin opens the request rather than requiring a
+// separate deliberate action.
+export async function acknowledgeSpecialRequest(userId: string) {
+  const admin = await getLoggedInAdmin();
+  if (!admin) return { success: false, error: "Unauthorized" };
+
+  const supabase = getSupabase();
+  const { data: srCfg } = await supabase.from("app_config").select("value").eq("key", "special_requests").maybeSingle();
+  let specialRequests: any[] = [];
+  try {
+    if (srCfg?.value) specialRequests = JSON.parse(srCfg.value);
+  } catch (e) {}
+
+  const updated = specialRequests.map((r) => r.userId === userId ? { ...r, seenAt: new Date().toISOString() } : r);
+
+  await supabase.from("app_config").upsert({
+    key: "special_requests",
+    value: JSON.stringify(updated),
+    updated_at: new Date().toISOString()
+  });
+
+  return { success: true };
+}
+
 // ── Content Management ────────────────────────────────────────────────────────
 
 export async function getContentData() {
