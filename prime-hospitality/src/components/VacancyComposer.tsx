@@ -376,29 +376,24 @@ export default function VacancyComposer({
             </div>
           </Field>
 
+          {/* One figure, written to both columns. The From/To pair this
+              replaces let an employer fill only one side, which stored
+              min=0/max=25000 and announced a real salary as negotiable. A
+              fixed salary is one number, so there is one box. */}
           {value.salary_type === "fixed" && (
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-              <Field label="From (ETB)">
-                <input
-                  className="vc-input"
-                  type="number"
-                  inputMode="numeric"
-                  value={value.salary_min ?? ""}
-                  onChange={(e) => set({ salary_min: e.target.value ? Number(e.target.value) : null })}
-                  placeholder="0"
-                />
-              </Field>
-              <Field label="To (ETB)">
-                <input
-                  className="vc-input"
-                  type="number"
-                  inputMode="numeric"
-                  value={value.salary_max ?? ""}
-                  onChange={(e) => set({ salary_max: e.target.value ? Number(e.target.value) : null })}
-                  placeholder="0"
-                />
-              </Field>
-            </div>
+            <Field label="Amount (ETB)">
+              <input
+                className="vc-input"
+                type="number"
+                inputMode="numeric"
+                value={value.salary_min ?? ""}
+                onChange={(e) => {
+                  const amount = e.target.value ? Number(e.target.value) : null;
+                  set({ salary_min: amount, salary_max: amount });
+                }}
+                placeholder="0"
+              />
+            </Field>
           )}
         </Card>
       </section>

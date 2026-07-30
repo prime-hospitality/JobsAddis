@@ -148,6 +148,9 @@ export interface AnnounceableJob {
   job_type?: string | null;
   salary_min?: number | null;
   salary_max?: number | null;
+  /** Years the employer asked for. Null means unstated, which the announcement
+   *  omits rather than rendering as "any". */
+  min_years_experience?: number | null;
   quantity?: number | null;
   deadline?: string | null;
   description?: string | null;
@@ -183,11 +186,28 @@ export async function sendGroupAnnouncement(job: AnnounceableJob, businessName: 
     return false;
   }
 
+  // -1 and -2 are the sentinels resolveSalary() writes; everything else is a
+  // real figure. The old version tested `min > 0` first, so a job with the
+  // amount only in salary_max -- which is what filling just the Maximum box
+  // produced -- fell through to the negotiable wording and announced a fixed
+  // 25,000 salary as having none. Each side falls back to the other, and a
+  // single figure prints once rather than as "25,000 - 25,000".
   const min = Number(job.salary_min) || 0;
   const max = Number(job.salary_max) || 0;
-  let salaryText = "Negotiable / Scale";
-  if (min > 0 && max > 0) salaryText = `${min.toLocaleString()} - ${max.toLocaleString()} ETB`;
-  else if (min > 0) salaryText = `${min.toLocaleString()} ETB`;
+  const money = (n: number) => `${n.toLocaleString()} ETB`;
+  let salaryText: string;
+  if (min === -1) salaryText = "Negotiable";
+  else if (min === -2) salaryText = "Per company scale";
+  else if (min > 0 && max > 0) salaryText = min === max ? money(min) : `${min.toLocaleString()} - ${money(max)}`;
+  else if (min > 0 || max > 0) salaryText = money(min > 0 ? min : max);
+  else salaryText = "Negotiable / Scale";
+
+  // The years the employer asked for. Absent means they did not state one, and
+  // that stays absent rather than becoming "any" -- an announcement is a
+  // summary, and a line saying nothing is required is not worth a line.
+  const years = job.min_years_experience;
+  const experienceText =
+    years == null ? null : years <= 0 ? "No experience required" : `${years}+ years experience`;
 
   let deadlineText = "N/A";
   if (job.deadline) {
@@ -211,7 +231,7 @@ export async function sendGroupAnnouncement(job: AnnounceableJob, businessName: 
 🏢 <b>${escapeHtml(businessName)}</b>
 ${emoji} <b>${escapeHtml(job.title)}</b> (${escapeHtml(job.category)})
 📍 ${escapeHtml(job.neighborhood || "Addis Ababa")}, Addis Ababa
-💰 ${salaryText} · ${escapeHtml(job.job_type || "Full Time")}
+💰 ${salaryText} · ${escapeHtml(job.job_type || "Full Time")}${experienceText ? `\n🎓 ${experienceText}` : ""}
 👥 ${Number(job.quantity) || 1} opening(s)
 📅 Deadline: <b>${deadlineText}</b>${excerpt ? `\n\n📝 <i>${escapeHtml(excerpt)}</i>` : ""}`;
 
