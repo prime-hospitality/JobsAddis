@@ -3703,8 +3703,18 @@ export default function AdminDashboard({ initialData, initialUi = {} }: { initia
 
               <div>
                 <span style={{ fontSize: 11, color: "#9ca3af", textTransform: "uppercase", fontWeight: 600, display: "block", marginBottom: 4 }}>Required Experience</span>
+                {/* Experience moved to jobs.min_years_experience; requirements
+                    .experience is the abandoned jsonb field and is unset on
+                    everything posted since. Reading it meant every recent job
+                    displayed the "Entry Level" fallback whatever the employer
+                    asked for. Legacy rows that still carry a label are shown
+                    as written rather than guessed at. */}
                 <span style={{ background: "#f1f5f9", color: "#1e40af", padding: "4px 10px", borderRadius: 6, fontSize: 12, fontWeight: 600 }}>
-                  {viewingJob.requirements?.experience || "Entry Level"}
+                  {viewingJob.min_years_experience != null
+                    ? viewingJob.min_years_experience <= 0
+                      ? "No experience required"
+                      : `${viewingJob.min_years_experience}+ years`
+                    : viewingJob.requirements?.experience || "Not specified"}
                 </span>
               </div>
 
