@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { escapeHtml, sendDirectMessage, sendGroupAnnouncement } from "../_shared/telegram.ts";
+import { deleteGroupMessage, escapeHtml, sendDirectMessage, sendGroupAnnouncement } from "../_shared/telegram.ts";
 import { serviceKey } from "../_shared/serviceKey.ts";
 
 // The every-minute platform sweep, invoked by pg_cron (see migration
@@ -52,6 +52,15 @@ function buildDmButtonText(row: any): string {
   return row.type === "vacancy_alert" ? "View & Apply →" : "View Job →";
 }
 
+/** How many group posts one sweep will send or retract. */
+const ANNOUNCE_BATCH_LIMIT = 20;
+
+/** Sweeps to try before giving up, shared by the announce and retract passes.
+ *  The Bot API call is already retried a few times within a single sweep, so
+ *  this is the outer bound on top of that: minutes of transient outage
+ *  tolerated, not seconds. */
+const MAX_ANNOUNCE_ATTEMPTS = 3;
+
 /** Announces newly-active jobs to the Telegram group and queues vacancy alerts
  *  for subscribed seekers.
  *
@@ -71,12 +80,6 @@ function buildDmButtonText(row: any): string {
  *  for the next sweep to retry, bounded by `announce_attempts` so a job Telegram
  *  rejects for a permanent reason doesn't retry every minute forever. */
 async function announceNewlyActiveJobs(supabase: any) {
-  const ANNOUNCE_BATCH_LIMIT = 20;
-  /** Sweeps to try before giving up. sendGroupAnnouncement already retries the
-   *  HTTP call a few times within one sweep, so this is the outer bound on top
-   *  of that: minutes of transient outage tolerated, not seconds. */
-  const MAX_ANNOUNCE_ATTEMPTS = 3;
-
   const { data: candidates, error } = await supabase
     .from("jobs")
     .select("id")
@@ -110,15 +113,26 @@ async function announceNewlyActiveJobs(supabase: any) {
     const emp = (job as any).employers;
     const businessName = (Array.isArray(emp) ? emp[0]?.business_name : emp?.business_name) || "JobsAddis";
 
-    let posted = false;
+    let messageId: number | null = null;
     try {
-      posted = await sendGroupAnnouncement(job as any, businessName);
+      messageId = await sendGroupAnnouncement(job as any, businessName);
     } catch (err) {
       console.error(`[Announce] Group post threw for job ${job.id}:`, err);
     }
+    const posted = messageId !== null;
 
     if (posted) {
       announced++;
+      // Kept so the post can be taken down if the job is later deleted. A
+      // failure to record it costs only that ability, so it must not undo an
+      // announcement that has already gone out.
+      const { error: idErr } = await supabase
+        .from("jobs")
+        .update({ announced_message_id: messageId })
+        .eq("id", job.id);
+      if (idErr) {
+        console.error(`[Announce] Could not store message id for job ${job.id}:`, idErr);
+      }
     } else {
       // Release the claim so the next sweep picks this job up again, unless
       // we've now burned the attempt budget -- at which point announced_at
@@ -201,7 +215,83 @@ async function announceNewlyActiveJobs(supabase: any) {
   return { announced, alerted };
 }
 
+/** Takes down group posts whose job has been deleted.
+ *
+ *  `retracted_announcements` is filled by an AFTER DELETE trigger on `jobs`,
+ *  so this drains a queue rather than deciding anything: by the time it runs
+ *  the job row is already gone, and the message id survives only because the
+ *  trigger copied it out.
+ *
+ *  Deleting from Telegram is done here rather than inline in the server action
+ *  that deletes the job, because the bot token deliberately lives only in
+ *  Supabase -- putting it in Vercel purely to make a delete synchronous would
+ *  spread the credential for a post that can perfectly well disappear a minute
+ *  later.
+ *
+ *  A message Telegram reports as already gone counts as done: someone deleted
+ *  it by hand, which is the outcome we wanted. */
+async function retractDeletedAnnouncements(supabase: any) {
+  const { data: pending, error } = await supabase
+    .from("retracted_announcements")
+    .select("message_id, job_title, attempts")
+    .is("deleted_at", null)
+    .lt("attempts", MAX_ANNOUNCE_ATTEMPTS)
+    .order("queued_at", { ascending: true })
+    .limit(ANNOUNCE_BATCH_LIMIT);
+
+  if (error) {
+    console.error("[Retract] Failed to load pending retractions:", error);
+    return { retracted: 0 };
+  }
+  if (!pending || pending.length === 0) return { retracted: 0 };
+
+  let retracted = 0;
+
+  for (const row of pending) {
+    const messageId = Number(row.message_id);
+    let result: { ok: boolean; gone: boolean; error?: string };
+    try {
+      result = await deleteGroupMessage(messageId);
+    } catch (err) {
+      console.error(`[Retract] Delete threw for message ${messageId}:`, err);
+      result = { ok: false, gone: false, error: String(err) };
+    }
+
+    if (result.ok || result.gone) {
+      const { error: markErr } = await supabase
+        .from("retracted_announcements")
+        .update({ deleted_at: new Date().toISOString() })
+        .eq("message_id", messageId);
+      if (markErr) {
+        console.error(`[Retract] Could not mark ${messageId} done:`, markErr);
+      } else {
+        retracted++;
+      }
+      continue;
+    }
+
+    // Transient failure. Count the attempt so a message Telegram will never
+    // accept stops being retried every minute for ever.
+    const attempts = (Number(row.attempts) || 0) + 1;
+    const { error: bumpErr } = await supabase
+      .from("retracted_announcements")
+      .update({ attempts })
+      .eq("message_id", messageId);
+    if (bumpErr) {
+      console.error(`[Retract] Could not bump attempts for ${messageId}:`, bumpErr);
+    } else if (attempts >= MAX_ANNOUNCE_ATTEMPTS) {
+      console.error(
+        `[Retract] Giving up on message ${messageId} ("${row.job_title || "untitled"}") ` +
+          `after ${attempts} sweeps -- the group post will have to be removed by hand.`,
+      );
+    }
+  }
+
+  return { retracted };
+}
+
 /** Sends the bot DM for notification rows that are due and not yet dispatched.
+ *
  *  Every failure mode is swallowed: notifications are a best-effort nudge on
  *  top of the in-app row, which remains the source of truth. */
 async function dispatchPendingDms(supabase: any, now: string) {
@@ -474,6 +564,17 @@ serve(async (req) => {
       console.error("[Announce] Unexpected failure:", annErr);
     }
 
+    // 5b. Take down group posts whose job has been deleted.
+    // After the announce step, so a job posted and deleted between two sweeps
+    // is announced and retracted in order rather than having its retraction
+    // processed before the post it refers to exists.
+    let retractResult = { retracted: 0 };
+    try {
+      retractResult = await retractDeletedAnnouncements(supabase);
+    } catch (retErr) {
+      console.error("[Retract] Unexpected failure:", retErr);
+    }
+
     // 6. Dispatch pending Telegram DMs.
     // Runs last so notifications created earlier in this same sweep (expiry
     // warnings and the vacancy alerts just queued above) go out without
@@ -497,6 +598,7 @@ serve(async (req) => {
       subscriptionExpiryWarningsSent,
       jobsAnnounced: announceResult.announced,
       vacancyAlertsQueued: announceResult.alerted,
+      announcementsRetracted: retractResult.retracted,
       dmAttempted: dmResult.attempted,
       dmSent: dmResult.sent
     }), {

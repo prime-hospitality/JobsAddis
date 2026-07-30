@@ -178,12 +178,15 @@ const CATEGORY_EMOJI: Record<string, string> = {
  *  active down four different routes (employer web post, admin approval, the
  *  scheduled-publish sweep, and the Telegram-surface post_job action), and all
  *  of them must announce identically. */
-export async function sendGroupAnnouncement(job: AnnounceableJob, businessName: string): Promise<boolean> {
+export async function sendGroupAnnouncement(
+  job: AnnounceableJob,
+  businessName: string,
+): Promise<number | null> {
   const chatId = Deno.env.get("TELEGRAM_GROUP_CHAT_ID");
 
   if (!chatId || !TELEGRAM_BOT_TOKEN) {
     console.warn("[Telegram Group] TELEGRAM_GROUP_CHAT_ID or TELEGRAM_BOT_TOKEN is not configured.");
-    return false;
+    return null;
   }
 
   // -1 and -2 are the sentinels resolveSalary() writes; everything else is a
@@ -272,8 +275,11 @@ ${emoji} <b>${escapeHtml(job.title)}</b> (${escapeHtml(job.category)})
 
       const data = await res.json().catch(() => ({}));
       if (res.ok) {
-        console.log("[Telegram Group] Announced job", job.id, "msg", data.result?.message_id);
-        return true;
+        // The id is the caller's only handle on this post afterwards; without
+        // it a deleted job leaves its announcement in the group for good.
+        const messageId = Number(data?.result?.message_id) || null;
+        console.log("[Telegram Group] Announced job", job.id, "msg", messageId);
+        return messageId;
       }
 
       const retriable = res.status === 429 || res.status >= 500;
@@ -281,7 +287,7 @@ ${emoji} <b>${escapeHtml(job.title)}</b> (${escapeHtml(job.category)})
         `[Telegram Group] Job ${job.id} rejected (attempt ${attempt}/${MAX_ATTEMPTS}, HTTP ${res.status}): ` +
           redact(data?.description || "no description"),
       );
-      if (!retriable) return false;
+      if (!retriable) return null;
     } catch (err) {
       // Network-level failure: connection reset, DNS, TLS. Always worth another
       // go -- nothing about the request itself is wrong.
@@ -292,7 +298,58 @@ ${emoji} <b>${escapeHtml(job.title)}</b> (${escapeHtml(job.category)})
   }
 
   console.error(`[Telegram Group] Giving up on job ${job.id} after ${MAX_ATTEMPTS} attempts.`);
-  return false;
+  return null;
+}
+
+/** Removes a previously announced vacancy from the group.
+ *
+ *  Called when the job behind the post has been deleted, so the group stops
+ *  advertising a vacancy that no longer exists and nobody taps through to a
+ *  dead job.
+ *
+ *  `gone` distinguishes "there is nothing left to delete" from "we failed to
+ *  delete it". Telegram answers a already-removed message with 400 "message to
+ *  delete not found", and a message someone deleted by hand is a success as far
+ *  as the queue is concerned -- retrying it forever would be the only wrong
+ *  move. The 48-hour rule Telegram documents for deleting messages does not
+ *  apply to a bot removing its own post in a group where it is an
+ *  administrator, but if it ever bites, it surfaces as "message can't be
+ *  deleted", which is also terminal and also stops the retry. */
+export async function deleteGroupMessage(
+  messageId: number,
+): Promise<{ ok: boolean; gone: boolean; error?: string }> {
+  const chatId = Deno.env.get("TELEGRAM_GROUP_CHAT_ID");
+
+  if (!chatId || !TELEGRAM_BOT_TOKEN) {
+    console.warn("[Telegram Group] Cannot delete message -- chat id or bot token missing.");
+    return { ok: false, gone: false, error: "not configured" };
+  }
+
+  try {
+    const res = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/deleteMessage`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ chat_id: chatId, message_id: messageId }),
+    });
+
+    if (res.ok) {
+      console.log("[Telegram Group] Deleted message", messageId);
+      return { ok: true, gone: false };
+    }
+
+    const body = await res.json().catch(() => ({}));
+    const description: string = body?.description || `HTTP ${res.status}`;
+    const gone = /message to delete not found|message can't be deleted/i.test(description);
+    if (gone) {
+      console.log("[Telegram Group] Message", messageId, "already gone:", redact(description));
+    } else {
+      console.error(`[Telegram Group] Delete of ${messageId} failed: ${redact(description)}`);
+    }
+    return { ok: false, gone, error: description };
+  } catch (err) {
+    console.error(`[Telegram Group] Delete of ${messageId} threw: ${redact(err)}`);
+    return { ok: false, gone: false, error: redact(err) };
+  }
 }
 
 export interface FanOutSummary {
