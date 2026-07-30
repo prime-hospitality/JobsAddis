@@ -434,33 +434,26 @@ export default function VacancyFormModal({
                   </div>
                 </div>
 
+                {/* One figure, written to both columns. The Minimum/Maximum
+                    pair this replaces let an employer fill only one side,
+                    which stored min=0/max=25000 and announced a real salary
+                    as negotiable. A fixed salary is one number, so there is
+                    one box. */}
                 {value.salary_type === "fixed" && (
-                  <div className="vfm-row2">
-                    <div className="vfm-field">
-                      <label className="vfm-label">Minimum</label>
-                      <div className="vfm-money">
-                        <span className="vfm-money-cur">ETB</span>
-                        <input
-                          className="vfm-input"
-                          type="number"
-                          value={value.salary_min || ""}
-                          onChange={(e) => set({ salary_min: e.target.value ? Number(e.target.value) : null })}
-                          placeholder="0"
-                        />
-                      </div>
-                    </div>
-                    <div className="vfm-field">
-                      <label className="vfm-label">Maximum</label>
-                      <div className="vfm-money">
-                        <span className="vfm-money-cur">ETB</span>
-                        <input
-                          className="vfm-input"
-                          type="number"
-                          value={value.salary_max || ""}
-                          onChange={(e) => set({ salary_max: e.target.value ? Number(e.target.value) : null })}
-                          placeholder="0"
-                        />
-                      </div>
+                  <div className="vfm-field">
+                    <label className="vfm-label">Amount</label>
+                    <div className="vfm-money">
+                      <span className="vfm-money-cur">ETB</span>
+                      <input
+                        className="vfm-input"
+                        type="number"
+                        value={value.salary_min || ""}
+                        onChange={(e) => {
+                          const amount = e.target.value ? Number(e.target.value) : null;
+                          set({ salary_min: amount, salary_max: amount });
+                        }}
+                        placeholder="0"
+                      />
                     </div>
                   </div>
                 )}

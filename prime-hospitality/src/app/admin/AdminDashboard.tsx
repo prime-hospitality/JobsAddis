@@ -3689,10 +3689,11 @@ export default function AdminDashboard({ initialData, initialUi = {} }: { initia
                 <div>
                   <span style={{ fontSize: 11, color: "#9ca3af", textTransform: "uppercase", fontWeight: 600 }}>Salary</span>
                   <div style={{ fontWeight: 600, marginTop: 2 }}>
-                    {viewingJob.salary_min === -1 
-                      ? "Per Company Scale" 
-                      : viewingJob.salary_min === -2 
-                      ? "Negotiable" 
+                    {/* -1 negotiable, -2 company scale, per resolveSalary(). Swapped. */}
+                    {viewingJob.salary_min === -1
+                      ? "Negotiable"
+                      : viewingJob.salary_min === -2
+                      ? "Per Company Scale"
                       : viewingJob.salary_min === viewingJob.salary_max
                       ? `${viewingJob.salary_min.toLocaleString()} ${viewingJob.currency || "ETB"}`
                       : `${viewingJob.salary_min.toLocaleString()} - ${viewingJob.salary_max.toLocaleString()} ${viewingJob.currency || "ETB"}`}

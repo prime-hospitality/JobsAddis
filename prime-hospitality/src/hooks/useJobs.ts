@@ -8,6 +8,48 @@ import { meetsExperience } from "@/lib/vocabulary";
 /** Role -> whole years, as stored on `profiles.experience_years`. */
 export type SeekerYears = Record<string, number>;
 
+/**
+ * Every column mapSupabaseJobToJob() reads, as a PostgREST select list.
+ *
+ * Exported because the deep-link loaders in app/page.tsx feed the same mapper
+ * and used to spell this list out themselves. Both copies were written before
+ * `min_years_experience` existed and neither gained it, so a job opened from a
+ * Telegram "View & Apply" button rendered as "Any experience" while the same
+ * job opened from the home list showed the years correctly -- the mapper
+ * coalesces the missing column to null, so there was nothing to notice until a
+ * seeker compared the two paths. `last_posted_at` was missing the same way,
+ * which dated a reposted job from when it was first created.
+ *
+ * Anything added to SupabaseJob belongs here too, or the deep link silently
+ * drops it again.
+ */
+export const JOB_SELECT = `
+  id,
+  employer_id,
+  title,
+  category,
+  location,
+  neighborhood,
+  job_type,
+  salary_min,
+  salary_max,
+  currency,
+  description,
+  full_description,
+  min_years_experience,
+  requirements,
+  deadline,
+  status,
+  created_at,
+  last_posted_at,
+  quantity,
+  employers (
+    business_name,
+    business_type,
+    logo_url
+  )
+`;
+
 // ---------------------------------------------------------------------------
 // Types — mirrors the `jobs` table columns returned from Supabase
 // ---------------------------------------------------------------------------
@@ -146,34 +188,7 @@ export function useJobs(category?: string | null, limit?: number, seekerYears?: 
     try {
       let query = supabase
         .from("jobs")
-        .select(
-          `
-          id,
-          employer_id,
-          title,
-          category,
-          location,
-          neighborhood,
-          job_type,
-          salary_min,
-          salary_max,
-          currency,
-          description,
-          full_description,
-          min_years_experience,
-          requirements,
-          deadline,
-          status,
-          created_at,
-          last_posted_at,
-          quantity,
-          employers (
-            business_name,
-            business_type,
-            logo_url
-          )
-        `
-        )
+        .select(JOB_SELECT)
         .eq("status", "active") // Only show approved, live jobs
         .order("last_posted_at", { ascending: false }); // reposts surface as fresh
 

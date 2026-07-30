@@ -11,7 +11,7 @@ import { useT } from "@/lib/i18n";
 import { useCvUpload } from "@/hooks/useCvUpload";
 import { fetchProfile, getUnreadCount, fetchApplications } from "@/lib/api";
 import { supabase } from "@/lib/supabase";
-import { mapSupabaseJobToJob } from "@/hooks/useJobs";
+import { mapSupabaseJobToJob, JOB_SELECT } from "@/hooks/useJobs";
 
 import BottomNav, { NavTab } from "@/components/BottomNav";
 import HomeScreen from "@/screens/HomeScreen";
@@ -168,30 +168,7 @@ export default function App() {
         try {
           const { data, error } = await supabase
             .from("jobs")
-            .select(`
-              id,
-              employer_id,
-              title,
-              category,
-              location,
-              neighborhood,
-              job_type,
-              salary_min,
-              salary_max,
-              currency,
-              description,
-              full_description,
-              requirements,
-              deadline,
-              status,
-              created_at,
-              quantity,
-              employers (
-                business_name,
-                business_type,
-                logo_url
-              )
-            `)
+            .select(JOB_SELECT)
             .eq("id", jobId)
             .single();
 
@@ -285,30 +262,7 @@ export default function App() {
     try {
       const { data, error } = await supabase
         .from("jobs")
-        .select(`
-          id,
-          employer_id,
-          title,
-          category,
-          location,
-          neighborhood,
-          job_type,
-          salary_min,
-          salary_max,
-          currency,
-          description,
-          full_description,
-          requirements,
-          deadline,
-          status,
-          created_at,
-          quantity,
-          employers (
-            business_name,
-            business_type,
-            logo_url
-          )
-        `)
+        .select(JOB_SELECT)
         .eq("id", jobId)
         .single();
 

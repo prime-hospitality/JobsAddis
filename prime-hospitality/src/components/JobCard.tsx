@@ -17,8 +17,12 @@ interface JobCardProps {
 
 /** Compact salary for the card, e.g. "ETB 8k–12k/mo". */
 function formatSalary(min: number, max: number, t: Translate): string {
-  if (min === -1) return t("jobDetail.salaryPerScale");
-  if (min === -2) return t("jobDetail.salaryNegotiable");
+  // resolveSalary() writes -1 for negotiable and -2 for company scale, and it
+  // is the only thing that writes either. These two were the wrong way round,
+  // so every job posted as Negotiable advertised itself as Per Company Scale
+  // and vice versa.
+  if (min === -1) return t("jobDetail.salaryNegotiable");
+  if (min === -2) return t("jobDetail.salaryPerScale");
   const fmt = (n: number) =>
     n >= 1000 ? `${(n / 1000).toFixed(0)}k` : `${n}`;
   if (min === max) return t("jobDetail.salarySingle", { amount: fmt(min) });

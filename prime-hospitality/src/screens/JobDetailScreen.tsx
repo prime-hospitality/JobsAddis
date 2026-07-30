@@ -64,10 +64,11 @@ export default function JobDetailScreen({ job, isEmployer, seekerYears, hasAppli
     {
       icon: Wallet,
       label: t("jobDetail.labels.salary"),
+      // -1 is negotiable and -2 is company scale, per resolveSalary(). Swapped.
       value: job.salaryMin === -1
-        ? t("jobDetail.salaryPerScale")
-        : job.salaryMin === -2
         ? t("jobDetail.salaryNegotiable")
+        : job.salaryMin === -2
+        ? t("jobDetail.salaryPerScale")
         : job.salaryMin === job.salaryMax
         ? t("jobDetail.salarySingle", { amount: formatNumber(job.salaryMin, t.lang) })
         : t("jobDetail.salaryRange", {

@@ -184,7 +184,13 @@ export function splitJobDescription(full: string) {
 export function resolveSalary(form: Pick<VacancyFormState, "salary_type" | "salary_min" | "salary_max">) {
   if (form.salary_type === "negotiable") return { salary_min: -1, salary_max: -1 };
   if (form.salary_type === "company_scale") return { salary_min: -2, salary_max: -2 };
-  const salary_min = form.salary_min ?? 0;
+  // Either box alone means one figure, not a range starting at zero. Filling
+  // only Maximum used to store min=0/max=25000, which the group announcement
+  // read as having no salary at all and posted as "Negotiable / Scale" -- the
+  // opposite of what the employer typed. Each side falls back to the other, so
+  // one number in either box yields min === max and reads as a single amount
+  // everywhere.
+  const salary_min = form.salary_min ?? form.salary_max ?? 0;
   const salary_max = form.salary_max ?? form.salary_min ?? 0;
   return { salary_min, salary_max };
 }

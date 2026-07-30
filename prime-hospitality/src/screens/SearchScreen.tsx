@@ -703,8 +703,9 @@ export default function SearchScreen({ onJobSelect, seekerYears, seekerCategorie
     postedWithin !== "Any date";
 
   const formatSalary = (min: number, max: number, currency: string) => {
-    if (min === -1) return t("jobDetail.salaryPerScale");
-    if (min === -2) return t("jobDetail.salaryNegotiable");
+    // -1 is negotiable and -2 is company scale, per resolveSalary(). Swapped.
+    if (min === -1) return t("jobDetail.salaryNegotiable");
+    if (min === -2) return t("jobDetail.salaryPerScale");
     const fmt = (n: number) =>
       n >= 1000 ? `${(n / 1000).toFixed(0)}k` : `${n}`;
     if (min === max) return `${currency} ${fmt(min)}/mo`;
