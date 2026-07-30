@@ -1,1 +1,12 @@
-{}
+{
+  "name": "AddisJobs",
+  "private": true,
+  "description": "Repo-root tooling. The application itself lives in prime-hospitality/.",
+  "scripts": {
+    "setup": "node scripts/doctor.cjs --fix",
+    "doctor": "node scripts/doctor.cjs",
+    "dev": "npm --prefix prime-hospitality run dev",
+    "build": "npm --prefix prime-hospitality run build",
+    "lint": "npm --prefix prime-hospitality run lint"
+  }
+}
