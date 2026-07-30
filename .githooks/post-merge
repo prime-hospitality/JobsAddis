@@ -1,0 +1,42 @@
+#!/bin/sh
+#
+# Runs after every successful `git pull` or `git merge`.
+#
+# This project is worked on from two machines, and the things that break on
+# arrival are always invisible in the diff: a new dependency that needs
+# installing, a new environment variable that is not in this machine's
+# .env.local, a credential committed from the machine that had no pre-commit
+# hook. Each one used to be found later, by way of a confusing error.
+#
+# So the pull reports them. This hook cannot block anything -- Git ignores what
+# it returns -- it only tells you what to fix before you start.
+
+root=$(git rev-parse --show-toplevel) || exit 0
+hookdir=$(dirname "$0")
+
+# Did the changes that just arrived leave this machine's setup stale?
+if command -v node >/dev/null 2>&1; then
+  node "$root/scripts/doctor.cjs" --quiet
+else
+  echo "  ! node is not on PATH, so setup could not be checked. See README."
+fi
+
+# Did they bring in a credential? ORIG_HEAD..HEAD is exactly what arrived.
+if git rev-parse --verify ORIG_HEAD >/dev/null 2>&1; then
+  found=$(git diff --diff-filter=ACM -U0 ORIG_HEAD HEAD \
+    | grep '^+' \
+    | sh "$hookdir/lib/scan-secrets.sh")
+
+  if [ $? -ne 0 ]; then
+    echo ""
+    echo "  WARNING -- what you just pulled contains a credential."
+    echo ""
+    printf '%s\n' "$found"
+    echo "  It is already on GitHub, so treat the value as compromised: rotate"
+    echo "  it, then remove it from the file. Rewriting history does not"
+    echo "  un-publish it."
+    echo ""
+  fi
+fi
+
+exit 0

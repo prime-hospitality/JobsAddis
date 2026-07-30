@@ -1,0 +1,34 @@
+# Line endings, settled once here rather than per machine.
+#
+# This repository is worked on from a Mac and from a Windows PC. Without this
+# file, Git on Windows checks every text file out with CRLF and commits it back
+# with CRLF, so a pull on the Mac can show hundreds of files as modified with no
+# real change in any of them -- and a genuine one-line fix becomes impossible to
+# review. Forcing LF in the working tree on both machines avoids the churn
+# entirely; every editor in use here handles LF on Windows without complaint.
+#
+# No tracked file contained CRLF when this was added, so it renormalises nothing
+# and the first Windows checkout after it lands is the only one that changes.
+
+* text=auto eol=lf
+
+# Shell scripts and Git hooks must be LF whatever happens -- /bin/sh fails with
+# a confusing "not found" if a shebang line ends in CR.
+*.sh text eol=lf
+.githooks/** text eol=lf
+
+# Lockfiles are generated: collapse them by default in GitHub's review view,
+# which is where their size is actually in the way. Deliberately NOT marked
+# -diff -- that would make `git diff` report them as binary, and a lockfile is
+# exactly where a dependency swapped for a malicious version would hide.
+package-lock.json linguist-generated
+
+# Binary: never line-ending-converted, never diffed as text.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+*.docx binary
+*.pem binary

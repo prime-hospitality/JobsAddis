@@ -1,0 +1,26 @@
+#!/bin/sh
+#
+# Runs after `git checkout <branch>` and after `git clone`.
+#
+# Switching branches moves package.json and the migrations under your feet just
+# as surely as pulling does, so the same check runs here. Kept quiet: it prints
+# nothing when the machine is already in shape.
+
+prev=$1
+new=$2
+branch_switch=$3
+
+# Git also fires this hook for `git checkout -- <file>`, where the third
+# argument is 0. Nothing about the branch changed, so there is nothing to check.
+[ "$branch_switch" = "1" ] || exit 0
+
+# Checking out the branch you are already on changes nothing either.
+[ "$prev" = "$new" ] && exit 0
+
+root=$(git rev-parse --show-toplevel) || exit 0
+
+if command -v node >/dev/null 2>&1; then
+  node "$root/scripts/doctor.cjs" --quiet
+fi
+
+exit 0
