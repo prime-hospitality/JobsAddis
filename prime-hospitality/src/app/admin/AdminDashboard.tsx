@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { toggleUserBan, toggleJobStatus, scheduleJobPost, repostJob, approveScheduledJob, cancelScheduledJob, logoutAdmin, addEmployer, deleteEmployer, updateEmployer, updateEmployerAutoPublish, adminUpdateEmployerLogo, deleteUser, approveSpecialRequest, getPricingConfig, updatePricingConfig, getLoggedInAdmin, createSubAdmin, updateSubAdminPermissions, deleteSubAdmin, listSubAdmins, searchUsers, getProfessionCounts, searchEmployers, getPackages, upsertPackage, deletePackage, getBusinessTypes, addBusinessType, getPlatformEmployerProfile, updatePlatformEmployerLogo, getAdminData, acknowledgeEmployerRenewal } from "./actions";
+import { toggleUserBan, toggleJobStatus, scheduleJobPost, repostJob, approveScheduledJob, cancelScheduledJob, logoutAdmin, addEmployer, deleteEmployer, updateEmployer, updateEmployerAutoPublish, adminUpdateEmployerLogo, deleteUser, approveSpecialRequest, getPricingConfig, updatePricingConfig, getLoggedInAdmin, createSubAdmin, updateSubAdminPermissions, deleteSubAdmin, listSubAdmins, searchUsers, getProfessionCounts, searchEmployers, getPackages, upsertPackage, deletePackage, getBusinessTypes, addBusinessType, getPlatformEmployerProfile, updatePlatformEmployerLogo, getAdminData, acknowledgeEmployerRenewal, acknowledgeSpecialRequest } from "./actions";
 import type { AdminPermissions, SubAdmin } from "./actions";
 import { Trash2, Pencil, Image as ImageIcon, Menu, X, LayoutDashboard, Briefcase, FileText, Users, LogOut, Settings, CreditCard, CheckCircle, BookOpen, User, Building2, Hourglass, ChevronDown, Check, Plus, Megaphone, History, BarChart3 } from "lucide-react";
 import EmployerAvatar from "@/components/EmployerAvatar";
@@ -17,6 +17,7 @@ import BroadcastTab from "./BroadcastTab";
 import ActivityLogTab from "./ActivityLogTab";
 import ReportingTab from "./ReportingTab";
 import { JobStatusBadge, JobActionButtons } from "./JobStatusActions";
+import NotificationBell from "./NotificationBell";
 
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -659,6 +660,9 @@ export default function AdminDashboard({ initialData, initialUi = {} }: { initia
   const [empTotal, setEmpTotal] = useState(0);
   const [empPage, setEmpPage] = useState(1);
   const [empLoading, setEmpLoading] = useState(false);
+  // Briefly highlights a single employer row after jumping here from a
+  // renewal notification, so the admin doesn't have to hunt for it in the list.
+  const [highlightEmployerId, setHighlightEmployerId] = useState<string | null>(null);
   const empPageSize = 20;
   const [newTelegramId, setNewTelegramId] = useState("");
   const [newBusinessName, setNewBusinessName] = useState("");
@@ -816,7 +820,6 @@ export default function AdminDashboard({ initialData, initialUi = {} }: { initia
   const [platformRemoveLogo, setPlatformRemoveLogo] = useState(false);
   const [platformCropFile, setPlatformCropFile] = useState<File | null>(null);
   const platformFileInputRef = useRef<HTMLInputElement>(null);
-  const [showNotifications, setShowNotifications] = useState(false);
   const [seekerSubTab, setSeekerSubTab] = useState<SeekerSubTab>(() => seed(initialUi.seekerSubTab, ["user-config", "tab2", "tab3", "tab4"], "user-config"));
   const [userSearchName, setUserSearchName] = useState("");
   const [userSearchPhone, setUserSearchPhone] = useState("");
@@ -950,6 +953,12 @@ export default function AdminDashboard({ initialData, initialUi = {} }: { initia
     }, 30000);
     return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    if (!highlightEmployerId) return;
+    const t = setTimeout(() => setHighlightEmployerId(null), 3000);
+    return () => clearTimeout(t);
+  }, [highlightEmployerId]);
 
   const perms = loggedInAdmin?.permissions;
   const isSuperAdmin = loggedInAdmin?.role === "super_admin";
@@ -1465,6 +1474,11 @@ export default function AdminDashboard({ initialData, initialUi = {} }: { initia
   // a "Seen" state) until an admin actually renews the package.
   const renewalRequests = (data.employers || []).filter((e: any) => e.renewal_requested);
 
+  // Jobs awaiting moderation -- same definition as the Overview "Pending
+  // Moderation" tile, now also surfaced in the bell since it's the one
+  // recurring admin task that previously had no notification at all.
+  const pendingJobs = (data.jobs || []).filter((j: any) => j.status === "pending");
+
   const handleAcknowledgeRenewal = async (employerId: string) => {
     try {
       const res = await acknowledgeEmployerRenewal(employerId);
@@ -1479,16 +1493,35 @@ export default function AdminDashboard({ initialData, initialUi = {} }: { initia
     }
   };
 
-  const jumpToEmployerInViewEmp = (businessName: string) => {
-    setShowNotifications(false);
+  const handleAcknowledgeSpecialRequest = async (userId: string) => {
+    setData((prev: any) => ({
+      ...prev,
+      specialRequests: (prev.specialRequests || []).map((r: any) => r.userId === userId ? { ...r, seenAt: new Date().toISOString() } : r)
+    }));
+    try {
+      await acknowledgeSpecialRequest(userId);
+    } catch (err) {
+      console.error("Failed to acknowledge special request:", err);
+    }
+  };
+
+  const jumpToEmployerInViewEmp = (employerId: string, businessName: string) => {
     setActiveTab("employers");
     setEmpSubTab("emp_config");
     setEmpConfigSubTab("view_emp");
     setEmpViewSearch(businessName);
+    setEmpPage(1);
+    setHighlightEmployerId(employerId);
+  };
+
+  const jumpToPendingJob = (employerId: string) => {
+    setActiveTab("jobs");
+    setSelectedEmployerId(employerId);
   };
 
   return (
     <div className="admin-shell flex h-screen overflow-hidden">
+      <style>{`@keyframes adminEmpRowBlink { 0%, 100% { background-color: transparent; } 50% { background-color: #fef3c7; } }`}</style>
       {/* Mobile Sidebar Overlay */}
       {mobileMenuOpen && (
         <div className="fixed inset-0 z-40 bg-gray-900/50 md:hidden" onClick={() => setMobileMenuOpen(false)} />
@@ -1570,123 +1603,19 @@ export default function AdminDashboard({ initialData, initialUi = {} }: { initia
             <span className="text-lg font-bold text-black tracking-tight">Admin Dashboard</span>
           </div>
           <div className="flex items-center gap-4">
-            <div className="relative">
-              <button 
-                onClick={() => setShowNotifications(!showNotifications)}
-                className="text-[#8e8e93] hover:text-[#1c1c1e] relative transition-colors cursor-pointer border-none bg-transparent flex items-center justify-center"
-              >
-                {((data.specialRequests?.length || 0) + renewalRequests.length) > 0 && (
-                  <span
-                    className="absolute -top-1.5 -right-1.5 bg-red-500 text-white rounded-full border border-white"
-                    style={{ width: 16, height: 16, fontSize: 9, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}
-                  >
-                    {(data.specialRequests?.length || 0) + renewalRequests.length}
-                  </span>
-                )}
-                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
-              </button>
-
-              {showNotifications && (
-                <>
-                  <div className="fixed inset-0 z-40" onClick={() => setShowNotifications(false)} />
-                  <div className="absolute right-0 mt-2 w-80 bg-white border border-[#c6c6c8] rounded-xl shadow-lg z-50 overflow-hidden">
-                    <div className="p-3 border-b border-[#e5e5ea] bg-[#f2f2f7] flex items-center justify-between">
-                      <h3 className="font-bold text-black text-sm">Notifications</h3>
-                      {((data.specialRequests && data.specialRequests.length > 0) || renewalRequests.length > 0) && (
-                        <span className="bg-[#1c1c1e] text-white text-xs font-bold px-2 py-0.5 rounded-full">
-                          {(data.specialRequests?.length || 0) + renewalRequests.length}
-                        </span>
-                      )}
-                    </div>
-                    <div className="max-h-80 overflow-y-auto">
-                      {((data.specialRequests && data.specialRequests.length > 0) || renewalRequests.length > 0) ? (
-                        <>
-                          {data.specialRequests && data.specialRequests.map((req: any) => {
-                          const name = req.name || "Unknown Name";
-                          return (
-                            <div key={req.userId} className="p-4 border-b border-gray-50 hover:bg-[#f2f2f7] transition-colors last:border-b-0">
-                              <div className="flex items-start gap-3">
-                                <div className="mt-0.5 bg-amber-100 p-1.5 rounded-full text-amber-600 shrink-0">
-                                  <Users size={14} />
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-sm font-semibold text-black leading-tight">
-                                    Special Request
-                                  </p>
-                                  <p className="text-xs text-[#8e8e93] mt-1 truncate">
-                                    <span className="font-medium text-[#1c1c1e]">{name}</span> (Telegram: {req.telegramId})
-                                  </p>
-                                  <p className="text-xs text-amber-700 mt-1.5 leading-relaxed">
-                                    Ex-employer wants now to become a job seeker.
-                                  </p>
-                                  <button
-                                    onClick={() => {
-                                      setShowNotifications(false);
-                                      setActiveTab("configuration");
-                                      setConfigSubTab("users");
-                                    }}
-                                    className="mt-2.5 text-xs font-semibold text-[#1c1c1e] hover:text-[#2c2c2e] bg-[#e5e5ea] hover:bg-[#e5e5ea] px-3 py-1.5 rounded-md transition-colors w-full text-center"
-                                  >
-                                    View or Fix
-                                  </button>
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        })}
-                          {renewalRequests.map((emp: any) => {
-                            const seen = !!emp.renewal_seen_at;
-                            return (
-                              <div key={`renewal-${emp.id}`} className="p-4 border-b border-gray-50 hover:bg-[#f2f2f7] transition-colors last:border-b-0">
-                                <div className="flex items-start gap-3">
-                                  <div className="mt-0.5 bg-blue-100 p-1.5 rounded-full text-blue-600 shrink-0">
-                                    <CreditCard size={14} />
-                                  </div>
-                                  <div className="flex-1 min-w-0">
-                                    <p className="text-sm font-semibold text-black leading-tight">
-                                      Renewal Requested
-                                    </p>
-                                    <p className="text-xs text-[#8e8e93] mt-1 truncate">
-                                      <span className="font-medium text-[#1c1c1e]">{emp.business_name}</span> wants to renew their subscription.
-                                    </p>
-                                    {seen && (
-                                      <p className="text-xs text-emerald-700 mt-1.5 leading-relaxed">
-                                        Marked as seen — follow up by phone.
-                                      </p>
-                                    )}
-                                    <div className="flex gap-2 mt-2.5">
-                                      <button
-                                        onClick={() => handleAcknowledgeRenewal(emp.id)}
-                                        disabled={seen}
-                                        className="text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-default px-3 py-1.5 rounded-md transition-colors flex-1 text-center"
-                                        style={{ border: "none", cursor: seen ? "default" : "pointer" }}
-                                      >
-                                        {seen ? "Received" : "Mark Received"}
-                                      </button>
-                                      <button
-                                        onClick={() => jumpToEmployerInViewEmp(emp.business_name)}
-                                        className="text-xs font-semibold text-[#1c1c1e] hover:text-[#2c2c2e] bg-[#e5e5ea] hover:bg-[#e5e5ea] px-3 py-1.5 rounded-md transition-colors flex-1 text-center"
-                                        style={{ border: "none", cursor: "pointer" }}
-                                      >
-                                        Go to Employer
-                                      </button>
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </>
-                      ) : (
-                        <div className="p-6 text-center text-[#8e8e93] text-sm">
-                          No new notifications
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </>
-              )}
-            </div>
+            <NotificationBell
+              specialRequests={data.specialRequests || []}
+              renewalEmployers={renewalRequests}
+              pendingJobs={pendingJobs}
+              onOpenSpecialRequest={(userId) => {
+                handleAcknowledgeSpecialRequest(userId);
+                setActiveTab("configuration");
+                setConfigSubTab("users");
+              }}
+              onAcknowledgeRenewal={handleAcknowledgeRenewal}
+              onGoToEmployer={jumpToEmployerInViewEmp}
+              onGoToPendingJob={jumpToPendingJob}
+            />
             <button onClick={() => setMobileMenuOpen(true)} className="text-[#8e8e93] hover:text-[#1c1c1e] focus:outline-none">
               <Menu className="w-6 h-6" />
             </button>
@@ -1697,126 +1626,22 @@ export default function AdminDashboard({ initialData, initialUi = {} }: { initia
         <header className="hidden md:flex bg-white h-[72px] items-center justify-between px-8 shrink-0 shadow-sm z-10 border-b border-[#c6c6c8]">
           <h1 className="text-2xl font-bold text-black tracking-tight">Admin Dashboard</h1>
           <div className="flex items-center gap-6">
-            <div className="relative">
-              <button 
-                onClick={() => setShowNotifications(!showNotifications)}
-                className="text-[#8e8e93] hover:text-[#1c1c1e] relative transition-colors cursor-pointer border-none bg-transparent flex items-center justify-center"
-              >
-                {((data.specialRequests?.length || 0) + renewalRequests.length) > 0 && (
-                  <span
-                    className="absolute -top-1.5 -right-1.5 bg-red-500 text-white rounded-full border border-white"
-                    style={{ width: 16, height: 16, fontSize: 9, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}
-                  >
-                    {(data.specialRequests?.length || 0) + renewalRequests.length}
-                  </span>
-                )}
-                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
-              </button>
+            <NotificationBell
+              specialRequests={data.specialRequests || []}
+              renewalEmployers={renewalRequests}
+              pendingJobs={pendingJobs}
+              onOpenSpecialRequest={(userId) => {
+                handleAcknowledgeSpecialRequest(userId);
+                setActiveTab("configuration");
+                setConfigSubTab("users");
+              }}
+              onAcknowledgeRenewal={handleAcknowledgeRenewal}
+              onGoToEmployer={jumpToEmployerInViewEmp}
+              onGoToPendingJob={jumpToPendingJob}
+            />
 
-              {showNotifications && (
-                <>
-                  <div className="fixed inset-0 z-40" onClick={() => setShowNotifications(false)} />
-                  <div className="absolute right-0 mt-2 w-80 bg-white border border-[#c6c6c8] rounded-xl shadow-lg z-50 overflow-hidden">
-                    <div className="p-3 border-b border-[#e5e5ea] bg-[#f2f2f7] flex items-center justify-between">
-                      <h3 className="font-bold text-black text-sm">Notifications</h3>
-                      {((data.specialRequests && data.specialRequests.length > 0) || renewalRequests.length > 0) && (
-                        <span className="bg-[#1c1c1e] text-white text-xs font-bold px-2 py-0.5 rounded-full">
-                          {(data.specialRequests?.length || 0) + renewalRequests.length}
-                        </span>
-                      )}
-                    </div>
-                    <div className="max-h-80 overflow-y-auto">
-                      {((data.specialRequests && data.specialRequests.length > 0) || renewalRequests.length > 0) ? (
-                        <>
-                          {data.specialRequests && data.specialRequests.map((req: any) => {
-                          const name = req.name || "Unknown Name";
-                          return (
-                            <div key={req.userId} className="p-4 border-b border-gray-50 hover:bg-[#f2f2f7] transition-colors last:border-b-0">
-                              <div className="flex items-start gap-3">
-                                <div className="mt-0.5 bg-amber-100 p-1.5 rounded-full text-amber-600 shrink-0">
-                                  <Users size={14} />
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-sm font-semibold text-black leading-tight">
-                                    Special Request
-                                  </p>
-                                  <p className="text-xs text-[#8e8e93] mt-1 truncate">
-                                    <span className="font-medium text-[#1c1c1e]">{name}</span> (Telegram: {req.telegramId})
-                                  </p>
-                                  <p className="text-xs text-amber-700 mt-1.5 leading-relaxed">
-                                    Ex-employer wants now to become a job seeker.
-                                  </p>
-                                  <button
-                                    onClick={() => {
-                                      setShowNotifications(false);
-                                      setActiveTab("configuration");
-                                      setConfigSubTab("users");
-                                    }}
-                                    className="mt-2.5 text-xs font-semibold text-[#1c1c1e] hover:text-[#2c2c2e] bg-[#e5e5ea] hover:bg-[#e5e5ea] px-3 py-1.5 rounded-md transition-colors w-full text-center"
-                                  >
-                                    View or Fix
-                                  </button>
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        })}
-                          {renewalRequests.map((emp: any) => {
-                            const seen = !!emp.renewal_seen_at;
-                            return (
-                              <div key={`renewal-${emp.id}`} className="p-4 border-b border-gray-50 hover:bg-[#f2f2f7] transition-colors last:border-b-0">
-                                <div className="flex items-start gap-3">
-                                  <div className="mt-0.5 bg-blue-100 p-1.5 rounded-full text-blue-600 shrink-0">
-                                    <CreditCard size={14} />
-                                  </div>
-                                  <div className="flex-1 min-w-0">
-                                    <p className="text-sm font-semibold text-black leading-tight">
-                                      Renewal Requested
-                                    </p>
-                                    <p className="text-xs text-[#8e8e93] mt-1 truncate">
-                                      <span className="font-medium text-[#1c1c1e]">{emp.business_name}</span> wants to renew their subscription.
-                                    </p>
-                                    {seen && (
-                                      <p className="text-xs text-emerald-700 mt-1.5 leading-relaxed">
-                                        Marked as seen — follow up by phone.
-                                      </p>
-                                    )}
-                                    <div className="flex gap-2 mt-2.5">
-                                      <button
-                                        onClick={() => handleAcknowledgeRenewal(emp.id)}
-                                        disabled={seen}
-                                        className="text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-default px-3 py-1.5 rounded-md transition-colors flex-1 text-center"
-                                        style={{ border: "none", cursor: seen ? "default" : "pointer" }}
-                                      >
-                                        {seen ? "Received" : "Mark Received"}
-                                      </button>
-                                      <button
-                                        onClick={() => jumpToEmployerInViewEmp(emp.business_name)}
-                                        className="text-xs font-semibold text-[#1c1c1e] hover:text-[#2c2c2e] bg-[#e5e5ea] hover:bg-[#e5e5ea] px-3 py-1.5 rounded-md transition-colors flex-1 text-center"
-                                        style={{ border: "none", cursor: "pointer" }}
-                                      >
-                                        Go to Employer
-                                      </button>
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </>
-                      ) : (
-                        <div className="p-6 text-center text-[#8e8e93] text-sm">
-                          No new notifications
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </>
-              )}
-            </div>
-            
             <div className="relative">
-              <button 
+              <button
                 onClick={() => setProfileMenuOpen(!profileMenuOpen)}
                 className="flex items-center gap-3 focus:outline-none hover:bg-[#f2f2f7] rounded-lg p-1.5 -m-1.5 transition-colors cursor-pointer"
               >
@@ -2525,7 +2350,7 @@ export default function AdminDashboard({ initialData, initialUi = {} }: { initia
                 </thead>
                 <tbody>
                   {activeTab === "employers" && empSubTab === "emp_config" && empConfigSubTab === "view_emp" && empResults.map((item: any) => (
-                    <tr key={item.id} style={{ borderBottom: "1px solid #f3f4f6" }}>
+                    <tr key={item.id} style={{ borderBottom: "1px solid #f3f4f6", animation: item.id === highlightEmployerId ? "adminEmpRowBlink 0.8s ease-in-out 3" : undefined }}>
                       <td style={{ padding: "16px 24px", fontWeight: 500 }}>
                         {item.business_name}
                       </td>
@@ -2632,7 +2457,7 @@ export default function AdminDashboard({ initialData, initialUi = {} }: { initia
             {/* Mobile Card View */}
             <div className="md:hidden flex flex-col p-4 bg-[#f2f2f7]/50">
               {activeTab === "employers" && empSubTab === "emp_config" && empConfigSubTab === "view_emp" && empResults.map((item: any) => (
-                <div key={item.id} className="bg-white p-4 rounded-xl border border-[#c6c6c8] shadow-sm flex flex-col gap-3 mb-3">
+                <div key={item.id} className="bg-white p-4 rounded-xl border border-[#c6c6c8] shadow-sm flex flex-col gap-3 mb-3" style={{ animation: item.id === highlightEmployerId ? "adminEmpRowBlink 0.8s ease-in-out 3" : undefined }}>
                   <div className="flex justify-between items-start">
                     <div>
                       <h4 className="font-semibold text-[#1c1c1e] m-0">{item.business_name}</h4>
