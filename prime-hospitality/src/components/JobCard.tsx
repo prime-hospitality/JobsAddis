@@ -94,32 +94,75 @@ function CardBody({ job }: { job: Job }) {
         </div>
       </div>
 
-      {/* Tags row */}
-      <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+      {/* Description — two lines, the rest on the detail screen */}
+      <p
+        style={{
+          fontSize: 13,
+          color: "var(--text-secondary)",
+          lineHeight: 1.5,
+          marginBottom: 12,
+          display: "-webkit-box",
+          WebkitLineClamp: 2,
+          WebkitBoxOrient: "vertical",
+          overflow: "hidden",
+        }}
+      >
+        {job.description}
+      </p>
+
+      {/* Tags row.
+          One line, never two: wrapping dropped the location onto a row of its
+          own under the salary, where it read as a second group rather than the
+          tail of this one. At 375px the three don't always fit — "Per Company
+          Scale" beside "Addis Industrial Park" needs half again the width — so
+          the order of who gives ground is set deliberately here.
+
+          The salary never shrinks. The job type gives ground three times as
+          fast as the location, down to a floor that always leaves "Full…" /
+          "Part…" — enough to tell them apart. Weights rather than a minimum
+          width on the location, so a short name like "Bole" sits in a badge its
+          own size instead of one padded out to a reserved width. */}
+      <div style={{ display: "flex", alignItems: "center", gap: 5, minWidth: 0 }}>
         {/* Salary */}
-        <span className="badge badge-brand">
+        <span
+          className="badge badge-brand"
+          style={{ flexShrink: 0, whiteSpace: "nowrap", padding: "4px 9px" }}
+        >
           {formatSalary(job.salaryMin, job.salaryMax, t)}
         </span>
 
         {/* Job type */}
-        <span className="badge badge-navy">
-          <Briefcase size={9} />
-          {job.jobType}
+        <span
+          className="badge badge-navy"
+          style={{ flexShrink: 3, minWidth: 62, overflow: "hidden", padding: "4px 9px" }}
+        >
+          <Briefcase size={9} style={{ flexShrink: 0 }} />
+          <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {job.jobType}
+          </span>
         </span>
 
         {/* Location */}
-        <span className="badge badge-navy">
-          <MapPin size={9} />
-          {job.neighborhood}
+        <span
+          className="badge badge-navy"
+          style={{ flexShrink: 1, minWidth: 0, overflow: "hidden", padding: "4px 9px" }}
+        >
+          <MapPin size={9} style={{ flexShrink: 0 }} />
+          <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {job.neighborhood}
+          </span>
         </span>
+      </div>
 
-        {/* Location mismatch */}
-        {job.locationMismatch && (
+      {/* Location mismatch — its own row, so it can never push the three above
+          it out of shape. Nothing in production sets this today. */}
+      {job.locationMismatch && (
+        <div style={{ display: "flex", marginTop: 6 }}>
           <span className="badge badge-warning">
             📍 Location mismatch
           </span>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
