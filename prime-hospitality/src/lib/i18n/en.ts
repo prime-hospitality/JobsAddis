@@ -45,6 +45,13 @@ export const en = {
     earnedAtShort: "Type of workplace",
   },
 
+  // The feed card. It carries no description, no deadline and no requirements
+  // — business, title, posted time and three badges, nothing else. Anything
+  // added here has to earn its line against the detail screen one tap away.
+  jobCard: {
+    posted: "Posted {when}",
+  },
+
   jobDetail: {
     header: "Job Detail",
     labels: {
