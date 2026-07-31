@@ -40,6 +40,10 @@ export const am: DeepPartial<Catalog> = {
     earnedAtShort: "የሥራ ቦታ ዓይነት",
   },
 
+  jobCard: {
+    posted: "የተለጠፈው {when}",
+  },
+
   jobDetail: {
     header: "የሥራ ዝርዝር",
     labels: {
