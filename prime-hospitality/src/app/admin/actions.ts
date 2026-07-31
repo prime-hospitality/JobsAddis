@@ -481,10 +481,15 @@ export async function deleteUser(userId: string, passwordAttempt: string) {
   return { success: true };
 }
 
+/** An admin status change supersedes whatever the employer had marked, so the
+ *  "filled" stamp is cleared alongside it. That matters in both directions:
+ *  an admin closing a previously-filled job must not leave behind the flag the
+ *  employer's Repost button unlocks on, and an admin reopening one must not
+ *  leave it looking filled while it is live. */
 export async function toggleJobStatus(jobId: string, status: "active" | "closed" | "pending" | "scheduled" | "rejected") {
   await requirePermission("manageJobs");
 
-  const { error } = await getSupabase().from("jobs").update({ status }).eq("id", jobId);
+  const { error } = await getSupabase().from("jobs").update({ status, filled_at: null }).eq("id", jobId);
   if (error) throw error;
   await logActivity("change_job_status", jobId, { status });
   return { success: true };
@@ -511,7 +516,21 @@ export async function repostJob(jobId: string, newDeadline: string) {
 
   const { error } = await supabase
     .from("jobs")
-    .update({ deadline: newDeadline, status: "active", scheduled_at: null, pre_approved: false, last_posted_at: new Date().toISOString() })
+    // Same reset as the employer's own Repost: a new hiring round is announced
+    // to the group again and re-alerts subscribed seekers, rather than quietly
+    // reappearing in the app where only someone already browsing would see it.
+    .update({
+      deadline: newDeadline,
+      status: "active",
+      scheduled_at: null,
+      pre_approved: false,
+      last_posted_at: new Date().toISOString(),
+      filled_at: null,
+      announced_at: null,
+      announced_message_id: null,
+      announce_attempts: 0,
+      alerts_queued_at: null,
+    })
     .eq("id", jobId);
 
   if (error) throw error;

@@ -124,9 +124,20 @@ async function announceNewlyActiveJobs(supabase: any) {
 
     if (posted) {
       announced++;
-      // Kept so the post can be taken down if the job is later deleted. A
-      // failure to record it costs only that ability, so it must not undo an
-      // announcement that has already gone out.
+      // Recorded so the post can be taken down if the job is later deleted, and
+      // so it counts against the employer's group-boost quota for the day. A
+      // failure to record it costs only those two things, so it must not undo
+      // an announcement that has already gone out.
+      //
+      // Appended rather than overwritten: a boosted job has several live posts
+      // in the group and every one of them needs retracting. The column is kept
+      // in step as "the most recent", which is all anything still reads it for.
+      const { error: logErr } = await supabase
+        .from("job_group_posts")
+        .insert({ job_id: job.id, message_id: messageId, job_title: job.title });
+      if (logErr) {
+        console.error(`[Announce] Could not record group post for job ${job.id}:`, logErr);
+      }
       const { error: idErr } = await supabase
         .from("jobs")
         .update({ announced_message_id: messageId })

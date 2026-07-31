@@ -2,6 +2,7 @@
 
 import { getSupabase, requireEmployer, logEmployerActivity } from "../shared/employerServerUtils";
 import { isSubscriptionExpired } from "@/lib/subscriptionStatus";
+import { startOfAddisDay } from "@/lib/addisDay";
 import {
   VacancyFormState,
   buildJobDescription,
@@ -11,15 +12,29 @@ import {
   validateVacancyForm as validateVacancyFormShared,
 } from "./vacancyShared";
 
+/** How many times a single job may appear in the Telegram group per day,
+ *  by plan tier. The mini app shows a vacancy once and that is enough --
+ *  the group is a feed, where a post is buried by the next twenty, so
+ *  visibility there is bought in repeats. The employer's very first
+ *  announcement counts as one of these, not as a freebie on top. */
+const GROUP_BOOSTS_PER_DAY = { standard: 3, premium: 5 } as const;
+
 async function getEmployerPublishingRules(supabase: ReturnType<typeof getSupabase>, employerId: string) {
   const { data } = await supabase
     .from("employers")
-    .select("auto_publish, daily_post_limit, package_expires_at, renewal_requested_at, renewal_seen_at")
+    .select("auto_publish, daily_post_limit, package_expires_at, renewal_requested_at, renewal_seen_at, packages(category)")
     .eq("id", employerId)
     .single();
+  const pkg = (data as any)?.packages;
+  const tier = (Array.isArray(pkg) ? pkg[0]?.category : pkg?.category) === "premium" ? "premium" : "standard";
   return {
     autoPublish: !!data?.auto_publish,
     dailyPostLimit: data?.daily_post_limit ?? 15,
+    // An employer with no package assigned falls back to standard rather than
+    // to nothing -- the subscription check is what gates access, and it runs
+    // separately. This only decides how generous the cap is once they're in.
+    tier,
+    groupBoostsPerDay: GROUP_BOOSTS_PER_DAY[tier],
     // Date-only (YYYY-MM-DD) so it compares cleanly against the deadline
     // field, which is itself a plain date with no time component.
     packageExpiresAt: data?.package_expires_at ? String(data.package_expires_at).split("T")[0] : null,
@@ -45,13 +60,11 @@ function resolveDeadline(formDeadline: string | null | undefined, maxDeadline: s
 // Counts against last_posted_at (not created_at) so that a repost of an expired
 // job counts as one of today's posts, same as a fresh "Post Now".
 async function getTodayPostCount(supabase: ReturnType<typeof getSupabase>, employerId: string) {
-  const startOfDay = new Date();
-  startOfDay.setHours(0, 0, 0, 0);
   const { count } = await supabase
     .from("jobs")
     .select("id", { count: "exact", head: true })
     .eq("employer_id", employerId)
-    .gte("last_posted_at", startOfDay.toISOString());
+    .gte("last_posted_at", startOfAddisDay().toISOString());
   return count || 0;
 }
 
@@ -65,11 +78,17 @@ export async function getEmployerPostingData() {
   if (!session) throw new Error("Unauthorized");
 
   const supabase = getSupabase();
-  const [jobsRes, templatesRes, rules, applicationsRes] = await Promise.all([
+  const startOfDay = startOfAddisDay();
+  const [jobsRes, templatesRes, rules, applicationsRes, groupPostsRes] = await Promise.all([
     supabase.from("jobs").select("*").eq("employer_id", session.employerId).order("last_posted_at", { ascending: false }),
     supabase.from("employer_vacancy_templates").select("*").eq("employer_id", session.employerId).order("created_at", { ascending: false }),
     getEmployerPublishingRules(supabase, session.employerId),
     supabase.from("applications").select("job_id, status, created_at, jobs!inner ( employer_id )").eq("jobs.employer_id", session.employerId),
+    supabase
+      .from("job_group_posts")
+      .select("job_id, jobs!inner ( employer_id )")
+      .eq("jobs.employer_id", session.employerId)
+      .gte("posted_at", startOfDay.toISOString()),
   ]);
 
   // Per-job applicant/shortlisted/locked counts, so each posting can show how
@@ -87,12 +106,22 @@ export async function getEmployerPostingData() {
     if (new Date((row as any).created_at).getTime() > expiresAtMs) lockedCounts[jobId] = (lockedCounts[jobId] ?? 0) + 1;
   }
 
+  // How many times each job has reached the group today, so a card can show
+  // what's left of its allowance without a round trip per card.
+  const groupPostsToday: Record<string, number> = {};
+  for (const row of groupPostsRes.data || []) {
+    const jobId = (row as any).job_id as string;
+    groupPostsToday[jobId] = (groupPostsToday[jobId] ?? 0) + 1;
+  }
+
   return {
     jobs: jobsRes.data || [],
     templates: templatesRes.data || [],
     applicantCounts,
     shortlistedCounts,
     lockedCounts,
+    groupPostsToday,
+    groupBoostsPerDay: rules.groupBoostsPerDay,
     autoPublish: rules.autoPublish,
     dailyPostLimit: rules.dailyPostLimit,
     packageExpiresAt: rules.packageExpiresAt,
@@ -108,9 +137,9 @@ export async function getEmployerPostingData() {
 /** "Mark as Filled" on a Post-tab card -- closes the job to new applicants
  *  without deleting it. Reuses the existing 'closed' status (already excluded
  *  from every seeker-facing query the same way 'expired' is); filled_at is
- *  what distinguishes this from an admin-moderated close. Not repostable by
- *  the employer afterward (repostEmployerJob only allows from 'expired') --
- *  post a new job to hire again for the same role. */
+ *  what distinguishes this from an admin-moderated close. The employer can
+ *  repost it later if the role opens up again -- see repostEmployerJob, which
+ *  is what filled_at gates on. */
 export async function markJobAsFilled(jobId: string): Promise<{ success: true } | { success: false; error: string }> {
   const session = await requireEmployer();
   if (!session) return { success: false, error: "Unauthorized" };
@@ -130,6 +159,89 @@ export async function markJobAsFilled(jobId: string): Promise<{ success: true } 
   if (error) return { success: false, error: error.message || "Failed to update job" };
   await logEmployerActivity(session, "employer_mark_job_filled", existing.title);
   return { success: true };
+}
+
+/** Counts how many times a job has already been announced to the group today.
+ *  Shares its notion of "today" with getTodayPostCount above so the two daily
+ *  allowances on the same dashboard roll over at the same moment. */
+async function getTodayGroupPostCount(supabase: ReturnType<typeof getSupabase>, jobId: string) {
+  const { count } = await supabase
+    .from("job_group_posts")
+    .select("id", { count: "exact", head: true })
+    .eq("job_id", jobId)
+    .gte("posted_at", startOfAddisDay().toISOString());
+  return count || 0;
+}
+
+/** "Repost to group" on a live job card — puts the vacancy back at the top of
+ *  the Telegram group without touching the mini app.
+ *
+ *  The two surfaces want opposite things. In the mini app a vacancy is a row in
+ *  a searchable list, so posting it twice is duplication with no upside. In the
+ *  group it is a message in a feed, and by the next morning it is a hundred
+ *  messages down; the only way back to the top is to say it again. So this
+ *  boosts one and deliberately leaves the other alone: the job row is not
+ *  modified, its status stays 'active', and last_posted_at is untouched, which
+ *  means a boost costs nothing against the daily *posting* limit. It draws on
+ *  its own smaller allowance instead — GROUP_BOOSTS_PER_DAY, per job, per day.
+ *
+ *  Nothing here talks to Telegram. Clearing announced_at hands the job back to
+ *  the same every-minute sweep that announced it the first time, which already
+ *  has the bot token, the claim-then-act guard against double posting, and the
+ *  retry budget. The sweep also skips the seeker DM fan-out on its own, keyed
+ *  off alerts_queued_at, so a boost reaches the group without re-notifying
+ *  everyone who was already told about this job. */
+export async function boostJobToGroup(jobId: string): Promise<{ success: true; used: number; limit: number } | { success: false; error: string }> {
+  const session = await requireEmployer();
+  if (!session) return { success: false, error: "Unauthorized" };
+
+  const supabase = getSupabase();
+  const rules = await getEmployerPublishingRules(supabase, session.employerId);
+  if (rules.isExpired) return { success: false, error: "Your subscription has expired. Renew your plan to keep posting to the group." };
+
+  const { data: job } = await supabase
+    .from("jobs")
+    .select("id, employer_id, title, status, deadline, announced_at")
+    .eq("id", jobId)
+    .maybeSingle();
+  if (!job || job.employer_id !== session.employerId) return { success: false, error: "Job not found" };
+
+  if (job.status !== "active") {
+    return { success: false, error: "Only a job that's currently live can be reposted to the group." };
+  }
+  // A job past its deadline is still 'active' until the next sweep flips it.
+  // Announcing one in that window would put a vacancy in the group that the
+  // app itself is about to stop accepting applications for.
+  if (job.deadline && new Date(job.deadline).getTime() < Date.now()) {
+    return { success: false, error: "This job's deadline has passed. Extend it first, then repost to the group." };
+  }
+  // announced_at is null only while a post is claimed but not yet sent, so this
+  // is also what stops a double-click from spending two of the day's boosts on
+  // one appearance.
+  if (!job.announced_at) {
+    return { success: false, error: "This job is already queued for the group — it'll appear within a minute." };
+  }
+
+  const used = await getTodayGroupPostCount(supabase, jobId);
+  if (used >= rules.groupBoostsPerDay) {
+    return {
+      success: false,
+      error: `This job has already been posted to the group ${used} time${used === 1 ? "" : "s"} today, the most your ${rules.tier} plan allows. You can post it again tomorrow.`,
+    };
+  }
+
+  const { error } = await supabase
+    .from("jobs")
+    // announce_attempts back to zero as well: the budget is per announcement,
+    // and a job that burned its retries on a bad night must not start this
+    // boost already written off.
+    .update({ announced_at: null, announce_attempts: 0 })
+    .eq("id", jobId)
+    .eq("employer_id", session.employerId);
+
+  if (error) return { success: false, error: error.message || "Failed to queue the group post" };
+  await logEmployerActivity(session, "employer_boost_job_to_group", job.title, { used: used + 1, limit: rules.groupBoostsPerDay });
+  return { success: true, used: used + 1, limit: rules.groupBoostsPerDay };
 }
 
 /** "Post Now" on the Post tab — creates a new job directly for this employer. */
@@ -220,11 +332,18 @@ export async function updateEmployerJobPost(jobId: string, form: VacancyFormStat
   return { success: true };
 }
 
-/** Repost button on an expired job card — requires a new (future) deadline,
- *  is gated by the same daily posting limit as a fresh post, and re-runs the
- *  employer's auto_publish routing (active if they have "post without
- *  review", otherwise back to pending for admin review). Updates the
- *  existing row in place rather than creating a new job. */
+/** Repost button on an expired or filled job card — requires a new (future)
+ *  deadline, is gated by the same daily posting limit as a fresh post, and
+ *  re-runs the employer's auto_publish routing (active if they have "post
+ *  without review", otherwise back to pending for admin review). Updates the
+ *  existing row in place rather than creating a new job.
+ *
+ *  'closed' is only repostable when filled_at is set. Three things produce a
+ *  closed job and only one of them is the employer's own doing: Mark as Filled
+ *  (filled_at stamped), an admin closing it from the moderation dashboard, and
+ *  a cancelled scheduled post. Letting the employer repost out of 'closed'
+ *  unconditionally would hand them a one-click undo for an admin's moderation
+ *  decision, so filled_at is the gate rather than the status alone. */
 export async function repostEmployerJob(jobId: string, form: VacancyFormState): Promise<{ success: true; status: "active" | "pending" } | { success: false; error: string }> {
   const session = await requireEmployer();
   if (!session) return { success: false, error: "Unauthorized" };
@@ -236,9 +355,10 @@ export async function repostEmployerJob(jobId: string, form: VacancyFormState): 
   const validationError = validateVacancyForm(form, { requireDeadline: true, maxDeadline: rules.packageExpiresAt });
   if (validationError) return { success: false, error: validationError };
 
-  const { data: existing } = await supabase.from("jobs").select("id, employer_id, status, deadline").eq("id", jobId).maybeSingle();
+  const { data: existing } = await supabase.from("jobs").select("id, employer_id, status, deadline, filled_at").eq("id", jobId).maybeSingle();
   if (!existing || existing.employer_id !== session.employerId) return { success: false, error: "Job not found" };
-  if (existing.status !== "expired") return { success: false, error: "Only expired jobs can be reposted." };
+  const repostable = existing.status === "expired" || (existing.status === "closed" && !!existing.filled_at);
+  if (!repostable) return { success: false, error: "Only expired or filled jobs can be reposted." };
 
   if (rules.dailyPostLimit !== -1) {
     const postedToday = await getTodayPostCount(supabase, session.employerId);
@@ -273,6 +393,27 @@ export async function repostEmployerJob(jobId: string, form: VacancyFormState): 
       // floats the job to the top of the feed, and shows it as freshly posted
       // to seekers — while created_at stays as the original post date.
       last_posted_at: new Date().toISOString(),
+      // The role is open again, so the "filled" stamp has to go. Leaving it set
+      // would outlive this repost: when the new deadline passes, the expired
+      // card checks `!filled_at` to decide whether to show the "Deadline ended
+      // — mark as filled / extend" advisory, and a stale stamp silently
+      // suppresses it.
+      filled_at: null,
+      // Hand the job back to the announce sweep so the group hears about it
+      // again. Without this a reposted vacancy returns to the mini app in
+      // silence: `announced_at` still carries the stamp from its first run, and
+      // the sweep only ever looks at jobs where it is null.
+      //
+      // alerts_queued_at goes with it, which re-opens the DM fan-out to seekers
+      // subscribed to this category. That is the line between the two kinds of
+      // repost: this one is a fresh hiring round -- the last round ended, in a
+      // hire or in a lapsed deadline, and these are new openings people want to
+      // hear about. A group boost is the same round said louder, so it leaves
+      // this field alone and nobody is DMed twice for one vacancy.
+      announced_at: null,
+      announced_message_id: null,
+      announce_attempts: 0,
+      alerts_queued_at: null,
     })
     .eq("id", jobId);
 

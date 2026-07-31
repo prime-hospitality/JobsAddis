@@ -70,6 +70,12 @@ export const POSTING_STYLES = `
   .mjp-iconbtn.repost:hover { background: #ecfdf5; border-color: #a7f3d0; color: #059669; }
   .mjp-iconbtn.hire { border-color: #e2e8f0; color: #64748b; }
   .mjp-iconbtn.hire:hover { background: #eef2ff; border-color: #c7d2fe; color: #4f46e5; }
+  /* Telegram's own blue on hover — this is the one action on the card that
+     leaves the app entirely, and colouring it like the destination is the
+     cheapest way to say so before the tooltip does. */
+  .mjp-iconbtn.tgboost { border-color: #e2e8f0; color: #64748b; }
+  .mjp-iconbtn.tgboost:hover:not(:disabled) { background: #e7f5fd; border-color: #a8dcfa; color: #229ED9; }
+  .mjp-iconbtn:disabled { opacity: .4; cursor: not-allowed; }
 
   .mjp-btn-primary {
     display: inline-flex; align-items: center; justify-content: center; gap: 7px;
@@ -215,6 +221,40 @@ export const STATUS_META: Record<string, StatusMeta> = {
   expired:   { label: "Expired",      text: "#b91c1c", bg: "#fef2f2", border: "#fecaca", dot: "#ef4444", accent: "#ef4444" },
   rejected:  { label: "Rejected",     text: "#b91c1c", bg: "#fef2f2", border: "#fecaca", dot: "#ef4444", accent: "#ef4444" },
 };
+
+/** Repost arrow with Telegram's paper plane tucked into it.
+ *
+ *  The card already has a plain repost arrow that means "put this vacancy back
+ *  in the app", and this action is a different thing that would otherwise look
+ *  identical -- group only, its own allowance, no effect on the listing. Rather
+ *  than a second bare arrow, the plane rides in the gap of the circular arrow,
+ *  which reads as "repost, to Telegram" at 15px without a legend.
+ *
+ *  Drawn inline instead of stacking two lucide icons so the plane can be masked
+ *  out of the arrow: the notch keeps the two shapes legible where they meet,
+ *  which overlapping alone does not at this size. */
+export function GroupRepostIcon({ size = 15 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
+         stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"
+         aria-hidden="true">
+      <defs>
+        {/* Everything shows except a disc behind the plane. */}
+        <mask id="tg-boost-notch">
+          <rect width="24" height="24" fill="white" />
+          <circle cx="16.5" cy="16.5" r="7" fill="black" />
+        </mask>
+      </defs>
+      <g mask="url(#tg-boost-notch)">
+        <path d="M21 12a9 9 0 1 1-2.64-6.36" />
+        <path d="M21 3v6h-6" />
+      </g>
+      {/* Paper plane: outline, then the fold line that gives it depth. */}
+      <path d="M21.5 12.5 12 17l-.6 3.6a.4.4 0 0 0 .7.3l1.8-2.1 3.1 2.3a.4.4 0 0 0 .6-.2l2.5-8a.4.4 0 0 0-.6-.4Z" fill="currentColor" stroke="none" />
+      <path d="M12 17l7.2-4.1" stroke="#fff" strokeWidth={1} />
+    </svg>
+  );
+}
 
 export function StatusPill({ status }: { status: string }) {
   const m = STATUS_META[status] || STATUS_META.pending;
