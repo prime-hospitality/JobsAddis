@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
-import { logoutEmployer, getEmployerNotifications, markNotificationAsRead, getEmployerAccounts, switchEmployerAccount, removeEmployerAccount } from "../actions";
+import { logoutEmployer, getEmployerNotifications, markAllNotificationsAsRead, getEmployerAccounts, switchEmployerAccount, removeEmployerAccount } from "../actions";
 import { getApplicantCounts } from "./applicants/actions";
 import EmployerAvatar from "@/components/EmployerAvatar";
 import { runSilently } from "@/lib/silentFetch";
@@ -106,6 +106,20 @@ export default function EmployerDashboardLayout({
     const interval = setInterval(fetchNotifs, 30000);
     return () => clearInterval(interval);
   }, []);
+
+  // Opening the bell clears the badge on its own, after a beat so it doesn't
+  // vanish before the count has registered — same pattern as the seeker-side
+  // NotificationPanel.
+  useEffect(() => {
+    if (!notifOpen) return;
+    const markTimer = setTimeout(() => {
+      setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+      runSilently(() => markAllNotificationsAsRead()).catch((e) =>
+        console.error("Failed to mark notifications read", e)
+      );
+    }, 1000);
+    return () => clearTimeout(markTimer);
+  }, [notifOpen]);
 
   // Badge the Applicant Tracking nav item with applicants nobody has opened yet.
   useEffect(() => {
@@ -369,33 +383,39 @@ export default function EmployerDashboardLayout({
                             let text = "";
                             let bg = "#f8fafc";
                             if (notif.type === "job_expiring") {
-                              text = `Your job post "${notif.job_title}" is expiring within 48 hours. Extend it before it goes offline!`;
-                              bg = notif.read ? "#fff" : "#fffbeb";
+                              text = `Your job post "${notif.job_title}" has 2 days left. Extend it before it goes offline!`;
+                              bg = "#fffbeb";
                             } else if (notif.type === "subscription_expired") {
                               text = `Your subscription has expired. All active jobs have been hidden.`;
-                              bg = notif.read ? "#fff" : "#fef2f2";
+                              bg = "#fef2f2";
                             } else if (notif.type === "subscription_expiring") {
-                              text = `Your subscription will expire within 24 hours. Once it ends, you won't be able to post new jobs until you renew.`;
-                              bg = notif.read ? "#fff" : "#fffbeb";
+                              text = `Your subscription has a day left. Once it ends, you won't be able to post new jobs until you renew.`;
+                              bg = "#fffbeb";
                             } else if (notif.type === "broadcast") {
                               text = notif.job_title;
-                              bg = notif.read ? "#fff" : "#f5f3ff";
+                              bg = "#f5f3ff";
                             } else {
                               text = `Someone applied to your "${notif.job_title}" position.`;
-                              bg = notif.read ? "#fff" : "#eff6ff";
+                              bg = "#eff6ff";
                             }
                             return (
                               <div
                                 key={notif.id}
                                 onClick={() => {
-                                  if (notif.read) return;
-                                  // Mark it read in place and persist quietly —
-                                  // a full-screen overlay over the dropdown for
-                                  // a read receipt is pure flicker.
-                                  setNotifications(prev => prev.map(n => n.id === notif.id ? { ...n, read: true } : n));
-                                  runSilently(() => markNotificationAsRead(notif.id)).catch((e) =>
-                                    console.error("Failed to mark notification read", e)
+                                  setNotifOpen(false);
+                                  // A click is stronger evidence of "seen" than the
+                                  // open-and-wait timer, and navigating away right after
+                                  // opening cancels that timer before it fires -- so mark
+                                  // read immediately rather than leaving it to that alone.
+                                  setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+                                  runSilently(() => markAllNotificationsAsRead()).catch((e) =>
+                                    console.error("Failed to mark notifications read", e)
                                   );
+                                  if (notif.type === "new_applicant" || notif.type === "job_expiring") {
+                                    router.push(notif.job_id ? `/emp/dashboard/applicants?job=${notif.job_id}` : "/emp/dashboard/jobs");
+                                  } else if (notif.type === "subscription_expiring" || notif.type === "subscription_expired") {
+                                    router.push("/emp/dashboard/billing");
+                                  }
                                 }}
                                 style={{
                                   padding: "12px 16px",
@@ -409,7 +429,7 @@ export default function EmployerDashboardLayout({
                                 onMouseEnter={(e) => (e.currentTarget.style.background = "#f1f5f9")}
                                 onMouseLeave={(e) => (e.currentTarget.style.background = bg)}
                               >
-                                <p style={{ margin: 0, lineHeight: 1.4, fontWeight: notif.read ? 400 : 600 }}>{text}</p>
+                                <p style={{ margin: 0, lineHeight: 1.4, fontWeight: 600 }}>{text}</p>
                                 <span style={{ fontSize: 10, color: "#94a3b8", marginTop: 4, display: "block" }}>
                                   {new Date(notif.created_at).toLocaleDateString()}
                                 </span>
