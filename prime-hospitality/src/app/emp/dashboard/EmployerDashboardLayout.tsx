@@ -386,7 +386,7 @@ export default function EmployerDashboardLayout({
                               text = `Your job post "${notif.job_title}" has 2 days left. Extend it before it goes offline!`;
                               bg = "#fffbeb";
                             } else if (notif.type === "subscription_expired") {
-                              text = `Your subscription has expired. All active jobs have been hidden.`;
+                              text = `Your subscription has expired. Your existing job posts stay live until their own deadline, but new applicants are locked until you renew.`;
                               bg = "#fef2f2";
                             } else if (notif.type === "subscription_expiring") {
                               text = `Your subscription has a day left. Once it ends, you won't be able to post new jobs until you renew.`;

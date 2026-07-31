@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, useTransition } from "react";
+import { Lock } from "lucide-react";
 import {
   getApplicants,
   setApplicationStatus,
@@ -13,6 +14,7 @@ import { runSilently } from "@/lib/silentFetch";
 import { cvActionLabel } from "@/lib/cvStorage";
 import FilterSelect from "@/components/FilterSelect";
 import { writeEmployerUi } from "@/lib/employerUiCookie";
+import RenewSubscriptionButton from "../RenewSubscriptionButton";
 
 type TabKey = "all" | "shortlisted" | "rejected";
 
@@ -58,9 +60,20 @@ interface Props {
   jobs: Array<{ id: string; title: string }>;
   initialJobFilter?: string;
   initialTab?: TabKey;
+  employerId: string;
+  initialRenewalRequestedAt: string | null;
+  initialRenewalSeenAt: string | null;
 }
 
-export default function ApplicantsTab({ initialApplicants, jobs, initialJobFilter = "", initialTab = "all" }: Props) {
+export default function ApplicantsTab({
+  initialApplicants,
+  jobs,
+  initialJobFilter = "",
+  initialTab = "all",
+  employerId,
+  initialRenewalRequestedAt,
+  initialRenewalSeenAt,
+}: Props) {
   const [applicants, setApplicants] = useState(initialApplicants);
   const [jobFilter, setJobFilter] = useState<string>(initialJobFilter);
   const [tab, setTab] = useState<TabKey>(initialTab);
@@ -107,6 +120,8 @@ export default function ApplicantsTab({ initialApplicants, jobs, initialJobFilte
     [applicants]
   );
 
+  const lockedCount = useMemo(() => applicants.filter((a) => a.locked).length, [applicants]);
+
   const visible = useMemo(() => {
     const q = search.trim().toLowerCase();
     return applicants.filter((a) => {
@@ -123,6 +138,7 @@ export default function ApplicantsTab({ initialApplicants, jobs, initialJobFilte
   }
 
   function handleOpen(row: ApplicantRow) {
+    if (row.locked) return;
     setOpenId(row.id);
     setError(null);
     // Opening a card counts as reviewing it — this is what lights up the
@@ -174,6 +190,18 @@ export default function ApplicantsTab({ initialApplicants, jobs, initialJobFilte
       {error && (
         <div style={{ background: "#fef2f2", border: "1px solid #fecaca", color: "#991b1b", borderRadius: 10, padding: "10px 14px", fontSize: 13, fontWeight: 500, marginBottom: 16 }}>
           {error}
+        </div>
+      )}
+
+      {lockedCount > 0 && (
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap", background: "#fef2f2", border: "1px solid #fecaca", color: "#991b1b", borderRadius: 10, padding: "12px 16px", marginBottom: 16 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <Lock size={15} style={{ flexShrink: 0 }} />
+            <p style={{ fontSize: 13, fontWeight: 600, margin: 0 }}>
+              {lockedCount} new applicant{lockedCount === 1 ? "" : "s"} {lockedCount === 1 ? "is" : "are"} waiting — renew your subscription to view them.
+            </p>
+          </div>
+          <RenewSubscriptionButton employerId={employerId} initialRequestedAt={initialRenewalRequestedAt} initialSeenAt={initialRenewalSeenAt} />
         </div>
       )}
 
@@ -238,21 +266,30 @@ export default function ApplicantsTab({ initialApplicants, jobs, initialJobFilte
             <div
               key={a.id}
               onClick={() => handleOpen(a)}
-              style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 18px", borderBottom: "1px solid #f1f5f9", cursor: "pointer" }}
+              style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 18px", borderBottom: "1px solid #f1f5f9", cursor: a.locked ? "default" : "pointer" }}
             >
-              <div style={{ width: 38, height: 38, borderRadius: "50%", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 800, color: "#fff", flexShrink: 0 }}>
-                {(a.profile?.full_name || "?").charAt(0).toUpperCase()}
-              </div>
+              <div style={{ position: "relative", display: "flex", alignItems: "center", gap: 14, flex: 1, minWidth: 0 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 14, flex: 1, minWidth: 0, filter: a.locked ? "blur(4px)" : "none" }}>
+                  <div style={{ width: 38, height: 38, borderRadius: "50%", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 800, color: "#fff", flexShrink: 0 }}>
+                    {(a.profile?.full_name || "?").charAt(0).toUpperCase()}
+                  </div>
 
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 14, fontWeight: 700, color: "#0f172a" }}>
-                  {a.profile?.full_name || "Anonymous"}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: "#0f172a" }}>
+                      {a.profile?.full_name || "Anonymous"}
+                    </div>
+                    <div style={{ fontSize: 12, color: "#94a3b8", marginTop: 2 }}>
+                      {a.job_title}
+                      {a.profile?.location ? ` · ${a.profile.location}` : ""}
+                      {a.profile?.cv_url ? " · CV ✓" : ""}
+                    </div>
+                  </div>
                 </div>
-                <div style={{ fontSize: 12, color: "#94a3b8", marginTop: 2 }}>
-                  {a.job_title}
-                  {a.profile?.location ? ` · ${a.profile.location}` : ""}
-                  {a.profile?.cv_url ? " · CV ✓" : ""}
-                </div>
+                {a.locked && (
+                  <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", gap: 6, color: "#991b1b", fontSize: 12, fontWeight: 700 }}>
+                    <Lock size={13} /> Renew to view
+                  </div>
+                )}
               </div>
 
               <span style={{ fontSize: 11, fontWeight: 700, color: a.score >= 80 ? "#059669" : a.score >= 50 ? "#d97706" : "#94a3b8", flexShrink: 0 }}>

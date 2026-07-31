@@ -4,6 +4,7 @@ import { createClient } from "@supabase/supabase-js";
 import Link from "next/link";
 import RenewSubscriptionButton from "./RenewSubscriptionButton";
 import { verifySessionValue } from "@/lib/signedSession";
+import { isSubscriptionExpired } from "@/lib/subscriptionStatus";
 
 async function getSession() {
   const sessionCookie = (await cookies()).get("employer_session");
@@ -63,7 +64,7 @@ async function getRenewalStatus(employerId: string) {
     .maybeSingle();
 
   const expiresAt = data?.package_expires_at ? new Date(data.package_expires_at) : null;
-  const isExpired = !expiresAt || expiresAt.getTime() < Date.now();
+  const isExpired = isSubscriptionExpired(data?.package_expires_at);
   // Keep nudging on Overview/Jobs both in the 24h run-up to expiry and after
   // it's actually passed -- posting stays blocked either way until renewed.
   const showNudge = !expiresAt || expiresAt.getTime() - Date.now() <= 24 * 60 * 60 * 1000;

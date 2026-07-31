@@ -77,6 +77,7 @@ export const en = {
     postedAndHiring: "Posted {when} · Actively hiring",
     applied: "Applied ✓",
     applicationsClosed: "Applications Closed",
+    deadlineEnded: "Deadline has ended",
     applyNow: "Apply Now →",
   },
 

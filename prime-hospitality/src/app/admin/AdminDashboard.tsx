@@ -11,6 +11,7 @@ import { Timer, Gear } from "@phosphor-icons/react";
 import { supabase } from "@/lib/supabase";
 import { runSilently } from "@/lib/silentFetch";
 import { AdminUiState, writeAdminUi, clearAdminUi } from "@/lib/adminUiCookie";
+import { isSubscriptionExpired } from "@/lib/subscriptionStatus";
 import { clearTabUser } from "@/lib/adminTabSession";
 import ContentManagementTab from "./ContentManagementTab";
 import BroadcastTab from "./BroadcastTab";
@@ -28,7 +29,7 @@ const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 function getSubscriptionStatus(packageExpiresAt: string | null | undefined) {
   const expiresAt = packageExpiresAt ? new Date(packageExpiresAt) : null;
   const msLeft = expiresAt ? expiresAt.getTime() - Date.now() : -Infinity;
-  const expired = !expiresAt || msLeft <= 0;
+  const expired = isSubscriptionExpired(packageExpiresAt);
   const daysLeft = expiresAt ? Math.ceil(msLeft / ONE_DAY_MS) : 0;
   return {
     expired,

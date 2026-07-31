@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Save, X, Briefcase, MapPin, CreditCard, ClipboardList, CalendarClock } from "lucide-react";
 import { searchLocations } from "@/data/locations";
 import { VacancyFormState, VacancyFormErrors, validateVacancyForm } from "./vacancyShared";
@@ -149,6 +149,9 @@ const STYLES = `
 
   @keyframes vfm-spin { to { transform: rotate(360deg); } }
   .vfm-spin { animation: vfm-spin 1s linear infinite; }
+
+  @keyframes vfm-pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(2,132,199,0); } 50% { box-shadow: 0 0 0 4px rgba(2,132,199,0.25); } }
+  .vfm-input.deadline-pulse { animation: vfm-pulse 0.6s ease-in-out 2; border-color: #0284c7; }
 `;
 
 export default function VacancyFormModal({
@@ -162,6 +165,7 @@ export default function VacancyFormModal({
   headerSubtitle,
   requireDeadline,
   maxDeadline,
+  focusDeadline,
   mode = "employer",
   scheduledPublish,
 }: {
@@ -177,6 +181,10 @@ export default function VacancyFormModal({
   /** Date (YYYY-MM-DD) past which the deadline picker is capped -- an
    *  employer's plan end date. Omit for no cap (e.g. the admin dashboard). */
   maxDeadline?: string | null;
+  /** Scrolls the deadline field into view and briefly pulses it on open --
+   *  set when the modal was opened via a "click here to extend" affordance
+   *  rather than the general Edit button. */
+  focusDeadline?: boolean;
   /** Reserved for admin-only affordances -- today that's just whether
    *  `scheduledPublish` is honored. Defaults to the employer dashboard. */
   mode?: "employer" | "admin";
@@ -193,6 +201,17 @@ export default function VacancyFormModal({
   const [locationSuggestionsOpen, setLocationSuggestionsOpen] = useState(false);
   // Typed off the shared validator so a new rule there can't silently render nowhere.
   const [fieldErrors, setFieldErrors] = useState<VacancyFormErrors>({});
+  const deadlineInputRef = useRef<HTMLInputElement>(null);
+  const [deadlinePulse, setDeadlinePulse] = useState(false);
+
+  useEffect(() => {
+    if (!focusDeadline || !deadlineInputRef.current) return;
+    deadlineInputRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+    setDeadlinePulse(true);
+    const t = setTimeout(() => setDeadlinePulse(false), 1500);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focusDeadline]);
 
   // Jobs saved before the role list was consolidated can carry a category that
   // is no longer an option (a department name, or a free-typed value). Keep it
@@ -397,7 +416,8 @@ export default function VacancyFormModal({
                     {maxDeadline && <span className="vfm-hint">Plan ends {maxDeadline}</span>}
                   </label>
                   <input
-                    className={`vfm-input${fieldErrors.deadline ? " error" : ""}`}
+                    ref={deadlineInputRef}
+                    className={`vfm-input${fieldErrors.deadline ? " error" : ""}${deadlinePulse ? " deadline-pulse" : ""}`}
                     type="date"
                     value={value.deadline}
                     min={new Date().toISOString().split("T")[0]}

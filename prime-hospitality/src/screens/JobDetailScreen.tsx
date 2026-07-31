@@ -77,7 +77,7 @@ export default function JobDetailScreen({ job, isEmployer, seekerYears, hasAppli
           })
     },
     { icon: Briefcase, label: t("jobDetail.labels.jobType"), value: job.jobType },
-    { icon: Calendar, label: t("jobDetail.labels.deadline"), value: formatDate(job.deadline, t.lang) },
+    { icon: Calendar, label: t("jobDetail.labels.deadline"), value: deadlinePassed ? t("jobDetail.deadlineEnded") : formatDate(job.deadline, t.lang) },
   ];
 
   if (job.requirements?.workingHours) {

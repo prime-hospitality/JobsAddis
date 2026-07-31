@@ -17,7 +17,7 @@ export default async function ApplicantsPage({
 
   // ?job=<id> lets the Jobs tab and the overview link straight to one posting.
   const { job } = await searchParams;
-  const { applicants, jobs } = await getApplicants(job);
+  const { applicants, jobs, renewalRequestedAt, renewalSeenAt } = await getApplicants(job);
 
   // Restore the last status tab server-side so a reload renders it on the first
   // paint instead of showing All and swapping after hydration.
@@ -31,6 +31,9 @@ export default async function ApplicantsPage({
       jobs={jobs}
       initialJobFilter={job ?? ""}
       initialTab={initialTab}
+      employerId={session.employerId}
+      initialRenewalRequestedAt={renewalRequestedAt}
+      initialRenewalSeenAt={renewalSeenAt}
     />
   );
 }
