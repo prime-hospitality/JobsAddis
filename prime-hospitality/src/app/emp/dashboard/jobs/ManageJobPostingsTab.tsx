@@ -21,6 +21,11 @@ export interface PostingData {
   /** job id → number that arrived after the subscription lapsed and are
    *  locked from view until the employer renews. */
   lockedCounts: Record<string, number>;
+  /** job id → times it has been announced to the Telegram group today,
+   *  counting the original announcement. Absent means none yet. */
+  groupPostsToday: Record<string, number>;
+  /** Times one job may reach the group per day on this employer's plan. */
+  groupBoostsPerDay: number;
   autoPublish: boolean;
   dailyPostLimit: number;
   /** Date (YYYY-MM-DD) this employer's current plan runs out, or null if
@@ -40,6 +45,8 @@ const EMPTY: PostingData = {
   applicantCounts: {},
   shortlistedCounts: {},
   lockedCounts: {},
+  groupPostsToday: {},
+  groupBoostsPerDay: 3,
   autoPublish: false,
   dailyPostLimit: 15,
   packageExpiresAt: null,
@@ -78,6 +85,8 @@ export default function ManageJobPostingsTab({
         applicantCounts: res.applicantCounts || {},
         shortlistedCounts: res.shortlistedCounts || {},
         lockedCounts: res.lockedCounts || {},
+        groupPostsToday: res.groupPostsToday || {},
+        groupBoostsPerDay: res.groupBoostsPerDay ?? 3,
         autoPublish: res.autoPublish,
         dailyPostLimit: res.dailyPostLimit,
         packageExpiresAt: res.packageExpiresAt ?? null,

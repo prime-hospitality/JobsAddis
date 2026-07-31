@@ -3,17 +3,18 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { Plus, Pencil, Trash2, MapPin, Briefcase, Users, Clock, CalendarClock, CheckCircle2, Radio, Hourglass, ListChecks, ListFilter, RotateCw, UserCheck, AlertTriangle } from "lucide-react";
-import { createEmployerJob, updateEmployerJobPost, deleteEmployerJob, repostEmployerJob, markJobAsFilled } from "./actions";
+import { createEmployerJob, updateEmployerJobPost, deleteEmployerJob, repostEmployerJob, markJobAsFilled, boostJobToGroup } from "./actions";
 import VacancyFormModal from "./VacancyFormModal";
 import { VacancyFormState, emptyVacancyForm, jobRowToForm } from "./vacancyShared";
-import { StatusPill, MetaChip, Stat, STATUS_META, salaryLabel, AttentionModal, ConfirmModal } from "./postingUI";
+import { StatusPill, MetaChip, Stat, STATUS_META, salaryLabel, AttentionModal, ConfirmModal, GroupRepostIcon } from "./postingUI";
 import type { PostingData } from "./ManageJobPostingsTab";
 import EmployerAvatar from "@/components/EmployerAvatar";
 import FilterSelect from "@/components/FilterSelect";
 import { isSubscriptionExpired } from "@/lib/subscriptionStatus";
+import { startOfAddisDay } from "@/lib/addisDay";
 
 export default function PostTab({ data, loading, reload }: { data: PostingData; loading: boolean; reload: () => Promise<void>; }) {
-  const { jobs, autoPublish, dailyPostLimit, packageExpiresAt, businessName, logoUrl } = data;
+  const { jobs, autoPublish, dailyPostLimit, packageExpiresAt, businessName, logoUrl, groupBoostsPerDay } = data;
   const subscriptionExpired = isSubscriptionExpired(packageExpiresAt);
 
   const [formModal, setFormModal] = useState<{ mode: "create" | "edit" | "repost"; jobId?: string; value: VacancyFormState } | null>(null);
@@ -25,6 +26,8 @@ export default function PostTab({ data, loading, reload }: { data: PostingData; 
   const [deleting, setDeleting] = useState(false);
   const [fillTarget, setFillTarget] = useState<{ id: string; title: string } | null>(null);
   const [filling, setFilling] = useState(false);
+  const [boostTarget, setBoostTarget] = useState<{ id: string; title: string; used: number } | null>(null);
+  const [boosting, setBoosting] = useState(false);
   const [statusFilter, setStatusFilter] = useState("all");
 
   const closeFormModal = () => { setFormModal(null); setFocusDeadlineOnOpen(false); };
@@ -60,9 +63,29 @@ export default function PostTab({ data, loading, reload }: { data: PostingData; 
     }
   };
 
-  const startOfToday = () => { const d = new Date(); d.setHours(0, 0, 0, 0); return d; };
-  // Mirror the server counter: reposts count as today's posts via last_posted_at.
-  const postedToday = jobs.filter((j) => new Date(j.last_posted_at ?? j.created_at) >= startOfToday()).length;
+  const handleBoost = async () => {
+    if (!boostTarget) return;
+    setBoosting(true);
+    try {
+      const res = await boostJobToGroup(boostTarget.id);
+      if (!res.success) { setBoostTarget(null); setErrorModal(res.error || "Failed to repost to the group."); return; }
+      setBoostTarget(null);
+      const left = res.limit - res.used;
+      setSuccessNote(
+        `Reposting to the Telegram group — it'll appear within a minute. ` +
+        (left > 0 ? `${left} more today.` : `That's all for today.`)
+      );
+      setTimeout(() => setSuccessNote(null), 6000);
+      await reload();
+    } finally {
+      setBoosting(false);
+    }
+  };
+
+  // Mirror the server counter: reposts count as today's posts via last_posted_at,
+  // and "today" is an Addis day on both sides so this can't disagree with the
+  // limit actually being enforced.
+  const postedToday = jobs.filter((j) => new Date(j.last_posted_at ?? j.created_at) >= startOfAddisDay()).length;
   const liveCount = jobs.filter((j) => j.status === "active").length;
   const reviewCount = jobs.filter((j) => j.status === "pending").length;
   const scheduledCount = jobs.filter((j) => j.status === "scheduled").length;
@@ -217,6 +240,22 @@ export default function PostTab({ data, loading, reload }: { data: PostingData; 
             const msToDeadline = job.status === "active" && job.deadline ? new Date(job.deadline).getTime() - Date.now() : null;
             const deadlineSoon = msToDeadline !== null && msToDeadline > 0 && msToDeadline <= 5 * 60 * 60 * 1000;
             const needsAdvisory = job.status === "expired" && !job.filled_at;
+            // Filled jobs are repostable; admin-closed and cancelled-scheduled
+            // ones are not, and filled_at is what tells them apart. Mirrors the
+            // same check on the server in repostEmployerJob.
+            const repostable = job.status === "expired" || (job.status === "closed" && !!job.filled_at);
+            // Group boost: live jobs only, and only while the deadline still
+            // stands — the server checks both again, this just keeps the button
+            // off cards where it could never work.
+            const groupUsed = data.groupPostsToday?.[job.id] ?? 0;
+            const groupLeft = Math.max(0, groupBoostsPerDay - groupUsed);
+            const deadlinePassed = !!job.deadline && new Date(job.deadline).getTime() < Date.now();
+            const canBoost = job.status === "active" && !deadlinePassed && !subscriptionExpired;
+            const boostTitle = !canBoost
+              ? "Repost to Telegram group"
+              : groupLeft === 0
+              ? `Posted to the group ${groupUsed}× today — that's your plan's limit. Resets tomorrow.`
+              : `Repost to Telegram group — ${groupLeft} of ${groupBoostsPerDay} left today`;
             return (
               <div
                 key={job.id}
@@ -330,9 +369,19 @@ export default function PostTab({ data, loading, reload }: { data: PostingData; 
                       </div>
                     )}
                     <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
-                      {job.status === "expired" && (
+                      {repostable && (
                         <button className="mjp-iconbtn repost" title="Repost job" onClick={() => handleRepostClick(job)}>
                           <RotateCw size={15} />
+                        </button>
+                      )}
+                      {canBoost && (
+                        <button
+                          className="mjp-iconbtn tgboost"
+                          title={boostTitle}
+                          disabled={groupLeft === 0}
+                          onClick={() => setBoostTarget({ id: job.id, title: job.title, used: groupUsed })}
+                        >
+                          <GroupRepostIcon size={15} />
                         </button>
                       )}
                       {(job.status === "active" || job.status === "expired") && (
@@ -371,7 +420,7 @@ export default function PostTab({ data, loading, reload }: { data: PostingData; 
             formModal.mode === "create"
               ? "Fill in the details below to publish this vacancy."
               : formModal.mode === "repost"
-              ? "This listing expired — set a new deadline to bring it back."
+              ? "Set a new deadline to bring this listing back."
               : "Update the details of this job posting."
           }
         />
@@ -391,7 +440,7 @@ export default function PostTab({ data, loading, reload }: { data: PostingData; 
       {fillTarget && (
         <ConfirmModal
           title="Mark this job as filled?"
-          message={<>This closes <strong style={{ color: "#0f172a" }}>{fillTarget.title}</strong> to new applicants and moves it to Closed. You can&apos;t reopen it — post a new job if you need to hire again.</>}
+          message={<>This closes <strong style={{ color: "#0f172a" }}>{fillTarget.title}</strong> to new applicants and moves it to Closed. If the role opens up again, you can repost it from here with a new deadline.</>}
           confirmLabel="Mark as Filled"
           loadingLabel="Marking as filled…"
           icon={<UserCheck size={24} strokeWidth={1.75} />}
@@ -399,6 +448,34 @@ export default function PostTab({ data, loading, reload }: { data: PostingData; 
           loading={filling}
           onConfirm={handleMarkFilled}
           onCancel={() => setFillTarget(null)}
+        />
+      )}
+
+      {boostTarget && (
+        <ConfirmModal
+          title="Repost to the Telegram group?"
+          message={
+            <>
+              <strong style={{ color: "#0f172a" }}>{boostTarget.title}</strong> goes back to the top of the group.
+              Nothing changes in the app — it stays live exactly as it is, and seekers already notified
+              about this vacancy won&apos;t be messaged again.
+              <br />
+              <span style={{ display: "inline-block", marginTop: 8, color: "#64748b" }}>
+                Posted to the group <strong style={{ color: "#0f172a" }}>{boostTarget.used}</strong> of{" "}
+                <strong style={{ color: "#0f172a" }}>{groupBoostsPerDay}</strong> times today
+                {groupBoostsPerDay - boostTarget.used - 1 > 0
+                  ? ` — ${groupBoostsPerDay - boostTarget.used - 1} left after this one.`
+                  : `. This is your last one for today.`}
+              </span>
+            </>
+          }
+          confirmLabel="Repost to Group"
+          loadingLabel="Queueing…"
+          icon={<GroupRepostIcon size={24} />}
+          tone="primary"
+          loading={boosting}
+          onConfirm={handleBoost}
+          onCancel={() => setBoostTarget(null)}
         />
       )}
 
