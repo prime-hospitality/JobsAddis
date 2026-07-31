@@ -431,7 +431,8 @@ export async function getEmployerNotifications() {
     .from("notifications")
     .select("*")
     .eq("user_telegram_id", session.telegramId)
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false })
+    .limit(50);
 
   if (error) throw new Error(error.message);
   return data || [];
@@ -443,6 +444,20 @@ export async function markNotificationAsRead(id: string) {
     .from("notifications")
     .update({ read: true })
     .eq("id", id);
+  if (error) throw new Error(error.message);
+  return { success: true };
+}
+
+export async function markAllNotificationsAsRead() {
+  const session = await getEmployerSession();
+  if (!session) return { success: false };
+
+  const supabase = getSupabase();
+  const { error } = await supabase
+    .from("notifications")
+    .update({ read: true })
+    .eq("user_telegram_id", session.telegramId)
+    .eq("read", false);
   if (error) throw new Error(error.message);
   return { success: true };
 }
