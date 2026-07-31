@@ -142,10 +142,10 @@ export default function HomeScreen({ onJobSelect, onSearchPress, onBellPress, un
   const virtualizer = useVirtualizer({
     count: jobPairs.length,
     getScrollElement: () => scrollRef.current,
-    // A two-card row measures ~288px now the cards carry no description. Only
-    // the pre-measurement estimate, but scroll restore runs on it, so keep it
-    // close.
-    estimateSize: useCallback(() => 288, []),
+    // A two-card row measures ~390px: 183px per card plus its 12px margin.
+    // Only the pre-measurement estimate, but scroll restore runs on it, so
+    // keep it close.
+    estimateSize: useCallback(() => 390, []),
     measureElement: useCallback((el: Element) => el.getBoundingClientRect().height, []),
     overscan: 3,
   });
