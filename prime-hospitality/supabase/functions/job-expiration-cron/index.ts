@@ -5,9 +5,10 @@ import { serviceKey } from "../_shared/serviceKey.ts";
 
 // The every-minute platform sweep, invoked by pg_cron (see migration
 // 20260723000000). Despite the name it does more than expiration: it publishes
-// scheduled posts on their scheduled minute, expires jobs and subscriptions,
-// sends expiry warnings, and dispatches pending Telegram DMs. The name is kept
-// because the pg_cron entry and the deployed function URL both depend on it.
+// scheduled posts on their scheduled minute, expires jobs past their own
+// deadline, notifies employers when their subscription lapses, sends expiry
+// warnings, and dispatches pending Telegram DMs. The name is kept because the
+// pg_cron entry and the deployed function URL both depend on it.
 
 /** Notification types that earn a Telegram DM. Deliberately narrow: a Mini App
  *  user's chat is a scarce resource, and over-messaging gets the bot muted or
@@ -416,50 +417,58 @@ serve(async (req) => {
     const publishedCount = toActive.length;
     const sentToReviewCount = toPending.length;
 
-    // 1. Find Expired Subscriptions
-    // All employers whose package_expires_at has passed.
+    // 1. Notify employers whose subscription has newly lapsed. Jobs are never
+    // force-expired here -- each job stays active through its OWN deadline
+    // regardless of subscription status, so status='expired' (step 2 below)
+    // exclusively means "this job's own deadline passed," never "subscription
+    // lapsed." Losing a subscription only locks out NEW applicants (handled
+    // client-side by comparing an application's created_at against
+    // package_expires_at) and blocks posting/reposting/extending, both of
+    // which were already gated on package_expires_at elsewhere.
     const { data: expiredEmployers, error: empError } = await supabase
       .from('employers')
-      .select('id, user_id, users(telegram_id)')
+      .select('id, package_expires_at, users(telegram_id)')
       .lt('package_expires_at', now);
-      
+
     if (empError) throw empError;
-    
-    let expiredEmployerJobsCount = 0;
-    
-    if (expiredEmployers && expiredEmployers.length > 0) {
-      for (const employer of expiredEmployers) {
-        // Expire all their active jobs
-        const { data: jobs, error: updateError } = await supabase
-          .from('jobs')
-          .update({ status: 'expired' })
-          .eq('employer_id', employer.id)
-          .eq('status', 'active')
-          .select();
-          
-        if (updateError) {
-          console.error(`Failed to update jobs for employer ${employer.id}`, updateError);
-          continue;
-        }
-        
-        if (jobs && jobs.length > 0) {
-          expiredEmployerJobsCount += jobs.length;
-          // Send dashboard notification that subscription expired
-          if (employer.users && (employer.users as any).telegram_id) {
-            await supabase.from('notifications').insert({
-              user_telegram_id: (employer.users as any).telegram_id,
-              company_name: "System",
-              job_title: "Subscription Expired",
-              type: "subscription_expired",
-              read: false
-            });
-          }
-        }
+
+    let subscriptionExpiredNoticesSent = 0;
+
+    for (const employer of expiredEmployers ?? []) {
+      const telegramId = (employer.users as any)?.telegram_id;
+      if (!telegramId) continue;
+
+      // Dedup with no extra column: has a notice already gone out since THIS
+      // lapse took effect? Renewing moves package_expires_at forward, which
+      // pushes every earlier notice's created_at before the new
+      // package_expires_at -- so this check resets itself once per lapse
+      // cycle with no bookkeeping flag needed.
+      const { count, error: dupErr } = await supabase
+        .from('notifications')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_telegram_id', telegramId)
+        .eq('type', 'subscription_expired')
+        .gt('created_at', employer.package_expires_at as string);
+
+      if (dupErr) {
+        console.error(`Dup check failed for employer ${employer.id}`, dupErr);
+        continue;
       }
+      if (count && count > 0) continue;
+
+      await supabase.from('notifications').insert({
+        user_telegram_id: telegramId,
+        company_name: "System",
+        job_title: "Subscription Expired",
+        type: "subscription_expired",
+        read: false,
+      });
+      subscriptionExpiredNoticesSent++;
     }
-    
+
     // 2. Find Expired Deadlines
-    // For employers who still have active packages, but specific jobs have passed deadline.
+    // The only step that ever sets status='expired' -- any active job whose
+    // own deadline has passed, regardless of the employer's subscription state.
     const { data: expiredDeadlineJobs, error: deadlineError } = await supabase
       .from('jobs')
       .update({ status: 'expired' })
@@ -592,7 +601,7 @@ serve(async (req) => {
       success: true,
       publishedCount,
       sentToReviewCount,
-      expiredEmployerJobsCount,
+      subscriptionExpiredNoticesSent,
       expiredDeadlineCount,
       warningsSent: expiringWarningsSent,
       subscriptionExpiryWarningsSent,

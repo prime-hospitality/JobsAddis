@@ -31,6 +31,11 @@ export interface ApplicantRow {
   profile: ApplicantProfile | null;
   /** 0-100 completeness of the seeker's profile — used to rank the list. */
   score: number;
+  /** Applied after the employer's subscription lapsed -- blurred and
+   *  non-openable in the UI until they renew. Self-clears on renewal since
+   *  it's computed against the employer's CURRENT package_expires_at, not
+   *  stamped at insert time. */
+  locked: boolean;
 }
 
 /**
@@ -72,6 +77,8 @@ function one<T>(value: T | T[] | null | undefined): T | null {
 export async function getApplicants(jobId?: string): Promise<{
   applicants: ApplicantRow[];
   jobs: Array<{ id: string; title: string }>;
+  renewalRequestedAt: string | null;
+  renewalSeenAt: string | null;
 }> {
   const session = await requireEmployer();
   if (!session) throw new Error("Unauthorized");
@@ -90,16 +97,29 @@ export async function getApplicants(jobId?: string): Promise<{
 
   if (jobId) query = query.eq("job_id", jobId);
 
-  const [appsRes, jobsRes] = await Promise.all([
+  const [appsRes, jobsRes, employerRes] = await Promise.all([
     query,
     supabase
       .from("jobs")
       .select("id, title")
       .eq("employer_id", session.employerId)
       .order("created_at", { ascending: false }),
+    supabase
+      .from("employers")
+      .select("package_expires_at, renewal_requested_at, renewal_seen_at")
+      .eq("id", session.employerId)
+      .maybeSingle(),
   ]);
 
   if (appsRes.error) throw appsRes.error;
+
+  // No separate "is the subscription currently expired" guard needed: if it
+  // isn't, package_expires_at is in the future and no created_at can exceed
+  // it, so this comparison alone is already correct in both cases -- and it
+  // self-clears on renewal since expiresAtMs reflects the CURRENT value.
+  const expiresAtMs = employerRes.data?.package_expires_at
+    ? new Date(employerRes.data.package_expires_at).getTime()
+    : -Infinity;
 
   const applicants: ApplicantRow[] = (appsRes.data ?? [])
     .map((row: any) => {
@@ -113,12 +133,18 @@ export async function getApplicants(jobId?: string): Promise<{
         created_at: row.created_at as string,
         profile,
         score: profileScore(profile),
+        locked: new Date(row.created_at).getTime() > expiresAtMs,
       };
     })
     // Most complete profiles first, then longest-waiting.
     .sort((a, b) => b.score - a.score || +new Date(a.created_at) - +new Date(b.created_at));
 
-  return { applicants, jobs: jobsRes.data ?? [] };
+  return {
+    applicants,
+    jobs: jobsRes.data ?? [],
+    renewalRequestedAt: employerRes.data?.renewal_requested_at ?? null,
+    renewalSeenAt: employerRes.data?.renewal_seen_at ?? null,
+  };
 }
 
 /** Loads an application only if it belongs to one of this employer's jobs. */

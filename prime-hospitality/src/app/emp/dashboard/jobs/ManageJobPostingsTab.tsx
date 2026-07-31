@@ -9,12 +9,18 @@ import { PostingStyles } from "./postingUI";
 import PostTab from "./PostTab";
 import VacancyTemplateTab from "./VacancyTemplateTab";
 import RenewSubscriptionButton from "../RenewSubscriptionButton";
+import { isSubscriptionExpired } from "@/lib/subscriptionStatus";
 
 export interface PostingData {
   jobs: any[];
   templates: any[];
   /** job id → number of applications received. */
   applicantCounts: Record<string, number>;
+  /** job id → number of those applications currently shortlisted. */
+  shortlistedCounts: Record<string, number>;
+  /** job id → number that arrived after the subscription lapsed and are
+   *  locked from view until the employer renews. */
+  lockedCounts: Record<string, number>;
   autoPublish: boolean;
   dailyPostLimit: number;
   /** Date (YYYY-MM-DD) this employer's current plan runs out, or null if
@@ -32,6 +38,8 @@ const EMPTY: PostingData = {
   jobs: [],
   templates: [],
   applicantCounts: {},
+  shortlistedCounts: {},
+  lockedCounts: {},
   autoPublish: false,
   dailyPostLimit: 15,
   packageExpiresAt: null,
@@ -68,6 +76,8 @@ export default function ManageJobPostingsTab({
         jobs: res.jobs,
         templates: res.templates,
         applicantCounts: res.applicantCounts || {},
+        shortlistedCounts: res.shortlistedCounts || {},
+        lockedCounts: res.lockedCounts || {},
         autoPublish: res.autoPublish,
         dailyPostLimit: res.dailyPostLimit,
         packageExpiresAt: res.packageExpiresAt ?? null,
@@ -94,7 +104,7 @@ export default function ManageJobPostingsTab({
   }, [reload]);
 
   const expiresAt = data.packageExpiresAt ? new Date(data.packageExpiresAt) : null;
-  const isExpired = !expiresAt || expiresAt.getTime() < Date.now();
+  const isExpired = isSubscriptionExpired(data.packageExpiresAt);
   const showRenewalNudge = !loading && (!expiresAt || expiresAt.getTime() - Date.now() <= 24 * 60 * 60 * 1000);
 
   return (

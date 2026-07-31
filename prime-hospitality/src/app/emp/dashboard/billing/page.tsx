@@ -32,6 +32,10 @@ export default async function BillingPage() {
   const pkgData = employer?.packages as any;
   const activePackage = Array.isArray(pkgData) ? pkgData[0] : pkgData;
   const expiresAt = employer?.package_expires_at ? new Date(employer.package_expires_at) : null;
+  // Deliberately NOT the shared isSubscriptionExpired() null-is-expired
+  // convention: this page needs to tell "never subscribed" (Free Tier /
+  // Upgrade copy) apart from "subscribed, then lapsed" (Renew copy), so no
+  // package must read as not-expired here.
   const isExpired = expiresAt ? expiresAt.getTime() < Date.now() : false;
   const daysLeft = expiresAt ? Math.ceil((expiresAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : null;
   // Same 24h-before-expiry gate as the Overview/Manage Job Postings nudge --

@@ -1,6 +1,7 @@
 "use server";
 
 import { getSupabase, requireEmployer, logEmployerActivity } from "../shared/employerServerUtils";
+import { isSubscriptionExpired } from "@/lib/subscriptionStatus";
 import {
   VacancyFormState,
   buildJobDescription,
@@ -16,16 +17,17 @@ async function getEmployerPublishingRules(supabase: ReturnType<typeof getSupabas
     .select("auto_publish, daily_post_limit, package_expires_at, renewal_requested_at, renewal_seen_at")
     .eq("id", employerId)
     .single();
-  // No package at all is treated the same as an expired one -- posting always
-  // requires a currently-valid package.
-  const isExpired = !data?.package_expires_at || new Date(data.package_expires_at) < new Date();
   return {
     autoPublish: !!data?.auto_publish,
     dailyPostLimit: data?.daily_post_limit ?? 15,
     // Date-only (YYYY-MM-DD) so it compares cleanly against the deadline
     // field, which is itself a plain date with no time component.
     packageExpiresAt: data?.package_expires_at ? String(data.package_expires_at).split("T")[0] : null,
-    isExpired,
+    // Full precision, unrounded -- for applicant-lock math where a same-day
+    // cutoff matters. The date-only field above must stay date-only since it
+    // feeds the deadline <input type="date"> max attribute.
+    packageExpiresAtRaw: data?.package_expires_at ?? null,
+    isExpired: isSubscriptionExpired(data?.package_expires_at),
     renewalRequestedAt: data?.renewal_requested_at ?? null,
     renewalSeenAt: data?.renewal_seen_at ?? null,
   };
@@ -67,21 +69,30 @@ export async function getEmployerPostingData() {
     supabase.from("jobs").select("*").eq("employer_id", session.employerId).order("last_posted_at", { ascending: false }),
     supabase.from("employer_vacancy_templates").select("*").eq("employer_id", session.employerId).order("created_at", { ascending: false }),
     getEmployerPublishingRules(supabase, session.employerId),
-    supabase.from("applications").select("job_id, jobs!inner ( employer_id )").eq("jobs.employer_id", session.employerId),
+    supabase.from("applications").select("job_id, status, created_at, jobs!inner ( employer_id )").eq("jobs.employer_id", session.employerId),
   ]);
 
-  // Per-job applicant counts, so each posting can show how many people applied
-  // and link straight into the applicant tracking page for that job.
+  // Per-job applicant/shortlisted/locked counts, so each posting can show how
+  // many people applied, how many were shortlisted (for the past-deadline
+  // advisory), and how many arrived after the subscription lapsed (for the
+  // "renew to view" nudge) -- all from the one query above.
   const applicantCounts: Record<string, number> = {};
+  const shortlistedCounts: Record<string, number> = {};
+  const lockedCounts: Record<string, number> = {};
+  const expiresAtMs = rules.packageExpiresAtRaw ? new Date(rules.packageExpiresAtRaw).getTime() : -Infinity;
   for (const row of applicationsRes.data || []) {
     const jobId = (row as any).job_id as string;
     applicantCounts[jobId] = (applicantCounts[jobId] ?? 0) + 1;
+    if ((row as any).status === "shortlisted") shortlistedCounts[jobId] = (shortlistedCounts[jobId] ?? 0) + 1;
+    if (new Date((row as any).created_at).getTime() > expiresAtMs) lockedCounts[jobId] = (lockedCounts[jobId] ?? 0) + 1;
   }
 
   return {
     jobs: jobsRes.data || [],
     templates: templatesRes.data || [],
     applicantCounts,
+    shortlistedCounts,
+    lockedCounts,
     autoPublish: rules.autoPublish,
     dailyPostLimit: rules.dailyPostLimit,
     packageExpiresAt: rules.packageExpiresAt,
@@ -92,6 +103,33 @@ export async function getEmployerPostingData() {
     businessType: session.businessType,
     logoUrl: session.logoUrl || null,
   };
+}
+
+/** "Mark as Filled" on a Post-tab card -- closes the job to new applicants
+ *  without deleting it. Reuses the existing 'closed' status (already excluded
+ *  from every seeker-facing query the same way 'expired' is); filled_at is
+ *  what distinguishes this from an admin-moderated close. Not repostable by
+ *  the employer afterward (repostEmployerJob only allows from 'expired') --
+ *  post a new job to hire again for the same role. */
+export async function markJobAsFilled(jobId: string): Promise<{ success: true } | { success: false; error: string }> {
+  const session = await requireEmployer();
+  if (!session) return { success: false, error: "Unauthorized" };
+
+  const supabase = getSupabase();
+  const { data: existing } = await supabase.from("jobs").select("id, employer_id, title, status").eq("id", jobId).maybeSingle();
+  if (!existing || existing.employer_id !== session.employerId) return { success: false, error: "Job not found" };
+  if (existing.status !== "active" && existing.status !== "expired") {
+    return { success: false, error: "Only active or expired jobs can be marked as filled." };
+  }
+
+  const { error } = await supabase
+    .from("jobs")
+    .update({ status: "closed", filled_at: new Date().toISOString() })
+    .eq("id", jobId);
+
+  if (error) return { success: false, error: error.message || "Failed to update job" };
+  await logEmployerActivity(session, "employer_mark_job_filled", existing.title);
+  return { success: true };
 }
 
 /** "Post Now" on the Post tab — creates a new job directly for this employer. */

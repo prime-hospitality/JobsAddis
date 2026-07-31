@@ -2,25 +2,33 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { Plus, Pencil, Trash2, MapPin, Briefcase, Users, Clock, CalendarClock, CheckCircle2, Radio, Hourglass, ListChecks, ListFilter, RotateCw } from "lucide-react";
-import { createEmployerJob, updateEmployerJobPost, deleteEmployerJob, repostEmployerJob } from "./actions";
+import { Plus, Pencil, Trash2, MapPin, Briefcase, Users, Clock, CalendarClock, CheckCircle2, Radio, Hourglass, ListChecks, ListFilter, RotateCw, UserCheck, AlertTriangle } from "lucide-react";
+import { createEmployerJob, updateEmployerJobPost, deleteEmployerJob, repostEmployerJob, markJobAsFilled } from "./actions";
 import VacancyFormModal from "./VacancyFormModal";
 import { VacancyFormState, emptyVacancyForm, jobRowToForm } from "./vacancyShared";
 import { StatusPill, MetaChip, Stat, STATUS_META, salaryLabel, AttentionModal, ConfirmModal } from "./postingUI";
 import type { PostingData } from "./ManageJobPostingsTab";
 import EmployerAvatar from "@/components/EmployerAvatar";
 import FilterSelect from "@/components/FilterSelect";
+import { isSubscriptionExpired } from "@/lib/subscriptionStatus";
 
 export default function PostTab({ data, loading, reload }: { data: PostingData; loading: boolean; reload: () => Promise<void>; }) {
   const { jobs, autoPublish, dailyPostLimit, packageExpiresAt, businessName, logoUrl } = data;
+  const subscriptionExpired = isSubscriptionExpired(packageExpiresAt);
 
   const [formModal, setFormModal] = useState<{ mode: "create" | "edit" | "repost"; jobId?: string; value: VacancyFormState } | null>(null);
+  const [focusDeadlineOnOpen, setFocusDeadlineOnOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [errorModal, setErrorModal] = useState<string | null>(null);
   const [successNote, setSuccessNote] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; title: string } | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [fillTarget, setFillTarget] = useState<{ id: string; title: string } | null>(null);
+  const [filling, setFilling] = useState(false);
   const [statusFilter, setStatusFilter] = useState("all");
+
+  const closeFormModal = () => { setFormModal(null); setFocusDeadlineOnOpen(false); };
+  const openEditForExtend = (job: any) => { setFocusDeadlineOnOpen(true); setFormModal({ mode: "edit", jobId: job.id, value: jobRowToForm(job) }); };
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
@@ -34,6 +42,21 @@ export default function PostTab({ data, loading, reload }: { data: PostingData; 
       await reload();
     } finally {
       setDeleting(false);
+    }
+  };
+
+  const handleMarkFilled = async () => {
+    if (!fillTarget) return;
+    setFilling(true);
+    try {
+      const res = await markJobAsFilled(fillTarget.id);
+      if (!res.success) { setFillTarget(null); setErrorModal(res.error || "Failed to update job."); return; }
+      setFillTarget(null);
+      setSuccessNote("Job marked as filled.");
+      setTimeout(() => setSuccessNote(null), 4000);
+      await reload();
+    } finally {
+      setFilling(false);
     }
   };
 
@@ -62,17 +85,17 @@ export default function PostTab({ data, loading, reload }: { data: PostingData; 
       if (formModal.mode === "create") {
         const res = await createEmployerJob(formModal.value);
         if (!res.success) { setErrorModal(res.error || "Something went wrong."); return; }
-        setFormModal(null);
+        closeFormModal();
         setSuccessNote(res.status === "active" ? "Job posted and is now live!" : "Job submitted — it will go live once reviewed.");
       } else if (formModal.mode === "repost") {
         const res = await repostEmployerJob(formModal.jobId!, formModal.value);
         if (!res.success) { setErrorModal(res.error || "Something went wrong."); return; }
-        setFormModal(null);
+        closeFormModal();
         setSuccessNote(res.status === "active" ? "Job reposted and is now live!" : "Job reposted — it will go live once reviewed.");
       } else {
         const res = await updateEmployerJobPost(formModal.jobId!, formModal.value);
         if (!res.success) { setErrorModal(res.error || "Something went wrong."); return; }
-        setFormModal(null);
+        closeFormModal();
         setSuccessNote("Job updated successfully.");
       }
       setTimeout(() => setSuccessNote(null), 4000);
@@ -186,6 +209,14 @@ export default function PostTab({ data, loading, reload }: { data: PostingData; 
             const accent = (STATUS_META[job.status] || STATUS_META.pending).accent;
             // Reposted if it was made live again well after it was first created.
             const reposted = job.last_posted_at && new Date(job.last_posted_at).getTime() - new Date(job.created_at).getTime() > 60000;
+            const applicantCount = data.applicantCounts[job.id] ?? 0;
+            const shortlistedCount = data.shortlistedCounts?.[job.id] ?? 0;
+            const lockedCount = data.lockedCounts?.[job.id] ?? 0;
+            // Deadline is a plain date (midnight UTC of that day) -- the
+            // countdown is exact, not "end of day" in any local sense.
+            const msToDeadline = job.status === "active" && job.deadline ? new Date(job.deadline).getTime() - Date.now() : null;
+            const deadlineSoon = msToDeadline !== null && msToDeadline > 0 && msToDeadline <= 5 * 60 * 60 * 1000;
+            const needsAdvisory = job.status === "expired" && !job.filled_at;
             return (
               <div
                 key={job.id}
@@ -218,14 +249,63 @@ export default function PostTab({ data, loading, reload }: { data: PostingData; 
                     style={{
                       display: "inline-flex", alignItems: "center", gap: 6, alignSelf: "flex-start",
                       fontSize: 12, fontWeight: 700, textDecoration: "none",
-                      color: (data.applicantCounts[job.id] ?? 0) > 0 ? "#0284c7" : "#94a3b8",
+                      color: applicantCount > 0 ? "#0284c7" : "#94a3b8",
                     }}
                   >
                     <Users size={12} />
-                    {(data.applicantCounts[job.id] ?? 0) === 0
+                    {applicantCount === 0
                       ? "No applicants yet"
-                      : `${data.applicantCounts[job.id]} applicant${data.applicantCounts[job.id] === 1 ? "" : "s"} →`}
+                      : lockedCount > 0
+                      ? `${applicantCount} applicant${applicantCount === 1 ? "" : "s"} (${lockedCount} new — renew to view) →`
+                      : `${applicantCount} applicant${applicantCount === 1 ? "" : "s"} →`}
                   </Link>
+
+                  {deadlineSoon && (
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, background: "#fffbeb", border: "1px solid #fde68a", color: "#92400e", borderRadius: 8, padding: "6px 10px", fontSize: 11.5, fontWeight: 600 }}>
+                      <AlertTriangle size={12} style={{ flexShrink: 0 }} />
+                      {subscriptionExpired ? (
+                        // Extending is impossible while the subscription is lapsed --
+                        // maxDeadline caps at a past date, so every choice in the
+                        // picker would fail validation. Point at renewing instead of
+                        // offering a link that can only ever dead-end.
+                        <span>Deadline about to end in {Math.max(1, Math.ceil(msToDeadline! / 3600000))}h. Renew your subscription to extend it.</span>
+                      ) : (
+                        <>
+                          <span>Deadline about to end in {Math.max(1, Math.ceil(msToDeadline! / 3600000))}h.</span>
+                          <button
+                            onClick={() => openEditForExtend(job)}
+                            style={{ background: "none", border: "none", padding: 0, color: "#92400e", fontWeight: 700, textDecoration: "underline", cursor: "pointer", fontSize: 11.5 }}
+                          >
+                            Click here to extend
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  )}
+
+                  {needsAdvisory && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 6, background: "#fef2f2", border: "1px solid #fecaca", color: "#991b1b", borderRadius: 8, padding: "8px 10px", fontSize: 11.5 }}>
+                      <span style={{ fontWeight: 600 }}>
+                        Deadline ended — {applicantCount} applied, {shortlistedCount} shortlisted.
+                      </span>
+                      <div style={{ display: "flex", gap: 12 }}>
+                        <button
+                          onClick={() => setFillTarget({ id: job.id, title: job.title })}
+                          style={{ background: "none", border: "none", padding: 0, color: "#991b1b", fontWeight: 700, textDecoration: "underline", cursor: "pointer", fontSize: 11.5 }}
+                        >
+                          Mark as filled
+                        </button>
+                        {!subscriptionExpired && (
+                          <button
+                            onClick={() => openEditForExtend(job)}
+                            style={{ background: "none", border: "none", padding: 0, color: "#991b1b", fontWeight: 700, textDecoration: "underline", cursor: "pointer", fontSize: 11.5 }}
+                          >
+                            Extend deadline
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  )}
 
                   <div style={{ flex: 1 }} />
                   <div style={{ height: 1, background: "#f1f5f9" }} />
@@ -255,6 +335,11 @@ export default function PostTab({ data, loading, reload }: { data: PostingData; 
                           <RotateCw size={15} />
                         </button>
                       )}
+                      {(job.status === "active" || job.status === "expired") && (
+                        <button className="mjp-iconbtn hire" title="Mark as filled" onClick={() => setFillTarget({ id: job.id, title: job.title })}>
+                          <UserCheck size={15} />
+                        </button>
+                      )}
                       <button className="mjp-iconbtn edit" title="Edit job" onClick={() => setFormModal({ mode: "edit", jobId: job.id, value: jobRowToForm(job) })}>
                         <Pencil size={15} />
                       </button>
@@ -274,9 +359,10 @@ export default function PostTab({ data, loading, reload }: { data: PostingData; 
         <VacancyFormModal
           value={formModal.value}
           onChange={(next) => setFormModal({ ...formModal, value: next })}
-          onClose={() => setFormModal(null)}
+          onClose={closeFormModal}
           onSubmit={handleSubmit}
           saving={saving}
+          focusDeadline={focusDeadlineOnOpen}
           requireDeadline={formModal.mode === "repost"}
           maxDeadline={packageExpiresAt}
           saveLabel={formModal.mode === "create" ? "Post Now" : formModal.mode === "repost" ? "Repost Job" : "Save Changes"}
@@ -299,6 +385,20 @@ export default function PostTab({ data, loading, reload }: { data: PostingData; 
           loading={deleting}
           onConfirm={handleDelete}
           onCancel={() => setDeleteTarget(null)}
+        />
+      )}
+
+      {fillTarget && (
+        <ConfirmModal
+          title="Mark this job as filled?"
+          message={<>This closes <strong style={{ color: "#0f172a" }}>{fillTarget.title}</strong> to new applicants and moves it to Closed. You can&apos;t reopen it — post a new job if you need to hire again.</>}
+          confirmLabel="Mark as Filled"
+          loadingLabel="Marking as filled…"
+          icon={<UserCheck size={24} strokeWidth={1.75} />}
+          tone="primary"
+          loading={filling}
+          onConfirm={handleMarkFilled}
+          onCancel={() => setFillTarget(null)}
         />
       )}
 

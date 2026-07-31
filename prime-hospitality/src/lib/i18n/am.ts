@@ -67,6 +67,7 @@ export const am: DeepPartial<Catalog> = {
     postedAndHiring: "የተለጠፈው {when} · በንቃት እየቀጠሩ ነው",
     applied: "አመልክተዋል ✓",
     applicationsClosed: "ማመልከቻ ተዘግቷል",
+    deadlineEnded: "የማመልከቻ ጊዜው አልፏል",
     applyNow: "አሁን ያመልክቱ →",
   },
 

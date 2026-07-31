@@ -68,6 +68,8 @@ export const POSTING_STYLES = `
   .mjp-iconbtn.danger:hover { background: #fef2f2; border-color: #fecaca; color: #ef4444; }
   .mjp-iconbtn.repost { border-color: #e2e8f0; color: #64748b; }
   .mjp-iconbtn.repost:hover { background: #ecfdf5; border-color: #a7f3d0; color: #059669; }
+  .mjp-iconbtn.hire { border-color: #e2e8f0; color: #64748b; }
+  .mjp-iconbtn.hire:hover { background: #eef2ff; border-color: #c7d2fe; color: #4f46e5; }
 
   .mjp-btn-primary {
     display: inline-flex; align-items: center; justify-content: center; gap: 7px;
@@ -272,31 +274,41 @@ export function ConfirmModal({
   title,
   message,
   confirmLabel = "Delete",
+  loadingLabel = "Deleting…",
   loading = false,
+  icon = <Trash2 size={24} strokeWidth={1.75} />,
+  tone = "danger",
   onConfirm,
   onCancel,
 }: {
   title: string;
   message: React.ReactNode;
   confirmLabel?: string;
+  loadingLabel?: string;
   loading?: boolean;
+  icon?: React.ReactNode;
+  tone?: "danger" | "primary";
   onConfirm: () => void;
   onCancel: () => void;
 }) {
+  const iconBg = tone === "danger" ? "#fef2f2" : "#eff6ff";
+  const iconBorder = tone === "danger" ? "#fecaca" : "#bfdbfe";
+  const iconColor = tone === "danger" ? "#dc2626" : "#0284c7";
+  const confirmClass = tone === "danger" ? "mjp-btn-danger" : "mjp-btn-primary";
   return (
     <div className="mjp-alert-overlay" onClick={loading ? undefined : onCancel}>
       <div className="mjp-alert-card" onClick={(e) => e.stopPropagation()}>
         <div className="mjp-alert-body">
-          <div className="mjp-alert-icon">
-            <Trash2 size={24} strokeWidth={1.75} />
+          <div className="mjp-alert-icon" style={{ background: iconBg, borderColor: iconBorder, color: iconColor }}>
+            {icon}
           </div>
           <h3 className="mjp-alert-title">{title}</h3>
           <p className="mjp-alert-message">{message}</p>
         </div>
         <div className="mjp-alert-footer two">
           <button className="mjp-btn-neutral" onClick={onCancel} disabled={loading}>Cancel</button>
-          <button className="mjp-btn-danger" style={{ flex: 1 }} onClick={onConfirm} disabled={loading}>
-            {loading ? "Deleting…" : confirmLabel}
+          <button className={confirmClass} style={{ flex: 1 }} onClick={onConfirm} disabled={loading}>
+            {loading ? loadingLabel : confirmLabel}
           </button>
         </div>
       </div>
