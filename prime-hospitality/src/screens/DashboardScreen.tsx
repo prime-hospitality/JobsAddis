@@ -14,15 +14,18 @@ import {
   MapPin,
   Pencil,
   RefreshCw,
+  Search,
   Send,
   Users,
 } from "lucide-react";
 import { useTelegram } from "@/hooks/useTelegram";
 import {
   createEmployerJobPost,
+  fetchEmployerDashboard,
   fetchEmployerPostingData,
   postJobFromTemplate,
   updateEmployerTemplate,
+  type EmployerJobRow,
   type EmployerPostingData,
 } from "@/lib/api";
 import {
@@ -128,6 +131,76 @@ function PrimaryButton({
   );
 }
 
+/** One posted job and its applicant tally. Deliberately a single number: the
+ *  employer is scanning for which role landed, and everything about who applied
+ *  is one tap away on the applicant screen. */
+function JobCountRow({
+  title,
+  count,
+  onOpen,
+}: {
+  title: string;
+  count: number;
+  onOpen?: () => void;
+}) {
+  const hasApplicants = count > 0;
+  return (
+    <button
+      onClick={onOpen}
+      aria-label={`${title} — ${count} applicant${count === 1 ? "" : "s"}`}
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 10,
+        width: "100%",
+        minHeight: 56,
+        padding: "12px 14px",
+        borderRadius: 14,
+        border: "1px solid var(--border)",
+        background: "var(--card)",
+        color: "var(--text-primary)",
+        fontFamily: "inherit",
+        textAlign: "left",
+        cursor: onOpen ? "pointer" : "default",
+      }}
+    >
+      <span
+        style={{
+          flex: 1,
+          minWidth: 0,
+          fontSize: 14.5,
+          fontWeight: 700,
+          letterSpacing: "-0.01em",
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+          whiteSpace: "nowrap",
+        }}
+      >
+        {title}
+      </span>
+      <span
+        style={{
+          flexShrink: 0,
+          display: "inline-flex",
+          alignItems: "center",
+          gap: 5,
+          padding: "4px 10px",
+          borderRadius: 100,
+          background: hasApplicants ? "var(--brand-subtle)" : "var(--card-hover)",
+          color: hasApplicants ? "var(--brand-dim)" : "var(--text-muted)",
+          fontSize: 12.5,
+          fontWeight: 800,
+          fontVariantNumeric: "tabular-nums",
+        }}
+      >
+        <Users size={12} />
+        {count}
+      </span>
+      {onOpen && <ChevronRight size={16} color="var(--text-muted)" style={{ flexShrink: 0 }} />}
+    </button>
+  );
+}
+
 const SCREEN_STYLES = `
   @keyframes dash-spin { to { transform: rotate(360deg); } }
   .vc-spin { animation: dash-spin 0.9s linear infinite; }
@@ -139,10 +212,15 @@ const SCREEN_STYLES = `
 /**
  * The employer's job-posting console inside the Mini App.
  *
- * Scope is deliberately two things — post a saved template, or write a new
- * vacancy — because an employer opening Telegram mid-shift is trying to get one
- * role live, not administer an account. Everything else (applicants, billing,
- * analytics, building the template library) stays on the web dashboard.
+ * Scope is deliberately narrow — post a saved template, write a new vacancy, or
+ * see how many applicants each posted job pulled in — because an employer
+ * opening Telegram mid-shift is trying to get one role live or check whether it
+ * worked, not administer an account. Everything else (billing, analytics,
+ * building the template library) stays on the web dashboard.
+ *
+ * The Applicants tab is a tally, not a second inbox: one row per job with its
+ * count, searchable by title, and tapping through hands off to
+ * ApplicantManagementScreen for the actual reviewing.
  *
  * The signature of the screen is the publishing rail under the title: every
  * posting control states its actual outcome ("Post it live" vs "Send for
@@ -156,9 +234,6 @@ const SCREEN_STYLES = `
  * the enforcement of them.
  */
 export default function DashboardScreen({ onJobSelect }: { onJobSelect?: (jobId: string, jobTitle: string) => void }) {
-  // Applicant management is reached from the web dashboard; this screen posts.
-  void onJobSelect;
-
   const { initData } = useTelegram();
   const reduceMotion = useReducedMotion();
 
@@ -166,7 +241,15 @@ export default function DashboardScreen({ onJobSelect }: { onJobSelect?: (jobId:
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
-  const [tab, setTab] = useState<"templates" | "new">("templates");
+  const [tab, setTab] = useState<"templates" | "new" | "applicants">("templates");
+
+  // Applicant tallies load only when the tab is first opened — posting is the
+  // reason this screen exists, and counting applications is a per-job query on
+  // the server that shouldn't sit in front of it.
+  const [jobs, setJobs] = useState<EmployerJobRow[] | null>(null);
+  const [jobsLoading, setJobsLoading] = useState(false);
+  const [jobsError, setJobsError] = useState<string | null>(null);
+  const [jobSearch, setJobSearch] = useState("");
 
   // The from-scratch draft lives at screen level so switching to Templates and
   // back doesn't silently discard a half-written job.
@@ -201,9 +284,37 @@ export default function DashboardScreen({ onJobSelect }: { onJobSelect?: (jobId:
     }
   }, [initData]);
 
+  const loadJobs = useCallback(async () => {
+    if (!initData) return;
+    setJobsLoading(true);
+    setJobsError(null);
+    try {
+      const res = await fetchEmployerDashboard(initData);
+      setJobs(res.jobs ?? []);
+    } catch (err: any) {
+      setJobsError(err?.message || "Couldn't load your applicant counts. Try again.");
+    } finally {
+      setJobsLoading(false);
+    }
+  }, [initData]);
+
   useEffect(() => {
     load();
   }, [load]);
+
+  // Fetch once, on first visit to the tab. A failure stops the retry here so a
+  // broken connection doesn't spin — the error state offers "Try again".
+  useEffect(() => {
+    if (tab !== "applicants" || jobs !== null || jobsLoading || jobsError) return;
+    loadJobs();
+  }, [tab, jobs, jobsLoading, jobsError, loadJobs]);
+
+  const visibleJobs = useMemo(() => {
+    const query = jobSearch.trim().toLowerCase();
+    const rows = jobs ?? [];
+    if (!query) return rows;
+    return rows.filter((job) => (job.title ?? "").toLowerCase().includes(query));
+  }, [jobs, jobSearch]);
 
   const rules = data?.rules;
   const templates = data?.templates ?? [];
@@ -347,7 +458,10 @@ export default function DashboardScreen({ onJobSelect }: { onJobSelect?: (jobId:
               {businessName || "Your business"}
             </span>
             <button
-              onClick={load}
+              onClick={() => {
+                load();
+                if (tab === "applicants") loadJobs();
+              }}
               aria-label="Refresh"
               style={{
                 marginLeft: "auto",
@@ -364,16 +478,18 @@ export default function DashboardScreen({ onJobSelect }: { onJobSelect?: (jobId:
                 flexShrink: 0,
               }}
             >
-              <RefreshCw size={15} className={loading ? "vc-spin" : undefined} />
+              <RefreshCw size={15} className={loading || jobsLoading ? "vc-spin" : undefined} />
             </button>
           </div>
 
           <h1 style={{ fontSize: 26, fontWeight: 800, color: "var(--text-primary)", letterSpacing: "-0.03em", margin: 0, lineHeight: 1.15 }}>
-            Post a vacancy
+            {tab === "applicants" ? "Applicants" : "Post a vacancy"}
           </h1>
 
-          {/* ── Publishing rail — what will actually happen when you post ── */}
-          {rules && (
+          {/* ── Publishing rail — what will actually happen when you post ──
+              Hidden on Applicants: nothing there posts, so posting rights are
+              not what the employer came to read. */}
+          {rules && tab !== "applicants" && (
             <div
               style={{
                 display: "flex",
@@ -468,7 +584,7 @@ export default function DashboardScreen({ onJobSelect }: { onJobSelect?: (jobId:
             </div>
           )}
 
-          {rules?.isExpired && (
+          {rules?.isExpired && tab !== "applicants" && (
             <div
               style={{
                 display: "flex",
@@ -489,7 +605,7 @@ export default function DashboardScreen({ onJobSelect }: { onJobSelect?: (jobId:
             </div>
           )}
 
-          {!rules?.isExpired && limitReached && (
+          {!rules?.isExpired && limitReached && tab !== "applicants" && (
             <div
               style={{
                 display: "flex",
@@ -518,11 +634,12 @@ export default function DashboardScreen({ onJobSelect }: { onJobSelect?: (jobId:
           <div
             role="tablist"
             aria-label="Dashboard sections"
-            style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 4, padding: 4, background: "var(--card-hover)", borderRadius: 14 }}
+            style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 4, padding: 4, background: "var(--card-hover)", borderRadius: 14 }}
           >
             {([
               { id: "templates", label: "Templates" },
-              { id: "new", label: "New vacancy" },
+              { id: "new", label: "New job" },
+              { id: "applicants", label: "Applicants" },
             ] as const).map((item) => {
               const isActive = tab === item.id;
               return (
@@ -538,11 +655,13 @@ export default function DashboardScreen({ onJobSelect }: { onJobSelect?: (jobId:
                     background: isActive ? "var(--surface)" : "transparent",
                     boxShadow: isActive ? "0 1px 3px rgba(0,0,0,0.10)" : "none",
                     color: isActive ? "var(--text-primary)" : "var(--text-secondary)",
-                    fontSize: 14,
+                    // Three-up: 13.5 keeps every label on one line at 320px.
+                    fontSize: 13.5,
                     fontWeight: isActive ? 800 : 600,
                     fontFamily: "inherit",
                     cursor: "pointer",
                     letterSpacing: "-0.01em",
+                    whiteSpace: "nowrap",
                   }}
                 >
                   {item.label}
@@ -581,6 +700,93 @@ export default function DashboardScreen({ onJobSelect }: { onJobSelect?: (jobId:
               >
                 Try again
               </button>
+            </div>
+          ) : tab === "applicants" ? (
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              {/* Search the jobs, not the applicants — same move as the job
+                  filter on the web applicant tracker, minus the drill-down. */}
+              <div style={{ position: "relative" }}>
+                <Search
+                  size={15}
+                  color="var(--text-muted)"
+                  style={{ position: "absolute", left: 13, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }}
+                />
+                <input
+                  type="search"
+                  value={jobSearch}
+                  onChange={(e) => setJobSearch(e.target.value)}
+                  placeholder="Search your jobs…"
+                  aria-label="Search your jobs"
+                  style={{
+                    width: "100%",
+                    minHeight: 44,
+                    padding: "11px 14px 11px 36px",
+                    borderRadius: 12,
+                    border: "1px solid var(--border)",
+                    background: "var(--surface)",
+                    color: "var(--text-primary)",
+                    fontSize: 14,
+                    fontFamily: "inherit",
+                    outline: "none",
+                  }}
+                />
+              </div>
+
+              {jobsLoading ? (
+                [0, 1, 2, 3].map((i) => (
+                  <div key={i} className="shimmer" style={{ height: 56, borderRadius: 14, border: "1px solid var(--border)" }} />
+                ))
+              ) : jobsError ? (
+                <div style={{ textAlign: "center", padding: "36px 20px" }}>
+                  <AlertCircle size={26} color="var(--text-muted)" style={{ marginBottom: 10 }} />
+                  <p style={{ fontSize: 13.5, color: "var(--text-secondary)", lineHeight: 1.55, margin: "0 0 16px" }}>{jobsError}</p>
+                  <button
+                    onClick={loadJobs}
+                    style={{
+                      minHeight: 44,
+                      padding: "11px 22px",
+                      borderRadius: 100,
+                      border: "1px solid var(--border)",
+                      background: "var(--surface)",
+                      color: "var(--text-primary)",
+                      fontSize: 14,
+                      fontWeight: 700,
+                      fontFamily: "inherit",
+                      cursor: "pointer",
+                    }}
+                  >
+                    Try again
+                  </button>
+                </div>
+              ) : visibleJobs.length === 0 ? (
+                <div
+                  style={{
+                    textAlign: "center",
+                    padding: "36px 22px",
+                    background: "var(--card)",
+                    border: "1px solid var(--border)",
+                    borderRadius: 16,
+                  }}
+                >
+                  <p style={{ fontSize: 15, fontWeight: 800, color: "var(--text-primary)", margin: "0 0 6px", letterSpacing: "-0.02em" }}>
+                    {jobs && jobs.length > 0 ? "No jobs match that search" : "No jobs posted yet"}
+                  </p>
+                  <p style={{ fontSize: 13.5, color: "var(--text-secondary)", lineHeight: 1.6, margin: 0 }}>
+                    {jobs && jobs.length > 0
+                      ? "Try a different word from the job title."
+                      : "Post a vacancy and your applicant count shows up here."}
+                  </p>
+                </div>
+              ) : (
+                visibleJobs.map((job) => (
+                  <JobCountRow
+                    key={job.id}
+                    title={job.title || "Untitled job"}
+                    count={Number(job.application_count ?? 0)}
+                    onOpen={onJobSelect ? () => onJobSelect(job.id, job.title || "Untitled job") : undefined}
+                  />
+                ))
+              )}
             </div>
           ) : tab === "templates" ? (
             templates.length === 0 ? (

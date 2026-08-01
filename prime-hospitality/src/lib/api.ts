@@ -244,6 +244,15 @@ export async function fetchOwnCvUrl(
 // ---------------------------------------------------------------------------
 // Action: Fetch employer dashboard data
 // ---------------------------------------------------------------------------
+/** A posted job with its applicant tally. `application_count` excludes declined
+ *  applicants, so it matches what fetchJobApplicants will actually return. */
+export interface EmployerJobRow extends Record<string, any> {
+  id: string;
+  title: string;
+  status: string;
+  application_count: number;
+}
+
 export interface FetchEmployerDashboardResult {
   success: boolean;
   employer: {
@@ -254,7 +263,7 @@ export interface FetchEmployerDashboardResult {
     today_post_count?: number;
     logo_url?: string | null;
   };
-  jobs: Array<Record<string, any>>;
+  jobs: EmployerJobRow[];
   stats: {
     totalJobs: number;
     activeJobs: number;

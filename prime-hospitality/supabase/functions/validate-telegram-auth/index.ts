@@ -836,13 +836,17 @@ serve(async (req: Request) => {
 
       if (jobsErr) throw jobsErr;
 
-      // 4) For each job, count applications
+      // 4) For each job, count applications. Declined applicants are excluded:
+      // get_job_applicants only ever surfaces pending and shortlisted, so
+      // counting rejections here would promise applicants the employer can no
+      // longer open.
       const jobsWithCounts = await Promise.all(
         (jobsData ?? []).map(async (job) => {
           const { count } = await supabase
             .from("applications")
             .select("id", { count: "exact", head: true })
-            .eq("job_id", job.id);
+            .eq("job_id", job.id)
+            .neq("status", "rejected");
           return { ...job, application_count: count ?? 0 };
         })
       );
