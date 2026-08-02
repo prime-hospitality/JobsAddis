@@ -93,11 +93,12 @@ export default function PostTab({ data, loading, reload }: { data: PostingData; 
 
   const filteredJobs = statusFilter === "all" ? jobs : jobs.filter((j) => j.status === statusFilter);
 
-  const handleRepostClick = (job: any) => {
+  const handleRepostClick = (job: any, focusDeadline = false) => {
     if (limitReached) {
       setErrorModal(`You've reached your daily posting limit of ${dailyPostLimit} job${dailyPostLimit === 1 ? "" : "s"}. Please try again tomorrow.`);
       return;
     }
+    setFocusDeadlineOnOpen(focusDeadline);
     setFormModal({ mode: "repost", jobId: job.id, value: { ...jobRowToForm(job), deadline: "" } });
   };
 
@@ -336,7 +337,13 @@ export default function PostTab({ data, loading, reload }: { data: PostingData; 
                         </button>
                         {!subscriptionExpired && (
                           <button
-                            onClick={() => openEditForExtend(job)}
+                            // Plain edit never touches status, so a deadline
+                            // extended that way would update the date but leave
+                            // the job stuck 'expired' forever -- repost is what
+                            // actually revives it (same as the Repost icon
+                            // button in the footer, which is already shown for
+                            // this exact job).
+                            onClick={() => handleRepostClick(job, true)}
                             style={{ background: "none", border: "none", padding: 0, color: "#991b1b", fontWeight: 700, textDecoration: "underline", cursor: "pointer", fontSize: 11.5 }}
                           >
                             Extend deadline

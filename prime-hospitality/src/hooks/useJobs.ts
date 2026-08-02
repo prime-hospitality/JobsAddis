@@ -189,7 +189,11 @@ export function useJobs(category?: string | null, limit?: number, seekerYears?: 
       let query = supabase
         .from("jobs")
         .select(JOB_SELECT)
-        .eq("status", "active") // Only show approved, live jobs
+        // A job past its own deadline stays visible and browsable -- it's only
+        // ever removed from the main app by the employer marking it filled
+        // (status 'closed'). 'expired' just means applying is closed, which
+        // JobDetailScreen enforces on its own.
+        .in("status", ["active", "expired"])
         .order("last_posted_at", { ascending: false }); // reposts surface as fresh
 
       if (category) {
@@ -266,11 +270,15 @@ export function useJobs(category?: string | null, limit?: number, seekerYears?: 
         (payload) => {
           const updated = payload.new as { id: string; status: string; category: string };
           if (!updated?.id) return;
-          if (updated.status !== "active") {
-            // No longer active (closed, expired, rejected, paused) — drop it
+          if (updated.status !== "active" && updated.status !== "expired") {
+            // Actually gone from the main app now (closed/rejected/paused/
+            // scheduled) — drop it. A transition TO 'expired' falls through to
+            // the refetch branch below instead, since it stays visible.
             removeJob(updated.id);
           } else if (matchesThisFeed(updated)) {
-            // Newly approved/published, or an edit to an already-active job
+            // Newly approved/published, an edit to an active job, a deadline
+            // that just passed (active -> expired), or one just revived
+            // (expired -> active via repost).
             fetchJobs(true);
           }
         }
