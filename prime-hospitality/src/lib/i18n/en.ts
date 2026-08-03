@@ -85,6 +85,7 @@ export const en = {
     applied: "Applied ✓",
     applicationsClosed: "Applications Closed",
     deadlineEnded: "Deadline has ended",
+    positionFilled: "Position Filled",
     applyNow: "Apply Now →",
   },
 
