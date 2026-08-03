@@ -40,6 +40,7 @@ export const JOB_SELECT = `
   requirements,
   deadline,
   status,
+  filled_at,
   created_at,
   last_posted_at,
   quantity,
@@ -75,6 +76,7 @@ export interface SupabaseJob {
   };
   deadline: string;
   status: "pending" | "active" | "closed" | "rejected" | "expired" | "scheduled";
+  filled_at: string | null;
   created_at: string;
   last_posted_at: string | null;
   quantity: number;
@@ -151,6 +153,7 @@ export function mapSupabaseJobToJob(sj: SupabaseJob, seekerYears?: SeekerYears):
     qualificationsMet: meetsExperience(seekerYears?.[sj.category], sj.min_years_experience),
     locationMismatch: false,
     quantity: sj.quantity ?? 1,
+    filled: !!sj.filled_at,
   };
 }
 
@@ -189,11 +192,13 @@ export function useJobs(category?: string | null, limit?: number, seekerYears?: 
       let query = supabase
         .from("jobs")
         .select(JOB_SELECT)
-        // A job past its own deadline stays visible and browsable -- it's only
-        // ever removed from the main app by the employer marking it filled
-        // (status 'closed'). 'expired' just means applying is closed, which
-        // JobDetailScreen enforces on its own.
-        .in("status", ["active", "expired"])
+        // A job stays visible and browsable through its own deadline, AND after
+        // the employer marks it filled -- it's never removed by either on its
+        // own. Only an admin-moderated close (status 'closed' with no filled_at)
+        // or another terminal status actually drops it from the main app.
+        // JobDetailScreen enforces "can't apply" for both the expired and the
+        // filled case on its own.
+        .or("status.in.(active,expired),and(status.eq.closed,filled_at.not.is.null)")
         .order("last_posted_at", { ascending: false }); // reposts surface as fresh
 
       if (category) {
@@ -268,17 +273,20 @@ export function useJobs(category?: string | null, limit?: number, seekerYears?: 
         "postgres_changes",
         { event: "UPDATE", schema: "public", table: "jobs" },
         (payload) => {
-          const updated = payload.new as { id: string; status: string; category: string };
+          const updated = payload.new as { id: string; status: string; category: string; filled_at: string | null };
           if (!updated?.id) return;
-          if (updated.status !== "active" && updated.status !== "expired") {
-            // Actually gone from the main app now (closed/rejected/paused/
-            // scheduled) — drop it. A transition TO 'expired' falls through to
-            // the refetch branch below instead, since it stays visible.
+          const stillVisible =
+            updated.status === "active" ||
+            updated.status === "expired" ||
+            (updated.status === "closed" && !!updated.filled_at);
+          if (!stillVisible) {
+            // Actually gone from the main app now — an admin-moderated close
+            // (closed with no filled_at), rejected, paused, or scheduled.
             removeJob(updated.id);
           } else if (matchesThisFeed(updated)) {
             // Newly approved/published, an edit to an active job, a deadline
-            // that just passed (active -> expired), or one just revived
-            // (expired -> active via repost).
+            // that just passed (active -> expired), one just revived (expired
+            // -> active via repost), or marked filled (active/expired -> closed).
             fetchJobs(true);
           }
         }

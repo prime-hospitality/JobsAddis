@@ -336,7 +336,7 @@ serve(async (req: Request) => {
       // deadline may have passed, since this job was loaded on the client.
       const { data: jobRowCheck, error: jobCheckErr } = await supabase
         .from("jobs")
-        .select("status, deadline")
+        .select("status, deadline, filled_at")
         .eq("id", jobId)
         .single();
 
@@ -346,7 +346,10 @@ serve(async (req: Request) => {
         });
       }
       if (jobRowCheck.status !== "active") {
-        return new Response(JSON.stringify({ error: "This job is no longer accepting applications." }), {
+        const message = jobRowCheck.status === "closed" && jobRowCheck.filled_at
+          ? "This position has already been filled."
+          : "This job is no longer accepting applications.";
+        return new Response(JSON.stringify({ error: message }), {
           status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }

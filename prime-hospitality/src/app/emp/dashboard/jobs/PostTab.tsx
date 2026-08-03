@@ -447,7 +447,7 @@ export default function PostTab({ data, loading, reload }: { data: PostingData; 
       {fillTarget && (
         <ConfirmModal
           title="Mark this job as filled?"
-          message={<>This closes <strong style={{ color: "#0f172a" }}>{fillTarget.title}</strong> to new applicants and moves it to Closed. If the role opens up again, you can repost it from here with a new deadline.</>}
+          message={<>Job seekers will still see <strong style={{ color: "#0f172a" }}>{fillTarget.title}</strong> in the app, but as "Position Filled" — they won't be able to apply. If the role opens up again, you can repost it from here with a new deadline.</>}
           confirmLabel="Mark as Filled"
           loadingLabel="Marking as filled…"
           icon={<UserCheck size={24} strokeWidth={1.75} />}

@@ -72,6 +72,7 @@ export const am: DeepPartial<Catalog> = {
     applied: "አመልክተዋል ✓",
     applicationsClosed: "ማመልከቻ ተዘግቷል",
     deadlineEnded: "የማመልከቻ ጊዜው አልፏል",
+    positionFilled: "ቦታው ተይዟል",
     applyNow: "አሁን ያመልክቱ →",
   },
 

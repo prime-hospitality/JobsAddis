@@ -38,6 +38,11 @@ export interface Job {
   qualificationsMet: boolean;
   locationMismatch: boolean; // demo: hardcoded location mismatch flag
   quantity?: number;
+  /** The employer marked this position filled. Stays visible and browsable --
+   *  only applying is blocked, with "Position Filled" shown in place of the
+   *  Apply button. Optional so the demo JOBS array below doesn't need every
+   *  entry touched; absent reads the same as false. */
+  filled?: boolean;
 }
 
 export const JOBS: Job[] = [

@@ -58,6 +58,7 @@ export default function JobDetailScreen({ job, isEmployer, seekerYears, hasAppli
   const t = useT();
   const shouldReduceMotion = useReducedMotion();
   const deadlinePassed = isDeadlinePassed(job.deadline);
+  const isFilled = !!job.filled;
 
   const infoItems = [
     { icon: MapPin, label: t("jobDetail.labels.location"), value: job.location },
@@ -471,6 +472,15 @@ export default function JobDetailScreen({ job, isEmployer, seekerYears, hasAppli
                 style={{ opacity: 0.6, cursor: "default" }}
               >
                 {t("jobDetail.applied")}
+              </button>
+            ) : isFilled ? (
+              <button
+                id="apply-now-btn"
+                className="btn-primary"
+                disabled
+                style={{ opacity: 0.6, cursor: "default" }}
+              >
+                {t("jobDetail.positionFilled")}
               </button>
             ) : deadlinePassed ? (
               <button
