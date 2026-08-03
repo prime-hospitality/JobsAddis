@@ -87,8 +87,8 @@ export function useTelegram(): UseTelegramReturn {
               document.documentElement.removeAttribute("data-theme");
             }
 
-            const bgPrimary = activeScheme === "dark" ? "#121212" : "#F9FAFB";
-            const surfaceColor = activeScheme === "dark" ? "#1A1A1A" : "#FFFFFF";
+            const bgPrimary = activeScheme === "dark" ? "#0C1017" : "#F7F8FA";
+            const surfaceColor = activeScheme === "dark" ? "#141924" : "#FFFFFF";
             
             tgWebApp.setHeaderColor?.(bgPrimary);
             tgWebApp.setBackgroundColor?.(bgPrimary);

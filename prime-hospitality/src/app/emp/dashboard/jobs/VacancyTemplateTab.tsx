@@ -163,8 +163,8 @@ export default function VacancyTemplateTab({ data, loading, reload }: { data: Po
       {/* Header */}
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, marginBottom: 18, flexWrap: "wrap" }}>
         <div>
-          <h2 style={{ fontSize: 18, fontWeight: 800, color: "#0f172a", margin: 0, letterSpacing: "-.02em" }}>Your Vacancy Templates</h2>
-          <p style={{ fontSize: 13, color: "#64748b", margin: "5px 0 0 0" }}>Save reusable job templates and post them the moment a role opens up.</p>
+          <h2 style={{ fontSize: 18, fontWeight: 800, color: "#141821", margin: 0, letterSpacing: "-.02em" }}>Your Vacancy Templates</h2>
+          <p style={{ fontSize: 13, color: "#6E7686", margin: "5px 0 0 0" }}>Save reusable job templates and post them the moment a role opens up.</p>
         </div>
         <button className="mjp-btn-primary" onClick={() => setFormModal(emptyVacancyForm())}>
           <Plus size={16} /> Add Template
@@ -172,20 +172,20 @@ export default function VacancyTemplateTab({ data, loading, reload }: { data: Po
       </div>
 
       {successNote && (
-        <div style={{ display: "flex", alignItems: "center", gap: 8, background: "#f0f9ff", border: "1px solid #bae6fd", color: "#0369a1", borderRadius: 10, padding: "11px 14px", fontSize: 13, fontWeight: 600, marginBottom: 16 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, background: "#f0f9ff", border: "1px solid #bae6fd", color: "#164A9C", borderRadius: 10, padding: "11px 14px", fontSize: 13, fontWeight: 600, marginBottom: 16 }}>
           <Timer size={16} weight="bold" style={{ flexShrink: 0 }} /> {successNote}
         </div>
       )}
 
       {loading ? (
-        <div style={{ textAlign: "center", color: "#94a3b8", padding: "56px 0", fontSize: 14 }}>Loading your templates…</div>
+        <div style={{ textAlign: "center", color: "#9AA1B1", padding: "56px 0", fontSize: 14 }}>Loading your templates…</div>
       ) : templates.length === 0 ? (
         <div className="mjp-empty">
-          <div style={{ width: 56, height: 56, borderRadius: 16, background: "#eff6ff", color: "#0284c7", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
+          <div style={{ width: 56, height: 56, borderRadius: 16, background: "#EEF3FC", color: "#1B5CBF", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
             <FileStack size={26} strokeWidth={1.75} />
           </div>
-          <h4 style={{ fontSize: 16, fontWeight: 700, color: "#0f172a", marginBottom: 6 }}>No templates yet</h4>
-          <p style={{ fontSize: 13.5, color: "#64748b", margin: "0 0 20px 0" }}>Create a template once, then post it again and again in one click.</p>
+          <h4 style={{ fontSize: 16, fontWeight: 700, color: "#141821", marginBottom: 6 }}>No templates yet</h4>
+          <p style={{ fontSize: 13.5, color: "#6E7686", margin: "0 0 20px 0" }}>Create a template once, then post it again and again in one click.</p>
           <button className="mjp-btn-primary" style={{ margin: "0 auto" }} onClick={() => setFormModal(emptyVacancyForm())}>
             <Plus size={16} /> Add Template
           </button>
@@ -194,7 +194,7 @@ export default function VacancyTemplateTab({ data, loading, reload }: { data: Po
         <div className="mjp-grid">
           {templates.map((tpl) => (
             <div key={tpl.id} className="mjp-card clickable" onClick={() => openPreview(tpl)}>
-              <div className="mjp-card-accent" style={{ background: "#0284c7" }} />
+              <div className="mjp-card-accent" style={{ background: "#1B5CBF" }} />
               <div style={{ padding: 18, display: "flex", flexDirection: "column", gap: 12, flex: 1 }}>
                 {/* Top: logo + title + actions */}
                 <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
@@ -214,7 +214,7 @@ export default function VacancyTemplateTab({ data, loading, reload }: { data: Po
                 </div>
 
                 {/* Description */}
-                <p style={{ fontSize: 13, color: "#64748b", lineHeight: 1.5, margin: 0, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", minHeight: 39 }}>
+                <p style={{ fontSize: 13, color: "#6E7686", lineHeight: 1.5, margin: 0, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", minHeight: 39 }}>
                   {tpl.description_template || "No description provided."}
                 </p>
 
@@ -232,11 +232,11 @@ export default function VacancyTemplateTab({ data, loading, reload }: { data: Po
                 </div>
 
                 <div style={{ flex: 1 }} />
-                <div style={{ height: 1, background: "#f1f5f9" }} />
+                <div style={{ height: 1, background: "#EFF1F5" }} />
 
                 {/* Preview hint + actions */}
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
-                  <span style={{ fontSize: 11.5, color: "#94a3b8", display: "inline-flex", alignItems: "center", gap: 5 }}>
+                  <span style={{ fontSize: 11.5, color: "#9AA1B1", display: "inline-flex", alignItems: "center", gap: 5 }}>
                     <Eye size={12} /> Click to preview
                   </span>
                 </div>
@@ -294,7 +294,7 @@ export default function VacancyTemplateTab({ data, loading, reload }: { data: Po
       {deleteTarget && (
         <ConfirmModal
           title="Delete this template?"
-          message={<><strong style={{ color: "#0f172a" }}>{deleteTarget.title}</strong> will be permanently removed. This can&apos;t be undone.</>}
+          message={<><strong style={{ color: "#141821" }}>{deleteTarget.title}</strong> will be permanently removed. This can&apos;t be undone.</>}
           confirmLabel="Delete Template"
           loading={deleting}
           onConfirm={executeDelete}
@@ -317,8 +317,8 @@ export default function VacancyTemplateTab({ data, loading, reload }: { data: Po
               <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#222" }} />
               <div style={{ width: 72, height: 10, borderRadius: 10, background: "#1a1a1a" }} />
             </div>
-            <div style={{ flex: 1, background: "var(--app-bg, #f9fafb)", borderRadius: 46, overflow: "hidden", margin: 4 }}>
-              <div style={{ height: 50, display: "flex", alignItems: "flex-end", justifyContent: "space-between", padding: "0 24px 6px", background: "var(--app-bg, #f9fafb)" }}>
+            <div style={{ flex: 1, background: "var(--app-bg, #F7F8FA)", borderRadius: 46, overflow: "hidden", margin: 4 }}>
+              <div style={{ height: 50, display: "flex", alignItems: "flex-end", justifyContent: "space-between", padding: "0 24px 6px", background: "var(--app-bg, #F7F8FA)" }}>
                 <span style={{ fontSize: 11, fontWeight: 700, color: "#111827" }}>9:41</span>
                 <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
                   <div style={{ display: "flex", gap: 1.5, alignItems: "flex-end" }}>
@@ -396,53 +396,53 @@ export default function VacancyTemplateTab({ data, loading, reload }: { data: Po
           <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)" }} onClick={() => { setScheduleTemplateModal(null); setScheduleError(""); }} />
           <div style={{ position: "relative", background: "#fff", borderRadius: 16, padding: 24, width: "100%", maxWidth: 420, boxShadow: "0 20px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1)" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
-              <div style={{ width: 40, height: 40, borderRadius: "50%", background: "#e0f2fe", color: "#0284c7", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              <div style={{ width: 40, height: 40, borderRadius: "50%", background: "#e0f2fe", color: "#1B5CBF", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                 <Timer size={24} weight="bold" />
               </div>
               <div>
                 <h3 style={{ margin: 0, fontSize: 17, fontWeight: 700, color: "#111827" }}>Scheduled Publication</h3>
-                <p style={{ margin: 0, fontSize: 12, color: "#6b7280" }}>{scheduleTemplateModal.title}</p>
+                <p style={{ margin: 0, fontSize: 12, color: "#6E7686" }}>{scheduleTemplateModal.title}</p>
               </div>
             </div>
 
             <form onSubmit={handleScheduleConfirm} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
               <div>
-                <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#374151", marginBottom: 6 }}>Publish Date</label>
+                <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#343A46", marginBottom: 6 }}>Publish Date</label>
                 <input
                   type="date"
                   required
                   value={scheduleDate}
                   onChange={(e) => setScheduleDate(e.target.value)}
                   min={new Date().toISOString().split("T")[0]}
-                  style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid #d1d5db", fontSize: 14, outline: "none" }}
+                  style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid #CBD0DA", fontSize: 14, outline: "none" }}
                 />
               </div>
 
               <div>
-                <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#374151", marginBottom: 6 }}>Publish Time</label>
+                <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#343A46", marginBottom: 6 }}>Publish Time</label>
                 <input
                   type="time"
                   required
                   value={scheduleTime}
                   onChange={(e) => setScheduleTime(e.target.value)}
-                  style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid #d1d5db", fontSize: 14, outline: "none" }}
+                  style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid #CBD0DA", fontSize: 14, outline: "none" }}
                 />
               </div>
 
-              {scheduleError && <p style={{ color: "#ef4444", fontSize: 12, margin: 0 }}>{scheduleError}</p>}
+              {scheduleError && <p style={{ color: "#E5484D", fontSize: 12, margin: 0 }}>{scheduleError}</p>}
 
               <div style={{ display: "flex", gap: 10, marginTop: 8 }}>
                 <button
                   type="button"
                   onClick={() => { setScheduleTemplateModal(null); setScheduleError(""); }}
-                  style={{ flex: 1, padding: "10px", background: "#f3f4f6", border: "none", borderRadius: 8, color: "#374151", fontSize: 14, fontWeight: 600, cursor: "pointer" }}
+                  style={{ flex: 1, padding: "10px", background: "#f3f4f6", border: "none", borderRadius: 8, color: "#343A46", fontSize: 14, fontWeight: 600, cursor: "pointer" }}
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={scheduleLoading}
-                  style={{ flex: 1, padding: "10px", background: "#0284c7", border: "none", borderRadius: 8, color: "#fff", fontSize: 14, fontWeight: 600, cursor: scheduleLoading ? "not-allowed" : "pointer" }}
+                  style={{ flex: 1, padding: "10px", background: "#1B5CBF", border: "none", borderRadius: 8, color: "#fff", fontSize: 14, fontWeight: 600, cursor: scheduleLoading ? "not-allowed" : "pointer" }}
                 >
                   {scheduleLoading ? "Scheduling…" : "Set Schedule"}
                 </button>

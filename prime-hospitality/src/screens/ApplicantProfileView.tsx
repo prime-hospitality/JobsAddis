@@ -150,15 +150,15 @@ export default function ApplicantProfileView({
               style={{
                 width: 66, height: 66, borderRadius: "50%",
                 background: p?.gender === "female"
-                  ? "linear-gradient(135deg, #059669 0%, #0D9488 100%)"
+                  ? "linear-gradient(135deg, #1B5CBF 0%, #4A80D3 100%)"
                   : p?.gender === "male"
-                  ? "linear-gradient(135deg, #047857 0%, #065F46 100%)"
-                  : "linear-gradient(135deg, #10B981 0%, #059669 100%)",
+                  ? "linear-gradient(135deg, #164A9C 0%, #113978 100%)"
+                  : "linear-gradient(135deg, #4A80D3 0%, #1B5CBF 100%)",
                 display: "flex", alignItems: "center", justifyContent: "center",
                 fontSize: 24, fontWeight: 800, color: "#FFFFFF",
                 flexShrink: 0,
                 boxShadow: p?.gender === "female"
-                  ? "0 4px 16px rgba(5,150,105,0.35)"
+                  ? "0 4px 16px rgba(27,92,191,0.35)"
                   : "0 4px 16px rgba(4,120,87,0.35)",
               }}
             >
@@ -195,8 +195,8 @@ export default function ApplicantProfileView({
                   display: "inline-flex", alignItems: "center", gap: 4,
                   fontSize: 11, fontWeight: 700,
                   borderRadius: 100, padding: "3px 10px",
-                  background: "rgba(5,150,105,0.1)",
-                  border: "1px solid rgba(5,150,105,0.25)",
+                  background: "rgba(27,92,191,0.1)",
+                  border: "1px solid rgba(27,92,191,0.25)",
                   color: "var(--brand)",
                 }}>
                   <CheckCircle size={10} /> Shortlisted
@@ -347,8 +347,8 @@ export default function ApplicantProfileView({
               disabled={!!actionLoading}
               style={{
                 flex: 1, padding: "14px 0", borderRadius: 14, fontSize: 14, fontWeight: 700,
-                background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.3)",
-                color: "#F59E0B", cursor: !!actionLoading ? "not-allowed" : "pointer",
+                background: "rgba(180,83,9,0.08)", border: "1px solid rgba(180,83,9,0.3)",
+                color: "var(--warning)", cursor: !!actionLoading ? "not-allowed" : "pointer",
                 fontFamily: "inherit", opacity: !!actionLoading ? 0.6 : 1,
                 display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
               }}
@@ -364,12 +364,12 @@ export default function ApplicantProfileView({
                 disabled={!!actionLoading}
                 style={{
                   flex: 1, padding: "14px 0", borderRadius: 14, fontSize: 14, fontWeight: 700,
-                  background: "linear-gradient(135deg, #059669 0%, #047857 100%)",
+                  background: "linear-gradient(135deg, #1B5CBF 0%, #164A9C 100%)",
                   border: "none",
                   color: "#fff", cursor: !!actionLoading ? "not-allowed" : "pointer",
                   fontFamily: "inherit", opacity: !!actionLoading ? 0.6 : 1,
                   display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-                  boxShadow: "0 4px 16px rgba(5,150,105,0.3)",
+                  boxShadow: "0 4px 16px rgba(27,92,191,0.3)",
                 }}
               >
                 {isShortlisting ? <Loader2 size={16} className="animate-spin" /> : <Star size={16} />}
@@ -382,7 +382,7 @@ export default function ApplicantProfileView({
                 style={{
                   width: 100, padding: "14px 0", borderRadius: 14, fontSize: 14, fontWeight: 700,
                   background: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.2)",
-                  color: "#FCA5A5", cursor: !!actionLoading ? "not-allowed" : "pointer",
+                  color: "var(--error)", cursor: !!actionLoading ? "not-allowed" : "pointer",
                   fontFamily: "inherit", opacity: !!actionLoading ? 0.6 : 1,
                   display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
                 }}

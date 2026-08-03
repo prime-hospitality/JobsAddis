@@ -103,7 +103,7 @@ export default function AdminSessionGate({ initialUi }: { initialUi: Partial<Adm
         }}
       >
         <img
-          src="/addis_jobs_logo.png"
+          src="/addis_jobs_logo.webp"
           alt="Loading…"
           style={{ width: 56, height: 56, objectFit: "contain", animation: "pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite" }}
         />

@@ -82,7 +82,7 @@ export default function AdminLogin() {
             animation: "adminLogoFadeIn 0.5s ease forwards",
           }}>
             <img
-              src="/pbg_logo.png"
+              src="/pbg_logo.webp"
               alt="PBG Logo"
               style={{ width: "100%", height: "100%", objectFit: "cover", opacity: 0, animation: "adminLogoFadeIn 0.5s ease 0.05s forwards" }}
             />
@@ -125,7 +125,7 @@ export default function AdminLogin() {
       <div className="w-full md:w-1/2 lg:flex-1 bg-white flex flex-col justify-center items-center relative p-8 md:p-10 min-h-[60vh] md:min-h-screen shrink-0">
         <div style={{ width: "100%", maxWidth: "380px" }}>
           <p style={{ 
-            color: "#9ca3af", 
+            color: "#9AA1B1", 
             fontSize: "15px", 
             marginBottom: "40px",
             lineHeight: "1.5",
@@ -145,11 +145,11 @@ export default function AdminLogin() {
                   width: "100%",
                   padding: "16px 48px 16px 24px",
                   borderRadius: "9999px",
-                  border: `1px solid ${hasError ? "#ef4444" : "#e5e7eb"}`,
+                  border: `1px solid ${hasError ? "#E5484D" : "#E2E5EC"}`,
                   fontSize: "13px",
                   fontWeight: 600,
                   letterSpacing: "1px",
-                  color: "#374151",
+                  color: "#343A46",
                   outline: "none",
                   boxSizing: "border-box",
                   textTransform: "uppercase",
@@ -157,7 +157,7 @@ export default function AdminLogin() {
                 }}
               />
               <svg 
-                width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={hasError ? "#ef4444" : "#9ca3af"} strokeWidth="2" 
+                width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={hasError ? "#E5484D" : "#9AA1B1"} strokeWidth="2" 
                 strokeLinecap="round" strokeLinejoin="round"
                 style={{ position: "absolute", right: "20px", top: "50%", transform: "translateY(-50%)", transition: "stroke 0.2s" }}
               >
@@ -176,11 +176,11 @@ export default function AdminLogin() {
                   width: "100%",
                   padding: "16px 24px",
                   borderRadius: "9999px",
-                  border: `1px solid ${hasError ? "#ef4444" : "#e5e7eb"}`,
+                  border: `1px solid ${hasError ? "#E5484D" : "#E2E5EC"}`,
                   fontSize: "13px",
                   fontWeight: 600,
                   letterSpacing: "1px",
-                  color: "#374151",
+                  color: "#343A46",
                   outline: "none",
                   boxSizing: "border-box",
                   textTransform: "uppercase",
@@ -194,19 +194,19 @@ export default function AdminLogin() {
                 display: "flex",
                 alignItems: "flex-start",
                 gap: "10px",
-                background: "#fef2f2",
+                background: "#FDECEC",
                 border: "1px solid #fecaca",
                 borderRadius: "12px",
                 padding: "14px 16px",
                 margin: "0",
                 animation: "fadeIn 0.2s ease"
               }}>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: 1 }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#E5484D" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: 1 }}>
                   <circle cx="12" cy="12" r="10"></circle>
                   <line x1="12" y1="8" x2="12" y2="12"></line>
                   <line x1="12" y1="16" x2="12.01" y2="16"></line>
                 </svg>
-                <p style={{ color: "#dc2626", fontSize: "13px", margin: 0, fontWeight: 500, lineHeight: "1.5" }}>{error}</p>
+                <p style={{ color: "#E5484D", fontSize: "13px", margin: 0, fontWeight: 500, lineHeight: "1.5" }}>{error}</p>
               </div>
             )}
 
@@ -248,7 +248,7 @@ export default function AdminLogin() {
         <div style={{
           position: "absolute",
           bottom: "16px",
-          color: "#9ca3af",
+          color: "#9AA1B1",
           fontSize: "13px",
           display: "flex",
           gap: "12px",

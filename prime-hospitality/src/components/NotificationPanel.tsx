@@ -22,23 +22,23 @@ function NotificationIcon({ type }: { type: Notification["type"] }) {
   };
 
   if (type === "shortlisted") return (
-    <div style={{ ...base, background: "rgba(5,150,105,0.12)", border: "1px solid rgba(5,150,105,0.2)" }}>
-      <CheckCircle size={18} color="#059669" />
+    <div style={{ ...base, background: "rgba(27,92,191,0.12)", border: "1px solid rgba(27,92,191,0.2)" }}>
+      <CheckCircle size={18} color="#1B5CBF" />
     </div>
   );
   if (type === "rejected") return (
     <div style={{ ...base, background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.2)" }}>
-      <XCircle size={18} color="#EF4444" />
+      <XCircle size={18} color="#E5484D" />
     </div>
   );
   if (type === "vacancy_alert") return (
-    <div style={{ ...base, background: "rgba(99,102,241,0.1)", border: "1px solid rgba(99,102,241,0.2)" }}>
-      <Sparkles size={18} color="#6366F1" />
+    <div style={{ ...base, background: "rgba(27,92,191,0.1)", border: "1px solid rgba(27,92,191,0.2)" }}>
+      <Sparkles size={18} color="#1B5CBF" />
     </div>
   );
   if (type === "broadcast") return (
-    <div style={{ ...base, background: "rgba(124,58,237,0.1)", border: "1px solid rgba(124,58,237,0.2)" }}>
-      <Bell size={18} color="#7C3AED" />
+    <div style={{ ...base, background: "rgba(27,92,191,0.1)", border: "1px solid rgba(27,92,191,0.2)" }}>
+      <Bell size={18} color="#164A9C" />
     </div>
   );
   return (
@@ -221,7 +221,7 @@ export default function NotificationPanel({ isOpen, onClose, isEmployer = false,
                         display: "flex", alignItems: "flex-start", gap: 12,
                         padding: "14px 14px",
                         background: n.read ? "var(--surface-elevated)" : "var(--brand-subtle)",
-                        border: `1px solid ${n.read ? "var(--border)" : "rgba(5,150,105,0.2)"}`,
+                        border: `1px solid ${n.read ? "var(--border)" : "rgba(27,92,191,0.2)"}`,
                         borderRadius: 16, cursor: n.job_id ? "pointer" : "default",
                         position: "relative",
                       }}

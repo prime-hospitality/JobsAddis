@@ -1,54 +1,284 @@
 @import "tailwindcss";
 
+/* ── JobsAdis colour system ───────────────────────────────────────────────
+   Sampled from the supplied logo (jobs_addis_logo_v2.png):
+     Signal Yellow #F2F012 — a high-chroma yellow-green, not a golden yellow.
+       It is the identity field: the logo tile is a solid sheet of it. In the
+       product it is the one action colour.
+     Deep Blue    #1B5CBF — the mark itself. Identity, structure, links,
+       active state, chrome.
+   White and a warm-neutral dark gray carry everything else.
+   Per screen: blue may repeat, yellow appears once or twice. Yellow is a FILL
+   colour only — never set it as a text or icon colour. */
 :root {
   color-scheme: light;
-  /* Light Theme (Upwork Green & White) */
-  --app-bg: #F9FAFB;
-  --surface: #FFFFFF;
-  --surface-elevated: #FFFFFF;
-  --card: #FFFFFF;
-  --card-hover: #F3F4F6;
 
-  /* Brand accent (Emerald) */
-  --brand: #22C55E;
-  --brand-light: #4ADE80;
-  --brand-dim: #16A34A;
-  --brand-subtle: rgba(34, 197, 94, 0.12);
+  /* ── Base ramps ── */
+  --yellow-50: #FDFDE3;
+  --yellow-100: #FBFBBD;
+  --yellow-200: #F8F78A;
+  --yellow-300: #F6F44E;
+  --yellow-400: #F4F22B;
+  --yellow-500: #F2F012;
+  --yellow-600: #D2D000;
+  --yellow-700: #9C9A00;
+  --yellow-800: #666500;
 
-  /* Text */
-  --text-primary: #111827;
-  --text-secondary: #4B5563;
-  --text-muted: #9CA3AF;
+  --blue-50: #EEF3FC;
+  --blue-100: #D9E5F8;
+  --blue-200: #B4CAF1;
+  --blue-300: #85A9E6;
+  --blue-400: #4A80D3;
+  --blue-500: #1B5CBF;
+  --blue-600: #164A9C;
+  --blue-700: #113978;
+  --blue-800: #0D2B5B;
+  --blue-900: #091D3D;
 
-  /* Status */
-  --success: #22C55E;
-  --warning: #F59E0B;
-  --error: #EF4444;
+  --gray-0: #FFFFFF;
+  --gray-25: #FCFCFD;
+  --gray-50: #F7F8FA;
+  --gray-100: #EFF1F5;
+  --gray-200: #E2E5EC;
+  --gray-300: #CBD0DA;
+  --gray-400: #9AA1B1;
+  --gray-500: #6E7686;
+  --gray-600: #4C5361;
+  --gray-700: #343A46;
+  --gray-800: #212630;
+  --gray-900: #141821;
+  --gray-950: #0B0E14;
 
-  /* Borders & Shadows */
-  --border: rgba(0, 0, 0, 0.08);
-  --border-active: rgba(34, 197, 94, 0.3);
-  --card-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  /* ── Semantic ramps ──
+     Amber is pushed deep and orange on purpose: brand yellow is so light and
+     chromatic that a warning in anything near it would read as a CTA. */
+  --green-500: #12A150;
+  --green-50: #E7F7EE;
+  --amber-500: #B45309;
+  --amber-50: #FDF1E7;
+  --red-500: #E5484D;
+  --red-50: #FDECEC;
+
+  /* ── Brand aliases ── */
+  --brand: var(--blue-500);
+  --brand-strong: var(--blue-600);
+  --brand-soft: var(--blue-50);
+  --brand-subtle: rgba(27, 92, 191, 0.10);
+  --brand-ring: rgba(27, 92, 191, 0.22);
+  /* Compatibility aliases for the codebase's pre-existing --brand-light /
+     --brand-dim variable names (emphasized brand text, hero accent dots,
+     the ConfirmationScreen business-name gradient) so those call sites
+     repaint without being touched individually. */
+  --brand-light: var(--blue-400);
+  --brand-dim: var(--blue-600);
+
+  --action: var(--yellow-500);
+  --action-hover: var(--yellow-400);
+  --action-press: var(--yellow-600);
+  --action-ink: var(--gray-900);
+  --action-soft: var(--yellow-50);
+  --action-subtle: rgba(242, 240, 18, 0.26);
+
+  /* ── Surfaces ── */
+  --app-bg: var(--gray-50);
+  --surface: var(--gray-0);
+  --surface-elevated: var(--gray-0);
+  --surface-sunken: var(--gray-100);
+  --card: var(--gray-0);
+  --card-hover: var(--gray-50);
+  --scrim: rgba(11, 14, 20, 0.44);
+
+  /* ── Text ── */
+  --text-primary: var(--gray-900);
+  --text-secondary: var(--gray-600);
+  --text-muted: var(--gray-400);
+  --text-on-brand: var(--gray-0);
+  --text-on-action: var(--gray-900);
+  --text-link: var(--blue-500);
+  --text-link-hover: var(--blue-600);
+
+  /* ── Lines ── */
+  --border: rgba(20, 24, 33, 0.09);
+  --border-strong: var(--gray-200);
+  --border-active: rgba(27, 92, 191, 0.34);
+  --divider: var(--gray-100);
+
+  /* ── Status ── */
+  --success: var(--green-500);
+  --success-soft: var(--green-50);
+  --warning: var(--amber-500);
+  --warning-soft: var(--amber-50);
+  --error: var(--red-500);
+  --error-soft: var(--red-50);
+  --info: var(--blue-500);
+  --info-soft: var(--blue-50);
+
+  /* ── Typography ──
+     Poppins is the brand face — display/UI, headings, buttons, nav labels.
+     Inter takes over anything under 16px that is not a heading (badges,
+     salary figures, table cells, long-form body). Ethiopic falls through
+     both to Noto Sans Ethiopic. */
+  --font-display: "Poppins", "Noto Sans Ethiopic", system-ui, sans-serif;
+  --font-body: "Inter", "Noto Sans Ethiopic", system-ui, sans-serif;
+  --font-ui: "Poppins", "Inter", "Noto Sans Ethiopic", system-ui, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, monospace;
+  --font-monogram: ui-serif, Georgia, "Times New Roman", serif;
+
+  --text-hero: 34px;
+  --text-display: 28px;
+  --text-title: 22px;
+  --text-heading: 20px;
+  --text-subhead: 18px;
+  --text-lg: 16px;
+  --text-base: 15px;
+  --text-sm: 14px;
+  --text-xs: 13px;
+  --text-2xs: 12px;
+  --text-3xs: 11px;
+  --text-4xs: 10px;
+
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+  --weight-extrabold: 800;
+
+  --leading-tight: 1.15;
+  --leading-snug: 1.2;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.65;
+
+  --tracking-hero: -0.035em;
+  --tracking-heading: -0.025em;
+  --tracking-tight: -0.015em;
+  --tracking-normal: 0;
+  --tracking-eyebrow: 0.05em;
+  --tracking-caps: 0.08em;
+
+  --measure: 65ch;
+
+  /* ── Spacing ──
+     One scale, used everywhere. 20px is the app's screen gutter — on the
+     scale on purpose, because every mobile screen uses it. */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-24: 96px;
+
+  --gutter: 20px;
+  --gutter-desktop: 48px;
+  --stack-card: 12px;
+  --nav-height: 64px;
+  --sidebar-width: 248px;
+  --content-max: 480px;
+
+  /* Telegram fullscreen: the band the client's own header and the notch sit
+     over. Nothing tappable may live inside it. */
+  --safe-top: max(84px, calc(env(safe-area-inset-top) + 32px));
+  --safe-bottom: env(safe-area-inset-bottom, 16px);
+
+  /* ── Radius ──
+     Pills for anything tappable that isn't a card, 12px for inputs/small
+     tiles, 16–20px for cards and sheets. */
+  --radius-xs: 6px;
+  --radius-sm: 10px;
+  --radius-md: 12px;
+  --radius-lg: 14px;
+  --radius-xl: 16px;
+  --radius-2xl: 20px;
+  --radius-sheet: 24px;
+  --radius-pill: 100px;
+  --radius-full: 50%;
+
+  /* ── Elevation ──
+     Shadows are quiet: a 1px border does most of the work, the shadow is a
+     soft second layer. Dropped entirely in dark mode. */
+  --shadow-card: 0 4px 12px rgba(20, 24, 33, 0.05);
+  --shadow-raised: 0 6px 20px rgba(20, 24, 33, 0.08);
+  --shadow-sheet: 0 -8px 32px rgba(20, 24, 33, 0.15);
+  --shadow-popover: 0 12px 32px rgba(20, 24, 33, 0.14);
+  --shadow-action: 0 4px 14px rgba(242, 240, 18, 0.38);
+  --shadow-brand: 0 4px 14px rgba(27, 92, 191, 0.24);
+  --shadow-none: none;
+  /* Pre-existing call-site name for --shadow-card (10 inline boxShadow uses). */
+  --card-shadow: var(--shadow-card);
+
+  --focus-ring: 0 0 0 3px var(--brand-ring);
+  --focus-ring-action: 0 0 0 3px rgba(242, 240, 18, 0.45);
+
+  --blur-chrome: blur(20px);
+  --blur-scrim: blur(12px);
+
+  /* ── Motion ──
+     Short and physical. Everything the thumb touches shrinks; nothing fades
+     in for longer than a screen transition. */
+  --duration-instant: 100ms;
+  --duration-fast: 180ms;
+  --duration-base: 200ms;
+  --duration-slow: 280ms;
+  --duration-slower: 400ms;
+  --duration-page: 600ms;
+
+  --ease-out: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  --ease-in: cubic-bezier(0.55, 0.06, 0.68, 0.19);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  --press-scale: 0.97;
+  --press-scale-card: 0.98;
+  --press-scale-icon: 0.90;
+  --stagger-step: 50ms;
 }
 
 [data-theme="dark"] {
   color-scheme: dark;
-  /* Dark Theme (Elevated Neutral Gray) */
-  --app-bg: #121212;
-  --surface: #1A1A1A;
-  --surface-elevated: #262626;
-  --card: #1A1A1A;
-  --card-hover: #262626;
+  /* Dark Theme */
+  --app-bg: #0C1017;
+  --surface: #141924;
+  --surface-elevated: #1B2230;
+  --surface-sunken: #0F141D;
+  --card: #141924;
+  --card-hover: #1B2230;
+  --scrim: rgba(0, 0, 0, 0.62);
+
+  --brand: #6E9AF0;
+  --brand-strong: #93B4F5;
+  --brand-soft: rgba(110, 154, 240, 0.14);
+  --brand-subtle: rgba(110, 154, 240, 0.16);
+  --brand-ring: rgba(110, 154, 240, 0.34);
 
   /* Text */
-  --text-primary: #FAFAFA;
-  --text-secondary: #A1A1AA;
-  --text-muted: #71717A;
+  --text-primary: #F3F5F9;
+  --text-secondary: #A7AEBD;
+  --text-muted: #6E7686;
+  --text-on-brand: #0B0E14;
+  --text-link: #93B4F5;
+  --text-link-hover: #B4CAF1;
 
   /* Borders & Shadows */
-  --border: rgba(255, 255, 255, 0.08);
-  --border-active: rgba(34, 197, 94, 0.4);
-  --card-shadow: none;
+  --border: rgba(255, 255, 255, 0.09);
+  --border-strong: rgba(255, 255, 255, 0.16);
+  --border-active: rgba(110, 154, 240, 0.42);
+  --divider: rgba(255, 255, 255, 0.07);
+
+  --success: #3ECF7E;
+  --success-soft: rgba(62, 207, 126, 0.14);
+  --warning: #E8963C;
+  --warning-soft: rgba(232, 150, 60, 0.14);
+  --error: #F2696D;
+  --error-soft: rgba(242, 105, 109, 0.14);
+  --info-soft: rgba(110, 154, 240, 0.14);
+
+  --shadow-card: none;
+  --shadow-raised: 0 6px 20px rgba(0, 0, 0, 0.5);
+  --shadow-sheet: 0 -8px 32px rgba(0, 0, 0, 0.55);
+  --shadow-popover: 0 12px 32px rgba(0, 0, 0, 0.55);
 }
 
 * {
@@ -57,16 +287,16 @@
 }
 
 html {
-  /* Latin resolves from Jakarta/Inter; Ethiopic (U+1200–137F) falls through to
+  /* Latin resolves from Poppins/Inter; Ethiopic (U+1200–137F) falls through to
      Noto Sans Ethiopic, which is the only loaded face that covers it. */
-  font-family: 'Plus Jakarta Sans', 'Inter', 'Noto Sans Ethiopic', system-ui, sans-serif;
+  font-family: var(--font-ui);
   background-color: var(--app-bg);
   color: var(--text-primary);
   overscroll-behavior: none;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   padding-top: env(safe-area-inset-top, 0px);
-  transition: background-color 0.3s ease, color 0.3s ease;
+  transition: background-color var(--duration-slow) ease, color var(--duration-slow) ease;
 }
 
 body {
@@ -75,14 +305,14 @@ body {
   overflow-x: hidden;
   overscroll-behavior: none;
   position: relative;
-  transition: background-color 0.3s ease;
+  transition: background-color var(--duration-slow) ease;
 }
 
 /* Optional Mesh Background - Only visible in dark mode to keep it sleek */
 [data-theme="dark"] body {
-  background-image: 
-    radial-gradient(circle at 0% 0%, rgba(34, 197, 94, 0.08) 0%, transparent 40%),
-    radial-gradient(circle at 100% 100%, rgba(74, 222, 128, 0.05) 0%, transparent 45%);
+  background-image:
+    radial-gradient(circle at 0% 0%, rgba(27, 92, 191, 0.08) 0%, transparent 40%),
+    radial-gradient(circle at 100% 100%, rgba(110, 154, 240, 0.05) 0%, transparent 45%);
   background-attachment: fixed;
 }
 
@@ -90,10 +320,6 @@ body {
 /* The band at the top of the viewport that Telegram's own header (close /
    menu buttons) and the device notch sit over. Nothing interactive may live
    here — taps land on Telegram's chrome, not on us. */
-:root {
-  --safe-top: max(84px, calc(env(safe-area-inset-top) + 32px));
-}
-
 .safe-screen-top {
   padding-top: var(--safe-top) !important;
 }
@@ -116,6 +342,8 @@ body {
   width: 0px;
   height: 0px;
 }
+.no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
 
 /* Smooth scrolling */
 .scroll-smooth {
@@ -136,15 +364,15 @@ body {
 .card {
   background: var(--card);
   border: 1px solid var(--border);
-  border-radius: 16px;
-  box-shadow: var(--card-shadow);
-  transition: border-color 0.2s ease, transform 0.2s ease;
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-card);
+  transition: border-color var(--duration-base) ease, transform var(--duration-base) ease;
   will-change: transform;
 }
 
 .card:active {
   border-color: var(--border-active);
-  transform: scale(0.98);
+  transform: scale(var(--press-scale-card));
 }
 
 /* Premium shimmer animation */
@@ -164,139 +392,146 @@ body {
   animation: shimmer 1.5s infinite;
 }
 
-/* Pill badge */
+/* Pill badges */
 .badge {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 4px 12px;
-  border-radius: 100px;
-  font-size: 11px;
-  font-weight: 600;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-pill);
+  font-family: var(--font-body);
+  font-size: var(--text-3xs);
+  font-weight: var(--weight-semibold);
   letter-spacing: 0.02em;
+  white-space: nowrap;
 }
 
-.badge-brand {
-  background: var(--brand-subtle);
-  color: var(--brand-dim);
-  border: 1px solid rgba(34, 197, 94, 0.2);
-}
+.badge-salary { background: var(--action-subtle); color: var(--text-primary); border: 1px solid rgba(242, 240, 18, 0.55); }
+.badge-brand { background: var(--brand-subtle); color: var(--brand-strong); border: 1px solid var(--border-active); }
+/* .badge-navy is the pre-existing call-site name for this same neutral pill;
+   .badge-neutral is the design system's name for it. Both point here so the
+   4 existing .badge-navy call sites repaint without being touched. */
+.badge-neutral, .badge-navy { background: var(--surface-sunken); color: var(--text-secondary); border: 1px solid var(--border); }
+.badge-success { background: var(--success-soft); color: var(--success); border: 1px solid transparent; }
+.badge-warning { background: var(--warning-soft); color: var(--warning); border: 1px solid transparent; }
+.badge-error { background: var(--error-soft); color: var(--error); border: 1px solid transparent; }
 
-[data-theme="dark"] .badge-brand {
-  color: var(--brand-light);
-}
+[data-theme="dark"] .badge-salary { color: var(--text-primary); border-color: rgba(242, 240, 18, 0.32); }
 
-/* Experience advisory on the job detail page.
-   Purple rather than the neutral card surface: sitting on --surface-elevated
-   like everything around it, the note was there but nobody saw it. Muted
-   rather than the vivid #8B5CF6 used elsewhere -- this is a quiet aside about
-   fit, not an alert, and it must not shout over the job description.
-   Both themes are set explicitly: a single rgba tint that survives a white
-   background washes out on a dark one. */
+/* Experience advisory on the job detail page. Blue, muted: it qualifies the
+   role, it is not an alert, and it must not shout over the job description. */
 .experience-note {
-  background: rgba(124, 58, 237, 0.06);
-  border: 1px solid rgba(124, 58, 237, 0.20);
-  color: #5B4491;
-}
-
-[data-theme="dark"] .experience-note {
-  background: rgba(167, 139, 250, 0.09);
-  border-color: rgba(167, 139, 250, 0.24);
-  color: #C3B5EA;
+  background: var(--brand-soft);
+  border: 1px solid var(--border-active);
+  color: var(--brand-strong);
+  border-radius: var(--radius-md);
 }
 
 /* The compact tag beside the job title. Same hue, a touch stronger, since it
    has to register at 11px against a bold 20px heading. */
 .experience-tag {
-  background: rgba(124, 58, 237, 0.10);
-  border: 1px solid rgba(124, 58, 237, 0.26);
-  color: #5B4491;
+  background: var(--brand-subtle);
+  border: 1px solid var(--border-active);
+  color: var(--brand-strong);
+  border-radius: var(--radius-xs);
+  padding: 2px var(--space-2);
+  font-size: var(--text-3xs);
+  font-weight: var(--weight-semibold);
 }
 
-[data-theme="dark"] .experience-tag {
-  background: rgba(167, 139, 250, 0.14);
-  border-color: rgba(167, 139, 250, 0.30);
-  color: #C3B5EA;
-}
-
-.badge-navy {
-  background: var(--surface-elevated);
-  color: var(--text-secondary);
-  border: 1px solid var(--border);
-}
-
-/* Button base */
+/* Button base — primary is the yellow action pill with ink text, the only
+   yellow fill on a screen. brand is the deep-blue desktop/structural primary.
+   secondary is a white pill with a hairline. */
 .btn-primary {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: var(--space-2);
   width: 100%;
-  padding: 16px 24px;
-  background: var(--brand);
-  color: #FFFFFF;
-  font-weight: 700;
-  font-size: 16px;
-  border-radius: 100px; /* Upwork style fully rounded */
+  padding: var(--space-4) var(--space-6);
+  background: var(--action);
+  color: var(--action-ink);
+  font-family: var(--font-ui);
+  font-weight: var(--weight-bold);
+  font-size: var(--text-lg);
+  border-radius: var(--radius-pill);
   border: none;
   cursor: pointer;
   will-change: transform;
-  transition: filter 0.2s ease, transform 0.1s ease;
+  transition: background var(--duration-base) ease, transform var(--duration-instant) ease;
 }
 
+.btn-primary:hover { background: var(--action-hover); }
 .btn-primary:active {
-  filter: brightness(0.9);
-  transform: scale(0.97);
+  background: var(--action-press);
+  transform: scale(var(--press-scale));
 }
+.btn-primary:focus-visible { outline: none; box-shadow: var(--focus-ring-action); }
+.btn-primary:disabled { background: var(--gray-200); color: var(--text-muted); cursor: not-allowed; transform: none; }
+
+.btn-brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  width: 100%;
+  padding: var(--space-4) var(--space-6);
+  background: var(--brand);
+  color: var(--text-on-brand);
+  font-family: var(--font-ui);
+  font-weight: var(--weight-bold);
+  font-size: var(--text-lg);
+  border-radius: var(--radius-pill);
+  border: none;
+  cursor: pointer;
+  transition: background var(--duration-base) ease, transform var(--duration-instant) ease;
+}
+.btn-brand:hover { background: var(--brand-strong); }
+.btn-brand:active { transform: scale(var(--press-scale)); }
 
 .btn-secondary {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: var(--space-2);
   width: 100%;
-  padding: 16px 24px;
+  padding: var(--space-4) var(--space-6);
   background: var(--surface);
   color: var(--text-primary);
-  font-weight: 600;
-  font-size: 16px;
-  border-radius: 100px;
-  border: 1px solid var(--border);
-  box-shadow: var(--card-shadow);
+  font-family: var(--font-ui);
+  font-weight: var(--weight-semibold);
+  font-size: var(--text-lg);
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border-strong);
+  box-shadow: var(--shadow-card);
   cursor: pointer;
   will-change: transform;
-  transition: background 0.2s ease;
+  transition: background var(--duration-base) ease, transform var(--duration-instant) ease;
 }
 
-.btn-secondary:active {
-  background: var(--card-hover);
-}
+.btn-secondary:active { background: var(--card-hover); }
+.btn-secondary:hover { background: var(--card-hover); }
 
 /* Input base */
 .input-base {
   width: 100%;
   background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 14px 16px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  padding: 14px var(--space-4);
   color: var(--text-primary);
-  font-size: 15px;
-  font-family: inherit;
+  font-size: var(--text-base);
+  font-family: var(--font-body);
   outline: none;
-  transition: border-color 0.2s ease;
+  transition: border-color var(--duration-base) ease, box-shadow var(--duration-base) ease;
 }
 
-.input-base:focus {
-  border-color: var(--brand);
-}
-
-.input-base::placeholder {
-  color: var(--text-muted);
-}
+.input-base:focus { border-color: var(--brand); box-shadow: var(--focus-ring); }
+.input-base::placeholder { color: var(--text-muted); }
 
 /* Bottom nav safe area */
 .bottom-nav-safe {
-  padding-bottom: env(safe-area-inset-bottom, 16px);
+  padding-bottom: var(--safe-bottom);
 }
 
 /* Page transition wrapper */
@@ -311,11 +546,15 @@ body {
 .qualification-dim {
   position: absolute;
   inset: 0;
-  background: rgba(15, 23, 42, 0.55);
-  border-radius: 16px;
+  background: rgba(11, 14, 20, 0.55);
+  border-radius: var(--radius-xl);
   z-index: 2;
   pointer-events: none;
 }
+
+/* Signature: the hand-drawn yellow swoop under the hero's second line */
+.brand-underline { position: relative; display: inline-block; }
+.brand-underline > svg { position: absolute; bottom: -8px; left: 0; width: 100%; height: 12px; }
 
 /* ── Hardware-specific performance optimizations ── */
 /* Applied via data-perf attribute set by useTelegram + page.tsx on init */
@@ -347,49 +586,47 @@ body {
   will-change: auto !important;
 }
 
-/* ── Admin Dashboard — iOS System Design Palette ───────────────────────────
-   Aesthetic direction: iOS / macOS Settings style
-   Primary font: Inter (already loaded globally)
-   Palette:
-     Page bg      #f2f2f7   iOS grouped background
-     Surface      #ffffff   Cards, sidebar, header
-     Separator    #e5e5ea   iOS system separator
-     Border       #c6c6c8   iOS opaque separator
-     Label        #1c1c1e   iOS primary label (near black)
-     Secondary    #8e8e93   iOS secondary label
-     Tertiary     #aeaeb2   iOS tertiary label
-     Active bg    #1c1c1e   Sidebar active item
-     Hover bg     #f2f2f7   Hover state on white surfaces
-     Accent       #007aff   iOS system blue (focus rings, interactive)
-   WCAG AA: all text/bg combos pass 4.5:1 ratio
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ── Admin console ─────────────────────────────────────────────────────────
+   iOS/macOS-Settings layout conventions (1.5px input borders, grouped rows)
+   are inherited and deliberately kept; only the palette moved to JobsAdis
+   tokens. The console reads dense tabular data, so it stays on Inter.
 ────────────────────────────────────────────────────────────────────────── */
 
 .admin-shell {
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-family: var(--font-body);
   -webkit-font-smoothing: antialiased;
-  background: #f2f2f7;
+  background: var(--gray-50);
 }
 
 /* Sidebar active nav item */
 .admin-nav-active {
-  background: #1c1c1e;
+  background: var(--gray-900);
   color: #ffffff;
   font-weight: 600;
 }
 
 /* Sidebar inactive nav item */
 .admin-nav-item {
-  color: #3a3a3c;
+  color: var(--gray-700);
   font-weight: 500;
 }
 .admin-nav-item:hover {
-  background: #e5e5ea;
-  color: #1c1c1e;
+  background: var(--gray-100);
+  color: var(--gray-900);
 }
 
 /* Primary action buttons */
 .admin-btn-primary {
-  background: #1c1c1e;
+  background: var(--gray-900);
   color: #ffffff;
   border: none;
   border-radius: 10px;
@@ -403,24 +640,24 @@ body {
 
 /* Secondary / ghost buttons */
 .admin-btn-secondary {
-  background: #f2f2f7;
-  color: #1c1c1e;
-  border: 1.5px solid #c6c6c8;
+  background: var(--gray-50);
+  color: var(--gray-900);
+  border: 1.5px solid var(--gray-200);
   border-radius: 10px;
   font-weight: 600;
   font-size: 14px;
   cursor: pointer;
   transition: background 0.15s ease;
 }
-.admin-btn-secondary:hover { background: #e5e5ea; }
+.admin-btn-secondary:hover { background: var(--gray-100); }
 
 /* Table header row */
 .admin-table-head {
-  background: #f2f2f7;
-  border-bottom: 1px solid #e5e5ea;
+  background: var(--gray-50);
+  border-bottom: 1px solid var(--gray-100);
 }
 .admin-table-head th {
-  color: #8e8e93;
+  color: var(--gray-600);
   font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
@@ -429,24 +666,24 @@ body {
 
 /* Table data row */
 .admin-table-row {
-  border-bottom: 1px solid #f2f2f7;
+  border-bottom: 1px solid var(--gray-50);
   transition: background 0.1s ease;
 }
-.admin-table-row:hover { background: #f2f2f7; }
+.admin-table-row:hover { background: var(--gray-50); }
 
 /* Input fields */
 .admin-input {
-  background: #f2f2f7;
-  border: 1.5px solid #e5e5ea;
+  background: var(--gray-50);
+  border: 1.5px solid var(--gray-100);
   border-radius: 10px;
-  color: #1c1c1e;
+  color: var(--gray-900);
   font-size: 14px;
   font-weight: 500;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
   outline: none;
 }
 .admin-input:focus {
-  border-color: #007aff;
-  box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.12);
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px var(--brand-ring);
 }
-.admin-input::placeholder { color: #aeaeb2; }
+.admin-input::placeholder { color: var(--gray-400); }

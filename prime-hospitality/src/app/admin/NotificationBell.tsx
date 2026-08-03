@@ -70,7 +70,7 @@ export default function NotificationBell({
         key: `sr-${req.userId}`,
         sortDate: req.requestedAt ? new Date(req.requestedAt).getTime() : 0,
         render: () => (
-          <div className="p-4 border-b border-gray-50 hover:bg-[#f2f2f7] transition-colors last:border-b-0">
+          <div className="p-4 border-b border-gray-50 hover:bg-[#F7F8FA] transition-colors last:border-b-0">
             <div className="flex items-start gap-3">
               <div className="mt-0.5 bg-amber-100 p-1.5 rounded-full text-amber-600 shrink-0">
                 <Users size={14} />
@@ -80,15 +80,15 @@ export default function NotificationBell({
                   {!seen && <span className="w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0" />}
                   <p className="text-sm font-semibold text-black leading-tight truncate">{name}</p>
                 </div>
-                <p className="text-xs text-[#8e8e93] mt-1">
+                <p className="text-xs text-[#4C5361] mt-1">
                   Ex-employer wants to become a job seeker · Telegram {req.telegramId}
                 </p>
                 {req.requestedAt && (
-                  <p className="text-[11px] text-[#aeaeb2] mt-0.5">{timeAgo(req.requestedAt, "en")}</p>
+                  <p className="text-[11px] text-[#9AA1B1] mt-0.5">{timeAgo(req.requestedAt, "en")}</p>
                 )}
                 <button
                   onClick={() => { onOpenSpecialRequest(req.userId); close(); }}
-                  className="mt-2.5 text-xs font-semibold text-[#1c1c1e] hover:text-[#2c2c2e] bg-[#e5e5ea] hover:bg-[#e5e5ea] px-3 py-1.5 rounded-md transition-colors w-full text-center"
+                  className="mt-2.5 text-xs font-semibold text-[#141821] hover:text-[#2c2c2e] bg-[#EFF1F5] hover:bg-[#EFF1F5] px-3 py-1.5 rounded-md transition-colors w-full text-center"
                   style={{ border: "none", cursor: "pointer" }}
                 >
                   View or Fix
@@ -105,7 +105,7 @@ export default function NotificationBell({
         key: `renewal-${emp.id}`,
         sortDate: emp.renewal_requested_at ? new Date(emp.renewal_requested_at).getTime() : 0,
         render: () => (
-          <div className="p-4 border-b border-gray-50 hover:bg-[#f2f2f7] transition-colors last:border-b-0">
+          <div className="p-4 border-b border-gray-50 hover:bg-[#F7F8FA] transition-colors last:border-b-0">
             <div className="flex items-start gap-3">
               <div className="mt-0.5 bg-blue-100 p-1.5 rounded-full text-blue-600 shrink-0">
                 <CreditCard size={14} />
@@ -115,9 +115,9 @@ export default function NotificationBell({
                   {!seen && <span className="w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0" />}
                   <p className="text-sm font-semibold text-black leading-tight truncate">{emp.business_name}</p>
                 </div>
-                <p className="text-xs text-[#8e8e93] mt-1">Requested a subscription renewal</p>
+                <p className="text-xs text-[#4C5361] mt-1">Requested a subscription renewal</p>
                 {emp.renewal_requested_at && (
-                  <p className="text-[11px] text-[#aeaeb2] mt-0.5">{timeAgo(emp.renewal_requested_at, "en")}</p>
+                  <p className="text-[11px] text-[#9AA1B1] mt-0.5">{timeAgo(emp.renewal_requested_at, "en")}</p>
                 )}
                 {seen && (
                   <p className="text-xs text-emerald-700 mt-1.5 leading-relaxed">Marked as seen — follow up by phone.</p>
@@ -133,7 +133,7 @@ export default function NotificationBell({
                   </button>
                   <button
                     onClick={() => { onGoToEmployer(emp.id, emp.business_name); close(); }}
-                    className="text-xs font-semibold text-[#1c1c1e] hover:text-[#2c2c2e] bg-[#e5e5ea] hover:bg-[#e5e5ea] px-3 py-1.5 rounded-md transition-colors flex-1 text-center"
+                    className="text-xs font-semibold text-[#141821] hover:text-[#2c2c2e] bg-[#EFF1F5] hover:bg-[#EFF1F5] px-3 py-1.5 rounded-md transition-colors flex-1 text-center"
                     style={{ border: "none", cursor: "pointer" }}
                   >
                     Go to Employer
@@ -149,7 +149,7 @@ export default function NotificationBell({
       key: `job-${job.id}`,
       sortDate: job.created_at ? new Date(job.created_at).getTime() : 0,
       render: () => (
-        <div className="p-4 border-b border-gray-50 hover:bg-[#f2f2f7] transition-colors last:border-b-0">
+        <div className="p-4 border-b border-gray-50 hover:bg-[#F7F8FA] transition-colors last:border-b-0">
           <div className="flex items-start gap-3">
             <div className="mt-0.5 bg-orange-100 p-1.5 rounded-full text-orange-600 shrink-0">
               <Hourglass size={14} />
@@ -159,13 +159,13 @@ export default function NotificationBell({
                 <span className="w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0" />
                 <p className="text-sm font-semibold text-black leading-tight truncate">{job.title}</p>
               </div>
-              <p className="text-xs text-[#8e8e93] mt-1 truncate">
-                <span className="font-medium text-[#1c1c1e]">{job.employers?.business_name || "Unknown employer"}</span> posted a job awaiting review
+              <p className="text-xs text-[#4C5361] mt-1 truncate">
+                <span className="font-medium text-[#141821]">{job.employers?.business_name || "Unknown employer"}</span> posted a job awaiting review
               </p>
-              {job.created_at && <p className="text-[11px] text-[#aeaeb2] mt-0.5">{timeAgo(job.created_at, "en")}</p>}
+              {job.created_at && <p className="text-[11px] text-[#9AA1B1] mt-0.5">{timeAgo(job.created_at, "en")}</p>}
               <button
                 onClick={() => { onGoToPendingJob(job.employer_id); close(); }}
-                className="mt-2.5 text-xs font-semibold text-[#1c1c1e] hover:text-[#2c2c2e] bg-[#e5e5ea] hover:bg-[#e5e5ea] px-3 py-1.5 rounded-md transition-colors w-full text-center"
+                className="mt-2.5 text-xs font-semibold text-[#141821] hover:text-[#2c2c2e] bg-[#EFF1F5] hover:bg-[#EFF1F5] px-3 py-1.5 rounded-md transition-colors w-full text-center"
                 style={{ border: "none", cursor: "pointer" }}
               >
                 Review Job
@@ -181,7 +181,7 @@ export default function NotificationBell({
     <div className="relative">
       <button
         onClick={() => setOpen((o) => !o)}
-        className="text-[#8e8e93] hover:text-[#1c1c1e] relative transition-colors cursor-pointer border-none bg-transparent flex items-center justify-center"
+        className="text-[#4C5361] hover:text-[#141821] relative transition-colors cursor-pointer border-none bg-transparent flex items-center justify-center"
       >
         {unseenCount > 0 && (
           <span
@@ -197,18 +197,18 @@ export default function NotificationBell({
       {open && (
         <>
           <div className="fixed inset-0 z-40" onClick={close} />
-          <div className="absolute right-0 mt-2 w-80 bg-white border border-[#c6c6c8] rounded-xl shadow-lg z-50 overflow-hidden">
-            <div className="p-3 border-b border-[#e5e5ea] bg-[#f2f2f7] flex items-center justify-between">
+          <div className="absolute right-0 mt-2 w-80 bg-white border border-[#E2E5EC] rounded-xl shadow-lg z-50 overflow-hidden">
+            <div className="p-3 border-b border-[#EFF1F5] bg-[#F7F8FA] flex items-center justify-between">
               <h3 className="font-bold text-black text-sm">Notifications</h3>
               {unseenCount > 0 && (
-                <span className="bg-[#1c1c1e] text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                <span className="bg-[#141821] text-white text-xs font-bold px-2 py-0.5 rounded-full">
                   {unseenCount} new
                 </span>
               )}
             </div>
             <div className="max-h-80 overflow-y-auto">
               {entries.length > 0 ? entries.map((e) => <div key={e.key}>{e.render()}</div>) : (
-                <div className="p-6 text-center text-[#8e8e93] text-sm">No new notifications</div>
+                <div className="p-6 text-center text-[#4C5361] text-sm">No new notifications</div>
               )}
             </div>
           </div>

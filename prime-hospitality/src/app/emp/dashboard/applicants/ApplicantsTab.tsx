@@ -25,10 +25,10 @@ const TABS: Array<{ key: TabKey; label: string }> = [
 ];
 
 const STATUS_BG: Record<string, string> = {
-  pending: "#fef3c7", reviewed: "#dbeafe", shortlisted: "#ede9fe", rejected: "#fee2e2",
+  pending: "#FDF1E7", reviewed: "#D9E5F8", shortlisted: "#EEF3FC", rejected: "#fee2e2",
 };
 const STATUS_COLOR: Record<string, string> = {
-  pending: "#92400e", reviewed: "#1e40af", shortlisted: "#5b21b6", rejected: "#991b1b",
+  pending: "#B45309", reviewed: "#164A9C", shortlisted: "#113978", rejected: "#E5484D",
 };
 const STATUS_LABEL: Record<string, string> = {
   pending: "New", reviewed: "Reviewed", shortlisted: "Shortlisted", rejected: "Declined",
@@ -179,22 +179,22 @@ export default function ApplicantsTab({
   return (
     <div style={{ maxWidth: 1200, margin: "0 auto" }}>
       <div style={{ marginBottom: 20 }}>
-        <h2 style={{ fontSize: 22, fontWeight: 800, color: "#0f172a", margin: 0, letterSpacing: "-0.02em" }}>
+        <h2 style={{ fontSize: 22, fontWeight: 800, color: "#141821", margin: 0, letterSpacing: "-0.02em" }}>
           Applicant Tracking
         </h2>
-        <p style={{ fontSize: 14, color: "#64748b", margin: "4px 0 0 0" }}>
+        <p style={{ fontSize: 14, color: "#6E7686", margin: "4px 0 0 0" }}>
           Review, shortlist and manage everyone who applied to your jobs.
         </p>
       </div>
 
       {error && (
-        <div style={{ background: "#fef2f2", border: "1px solid #fecaca", color: "#991b1b", borderRadius: 10, padding: "10px 14px", fontSize: 13, fontWeight: 500, marginBottom: 16 }}>
+        <div style={{ background: "#FDECEC", border: "1px solid #fecaca", color: "#E5484D", borderRadius: 10, padding: "10px 14px", fontSize: 13, fontWeight: 500, marginBottom: 16 }}>
           {error}
         </div>
       )}
 
       {lockedCount > 0 && (
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap", background: "#fef2f2", border: "1px solid #fecaca", color: "#991b1b", borderRadius: 10, padding: "12px 16px", marginBottom: 16 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap", background: "#FDECEC", border: "1px solid #fecaca", color: "#E5484D", borderRadius: 10, padding: "12px 16px", marginBottom: 16 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <Lock size={15} style={{ flexShrink: 0 }} />
             <p style={{ fontSize: 13, fontWeight: 600, margin: 0 }}>
@@ -228,10 +228,10 @@ export default function ApplicantsTab({
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search by name…"
-          style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 10, padding: "9px 14px", fontSize: 13, color: "#0f172a", flex: 1, minWidth: 200 }}
+          style={{ background: "#fff", border: "1px solid #E2E5EC", borderRadius: 10, padding: "9px 14px", fontSize: 13, color: "#141821", flex: 1, minWidth: 200 }}
         />
 
-        <div style={{ display: "flex", gap: 6, background: "#f1f5f9", borderRadius: 10, padding: 4 }}>
+        <div style={{ display: "flex", gap: 6, background: "#EFF1F5", borderRadius: 10, padding: 4 }}>
           {TABS.map((t) => (
             <button
               key={t.key}
@@ -240,7 +240,7 @@ export default function ApplicantsTab({
                 border: "none", cursor: "pointer", borderRadius: 8, padding: "7px 14px",
                 fontSize: 13, fontWeight: 700,
                 background: tab === t.key ? "#fff" : "transparent",
-                color: tab === t.key ? "#0f172a" : "#64748b",
+                color: tab === t.key ? "#141821" : "#6E7686",
                 boxShadow: tab === t.key ? "0 1px 3px rgba(0,0,0,0.08)" : "none",
               }}
             >
@@ -251,13 +251,13 @@ export default function ApplicantsTab({
       </div>
 
       {/* List */}
-      <div style={{ background: "#fff", borderRadius: 14, border: "1px solid #e2e8f0", overflow: "hidden", boxShadow: "0 1px 4px rgba(0,0,0,0.04)", opacity: isPending ? 0.7 : 1, transition: "opacity 0.15s" }}>
+      <div style={{ background: "#fff", borderRadius: 14, border: "1px solid #E2E5EC", overflow: "hidden", boxShadow: "0 1px 4px rgba(0,0,0,0.04)", opacity: isPending ? 0.7 : 1, transition: "opacity 0.15s" }}>
         {visible.length === 0 ? (
           <div style={{ padding: "48px 20px", textAlign: "center" }}>
-            <div style={{ color: "#94a3b8", display: "flex", justifyContent: "center", marginBottom: 14 }}>
+            <div style={{ color: "#9AA1B1", display: "flex", justifyContent: "center", marginBottom: 14 }}>
               <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
             </div>
-            <p style={{ fontSize: 14, color: "#94a3b8", fontWeight: 500, margin: 0 }}>
+            <p style={{ fontSize: 14, color: "#9AA1B1", fontWeight: 500, margin: 0 }}>
               {applicants.length === 0 ? "No applications yet." : "No applicants match these filters."}
             </p>
           </div>
@@ -266,19 +266,19 @@ export default function ApplicantsTab({
             <div
               key={a.id}
               onClick={() => handleOpen(a)}
-              style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 18px", borderBottom: "1px solid #f1f5f9", cursor: a.locked ? "default" : "pointer" }}
+              style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 18px", borderBottom: "1px solid #EFF1F5", cursor: a.locked ? "default" : "pointer" }}
             >
               <div style={{ position: "relative", display: "flex", alignItems: "center", gap: 14, flex: 1, minWidth: 0 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 14, flex: 1, minWidth: 0, filter: a.locked ? "blur(4px)" : "none" }}>
-                  <div style={{ width: 38, height: 38, borderRadius: "50%", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 800, color: "#fff", flexShrink: 0 }}>
+                  <div style={{ width: 38, height: 38, borderRadius: "50%", background: "linear-gradient(135deg, #1B5CBF, #4A80D3)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 800, color: "#fff", flexShrink: 0 }}>
                     {(a.profile?.full_name || "?").charAt(0).toUpperCase()}
                   </div>
 
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: "#0f172a" }}>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: "#141821" }}>
                       {a.profile?.full_name || "Anonymous"}
                     </div>
-                    <div style={{ fontSize: 12, color: "#94a3b8", marginTop: 2 }}>
+                    <div style={{ fontSize: 12, color: "#9AA1B1", marginTop: 2 }}>
                       {a.job_title}
                       {a.profile?.location ? ` · ${a.profile.location}` : ""}
                       {a.profile?.cv_url ? " · CV ✓" : ""}
@@ -286,19 +286,19 @@ export default function ApplicantsTab({
                   </div>
                 </div>
                 {a.locked && (
-                  <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", gap: 6, color: "#991b1b", fontSize: 12, fontWeight: 700 }}>
+                  <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", gap: 6, color: "#E5484D", fontSize: 12, fontWeight: 700 }}>
                     <Lock size={13} /> Renew to view
                   </div>
                 )}
               </div>
 
-              <span style={{ fontSize: 11, fontWeight: 700, color: a.score >= 80 ? "#059669" : a.score >= 50 ? "#d97706" : "#94a3b8", flexShrink: 0 }}>
+              <span style={{ fontSize: 11, fontWeight: 700, color: a.score >= 80 ? "#12A150" : a.score >= 50 ? "#B45309" : "#9AA1B1", flexShrink: 0 }}>
                 {a.score}%
               </span>
               <span style={{ padding: "3px 10px", borderRadius: 20, fontSize: 11, fontWeight: 700, background: STATUS_BG[a.status], color: STATUS_COLOR[a.status], flexShrink: 0 }}>
                 {STATUS_LABEL[a.status]}
               </span>
-              <span style={{ fontSize: 11, color: "#cbd5e1", flexShrink: 0, minWidth: 62, textAlign: "right" }}>
+              <span style={{ fontSize: 11, color: "#CBD0DA", flexShrink: 0, minWidth: 62, textAlign: "right" }}>
                 {fmtTime(a.created_at)}
               </span>
             </div>
@@ -324,17 +324,17 @@ export default function ApplicantsTab({
             onClick={(e) => e.stopPropagation()}
             style={{ background: "#fff", borderRadius: 16, width: "100%", maxWidth: 420, padding: 24, boxShadow: "0 20px 50px rgba(0,0,0,0.25)" }}
           >
-            <h3 style={{ fontSize: 17, fontWeight: 800, color: "#0f172a", margin: 0 }}>
+            <h3 style={{ fontSize: 17, fontWeight: 800, color: "#141821", margin: 0 }}>
               They&apos;ve already been told
             </h3>
-            <p style={{ fontSize: 14, color: "#475569", lineHeight: 1.55, margin: "10px 0 0 0" }}>
+            <p style={{ fontSize: 14, color: "#4C5361", lineHeight: 1.55, margin: "10px 0 0 0" }}>
               This applicant has seen a message saying they were shortlisted. Moving them
               out will remove it, but there is no way to know whether they already read it.
             </p>
             <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
               <button
                 onClick={() => setPendingUndo(null)}
-                style={{ flex: 1, border: "1px solid #e2e8f0", background: "#fff", borderRadius: 10, padding: "11px 16px", fontSize: 14, fontWeight: 700, color: "#64748b", cursor: "pointer" }}
+                style={{ flex: 1, border: "1px solid #E2E5EC", background: "#fff", borderRadius: 10, padding: "11px 16px", fontSize: 14, fontWeight: 700, color: "#6E7686", cursor: "pointer" }}
               >
                 Keep shortlisted
               </button>
@@ -344,7 +344,7 @@ export default function ApplicantsTab({
                   setPendingUndo(null);
                   handleStatus(id, status, true);
                 }}
-                style={{ flex: 1, border: "none", background: "#ef4444", borderRadius: 10, padding: "11px 16px", fontSize: 14, fontWeight: 700, color: "#fff", cursor: "pointer" }}
+                style={{ flex: 1, border: "none", background: "#E5484D", borderRadius: 10, padding: "11px 16px", fontSize: 14, fontWeight: 700, color: "#fff", cursor: "pointer" }}
               >
                 Move them anyway
               </button>
@@ -377,19 +377,19 @@ function ApplicantDetail({
         style={{ background: "#fff", borderRadius: 16, width: "100%", maxWidth: 560, maxHeight: "85vh", overflowY: "auto", boxShadow: "0 20px 50px rgba(0,0,0,0.25)" }}
       >
         {/* Header */}
-        <div style={{ padding: "20px 24px", borderBottom: "1px solid #f1f5f9", display: "flex", alignItems: "center", gap: 14 }}>
-          <div style={{ width: 48, height: 48, borderRadius: "50%", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, fontWeight: 800, color: "#fff", flexShrink: 0 }}>
+        <div style={{ padding: "20px 24px", borderBottom: "1px solid #EFF1F5", display: "flex", alignItems: "center", gap: 14 }}>
+          <div style={{ width: 48, height: 48, borderRadius: "50%", background: "linear-gradient(135deg, #1B5CBF, #4A80D3)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, fontWeight: 800, color: "#fff", flexShrink: 0 }}>
             {(p?.full_name || "?").charAt(0).toUpperCase()}
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <h3 style={{ fontSize: 17, fontWeight: 800, color: "#0f172a", margin: 0 }}>{p?.full_name || "Anonymous"}</h3>
-            <p style={{ fontSize: 12, color: "#94a3b8", margin: "3px 0 0 0" }}>
+            <h3 style={{ fontSize: 17, fontWeight: 800, color: "#141821", margin: 0 }}>{p?.full_name || "Anonymous"}</h3>
+            <p style={{ fontSize: 12, color: "#9AA1B1", margin: "3px 0 0 0" }}>
               Applied to {applicant.job_title} · {fmtTime(applicant.created_at)}
             </p>
           </div>
           <button
             onClick={onClose}
-            style={{ border: "none", background: "#f1f5f9", borderRadius: 8, width: 32, height: 32, cursor: "pointer", color: "#64748b", fontSize: 18, lineHeight: 1 }}
+            style={{ border: "none", background: "#EFF1F5", borderRadius: 8, width: 32, height: 32, cursor: "pointer", color: "#6E7686", fontSize: 18, lineHeight: 1 }}
             aria-label="Close"
           >
             ×
@@ -412,7 +412,7 @@ function ApplicantDetail({
               <FieldLabel>Roles &amp; experience</FieldLabel>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
                 {categories.map((c) => (
-                  <span key={c} style={{ background: "#f1f5f9", borderRadius: 20, padding: "5px 12px", fontSize: 12, fontWeight: 600, color: "#0f172a" }}>
+                  <span key={c} style={{ background: "#EFF1F5", borderRadius: 20, padding: "5px 12px", fontSize: 12, fontWeight: 600, color: "#141821" }}>
                     {c}
                     {p?.experience_years?.[c] != null
                       ? ` · ${p.experience_years[c]} yr${p.experience_years[c] === 1 ? "" : "s"}${p?.experience_context?.[c] ? ` · ${p.experience_context[c]}` : ""}`
@@ -427,7 +427,7 @@ function ApplicantDetail({
           {applicant.cover_note && (
             <div>
               <FieldLabel>Cover note</FieldLabel>
-              <p style={{ fontSize: 13, color: "#334155", lineHeight: 1.6, margin: 0, background: "#f8fafc", border: "1px solid #f1f5f9", borderRadius: 10, padding: "12px 14px", whiteSpace: "pre-wrap" }}>
+              <p style={{ fontSize: 13, color: "#343A46", lineHeight: 1.6, margin: 0, background: "#F7F8FA", border: "1px solid #EFF1F5", borderRadius: 10, padding: "12px 14px", whiteSpace: "pre-wrap" }}>
                 {applicant.cover_note}
               </p>
             </div>
@@ -438,30 +438,30 @@ function ApplicantDetail({
             {p?.cv_url ? (
               <button
                 onClick={() => onViewCv(applicant.id)}
-                style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 8, padding: "9px 16px", fontSize: 13, fontWeight: 600, color: "#0284c7", cursor: "pointer" }}
+                style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "#EEF3FC", border: "1px solid #D9E5F8", borderRadius: 8, padding: "9px 16px", fontSize: 13, fontWeight: 600, color: "#1B5CBF", cursor: "pointer" }}
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
                 {cvActionLabel(p.cv_url)}
               </button>
             ) : (
-              <p style={{ fontSize: 13, color: "#94a3b8", margin: 0 }}>No CV uploaded.</p>
+              <p style={{ fontSize: 13, color: "#9AA1B1", margin: 0 }}>No CV uploaded.</p>
             )}
           </div>
         </div>
 
         {/* Actions */}
-        <div style={{ padding: "16px 24px", borderTop: "1px solid #f1f5f9", display: "flex", gap: 10, position: "sticky", bottom: 0, background: "#fff" }}>
+        <div style={{ padding: "16px 24px", borderTop: "1px solid #EFF1F5", display: "flex", gap: 10, position: "sticky", bottom: 0, background: "#fff" }}>
           {applicant.status === "shortlisted" ? (
             <button
               onClick={() => onStatus(applicant.id, "reviewed")}
-              style={{ flex: 1, border: "1px solid #e2e8f0", background: "#fff", borderRadius: 10, padding: "11px 16px", fontSize: 14, fontWeight: 700, color: "#64748b", cursor: "pointer" }}
+              style={{ flex: 1, border: "1px solid #E2E5EC", background: "#fff", borderRadius: 10, padding: "11px 16px", fontSize: 14, fontWeight: 700, color: "#6E7686", cursor: "pointer" }}
             >
               Move back to All
             </button>
           ) : (
             <button
               onClick={() => onStatus(applicant.id, "shortlisted")}
-              style={{ flex: 1, border: "none", background: "#059669", borderRadius: 10, padding: "11px 16px", fontSize: 14, fontWeight: 700, color: "#fff", cursor: "pointer" }}
+              style={{ flex: 1, border: "none", background: "#12A150", borderRadius: 10, padding: "11px 16px", fontSize: 14, fontWeight: 700, color: "#fff", cursor: "pointer" }}
             >
               Shortlist
             </button>
@@ -470,14 +470,14 @@ function ApplicantDetail({
           {applicant.status === "rejected" ? (
             <button
               onClick={() => onStatus(applicant.id, "reviewed")}
-              style={{ flex: 1, border: "1px solid #e2e8f0", background: "#fff", borderRadius: 10, padding: "11px 16px", fontSize: 14, fontWeight: 700, color: "#64748b", cursor: "pointer" }}
+              style={{ flex: 1, border: "1px solid #E2E5EC", background: "#fff", borderRadius: 10, padding: "11px 16px", fontSize: 14, fontWeight: 700, color: "#6E7686", cursor: "pointer" }}
             >
               Undo decline
             </button>
           ) : (
             <button
               onClick={() => onStatus(applicant.id, "rejected")}
-              style={{ flex: 1, border: "1px solid #fecaca", background: "#fff", borderRadius: 10, padding: "11px 16px", fontSize: 14, fontWeight: 700, color: "#991b1b", cursor: "pointer" }}
+              style={{ flex: 1, border: "1px solid #fecaca", background: "#fff", borderRadius: 10, padding: "11px 16px", fontSize: 14, fontWeight: 700, color: "#E5484D", cursor: "pointer" }}
             >
               Decline
             </button>
@@ -490,7 +490,7 @@ function ApplicantDetail({
 
 function FieldLabel({ children }: { children: React.ReactNode }) {
   return (
-    <p style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.05em", margin: "0 0 6px 0" }}>
+    <p style={{ fontSize: 11, fontWeight: 700, color: "#9AA1B1", textTransform: "uppercase", letterSpacing: "0.05em", margin: "0 0 6px 0" }}>
       {children}
     </p>
   );
@@ -500,7 +500,7 @@ function Field({ label, value }: { label: string; value: string }) {
   return (
     <div>
       <FieldLabel>{label}</FieldLabel>
-      <p style={{ fontSize: 14, fontWeight: 600, color: "#0f172a", margin: 0 }}>{value}</p>
+      <p style={{ fontSize: 14, fontWeight: 600, color: "#141821", margin: 0 }}>{value}</p>
     </div>
   );
 }

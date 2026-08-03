@@ -118,7 +118,7 @@ export default function BottomNav({ activeTab, onTabChange, isEmployer = false, 
                       top: -2, right: -4,
                       width: 8, height: 8,
                       borderRadius: "50%",
-                      background: "#EF4444",
+                      background: "#E5484D",
                       border: "2px solid var(--surface-elevated)",
                     }}
                   />

@@ -121,7 +121,7 @@ export default function ManageJobPostingsTab({
       <PostingStyles />
 
       {showRenewalNudge && (
-        <div style={{ background: isExpired ? "#fef2f2" : "#fffbeb", border: `1px solid ${isExpired ? "#fecaca" : "#fde68a"}`, borderRadius: 10, padding: "14px 16px", marginBottom: 16, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12, color: isExpired ? "#991b1b" : "#92400e" }}>
+        <div style={{ background: isExpired ? "#FDECEC" : "#fffbeb", border: `1px solid ${isExpired ? "#fecaca" : "#fde68a"}`, borderRadius: 10, padding: "14px 16px", marginBottom: 16, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12, color: isExpired ? "#E5484D" : "#B45309" }}>
           <div>
             <p style={{ fontSize: 13, fontWeight: 700, margin: 0 }}>
               {isExpired ? "Your subscription has expired — posting is disabled" : "Your subscription expires in less than 24 hours"}

@@ -504,7 +504,7 @@ export default function ProfileScreen() {
                 maxWidth: 380,
                 margin: "0 auto",
                 background: toast.type === "success"
-                  ? "linear-gradient(135deg, rgba(5,150,105,0.97) 0%, rgba(4,120,87,0.97) 100%)"
+                  ? "linear-gradient(135deg, rgba(27,92,191,0.97) 0%, rgba(4,120,87,0.97) 100%)"
                   : "linear-gradient(135deg, rgba(220,38,38,0.97) 0%, rgba(185,28,28,0.97) 100%)",
                 borderRadius: 18,
                 padding: "14px 18px",
@@ -512,7 +512,7 @@ export default function ProfileScreen() {
                 alignItems: "center",
                 gap: 14,
                 boxShadow: toast.type === "success"
-                  ? "0 8px 32px rgba(5,150,105,0.45), 0 2px 8px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.15)"
+                  ? "0 8px 32px rgba(27,92,191,0.45), 0 2px 8px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.15)"
                   : "0 8px 32px rgba(220,38,38,0.45), 0 2px 8px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.15)",
                 backdropFilter: "blur(12px)",
               }}
@@ -625,7 +625,7 @@ export default function ProfileScreen() {
                 borderRadius: 14, padding: 20, textAlign: "center",
               }}
             >
-              <p style={{ color: "#FCA5A5", fontSize: 14, marginBottom: 12 }}>{error}</p>
+              <p style={{ color: "var(--error)", fontSize: 14, marginBottom: 12 }}>{error}</p>
               <button
                 onClick={fetchProfile}
                 style={{
@@ -672,15 +672,15 @@ export default function ProfileScreen() {
                           style={{
                             width: 60, height: 60, borderRadius: "50%",
                             background: profile.gender === "female"
-                              ? "linear-gradient(135deg, #059669 0%, #0D9488 100%)"
+                              ? "linear-gradient(135deg, #1B5CBF 0%, #4A80D3 100%)"
                               : profile.gender === "male"
-                              ? "linear-gradient(135deg, #047857 0%, #065F46 100%)"
-                              : "linear-gradient(135deg, #10B981 0%, #059669 100%)",
+                              ? "linear-gradient(135deg, #164A9C 0%, #113978 100%)"
+                              : "linear-gradient(135deg, #4A80D3 0%, #1B5CBF 100%)",
                             display: "flex", alignItems: "center", justifyContent: "center",
                             fontSize: 22, fontWeight: 800, color: "#FFFFFF",
                             flexShrink: 0,
                             boxShadow: profile.gender === "female"
-                              ? "0 4px 16px rgba(5,150,105,0.35)"
+                              ? "0 4px 16px rgba(27,92,191,0.35)"
                               : profile.gender === "male"
                               ? "0 4px 16px rgba(4,120,87,0.35)"
                               : "0 4px 16px rgba(16,185,129,0.3)",
@@ -712,9 +712,9 @@ export default function ProfileScreen() {
                           <span
                             style={{
                               fontSize: 11, fontWeight: 600,
-                              color: isFullyDone ? "var(--success)" : "#F59E0B",
-                              background: isFullyDone ? "rgba(34,197,94,0.08)" : "rgba(245,158,11,0.08)",
-                              border: isFullyDone ? "1px solid rgba(34,197,94,0.2)" : "1px solid rgba(245,158,11,0.25)",
+                              color: isFullyDone ? "var(--success)" : "var(--warning)",
+                              background: isFullyDone ? "var(--success-soft)" : "var(--warning-soft)",
+                              border: "1px solid transparent",
                               borderRadius: 100, padding: "3px 10px",
                               display: "inline-flex", alignItems: "center", gap: 4
                             }}
@@ -749,7 +749,7 @@ export default function ProfileScreen() {
                     <div
                       style={{
                         background: "var(--card)",
-                        border: isFullyDone ? "1px solid rgba(34,197,94,0.2)" : "1px solid rgba(245,158,11,0.2)",
+                        border: "1px solid var(--border)",
                         borderRadius: 16,
                         padding: 16,
                       }}
@@ -760,7 +760,7 @@ export default function ProfileScreen() {
                         </span>
                         <span style={{
                           fontSize: 13, fontWeight: 800,
-                          color: isFullyDone ? "var(--success)" : "#F59E0B",
+                          color: isFullyDone ? "var(--success)" : "var(--warning)",
                         }}>
                           {score}%
                         </span>
@@ -775,9 +775,7 @@ export default function ProfileScreen() {
                           style={{
                             height: "100%",
                             borderRadius: 100,
-                            background: isFullyDone
-                              ? "linear-gradient(90deg, #4ADE80 0%, #22C55E 100%)"
-                              : "linear-gradient(90deg, #F59E0B 0%, #EAB308 100%)",
+                            background: isFullyDone ? "var(--success)" : "var(--warning)",
                           }}
                         />
                       </div>
@@ -801,8 +799,8 @@ export default function ProfileScreen() {
                               whileTap={isCv ? { scale: 0.98 } : undefined}
                               onClick={isCv ? triggerCvUpload : undefined}
                               style={{
-                                background: "rgba(245,158,11,0.06)",
-                                border: "1px solid rgba(245,158,11,0.2)",
+                                background: "rgba(180,83,9,0.06)",
+                                border: "1px solid rgba(180,83,9,0.2)",
                                 borderRadius: 10,
                                 padding: "11px 14px",
                                 display: "flex",
@@ -814,7 +812,7 @@ export default function ProfileScreen() {
                             >
                               <div style={{
                                 width: 6, height: 6, borderRadius: "50%",
-                                background: "#F59E0B",
+                                background: "var(--warning)",
                                 flexShrink: 0,
                                 marginTop: 5,
                               }} />
@@ -835,7 +833,7 @@ export default function ProfileScreen() {
                               </div>
                               <span style={{
                                 fontSize: 11, fontWeight: 700,
-                                color: "#F59E0B",
+                                color: "var(--warning)",
                                 flexShrink: 0,
                               }}>
                                 +{s.weight}%
@@ -868,14 +866,14 @@ export default function ProfileScreen() {
                       style={{
                         width: 28, height: 28,
                         borderRadius: "50%",
-                        background: "rgba(99,102,241,0.1)",
-                        border: "1px solid rgba(99,102,241,0.25)",
+                        background: "rgba(27,92,191,0.1)",
+                        border: "1px solid rgba(27,92,191,0.25)",
                         display: "flex", alignItems: "center", justifyContent: "center",
                         cursor: "pointer",
                         flexShrink: 0,
                       }}
                     >
-                      <HelpCircle size={14} color="#6366F1" />
+                      <HelpCircle size={14} color="#1B5CBF" />
                     </motion.button>
                   </motion.div>
                 ) : (
@@ -887,8 +885,8 @@ export default function ProfileScreen() {
                     exit={{ opacity: 0, y: -6 }}
                     transition={{ duration: 0.18 }}
                     style={{
-                      background: "rgba(99,102,241,0.05)",
-                      border: "1px solid rgba(99,102,241,0.18)",
+                      background: "rgba(27,92,191,0.05)",
+                      border: "1px solid rgba(27,92,191,0.18)",
                       borderRadius: 16,
                       padding: "14px 16px",
                       display: "flex",
@@ -896,11 +894,11 @@ export default function ProfileScreen() {
                       gap: 12,
                     }}
                   >
-                    <div style={{ marginTop: 2, background: "rgba(99,102,241,0.12)", borderRadius: "50%", padding: 6, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                      <ShieldCheck size={18} color="#6366F1" />
+                    <div style={{ marginTop: 2, background: "rgba(27,92,191,0.12)", borderRadius: "50%", padding: 6, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      <ShieldCheck size={18} color="#1B5CBF" />
                     </div>
                     <div style={{ flex: 1 }}>
-                      <p style={{ fontSize: 14, fontWeight: 700, color: "#6366F1", marginBottom: 4 }}>
+                      <p style={{ fontSize: 14, fontWeight: 700, color: "#1B5CBF", marginBottom: 4 }}>
                         {t("profile.onlyVisibleToEmployers")}
                       </p>
                       <p style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.4 }}>
@@ -917,9 +915,9 @@ export default function ProfileScreen() {
                         height: 26,
                         padding: "0 12px",
                         borderRadius: 100,
-                        background: "rgba(99,102,241,0.12)",
-                        border: "1px solid rgba(99,102,241,0.3)",
-                        color: "#6366F1",
+                        background: "rgba(27,92,191,0.12)",
+                        border: "1px solid rgba(27,92,191,0.3)",
+                        color: "#1B5CBF",
                         fontSize: 12,
                         fontWeight: 700,
                         cursor: "pointer",
@@ -963,9 +961,9 @@ export default function ProfileScreen() {
                         <span style={{
                           display: "flex", alignItems: "center", justifyContent: "center",
                           padding: "6px", borderRadius: 8,
-                          background: "rgba(245,158,11,0.08)",
-                          border: "1px solid rgba(245,158,11,0.2)",
-                          color: "#F59E0B",
+                          background: "rgba(180,83,9,0.08)",
+                          border: "1px solid rgba(180,83,9,0.2)",
+                          color: "var(--warning)",
                         }}>
                           <Lock size={14} />
                         </span>
@@ -1139,7 +1137,7 @@ export default function ProfileScreen() {
                       ) : profile.cv_url ? (
                         <>
                           <CheckCircle size={12} color="var(--success)" />
-                          <span style={{ textDecoration: "underline", color: "#6366F1", cursor: "pointer" }} onClick={handleViewCv}>
+                          <span style={{ textDecoration: "underline", color: "#1B5CBF", cursor: "pointer" }} onClick={handleViewCv}>
                             {cvOpensInBrowser(profile.cv_url) ? t("profile.viewCv") : t("profile.downloadCv")}
                           </span>
                           <span style={{ color: "var(--text-muted)", fontSize: 11, marginLeft: 2, marginRight: 2 }}>|</span>
@@ -1148,7 +1146,7 @@ export default function ProfileScreen() {
                           </span>
                         </>
                       ) : (
-                        <span style={{ textDecoration: "underline", color: "#6366F1", cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }} onClick={triggerCvUpload}>
+                        <span style={{ textDecoration: "underline", color: "#1B5CBF", cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }} onClick={triggerCvUpload}>
                           <Upload size={12} /> Upload CV
                         </span>
                       )}
@@ -1348,11 +1346,11 @@ export default function ProfileScreen() {
                       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                         <div style={{
                           width: 36, height: 36, borderRadius: 10,
-                          background: isDark ? "rgba(99,102,241,0.12)" : "rgba(245,158,11,0.12)",
-                          border: `1px solid ${isDark ? "rgba(99,102,241,0.25)" : "rgba(245,158,11,0.25)"}`,
+                          background: "var(--brand-subtle)",
+                          border: "1px solid var(--border-active)",
                           display: "flex", alignItems: "center", justifyContent: "center",
                         }}>
-                          {isDark ? <Moon size={17} color="#818CF8" /> : <Sun size={17} color="#F59E0B" />}
+                          {isDark ? <Moon size={17} color="var(--brand)" /> : <Sun size={17} color="var(--brand)" />}
                         </div>
                         <div>
                           <p style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>{isDark ? t("profile.darkMode") : t("profile.lightMode")}</p>
@@ -1885,7 +1883,7 @@ export default function ProfileScreen() {
                   borderRadius: 14,
                   padding: "0 16px",
                   marginBottom: 20,
-                  boxShadow: "0 0 0 3px rgba(5,150,105,0.1)",
+                  boxShadow: "0 0 0 3px rgba(27,92,191,0.1)",
                 }}
                 >
                   <Phone size={18} color="var(--brand)" />
@@ -2023,7 +2021,7 @@ export default function ProfileScreen() {
                   borderRadius: 14,
                   padding: "0 16px",
                   marginBottom: 20,
-                  boxShadow: "0 0 0 3px rgba(5,150,105,0.1)",
+                  boxShadow: "0 0 0 3px rgba(27,92,191,0.1)",
                 }}
                 >
                   <Phone size={18} color="var(--brand)" />

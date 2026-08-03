@@ -139,7 +139,7 @@ export default function ApplicationScreen({
             transition={{ duration: 0.25, delay: 0.05 }}
             style={{
               background: "var(--brand-subtle)",
-              border: "1px solid rgba(34, 197, 94, 0.12)",
+              border: "1px solid var(--border-active)",
               borderRadius: 14, padding: "12px 16px",
               display: "flex", alignItems: "center", gap: 12, marginBottom: 24,
             }}
@@ -211,9 +211,9 @@ export default function ApplicationScreen({
                   <span
                     style={{
                       marginLeft: "auto", fontSize: 10, fontWeight: 600,
-                      color: "#F59E0B",
-                      background: "rgba(245,158,11,0.1)",
-                      border: "1px solid rgba(245,158,11,0.2)",
+                      color: "var(--warning)",
+                      background: "rgba(180,83,9,0.1)",
+                      border: "1px solid rgba(180,83,9,0.2)",
                       borderRadius: 100, padding: "3px 8px", flexShrink: 0,
                     }}
                   >
@@ -296,7 +296,7 @@ export default function ApplicationScreen({
               }}
             >
               <AlertTriangle size={15} color="var(--error)" style={{ flexShrink: 0, marginTop: 1 }} />
-              <p style={{ fontSize: 13, color: "#FCA5A5", lineHeight: 1.5 }}>{submitError}</p>
+              <p style={{ fontSize: 13, color: "var(--error)", lineHeight: 1.5 }}>{submitError}</p>
             </motion.div>
           )}
 

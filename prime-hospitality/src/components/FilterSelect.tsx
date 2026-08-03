@@ -171,10 +171,10 @@ export default function FilterSelect({
           to   { opacity: 1; transform: translateY(0); }
         }
         .fs-menu { animation: fs-in .13s cubic-bezier(0.16, 1, 0.3, 1); }
-        .fs-opt:hover { background: #f8fafc; }
-        .fs-opt[data-active="true"] { background: #f1f5f9; }
-        .fs-opt[data-selected="true"] { background: #eff6ff; }
-        .fs-trigger:hover { border-color: #cbd5e1; }
+        .fs-opt:hover { background: #F7F8FA; }
+        .fs-opt[data-active="true"] { background: #EFF1F5; }
+        .fs-opt[data-selected="true"] { background: #EEF3FC; }
+        .fs-trigger:hover { border-color: #CBD0DA; }
         .fs-trigger[data-open="true"] { border-color: #93c5fd; box-shadow: 0 0 0 3px rgba(147,197,253,0.25); }
         .fs-search:focus { outline: none; border-color: #93c5fd; }
       `}</style>
@@ -189,9 +189,9 @@ export default function FilterSelect({
         onClick={() => setOpen((o) => !o)}
         style={{
           width: "100%", display: "flex", alignItems: "center", gap: 8,
-          background: "#fff", border: "1px solid #e2e8f0", borderRadius: 10,
+          background: "#fff", border: "1px solid #E2E5EC", borderRadius: 10,
           padding: "9px 12px", fontSize: 13, fontWeight: 600,
-          color: selected ? "#0f172a" : "#94a3b8",
+          color: selected ? "#141821" : "#9AA1B1",
           cursor: "pointer", fontFamily: "inherit", textAlign: "left",
           transition: "border-color .15s ease, box-shadow .15s ease",
         }}
@@ -204,14 +204,14 @@ export default function FilterSelect({
           {selected ? selected.label : placeholder}
         </span>
         {typeof selected?.count === "number" && (
-          <span style={{ fontSize: 11, fontWeight: 700, color: "#64748b", background: "#f1f5f9", borderRadius: 6, padding: "2px 7px", flexShrink: 0 }}>
+          <span style={{ fontSize: 11, fontWeight: 700, color: "#6E7686", background: "#EFF1F5", borderRadius: 6, padding: "2px 7px", flexShrink: 0 }}>
             {selected.count}
           </span>
         )}
         <svg
           width="10" height="6" viewBox="0 0 10 6" fill="none" style={{ flexShrink: 0, transform: open ? "rotate(180deg)" : "none", transition: "transform .15s ease" }}
         >
-          <path d="M1 1L5 5L9 1" stroke="#64748b" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M1 1L5 5L9 1" stroke="#6E7686" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       </button>
 
@@ -224,12 +224,12 @@ export default function FilterSelect({
             ["--fs-from" as string]: dropUp ? "4px" : "-4px",
             position: "absolute", zIndex: 60, left: 0, right: 0,
             ...(dropUp ? { bottom: "calc(100% + 6px)" } : { top: "calc(100% + 6px)" }),
-            background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12,
+            background: "#fff", border: "1px solid #E2E5EC", borderRadius: 12,
             boxShadow: "0 12px 28px rgba(15,23,42,0.12)", overflow: "hidden",
           }}
         >
           {searchable && (
-            <div style={{ padding: 8, borderBottom: "1px solid #f1f5f9" }}>
+            <div style={{ padding: 8, borderBottom: "1px solid #EFF1F5" }}>
               <input
                 ref={searchRef}
                 className="fs-search"
@@ -238,8 +238,8 @@ export default function FilterSelect({
                 placeholder={searchPlaceholder}
                 style={{
                   width: "100%", boxSizing: "border-box",
-                  background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 8,
-                  padding: "8px 10px", fontSize: 12.5, color: "#0f172a", fontFamily: "inherit",
+                  background: "#F7F8FA", border: "1px solid #E2E5EC", borderRadius: 8,
+                  padding: "8px 10px", fontSize: 12.5, color: "#141821", fontFamily: "inherit",
                 }}
               />
             </div>
@@ -247,7 +247,7 @@ export default function FilterSelect({
 
           <div ref={listRef} style={{ maxHeight: maxMenuHeight, overflowY: "auto", padding: 4 }}>
             {filtered.length === 0 ? (
-              <p style={{ margin: 0, padding: "18px 12px", fontSize: 12.5, color: "#94a3b8", textAlign: "center" }}>
+              <p style={{ margin: 0, padding: "18px 12px", fontSize: 12.5, color: "#9AA1B1", textAlign: "center" }}>
                 Nothing matches “{query}”
               </p>
             ) : (
@@ -269,27 +269,27 @@ export default function FilterSelect({
                       padding: "9px 10px", borderRadius: 8, cursor: "pointer",
                       // The selected row carries a left bar in its own colour —
                       // on the status filter that is the status colour itself.
-                      boxShadow: isSelected ? `inset 3px 0 0 ${o.dot ?? "#0284c7"}` : "none",
+                      boxShadow: isSelected ? `inset 3px 0 0 ${o.dot ?? "#1B5CBF"}` : "none",
                     }}
                   >
                     {o.dot && <span style={{ width: 7, height: 7, borderRadius: "50%", background: o.dot, flexShrink: 0 }} />}
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 13, fontWeight: isSelected ? 700 : 600, color: "#0f172a", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      <div style={{ fontSize: 13, fontWeight: isSelected ? 700 : 600, color: "#141821", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                         {o.label}
                       </div>
                       {o.hint && (
-                        <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        <div style={{ fontSize: 11, color: "#9AA1B1", marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                           {o.hint}
                         </div>
                       )}
                     </div>
                     {typeof o.count === "number" && (
-                      <span style={{ fontSize: 11, fontWeight: 700, color: o.count > 0 ? "#0284c7" : "#94a3b8", background: o.count > 0 ? "#eff6ff" : "#f8fafc", borderRadius: 6, padding: "2px 7px", flexShrink: 0 }}>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: o.count > 0 ? "#1B5CBF" : "#9AA1B1", background: o.count > 0 ? "#EEF3FC" : "#F7F8FA", borderRadius: 6, padding: "2px 7px", flexShrink: 0 }}>
                         {o.count}
                       </span>
                     )}
                     {isSelected && (
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#0284c7" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#1B5CBF" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
                         <polyline points="20 6 9 17 4 12" />
                       </svg>
                     )}

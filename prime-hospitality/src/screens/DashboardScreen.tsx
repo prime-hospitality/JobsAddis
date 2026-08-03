@@ -541,8 +541,8 @@ export default function DashboardScreen({ onJobSelect }: { onJobSelect?: (jobId:
                   gap: 10,
                   padding: "13px 14px",
                   borderRadius: 14,
-                  background: result.kind === "pending" ? "rgba(245,158,11,0.10)" : "var(--brand-subtle)",
-                  border: `1px solid ${result.kind === "pending" ? "rgba(245,158,11,0.28)" : "var(--border-active)"}`,
+                  background: result.kind === "pending" ? "rgba(180,83,9,0.10)" : "var(--brand-subtle)",
+                  border: `1px solid ${result.kind === "pending" ? "rgba(180,83,9,0.28)" : "var(--border-active)"}`,
                 }}
               >
                 <CheckCircle2
@@ -612,8 +612,8 @@ export default function DashboardScreen({ onJobSelect }: { onJobSelect?: (jobId:
                 gap: 10,
                 padding: "13px 14px",
                 borderRadius: 14,
-                background: "rgba(245,158,11,0.10)",
-                border: "1px solid rgba(245,158,11,0.28)",
+                background: "rgba(180,83,9,0.10)",
+                border: "1px solid rgba(180,83,9,0.28)",
               }}
             >
               <CalendarClock size={18} color="var(--warning)" style={{ flexShrink: 0, marginTop: 1 }} />

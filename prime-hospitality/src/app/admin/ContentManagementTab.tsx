@@ -284,28 +284,28 @@ export default function ContentManagementTab({
   };
 
   if (loading) {
-    return <div className="p-8 text-center text-[#8e8e93]">Loading content data...</div>;
+    return <div className="p-8 text-center text-[#4C5361]">Loading content data...</div>;
   }
 
   return (
-    <div className="bg-white rounded-2xl border border-[#c6c6c8] shadow-sm overflow-hidden flex flex-col h-full">
+    <div className="bg-white rounded-2xl border border-[#E2E5EC] shadow-sm overflow-hidden flex flex-col h-full">
       {/* Sub Tabs */}
-      <div className="flex border-b border-[#c6c6c8] bg-[#f2f2f7]/50">
+      <div className="flex border-b border-[#E2E5EC] bg-[#F7F8FA]/50">
         <button
           onClick={() => setActiveSubTab("faqs")}
-          className={`px-6 py-4 text-sm font-medium transition-colors ${activeSubTab === "faqs" ? "text-[#0284c7] border-b-2 border-[#0284c7] bg-white" : "text-[#8e8e93] hover:text-[#1c1c1e]"}`}
+          className={`px-6 py-4 text-sm font-medium transition-colors ${activeSubTab === "faqs" ? "text-[#1B5CBF] border-b-2 border-[#1B5CBF] bg-white" : "text-[#4C5361] hover:text-[#141821]"}`}
         >
           FAQs
         </button>
         <button
           onClick={() => setActiveSubTab("onboarding")}
-          className={`px-6 py-4 text-sm font-medium transition-colors ${activeSubTab === "onboarding" ? "text-[#0284c7] border-b-2 border-[#0284c7] bg-white" : "text-[#8e8e93] hover:text-[#1c1c1e]"}`}
+          className={`px-6 py-4 text-sm font-medium transition-colors ${activeSubTab === "onboarding" ? "text-[#1B5CBF] border-b-2 border-[#1B5CBF] bg-white" : "text-[#4C5361] hover:text-[#141821]"}`}
         >
           Onboarding Texts
         </button>
         <button
           onClick={() => setActiveSubTab("vacancyManagement")}
-          className={`px-6 py-4 text-sm font-medium transition-colors ${activeSubTab === "vacancyManagement" ? "text-[#0284c7] border-b-2 border-[#0284c7] bg-white" : "text-[#8e8e93] hover:text-[#1c1c1e]"}`}
+          className={`px-6 py-4 text-sm font-medium transition-colors ${activeSubTab === "vacancyManagement" ? "text-[#1B5CBF] border-b-2 border-[#1B5CBF] bg-white" : "text-[#4C5361] hover:text-[#141821]"}`}
         >
           Vacancy Management
         </button>
@@ -319,32 +319,32 @@ export default function ContentManagementTab({
               <h3 className="text-lg font-bold text-black">Manage FAQs</h3>
               <button
                 onClick={() => setFaqModal({ question: "", answer: "", display_order: (data.faqs.length + 1) * 10 })}
-                className="bg-[#0284c7] text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-[#0369a1] transition-colors flex items-center gap-2"
+                className="bg-[#1B5CBF] text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-[#164A9C] transition-colors flex items-center gap-2"
               >
                 <Plus size={16} /> Add FAQ
               </button>
             </div>
             <div className="space-y-4">
               {data.faqs.map((faq) => (
-                <div key={faq.id} className="border border-[#c6c6c8] rounded-xl p-4 flex gap-4 bg-[#f2f2f7]/30">
-                  <div className="flex flex-col items-center justify-center text-[#aeaeb2] bg-white border border-[#c6c6c8] rounded-lg w-10 h-10 shrink-0 font-bold text-sm">
+                <div key={faq.id} className="border border-[#E2E5EC] rounded-xl p-4 flex gap-4 bg-[#F7F8FA]/30">
+                  <div className="flex flex-col items-center justify-center text-[#9AA1B1] bg-white border border-[#E2E5EC] rounded-lg w-10 h-10 shrink-0 font-bold text-sm">
                     {faq.display_order}
                   </div>
                   <div className="flex-1">
                     <h4 className="font-bold text-black mb-1">{faq.question}</h4>
-                    <p className="text-sm text-[#8e8e93] line-clamp-2">{faq.answer}</p>
+                    <p className="text-sm text-[#4C5361] line-clamp-2">{faq.answer}</p>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
-                    <button onClick={() => setFaqModal(faq)} className="p-2 text-[#aeaeb2] hover:text-[#0284c7] hover:bg-blue-50 rounded-lg transition-colors">
+                    <button onClick={() => setFaqModal(faq)} className="p-2 text-[#9AA1B1] hover:text-[#1B5CBF] hover:bg-blue-50 rounded-lg transition-colors">
                       <Pencil size={18} />
                     </button>
-                    <button onClick={() => handleDeleteFaq(faq.id)} className="p-2 text-[#aeaeb2] hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors">
+                    <button onClick={() => handleDeleteFaq(faq.id)} className="p-2 text-[#9AA1B1] hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors">
                       <Trash2 size={18} />
                     </button>
                   </div>
                 </div>
               ))}
-              {data.faqs.length === 0 && <p className="text-center text-[#8e8e93] py-8">No FAQs found.</p>}
+              {data.faqs.length === 0 && <p className="text-center text-[#4C5361] py-8">No FAQs found.</p>}
             </div>
           </div>
         )}
@@ -372,7 +372,7 @@ export default function ContentManagementTab({
               <h3 className="text-lg font-bold text-black">Vacancy Templates</h3>
               <button
                 onClick={() => setTemplateModal(emptyVacancyForm())}
-                className="bg-[#0284c7] text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-[#0369a1] transition-colors flex items-center gap-2"
+                className="bg-[#1B5CBF] text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-[#164A9C] transition-colors flex items-center gap-2"
               >
                 <Plus size={16} /> Add Template
               </button>
@@ -434,13 +434,13 @@ export default function ContentManagementTab({
                       <EmployerAvatar name={platformProfile.businessName} logoUrl={platformProfile.logoUrl} size={48} radius={12} />
                       {/* Title + category */}
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <p style={{ fontSize: 12, color: "var(--text-secondary, #94a3b8)", marginBottom: 2, fontWeight: 500, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                        <p style={{ fontSize: 12, color: "var(--text-secondary, #9AA1B1)", marginBottom: 2, fontWeight: 500, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                           {tpl.job_category || "Template"}
                         </p>
-                        <h3 style={{ fontSize: 16, fontWeight: 700, color: "var(--text-primary, #f1f5f9)", lineHeight: 1.2, marginBottom: 4 }}>
+                        <h3 style={{ fontSize: 16, fontWeight: 700, color: "var(--text-primary, #EFF1F5)", lineHeight: 1.2, marginBottom: 4 }}>
                           {tpl.title}
                         </h3>
-                        <span style={{ fontSize: 11, color: "var(--text-muted, #64748b)", display: "flex", alignItems: "center", gap: 3 }}>
+                        <span style={{ fontSize: 11, color: "var(--text-muted, #6E7686)", display: "flex", alignItems: "center", gap: 3 }}>
                           <Clock size={10} />
                           Template
                         </span>
@@ -463,7 +463,7 @@ export default function ContentManagementTab({
                     </div>
 
                     {/* Description */}
-                    <p style={{ fontSize: 13, color: "var(--text-secondary, #94a3b8)", lineHeight: 1.5, marginBottom: 12, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                    <p style={{ fontSize: 13, color: "var(--text-secondary, #9AA1B1)", lineHeight: 1.5, marginBottom: 12, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
                       {tpl.description_template || "No description provided."}
                     </p>
 
@@ -509,9 +509,9 @@ export default function ContentManagementTab({
                           flex: 1,
                           padding: "9px 12px",
                           borderRadius: 10,
-                          border: postedTemplateId === tpl.id ? "1px solid rgba(34,197,94,0.4)" : "1px solid rgba(34,197,94,0.25)",
-                          background: postedTemplateId === tpl.id ? "rgba(34,197,94,0.15)" : "rgba(34,197,94,0.08)",
-                          color: postedTemplateId === tpl.id ? "#16a34a" : "#22c55e",
+                          border: postedTemplateId === tpl.id ? "1px solid rgba(27,92,191,0.4)" : "1px solid rgba(27,92,191,0.25)",
+                          background: postedTemplateId === tpl.id ? "rgba(27,92,191,0.15)" : "rgba(27,92,191,0.08)",
+                          color: postedTemplateId === tpl.id ? "#164A9C" : "#1B5CBF",
                           fontWeight: 600,
                           fontSize: 13,
                           cursor: postingTemplateId === tpl.id ? "not-allowed" : "pointer",
@@ -544,7 +544,7 @@ export default function ContentManagementTab({
                           borderRadius: 10,
                           border: "1px solid rgba(2,132,199,0.3)",
                           background: "rgba(2,132,199,0.1)",
-                          color: "#0284c7",
+                          color: "#1B5CBF",
                           fontWeight: 600,
                           fontSize: 13,
                           cursor: "pointer",
@@ -560,7 +560,7 @@ export default function ContentManagementTab({
                   </div>
                 );
               })}
-              {data.templates.length === 0 && <p className="text-center text-[#8e8e93] py-8 col-span-full">No templates found.</p>}
+              {data.templates.length === 0 && <p className="text-center text-[#4C5361] py-8 col-span-full">No templates found.</p>}
             </div>
           </div>
             )}
@@ -570,7 +570,7 @@ export default function ContentManagementTab({
             <div className="flex justify-between items-center mb-6 flex-wrap gap-3">
               <div>
                 <h3 className="text-lg font-bold text-black">Posts</h3>
-                <p className="text-sm text-[#8e8e93]">All jobs posted under the platform account — live, scheduled, or otherwise.</p>
+                <p className="text-sm text-[#4C5361]">All jobs posted under the platform account — live, scheduled, or otherwise.</p>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
                 <button className="mjp-btn-primary" onClick={() => setNewJobModal(emptyVacancyForm())} title="Post a new job">
@@ -582,7 +582,7 @@ export default function ContentManagementTab({
                   ariaLabel="Filter posts by status"
                   searchable={false}
                   minWidth={190}
-                  icon={<ListFilter size={14} color="#94a3b8" style={{ flexShrink: 0 }} />}
+                  icon={<ListFilter size={14} color="#9AA1B1" style={{ flexShrink: 0 }} />}
                   // Deliberately identical to the employer dashboard's status
                   // filter — same labels, same colours, same counts.
                   options={[
@@ -600,10 +600,10 @@ export default function ContentManagementTab({
             {(() => {
               const filteredPlatformJobs = postsStatusFilter === "all" ? platformJobs : platformJobs.filter((j: any) => j.status === postsStatusFilter);
               if (platformJobs.length === 0) {
-                return <p className="text-center text-[#8e8e93] py-8">No posts yet.</p>;
+                return <p className="text-center text-[#4C5361] py-8">No posts yet.</p>;
               }
               if (filteredPlatformJobs.length === 0) {
-                return <p className="text-center text-[#8e8e93] py-8">No posts match this filter.</p>;
+                return <p className="text-center text-[#4C5361] py-8">No posts match this filter.</p>;
               }
               return (
                 <div className="mjp-grid">
@@ -628,18 +628,18 @@ export default function ContentManagementTab({
                         </div>
 
                         <div style={{ flex: 1 }} />
-                        <div style={{ height: 1, background: "#f1f5f9" }} />
+                        <div style={{ height: 1, background: "#EFF1F5" }} />
 
                         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
                           {job.status === "scheduled" && job.scheduled_at ? (
-                            <div style={{ fontSize: 11.5, color: "#0369a1", fontWeight: 600, display: "flex", alignItems: "center", gap: 5, minWidth: 0 }}>
+                            <div style={{ fontSize: 11.5, color: "#164A9C", fontWeight: 600, display: "flex", alignItems: "center", gap: 5, minWidth: 0 }}>
                               <Timer size={12} weight="bold" />
                               <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                                 Publishes {new Date(job.scheduled_at).toLocaleDateString()} at {new Date(job.scheduled_at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}
                               </span>
                             </div>
                           ) : (
-                            <div style={{ fontSize: 11.5, color: "#94a3b8", display: "flex", alignItems: "center", gap: 5, minWidth: 0 }}>
+                            <div style={{ fontSize: 11.5, color: "#9AA1B1", display: "flex", alignItems: "center", gap: 5, minWidth: 0 }}>
                               <Clock size={12} style={{ flexShrink: 0 }} />
                               <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                                 {new Date(job.created_at).toLocaleDateString()}
@@ -678,7 +678,7 @@ export default function ContentManagementTab({
           <div>
             <div className="mb-6">
               <h3 className="text-lg font-bold text-black">Onboarding Texts & Options</h3>
-              <p className="text-sm text-[#8e8e93]">Configure text and selectable options for each onboarding step.</p>
+              <p className="text-sm text-[#4C5361]">Configure text and selectable options for each onboarding step.</p>
             </div>
             
             <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
@@ -686,7 +686,7 @@ export default function ContentManagementTab({
                 <button
                   key={step}
                   onClick={() => setActiveOnboardingStep(step)}
-                  className={`px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-colors ${activeOnboardingStep === step ? "bg-[#0284c7] text-white" : "bg-[#e5e5ea] text-[#8e8e93] hover:bg-[#e5e5ea]"}`}
+                  className={`px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-colors ${activeOnboardingStep === step ? "bg-[#1B5CBF] text-white" : "bg-[#EFF1F5] text-[#4C5361] hover:bg-[#EFF1F5]"}`}
                 >
                   Step {step}
                 </button>
@@ -704,7 +704,7 @@ export default function ContentManagementTab({
                   const isCategories = cfg.key.includes("categories");
                   
                   return (
-                    <div key={cfg.key} className="bg-white border border-[#c6c6c8] rounded-xl p-5 shadow-sm">
+                    <div key={cfg.key} className="bg-white border border-[#E2E5EC] rounded-xl p-5 shadow-sm">
                       <div className="flex justify-between items-center mb-4">
                         <label className="block text-sm font-bold text-black">{cfg.label}</label>
                         <button onClick={() => handleSaveConfig(cfg.key, cfg.label)} className="bg-gray-900 text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-gray-800 transition-colors flex items-center gap-2">
@@ -714,7 +714,7 @@ export default function ContentManagementTab({
                       
                       <div className="space-y-2 mb-4 max-h-80 overflow-y-auto pr-2">
                         {parsedArray.map((item, idx) => (
-                          <div key={idx} className="flex gap-2 items-center bg-[#f2f2f7] p-2 rounded-lg border border-[#e5e5ea]">
+                          <div key={idx} className="flex gap-2 items-center bg-[#F7F8FA] p-2 rounded-lg border border-[#EFF1F5]">
                               <input 
                                 value={isCategories ? item.label : item} 
                                 onChange={(e) => {
@@ -724,7 +724,7 @@ export default function ContentManagementTab({
                                   setConfigState(prev => ({ ...prev, [cfg.key]: JSON.stringify(newArr) }));
                                   setDirtyKeys(prev => new Set(prev).add(cfg.key));
                                 }}
-                                className="flex-1 px-3 py-1.5 bg-white border border-[#c6c6c8] rounded text-sm" 
+                                className="flex-1 px-3 py-1.5 bg-white border border-[#E2E5EC] rounded text-sm" 
                                 placeholder={isCategories ? "Category Label" : "Experience Level"}
                               />
                             <button 
@@ -732,7 +732,7 @@ export default function ContentManagementTab({
                                 const label = isCategories ? item.label : item;
                                 setDeleteConfirmModal({ type: "arrayRemove", configKey: cfg.key, itemIndex: idx, itemLabel: label });
                               }}
-                              className="p-1.5 px-3 text-sm font-medium text-red-600 hover:bg-red-50 rounded bg-white border border-[#c6c6c8]"
+                              className="p-1.5 px-3 text-sm font-medium text-red-600 hover:bg-red-50 rounded bg-white border border-[#E2E5EC]"
                             >
                               Remove
                             </button>
@@ -753,7 +753,7 @@ export default function ContentManagementTab({
                           setConfigState(prev => ({ ...prev, [cfg.key]: JSON.stringify(newArr) }));
                           setDirtyKeys(prev => new Set(prev).add(cfg.key));
                         }}
-                        className="w-full py-2 bg-[#f2f2f7] border border-dashed border-[#c6c6c8] rounded-lg text-sm font-medium text-[#8e8e93] hover:bg-[#e5e5ea] flex items-center justify-center gap-1"
+                        className="w-full py-2 bg-[#F7F8FA] border border-dashed border-[#E2E5EC] rounded-lg text-sm font-medium text-[#4C5361] hover:bg-[#EFF1F5] flex items-center justify-center gap-1"
                       >
                         Add Option
                       </button>
@@ -762,13 +762,13 @@ export default function ContentManagementTab({
                 }
 
                 return (
-                  <div key={cfg.key} className="bg-white border border-[#c6c6c8] rounded-xl p-5 shadow-sm">
+                  <div key={cfg.key} className="bg-white border border-[#E2E5EC] rounded-xl p-5 shadow-sm">
                     <label className="block text-sm font-bold text-black mb-1">{cfg.label}</label>
                     <div className="flex gap-3">
                       <textarea
                         value={configState[cfg.key] ?? ""}
                         onChange={(e) => setConfigState(prev => ({ ...prev, [cfg.key]: e.target.value }))}
-                        className="flex-1 px-4 py-3 bg-[#f2f2f7] border border-[#c6c6c8] rounded-xl text-sm focus:ring-2 focus:ring-[#0284c7] outline-none resize-none h-20"
+                        className="flex-1 px-4 py-3 bg-[#F7F8FA] border border-[#E2E5EC] rounded-xl text-sm focus:ring-2 focus:ring-[#1B5CBF] outline-none resize-none h-20"
                       />
                       <button
                         onClick={() => handleSaveConfig(cfg.key, cfg.label)}
@@ -782,7 +782,7 @@ export default function ContentManagementTab({
               })}
               
               {data.onboardingConfig.filter(cfg => cfg.key.startsWith(`step${activeOnboardingStep}_`)).length === 0 && (
-                <div className="text-center py-10 text-[#8e8e93] bg-[#f2f2f7] rounded-xl border border-dashed border-[#c6c6c8]">
+                <div className="text-center py-10 text-[#4C5361] bg-[#F7F8FA] rounded-xl border border-dashed border-[#E2E5EC]">
                   No configuration fields mapped for Step {activeOnboardingStep} yet.
                 </div>
               )}
@@ -798,35 +798,35 @@ export default function ContentManagementTab({
             <h3 className="text-xl font-bold text-black mb-4">{faqModal.id ? "Edit FAQ" : "Add FAQ"}</h3>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-[#1c1c1e] mb-1">Question</label>
+                <label className="block text-sm font-medium text-[#141821] mb-1">Question</label>
                 <input
                   type="text"
                   value={faqModal.question}
                   onChange={(e) => setFaqModal({ ...faqModal, question: e.target.value })}
-                  className="w-full px-4 py-2.5 bg-[#f2f2f7] border border-[#c6c6c8] rounded-xl text-sm focus:ring-2 focus:ring-[#0284c7] outline-none"
+                  className="w-full px-4 py-2.5 bg-[#F7F8FA] border border-[#E2E5EC] rounded-xl text-sm focus:ring-2 focus:ring-[#1B5CBF] outline-none"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-[#1c1c1e] mb-1">Answer</label>
+                <label className="block text-sm font-medium text-[#141821] mb-1">Answer</label>
                 <textarea
                   value={faqModal.answer}
                   onChange={(e) => setFaqModal({ ...faqModal, answer: e.target.value })}
-                  className="w-full px-4 py-2.5 bg-[#f2f2f7] border border-[#c6c6c8] rounded-xl text-sm h-32 resize-none focus:ring-2 focus:ring-[#0284c7] outline-none"
+                  className="w-full px-4 py-2.5 bg-[#F7F8FA] border border-[#E2E5EC] rounded-xl text-sm h-32 resize-none focus:ring-2 focus:ring-[#1B5CBF] outline-none"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-[#1c1c1e] mb-1">Display Order (lowest first)</label>
+                <label className="block text-sm font-medium text-[#141821] mb-1">Display Order (lowest first)</label>
                 <input
                   type="number"
                   value={faqModal.display_order}
                   onChange={(e) => setFaqModal({ ...faqModal, display_order: parseInt(e.target.value) || 0 })}
-                  className="w-full px-4 py-2.5 bg-[#f2f2f7] border border-[#c6c6c8] rounded-xl text-sm focus:ring-2 focus:ring-[#0284c7] outline-none"
+                  className="w-full px-4 py-2.5 bg-[#F7F8FA] border border-[#E2E5EC] rounded-xl text-sm focus:ring-2 focus:ring-[#1B5CBF] outline-none"
                 />
               </div>
             </div>
             <div className="flex justify-end gap-3 mt-6">
-              <button onClick={() => setFaqModal(null)} className="px-5 py-2.5 text-sm font-medium text-[#8e8e93] hover:bg-[#e5e5ea] rounded-xl transition-colors">Cancel</button>
-              <button onClick={handleSaveFaq} className="px-5 py-2.5 text-sm font-medium text-white bg-[#0284c7] hover:bg-[#0369a1] rounded-xl transition-colors">Save FAQ</button>
+              <button onClick={() => setFaqModal(null)} className="px-5 py-2.5 text-sm font-medium text-[#4C5361] hover:bg-[#EFF1F5] rounded-xl transition-colors">Cancel</button>
+              <button onClick={handleSaveFaq} className="px-5 py-2.5 text-sm font-medium text-white bg-[#1B5CBF] hover:bg-[#164A9C] rounded-xl transition-colors">Save FAQ</button>
             </div>
           </div>
         </div>
@@ -854,7 +854,7 @@ export default function ContentManagementTab({
             <h3 className="text-xl font-bold text-black mb-2">
               {deleteConfirmModal.type === "faq" ? "Delete FAQ" : deleteConfirmModal.type === "template" ? "Delete Template" : deleteConfirmModal.type === "platformJob" ? "Delete Job Post" : "Remove Option"}
             </h3>
-            <p className="text-[#8e8e93] mb-6 text-sm">
+            <p className="text-[#4C5361] mb-6 text-sm">
               {deleteConfirmModal.type === "arrayRemove"
                 ? <>Are you sure you want to remove <strong>&ldquo;{deleteConfirmModal.itemLabel}&rdquo;</strong>? You still need to click <strong>Save Options</strong> for it to take effect.</>
                 : deleteConfirmModal.type === "platformJob"
@@ -865,7 +865,7 @@ export default function ContentManagementTab({
             <div className="flex justify-center gap-3">
               <button
                 onClick={() => setDeleteConfirmModal(null)}
-                className="flex-1 px-4 py-2.5 text-sm font-medium text-[#1c1c1e] bg-[#e5e5ea] hover:bg-[#e5e5ea] rounded-xl transition-colors"
+                className="flex-1 px-4 py-2.5 text-sm font-medium text-[#141821] bg-[#EFF1F5] hover:bg-[#EFF1F5] rounded-xl transition-colors"
               >
                 No, cancel
               </button>
@@ -908,9 +908,9 @@ export default function ContentManagementTab({
               <div style={{ width: 72, height: 10, borderRadius: 10, background: "#1a1a1a" }} />
             </div>
             {/* Screen */}
-            <div style={{ flex: 1, background: "var(--app-bg, #f9fafb)", borderRadius: 46, overflow: "hidden", margin: 4 }}>
+            <div style={{ flex: 1, background: "var(--app-bg, #F7F8FA)", borderRadius: 46, overflow: "hidden", margin: 4 }}>
               {/* Status bar */}
-              <div style={{ height: 50, display: "flex", alignItems: "flex-end", justifyContent: "space-between", padding: "0 24px 6px", background: "var(--app-bg, #f9fafb)" }}>
+              <div style={{ height: 50, display: "flex", alignItems: "flex-end", justifyContent: "space-between", padding: "0 24px 6px", background: "var(--app-bg, #F7F8FA)" }}>
                 <span style={{ fontSize: 11, fontWeight: 700, color: "#111827" }}>9:41</span>
                 <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
                   <div style={{ display: "flex", gap: 1.5, alignItems: "flex-end" }}>
@@ -951,7 +951,7 @@ export default function ContentManagementTab({
                 <div className={`p-3 rounded-full flex-shrink-0 h-12 w-12 flex items-center justify-center ${
                   confirmPostData.status === "same" ? "bg-amber-100 text-amber-600" :
                   confirmPostData.status === "changed" ? "bg-blue-100 text-blue-600" :
-                  "bg-green-100 text-green-600"
+                  "bg-green-100 text-[#12A150]"
                 }`}>
                   {confirmPostData.status === "same" ? <AlertTriangle size={24} /> :
                    confirmPostData.status === "changed" ? <RefreshCw size={24} /> :
@@ -963,7 +963,7 @@ export default function ContentManagementTab({
                      confirmPostData.status === "changed" ? "Post Updated Version?" :
                      "Confirm Post"}
                   </h3>
-                  <p className="text-sm text-[#8e8e93] leading-relaxed">
+                  <p className="text-sm text-[#4C5361] leading-relaxed">
                     {confirmPostData.status === "same" ? "Everything is the same as the last time you posted this. Are you sure you want to create a duplicate job post?" :
                      confirmPostData.status === "changed" ? `This template has been modified since it was last posted (on ${confirmPostData.lastPosted ? new Date(confirmPostData.lastPosted).toLocaleDateString() : 'a while ago'}). Post the new version?` :
                      "Are you sure you want to post this template to the main app?"}
@@ -971,10 +971,10 @@ export default function ContentManagementTab({
                 </div>
               </div>
             </div>
-            <div className="bg-[#f2f2f7] px-6 py-4 flex justify-end gap-3 border-t border-[#e5e5ea]">
+            <div className="bg-[#F7F8FA] px-6 py-4 flex justify-end gap-3 border-t border-[#EFF1F5]">
               <button
                 onClick={() => setConfirmPostData(null)}
-                className="px-4 py-2 text-sm font-semibold text-[#1c1c1e] bg-white border border-[#c6c6c8] rounded-lg hover:bg-[#f2f2f7] transition-colors"
+                className="px-4 py-2 text-sm font-semibold text-[#141821] bg-white border border-[#E2E5EC] rounded-lg hover:bg-[#F7F8FA] transition-colors"
               >
                 Cancel
               </button>
@@ -1002,18 +1002,18 @@ export default function ContentManagementTab({
           <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)" }} onClick={() => { setScheduleTemplateModal(null); setScheduleError(""); }} />
           <div style={{ position: "relative", background: "#fff", borderRadius: 16, padding: 24, width: "100%", maxWidth: 420, boxShadow: "0 20px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1)" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
-              <div style={{ width: 40, height: 40, borderRadius: "50%", background: "#e0f2fe", color: "#0284c7", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              <div style={{ width: 40, height: 40, borderRadius: "50%", background: "#e0f2fe", color: "#1B5CBF", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                 <Timer size={24} weight="bold" />
               </div>
               <div>
                 <h3 style={{ margin: 0, fontSize: 17, fontWeight: 700, color: "#111827" }}>Scheduled Publication</h3>
-                <p style={{ margin: 0, fontSize: 12, color: "#6b7280" }}>{scheduleTemplateModal.title}</p>
+                <p style={{ margin: 0, fontSize: 12, color: "#6E7686" }}>{scheduleTemplateModal.title}</p>
               </div>
             </div>
 
             <form onSubmit={handleScheduleTemplateConfirm} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
               <div>
-                <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#374151", marginBottom: 6 }}>
+                <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#343A46", marginBottom: 6 }}>
                   Publish Date
                 </label>
                 <input
@@ -1022,12 +1022,12 @@ export default function ContentManagementTab({
                   value={scheduleDate}
                   onChange={(e) => setScheduleDate(e.target.value)}
                   min={new Date().toISOString().split("T")[0]}
-                  style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid #d1d5db", fontSize: 14, outline: "none" }}
+                  style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid #CBD0DA", fontSize: 14, outline: "none" }}
                 />
               </div>
 
               <div>
-                <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#374151", marginBottom: 6 }}>
+                <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#343A46", marginBottom: 6 }}>
                   Publish Time
                 </label>
                 <input
@@ -1035,26 +1035,26 @@ export default function ContentManagementTab({
                   required
                   value={scheduleTime}
                   onChange={(e) => setScheduleTime(e.target.value)}
-                  style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid #d1d5db", fontSize: 14, outline: "none" }}
+                  style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid #CBD0DA", fontSize: 14, outline: "none" }}
                 />
               </div>
 
               {scheduleError && (
-                <p style={{ color: "#ef4444", fontSize: 12, margin: 0 }}>{scheduleError}</p>
+                <p style={{ color: "#E5484D", fontSize: 12, margin: 0 }}>{scheduleError}</p>
               )}
 
               <div style={{ display: "flex", gap: 10, marginTop: 8 }}>
                 <button
                   type="button"
                   onClick={() => { setScheduleTemplateModal(null); setScheduleError(""); }}
-                  style={{ flex: 1, padding: "10px", background: "#f3f4f6", border: "none", borderRadius: 8, color: "#374151", fontSize: 14, fontWeight: 600, cursor: "pointer" }}
+                  style={{ flex: 1, padding: "10px", background: "#f3f4f6", border: "none", borderRadius: 8, color: "#343A46", fontSize: 14, fontWeight: 600, cursor: "pointer" }}
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={scheduleLoading}
-                  style={{ flex: 1, padding: "10px", background: "#0284c7", border: "none", borderRadius: 8, color: "#fff", fontSize: 14, fontWeight: 600, cursor: scheduleLoading ? "not-allowed" : "pointer" }}
+                  style={{ flex: 1, padding: "10px", background: "#1B5CBF", border: "none", borderRadius: 8, color: "#fff", fontSize: 14, fontWeight: 600, cursor: scheduleLoading ? "not-allowed" : "pointer" }}
                 >
                   {scheduleLoading ? "Scheduling..." : "Set Schedule"}
                 </button>
@@ -1116,11 +1116,11 @@ export default function ContentManagementTab({
                 </div>
                 <div className="pt-1">
                   <h3 className="text-lg font-bold text-black mb-1">Attention Needed</h3>
-                  <p className="text-sm text-[#8e8e93] leading-relaxed">{errorModal}</p>
+                  <p className="text-sm text-[#4C5361] leading-relaxed">{errorModal}</p>
                 </div>
               </div>
             </div>
-            <div className="bg-[#f2f2f7] px-6 py-4 flex justify-end border-t border-[#e5e5ea]">
+            <div className="bg-[#F7F8FA] px-6 py-4 flex justify-end border-t border-[#EFF1F5]">
               <button
                 onClick={() => setErrorModal(null)}
                 className="px-5 py-2 text-sm font-semibold text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors shadow-sm"
