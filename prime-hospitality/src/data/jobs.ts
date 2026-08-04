@@ -22,6 +22,16 @@ export interface Job {
   fullDescription: string;
   /** Minimum whole years asked for. null = no minimum stated, read as "any". */
     minYearsExperience: number | null;
+  /**
+   * Gender the employer is hiring for. null = they never restricted the role,
+   * which is both the default and the overwhelming majority of postings.
+   *
+   * Carried as the raw fact rather than as a resolved match flag, unlike
+   * `qualificationsMet`: only the detail screen says anything about it, so
+   * there is nothing to precompute for the feed card. The screen pairs it with
+   * the seeker's own gender through meetsGender() in lib/vocabulary.ts.
+   */
+  genderPreference: "male" | "female" | null;
   requirements: {
     education: string;
     languages: string[];
@@ -64,6 +74,7 @@ export const JOBS: Job[] = [
     fullDescription:
       "We are looking for an experienced and professional Senior Waiter to join our award-winning food & beverage team. The ideal candidate will be passionate about hospitality, fluent in English, and capable of delivering five-star dining experiences to our international guests. You will work across our main restaurant, rooftop bar, and private dining facilities.",
     minYearsExperience: 3,
+    genderPreference: null,
     requirements: {
       education: "Diploma in Hotel Management or related field",
       languages: ["Amharic", "English"],
@@ -91,6 +102,7 @@ export const JOBS: Job[] = [
     fullDescription:
       "Tomoca Coffee, Ethiopia's most historic and beloved coffee house since 1953, is seeking a passionate Head Barista to lead our brew team. You will be responsible for quality control, training junior staff, and maintaining the authentic Tomoca experience that has been cherished by Addis Ababans for generations. Knowledge of Ethiopian coffee ceremony is a strong plus.",
     minYearsExperience: 3,
+    genderPreference: null,
     requirements: {
       education: "Certificate in Food & Beverage or equivalent",
       languages: ["Amharic"],
@@ -118,6 +130,7 @@ export const JOBS: Job[] = [
     fullDescription:
       "Radisson Blu Addis Ababa is looking for a polished and professional Front Desk Receptionist to represent our brand at the heart of our operations. You will handle check-ins, check-outs, guest queries, and coordinate with housekeeping and concierge teams. Excellent communication in English is essential. Experience with Opera PMS is an advantage.",
     minYearsExperience: 3,
+    genderPreference: null,
     requirements: {
       education: "BA in Hospitality Management or Tourism",
       languages: ["Amharic", "English"],
@@ -145,6 +158,7 @@ export const JOBS: Job[] = [
     fullDescription:
       "Lime Tree Restaurant — Addis Ababa's beloved garden dining destination — is hiring a skilled Line Chef. You will work in a fast-paced kitchen environment preparing Mediterranean and Ethiopian fusion cuisine. The ideal candidate has strong knife skills, heat management ability, and a passion for seasonal, locally sourced ingredients. We pride ourselves on quality and consistency.",
     minYearsExperience: 5,
+    genderPreference: null,
     requirements: {
       education: "Culinary Arts Diploma or equivalent professional training",
       languages: ["Amharic"],
@@ -172,6 +186,7 @@ export const JOBS: Job[] = [
     fullDescription:
       "Hyatt Regency Addis Ababa is seeking dedicated Room Attendants to maintain the exceptional cleanliness and presentation standards our guests expect. You will be responsible for servicing guest rooms, restocking amenities, and reporting any maintenance issues. A detail-oriented personality and pride in your work are more important than experience — we will train the right candidate.",
     minYearsExperience: 0,
+    genderPreference: null,
     requirements: {
       education: "High School Completion (Grade 12)",
       languages: ["Amharic"],
@@ -199,6 +214,7 @@ export const JOBS: Job[] = [
     fullDescription:
       "Kaldis Coffee is expanding its CMC branch team and looking for bright, friendly cashiers who love interacting with people. You will handle POS transactions, assist with order preparation, and ensure every customer leaves with a smile. This is a part-time role ideal for students or those looking to enter the hospitality sector. Training provided from day one.",
     minYearsExperience: 0,
+    genderPreference: null,
     requirements: {
       education: "High School Completion (Grade 12)",
       languages: ["Amharic"],
@@ -226,6 +242,7 @@ export const JOBS: Job[] = [
     fullDescription:
       "Sheraton Addis, a landmark of luxury in Africa, is seeking a Night Security Officer to join our safety team. You will patrol the property, monitor CCTV systems, and ensure the safety of guests and staff throughout the night shift. Military or police background preferred. Candidates must be physically fit, disciplined, and able to maintain composure under pressure.",
     minYearsExperience: 3,
+    genderPreference: null,
     requirements: {
       education: "Grade 12 minimum; security training certificate is an advantage",
       languages: ["Amharic", "English"],
@@ -253,6 +270,7 @@ export const JOBS: Job[] = [
     fullDescription:
       "Four Points by Sheraton Addis Ababa is looking for an experienced Breakfast Chef to manage our busy morning kitchen operations. You will prepare buffet and à la carte breakfast items for our international business guests. Early morning shift (5am–12pm). Must be reliable, fast-paced, and knowledgeable in both Ethiopian and continental breakfast items.",
     minYearsExperience: 3,
+    genderPreference: null,
     requirements: {
       education: "Culinary Certificate or equivalent on-the-job experience",
       languages: ["Amharic"],

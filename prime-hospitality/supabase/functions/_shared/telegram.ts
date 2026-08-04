@@ -151,6 +151,9 @@ export interface AnnounceableJob {
   /** Years the employer asked for. Null means unstated, which the announcement
    *  omits rather than rendering as "any". */
   min_years_experience?: number | null;
+  /** Gender the employer is hiring for. Null means they never restricted the
+   *  role, which is the normal case and prints no line. */
+  gender_preference?: string | null;
   quantity?: number | null;
   deadline?: string | null;
   description?: string | null;
@@ -212,6 +215,15 @@ export async function sendGroupAnnouncement(
   const experienceText =
     years == null ? null : years <= 0 ? "No experience required" : `${years}+ years experience`;
 
+  // Same rule as the experience line: stated or absent, never "any". Worth a
+  // line of its own because the group is where most people meet a vacancy for
+  // the first time, and it is the one requirement a reader cannot act on after
+  // the fact. Normalised here rather than trusted: the cron passes a raw `jobs`
+  // row straight through.
+  const gender = String(job.gender_preference ?? "").trim().toLowerCase();
+  const genderText =
+    gender === "female" ? "Female applicants only" : gender === "male" ? "Male applicants only" : null;
+
   let deadlineText = "N/A";
   if (job.deadline) {
     try {
@@ -234,7 +246,7 @@ export async function sendGroupAnnouncement(
 🏢 <b>${escapeHtml(businessName)}</b>
 ${emoji} <b>${escapeHtml(job.title)}</b> (${escapeHtml(job.category)})
 📍 ${escapeHtml(job.neighborhood || "Addis Ababa")}, Addis Ababa
-💰 ${salaryText} · ${escapeHtml(job.job_type || "Full Time")}${experienceText ? `\n🎓 ${experienceText}` : ""}
+💰 ${salaryText} · ${escapeHtml(job.job_type || "Full Time")}${experienceText ? `\n🎓 ${experienceText}` : ""}${genderText ? `\n👤 ${genderText}` : ""}
 👥 ${Number(job.quantity) || 1} opening(s)
 📅 Deadline: <b>${deadlineText}</b>${excerpt ? `\n\n📝 <i>${escapeHtml(excerpt)}</i>` : ""}`;
 

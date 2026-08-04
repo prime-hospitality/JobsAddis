@@ -85,6 +85,7 @@ export default function VacancyTemplateTab({ data, loading, reload }: { data: Po
       description: desc,
       fullDescription: desc,
       minYearsExperience: (tpl.min_years_experience as number | null) ?? null,
+      genderPreference: (tpl.gender_preference as "male" | "female" | null) ?? null,
       requirements: {
         education: tpl.education_requirements || "",
         languages: [],

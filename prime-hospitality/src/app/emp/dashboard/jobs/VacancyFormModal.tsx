@@ -360,19 +360,46 @@ export default function VacancyFormModal({
                   </div>
                 </div>
 
-                <div className="vfm-field">
-                  <label className="vfm-label">No. of Openings</label>
-                  <input
-                    className="vfm-input"
-                    type="number"
-                    min={1}
-                    value={value.quantity}
-                    onChange={(e) => set({ quantity: Math.max(1, Number(e.target.value)) })}
-                    placeholder="1"
-                    // A full-bleed number field reads as an empty trough; this is
-                    // the width the value actually needs.
-                    style={{ maxWidth: 132 }}
-                  />
+                {/* Paired for the same reason as the row above: two short
+                    fixed-length values that each waste a full panel width. */}
+                <div className="vfm-row2">
+                  {/* "Any" is the default and stores nothing, so a job the
+                      employer never considered gender for carries no gender
+                      requirement -- rather than inheriting whichever option
+                      happened to sit first in the list. Male/Female reach the
+                      seeker as an advisory note on the job detail screen; they
+                      never stop anyone from applying. */}
+                  <div className="vfm-field">
+                    <label className="vfm-label">Gender</label>
+                    <FilterSelect
+                      value={value.gender_preference ?? ""}
+                      onChange={(v) => set({ gender_preference: v === "" ? null : (v as "male" | "female") })}
+                      fullWidth
+                      minWidth={0}
+                      searchable={false}
+                      maxMenuHeight={224}
+                      ariaLabel="Gender"
+                      options={[
+                        { value: "", label: "Any" },
+                        { value: "male", label: "Male only" },
+                        { value: "female", label: "Female only" },
+                      ]}
+                    />
+                  </div>
+                  <div className="vfm-field">
+                    <label className="vfm-label">No. of Openings</label>
+                    <input
+                      className="vfm-input"
+                      type="number"
+                      min={1}
+                      value={value.quantity}
+                      onChange={(e) => set({ quantity: Math.max(1, Number(e.target.value)) })}
+                      placeholder="1"
+                      // A full-bleed number field reads as an empty trough; this is
+                      // the width the value actually needs.
+                      style={{ maxWidth: 132 }}
+                    />
+                  </div>
                 </div>
 
                 <div className="vfm-field" style={{ position: "relative" }}>
