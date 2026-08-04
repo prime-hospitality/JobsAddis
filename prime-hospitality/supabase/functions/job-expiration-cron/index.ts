@@ -100,7 +100,7 @@ async function announceNewlyActiveJobs(supabase: any) {
     .update({ announced_at: new Date().toISOString() })
     .in("id", candidates.map((c: any) => c.id))
     .is("announced_at", null)
-    .select("id, title, category, neighborhood, job_type, salary_min, salary_max, quantity, deadline, description, min_years_experience, requirements, employer_id, announce_attempts, alerts_queued_at, employers(business_name)");
+    .select("id, title, category, neighborhood, job_type, salary_min, salary_max, quantity, deadline, description, min_years_experience, gender_preference, requirements, employer_id, announce_attempts, alerts_queued_at, employers(business_name)");
 
   if (claimErr) {
     console.error("[Announce] Failed to claim jobs:", claimErr);

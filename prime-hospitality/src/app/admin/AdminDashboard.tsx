@@ -3544,6 +3544,19 @@ export default function AdminDashboard({ initialData, initialUi = {} }: { initia
                 </span>
               </div>
 
+              {/* Absent, not "Any", when the employer set no restriction --
+                  matching every other surface. A moderator reviewing a pending
+                  job needs to see a gender requirement that IS there; inventing
+                  a row for one that is not would make an open job look screened. */}
+              {(viewingJob.gender_preference === "male" || viewingJob.gender_preference === "female") && (
+                <div>
+                  <span style={{ fontSize: 11, color: "#9ca3af", textTransform: "uppercase", fontWeight: 600, display: "block", marginBottom: 4 }}>Gender</span>
+                  <span style={{ background: "#f1f5f9", color: "#1e40af", padding: "4px 10px", borderRadius: 6, fontSize: 12, fontWeight: 600 }}>
+                    {viewingJob.gender_preference === "female" ? "Female only" : "Male only"}
+                  </span>
+                </div>
+              )}
+
               <div>
                 <span style={{ fontSize: 11, color: "#9ca3af", textTransform: "uppercase", fontWeight: 600, display: "block", marginBottom: 4 }}>Job Description</span>
                 <div style={{ background: "#f9fafb", padding: 12, borderRadius: 8, whiteSpace: "pre-wrap", lineHeight: 1.5, fontSize: 13, border: "1px solid #e5e7eb" }}>

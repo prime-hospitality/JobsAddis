@@ -22,6 +22,15 @@ const EXPERIENCE_OPTIONS = [
   })),
 ];
 
+/** "Any" first and default, stored as null: a job the employer never considered
+ *  gender for must carry no gender requirement at all. The seeker app shows
+ *  Male/Female as an advisory note and never blocks an application on it. */
+const GENDER_OPTIONS = [
+  { value: "", label: "Any" },
+  { value: "male", label: "Male only" },
+  { value: "female", label: "Female only" },
+];
+
 const SALARY_OPTIONS: { value: string; label: string }[] = [
   { value: "fixed", label: "Fixed" },
   { value: "company_scale", label: "Company scale" },
@@ -203,6 +212,14 @@ export default function VacancyComposer({
             value={String(value.min_years_experience ?? "")}
             onChange={(v) => set({ min_years_experience: v === "" ? null : Number(v) })}
             options={EXPERIENCE_OPTIONS}
+          />
+
+          <SheetSelect
+            label="Gender"
+            title="Gender"
+            value={value.gender_preference ?? ""}
+            onChange={(v) => set({ gender_preference: v === "" ? null : (v as "male" | "female") })}
+            options={GENDER_OPTIONS}
           />
 
           <Field label="Openings">

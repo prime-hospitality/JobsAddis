@@ -40,6 +40,13 @@ export const am: DeepPartial<Catalog> = {
     earnedAtShort: "የሥራ ቦታ ዓይነት",
   },
 
+  gender: {
+    male: "ወንድ",
+    female: "ሴት",
+    maleOnly: "ወንድ ብቻ",
+    femaleOnly: "ሴት ብቻ",
+  },
+
   jobCard: {
     posted: "የተለጠፈው {when}",
   },
@@ -54,6 +61,7 @@ export const am: DeepPartial<Catalog> = {
       workingHours: "የሥራ ሰዓት",
       openings: "ክፍት ቦታዎች",
       experience: "የሥራ ልምድ",
+      gender: "ጾታ",
       education: "የትምህርት ደረጃ",
       languages: "ቋንቋዎች",
     },
@@ -66,6 +74,8 @@ export const am: DeepPartial<Catalog> = {
     experienceGapTag: "{min}+ ዓመት ተጠቅሷል",
     experienceNote:
       "ይህ ሥራ {min}+ ዓመታት ልምድ ተጠቅሷል። መገለጫዎ በ{role} {actual} ያሳያል።",
+    genderNote:
+      "ይህ ሥራ ለ{required} አመልካቾች ተጠቅሷል። መገለጫዎ {actual} መሆንዎን ያሳያል።",
     aboutHeading: "ስለዚህ ሥራ",
     requirementsHeading: "መስፈርቶች",
     postedAndHiring: "የተለጠፈው {when} · በንቃት እየቀጠሩ ነው",

@@ -37,6 +37,7 @@ export const JOB_SELECT = `
   description,
   full_description,
   min_years_experience,
+  gender_preference,
   requirements,
   deadline,
   status,
@@ -67,6 +68,7 @@ export interface SupabaseJob {
   description: string;
   full_description: string;
   min_years_experience: number | null;
+  gender_preference: "male" | "female" | null;
   requirements: {
     education: string;
     languages: string[];
@@ -141,6 +143,7 @@ export function mapSupabaseJobToJob(sj: SupabaseJob, seekerYears?: SeekerYears):
     description: sj.description,
     fullDescription: sj.full_description,
     minYearsExperience: sj.min_years_experience ?? null,
+    genderPreference: sj.gender_preference ?? null,
     requirements: {
       education: sj.requirements?.education ?? "",
       languages: sj.requirements?.languages ?? [],
