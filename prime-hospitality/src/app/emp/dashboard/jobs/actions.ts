@@ -126,6 +126,7 @@ export async function getEmployerPostingData() {
     autoPublish: rules.autoPublish,
     dailyPostLimit: rules.dailyPostLimit,
     packageExpiresAt: rules.packageExpiresAt,
+    packageExpiresAtRaw: rules.packageExpiresAtRaw,
     renewalRequestedAt: rules.renewalRequestedAt,
     renewalSeenAt: rules.renewalSeenAt,
     employerId: session.employerId,

@@ -28,9 +28,20 @@ export interface PostingData {
   groupBoostsPerDay: number;
   autoPublish: boolean;
   dailyPostLimit: number;
-  /** Date (YYYY-MM-DD) this employer's current plan runs out, or null if
-   *  they have none -- caps how far out a job deadline can be set. */
+  /** Date (YYYY-MM-DD) this employer's current plan runs out, or null if they
+   *  have none. Feeds the deadline <input type="date"> max attribute, which is
+   *  why it must stay date-only -- so it is for display and capping ONLY.
+   *  Never compare it against the clock: see packageExpiresAtRaw below. */
   packageExpiresAt: string | null;
+  /** The same expiry with its time component intact, and the only field any
+   *  "has it expired / is it expiring soon" check may use.
+   *
+   *  A plan running to 4 Aug 18:00 arrives above as "2026-08-04", and
+   *  new Date("2026-08-04") is midnight UTC -- so from 03:00 Addis time the
+   *  dashboard called the subscription dead while the server, which checks the
+   *  real timestamp, kept accepting posts. The two disagreed for most of the
+   *  final day, and the employer was the one who had to guess which was right. */
+  packageExpiresAtRaw: string | null;
   renewalRequestedAt: string | null;
   renewalSeenAt: string | null;
   employerId: string;
@@ -50,6 +61,7 @@ const EMPTY: PostingData = {
   autoPublish: false,
   dailyPostLimit: 15,
   packageExpiresAt: null,
+  packageExpiresAtRaw: null,
   renewalRequestedAt: null,
   renewalSeenAt: null,
   employerId: "",
@@ -90,6 +102,7 @@ export default function ManageJobPostingsTab({
         autoPublish: res.autoPublish,
         dailyPostLimit: res.dailyPostLimit,
         packageExpiresAt: res.packageExpiresAt ?? null,
+        packageExpiresAtRaw: res.packageExpiresAtRaw ?? null,
         renewalRequestedAt: res.renewalRequestedAt ?? null,
         renewalSeenAt: res.renewalSeenAt ?? null,
         employerId: res.employerId,
@@ -112,8 +125,8 @@ export default function ManageJobPostingsTab({
     })();
   }, [reload]);
 
-  const expiresAt = data.packageExpiresAt ? new Date(data.packageExpiresAt) : null;
-  const isExpired = isSubscriptionExpired(data.packageExpiresAt);
+  const expiresAt = data.packageExpiresAtRaw ? new Date(data.packageExpiresAtRaw) : null;
+  const isExpired = isSubscriptionExpired(data.packageExpiresAtRaw);
   const showRenewalNudge = !loading && (!expiresAt || expiresAt.getTime() - Date.now() <= 24 * 60 * 60 * 1000);
 
   return (
