@@ -21,6 +21,10 @@ export interface VacancyFormState {
    *  "any" everywhere rather than as zero. Stored on its own `jobs` column,
    *  not inside `requirements`, so the search filter can range-query it. */
   min_years_experience: number | null;
+  /** Gender the employer is hiring for. null = "Any", the default, and the only
+   *  value that renders as nothing at all rather than as a stated requirement.
+   *  Stored on its own `jobs` column for the same reason the year count is. */
+  gender_preference: "male" | "female" | null;
   experience_template: string;
   responsibilities_template: string;
   benefits_template: string;
@@ -41,6 +45,10 @@ export function emptyVacancyForm(): VacancyFormState {
     salary_min: null,
     salary_max: null,
     min_years_experience: 0,
+    // "Any" — a new job is open to everyone until the employer says otherwise.
+    // Defaulting to a gender would put a restriction on the posting that nobody
+    // chose, which is the one mistake this field must not make.
+    gender_preference: null,
     experience_template: "",
     responsibilities_template: "",
     benefits_template: "",
@@ -65,6 +73,23 @@ export function coerceYears(value: unknown): number | null {
   const n = Math.floor(Number(value));
   if (!Number.isFinite(n) || n < 0) return null;
   return Math.min(n, MAX_YEARS_INPUT);
+}
+
+/**
+ * Coerces form/DB input to a storable gender, or null for "Any".
+ *
+ * Anything unrecognised becomes null rather than raising: a value we cannot
+ * read means no restriction was stated, and the widest reading is the safe one
+ * — a bad value must never silently narrow who may apply. Mirrored in
+ * supabase/functions/_shared/vacancy.ts, and kept in step with
+ * normalizeGender() in src/lib/vocabulary.ts.
+ */
+export function coerceGender(value: unknown): "male" | "female" | null {
+  if (typeof value !== "string") return null;
+  const v = value.trim().toLowerCase();
+  if (v === "male" || v === "m") return "male";
+  if (v === "female" || v === "f") return "female";
+  return null;
 }
 
 export interface VacancyFormErrors {
@@ -229,6 +254,7 @@ export function jobRowToForm(job: any): VacancyFormState {
     salary_min: job.salary_min != null && job.salary_min >= 0 ? job.salary_min : null,
     salary_max: job.salary_max != null && job.salary_max >= 0 ? job.salary_max : null,
     min_years_experience: coerceYears(job.min_years_experience),
+    gender_preference: coerceGender(job.gender_preference),
     experience_template: split.experience_template,
     responsibilities_template: split.responsibilities_template,
     benefits_template: split.benefits_template,
@@ -252,6 +278,7 @@ export function templateRowToForm(tpl: any): VacancyFormState {
     salary_min: tpl.salary_min,
     salary_max: tpl.salary_max,
     min_years_experience: coerceYears(tpl.min_years_experience),
+    gender_preference: coerceGender(tpl.gender_preference),
     experience_template: tpl.experience_template || "",
     responsibilities_template: tpl.responsibilities_template || "",
     benefits_template: tpl.benefits_template || "",

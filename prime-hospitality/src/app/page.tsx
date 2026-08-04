@@ -409,6 +409,7 @@ export default function App() {
           job={view.job}
           isEmployer={isEmployer}
           seekerYears={userProfile?.experience_years}
+          seekerGender={userProfile?.gender}
           hasApplied={appliedJobIds.has(view.job.id)}
           applyError={applyError}
           onBack={goBackToList}

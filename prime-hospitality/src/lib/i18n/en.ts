@@ -45,6 +45,17 @@ export const en = {
     earnedAtShort: "Type of workplace",
   },
 
+  // A job's stated gender, rendered only through genderPreferenceLabel() /
+  // genderLabel() in vocabulary.ts. There is no "any" string here on purpose:
+  // an unrestricted job prints nothing at all rather than a line saying it has
+  // no restriction.
+  gender: {
+    male: "male",
+    female: "female",
+    maleOnly: "Male only",
+    femaleOnly: "Female only",
+  },
+
   // The feed card. It carries no description, no deadline and no requirements
   // — business, title, posted time and three badges, nothing else. Anything
   // added here has to earn its line against the detail screen one tap away.
@@ -62,6 +73,7 @@ export const en = {
       workingHours: "Working Hours",
       openings: "Openings",
       experience: "Experience",
+      gender: "Gender",
       education: "Education",
       languages: "Languages",
     },
@@ -79,6 +91,13 @@ export const en = {
     experienceGapTag: "{min}+ yrs listed",
     experienceNote:
       "This position lists {min}+ years of experience. Your profile records {actual} as {role}.",
+    // Built to the same rule as experienceNote above: state what the employer
+    // asked for, state what we hold, stop. No encouragement, no discouragement,
+    // and above all no instruction -- the Apply button stays live underneath,
+    // because whether to spend an application on this is the seeker's call and
+    // not ours.
+    genderNote:
+      "This position is listed for {required} applicants. Your profile records you as {actual}.",
     aboutHeading: "About this Job",
     requirementsHeading: "Requirements",
     postedAndHiring: "Posted {when} · Actively hiring",

@@ -5,7 +5,7 @@ import { ArrowLeft, MapPin, Wallet, Briefcase, Calendar, CheckCircle, AlertCircl
 import { Job } from "@/data/jobs";
 import EmployerAvatar from "@/components/EmployerAvatar";
 import { useT, timeAgo, formatDate, formatNumber } from "@/lib/i18n";
-import { minYearsLabel, yearsLabel, categoryLabel } from "@/lib/vocabulary";
+import { minYearsLabel, yearsLabel, categoryLabel, meetsGender, normalizeGender, genderLabel, genderPreferenceLabel } from "@/lib/vocabulary";
 import type { SeekerYears } from "@/hooks/useJobs";
 
 interface JobDetailScreenProps {
@@ -13,6 +13,9 @@ interface JobDetailScreenProps {
   isEmployer?: boolean;
   /** Signed-in seeker's role -> years, so the advisory banner can name the gap. */
   seekerYears?: SeekerYears;
+  /** Signed-in seeker's own gender, from `profiles.gender`. Absent (no seeker,
+   *  or a profile that never recorded one) reads as neutral, not as a mismatch. */
+  seekerGender?: string | null;
   /** True when this seeker already has an application on file for this job. */
   hasApplied?: boolean;
   /** Surfaced when the apply flow can't start (e.g. the profile failed to load). */
@@ -54,11 +57,21 @@ function renderWithLinks(text: string) {
   });
 }
 
-export default function JobDetailScreen({ job, isEmployer, seekerYears, hasApplied, applyError, onBack, onApply }: JobDetailScreenProps) {
+export default function JobDetailScreen({ job, isEmployer, seekerYears, seekerGender, hasApplied, applyError, onBack, onApply }: JobDetailScreenProps) {
   const t = useT();
   const shouldReduceMotion = useReducedMotion();
   const deadlinePassed = isDeadlinePassed(job.deadline);
   const isFilled = !!job.filled;
+
+  // Advisory, exactly like qualificationsMet: false only when the employer
+  // stated a gender AND we hold one for this seeker AND the two differ. A job
+  // open to anyone, or a profile with no gender recorded, resolves to true and
+  // this screen never mentions gender at all.
+  const genderMet = meetsGender(seekerGender, job.genderPreference);
+  // Read back rather than inferred as "the other one": with two values today
+  // those are the same answer, but only one of them stays true if a third is
+  // ever recorded, and this is a sentence about a real person's profile.
+  const seekerGenderValue = normalizeGender(seekerGender);
 
   const infoItems = [
     { icon: MapPin, label: t("jobDetail.labels.location"), value: job.location },
@@ -309,6 +322,37 @@ export default function JobDetailScreen({ job, isEmployer, seekerYears, hasAppli
             </motion.div>
           )}
 
+          {/* Gender note. Same surface and same voice as the experience note
+              above -- both are asides about what the employer asked for, and a
+              seeker who trips both should meet one consistent register rather
+              than two competing ones.
+
+              Shown only when the employer actually restricted the role and we
+              actually hold this seeker's gender. An unrestricted job is the
+              normal case and says nothing here; meetsGender() returns true for
+              both unknowns, so neither reaches this branch. Nothing below is
+              disabled by it -- the Apply button stays live. */}
+          {!genderMet && job.genderPreference && seekerGenderValue && (
+            <motion.div
+              initial={shouldReduceMotion ? false : { opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.25, delay: 0.13 }}
+              className="experience-note"
+              style={{
+                borderRadius: 12,
+                padding: "12px 14px",
+                marginBottom: 20,
+              }}
+            >
+              <p style={{ fontSize: 13, lineHeight: 1.6 }}>
+                {t("jobDetail.genderNote", {
+                  required: genderLabel(job.genderPreference, t),
+                  actual: genderLabel(seekerGenderValue, t),
+                })}
+              </p>
+            </motion.div>
+          )}
+
           {/* About section */}
           {job.fullDescription && job.fullDescription.trim() !== "" && (
             <motion.section
@@ -352,6 +396,13 @@ export default function JobDetailScreen({ job, isEmployer, seekerYears, hasAppli
           {(() => {
             const reqItems = [
               { label: t("jobDetail.labels.experience"), value: minYearsLabel(job.minYearsExperience, t) },
+              // Absent rather than "Any" when unrestricted: the row list below
+              // drops empty values, so a job open to everyone shows no gender
+              // line at all. Printing "Any" would turn the absence of a
+              // requirement into something that looks like one.
+              ...(job.genderPreference
+                ? [{ label: t("jobDetail.labels.gender"), value: genderPreferenceLabel(job.genderPreference, t) }]
+                : []),
               { label: t("jobDetail.labels.education"), value: job.requirements?.education },
               { label: t("jobDetail.labels.languages"), value: job.requirements?.languages?.length ? job.requirements.languages.join(", ") : null },
               ...(job.requirements?.locationPreference

@@ -97,6 +97,65 @@ export function meetsExperience(
   return seekerYears >= jobMinYears;
 }
 
+/**
+ * Gender the employer is hiring for. null = they never restricted the role.
+ *
+ * "Open to anyone" is the absence of a requirement, not a requirement, so it is
+ * null rather than a third "any" value — which is what lets every renderer show
+ * nothing at all for it instead of a row reading "Any".
+ */
+export type GenderPreference = "male" | "female";
+
+/**
+ * Normalises a stored gender to the two values we can actually compare, or null.
+ *
+ * Tolerant on the way in because the seeker side is free text: onboarding
+ * writes "male"/"female", but older rows and the IDP import carry "M"/"F" and
+ * mixed casing. Anything else — blank, a typo, a value from some future
+ * onboarding — is null, which reads as unknown and suppresses the advisory.
+ */
+export function normalizeGender(value: unknown): GenderPreference | null {
+  if (typeof value !== "string") return null;
+  const v = value.trim().toLowerCase();
+  if (v === "male" || v === "m") return "male";
+  if (v === "female" || v === "f") return "female";
+  return null;
+}
+
+/**
+ * Whether a seeker matches a job's stated gender.
+ *
+ * Unknown on either side is not a failure, exactly as in meetsExperience(): a
+ * job that never restricted the role, and a seeker whose gender we do not hold,
+ * must both read as neutral. Telling someone they fall short of a requirement
+ * that was never stated would be a claim we cannot support.
+ *
+ * Advisory only. Nothing blocks an application on it, nothing hides the job,
+ * and the search RPC has no gender predicate — the employer's requirement is
+ * shown to the seeker, and the seeker decides.
+ */
+export function meetsGender(
+  seekerGender: string | null | undefined,
+  jobGender: string | null | undefined
+): boolean {
+  const wanted = normalizeGender(jobGender);
+  if (wanted == null) return true;
+  const seeker = normalizeGender(seekerGender);
+  if (seeker == null) return true;
+  return seeker === wanted;
+}
+
+/** "Female only" — what a job's requirement is called on screen. Never called
+ *  with null: an unrestricted job prints no gender line at all. */
+export function genderPreferenceLabel(gender: GenderPreference, t: Translate): string {
+  return t(gender === "female" ? "gender.femaleOnly" : "gender.maleOnly");
+}
+
+/** The bare word, for sentences that name a gender rather than label a rule. */
+export function genderLabel(gender: GenderPreference, t: Translate): string {
+  return t(gender === "female" ? "gender.female" : "gender.male");
+}
+
 /** Coerces form/API input to a stored year count, or null when unusable. */
 export function clampYears(value: unknown): number | null {
   if (value === null || value === undefined || value === "") return null;

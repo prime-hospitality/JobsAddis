@@ -37,6 +37,9 @@ export interface VacancyFormState {
    *  "any" everywhere rather than as zero. Stored on `jobs.min_years_experience`,
    *  not inside `requirements`, so the search filter can range-query it. */
   min_years_experience: number | null;
+  /** Gender the employer is hiring for, on `jobs.gender_preference`. null =
+   *  "Any", the default, and the only value that renders as nothing at all. */
+  gender_preference: "male" | "female" | null;
   experience_template: string;
   responsibilities_template: string;
   benefits_template: string;
@@ -64,6 +67,19 @@ export function coerceYears(value: unknown): number | null {
   return Math.min(n, MAX_YEARS_INPUT);
 }
 
+/** Coerces untrusted input to a storable gender, or null for "Any". Mirrors
+ *  coerceGender() in vacancyShared.ts. Anything unrecognised becomes null: a
+ *  value we cannot read means no restriction was stated, and a bad value must
+ *  never silently narrow who may apply. This is also what stops a hand-rolled
+ *  Mini App request from tripping the column's CHECK constraint. */
+export function coerceGender(value: unknown): "male" | "female" | null {
+  if (typeof value !== "string") return null;
+  const v = value.trim().toLowerCase();
+  if (v === "male" || v === "m") return "male";
+  if (v === "female" || v === "f") return "female";
+  return null;
+}
+
 /** Coerces an untrusted JSON payload into a VacancyFormState, sanitizing every
  *  free-text field. The Mini App posts this straight off the wire, so nothing
  *  below may assume the client sent well-formed values. */
@@ -85,6 +101,7 @@ export function coerceVacancyForm(raw: Record<string, unknown> | null | undefine
     salary_min: num(r.salary_min),
     salary_max: num(r.salary_max),
     min_years_experience: coerceYears(r.min_years_experience),
+    gender_preference: coerceGender(r.gender_preference),
     experience_template: stripTags(r.experience_template),
     responsibilities_template: stripTags(r.responsibilities_template),
     benefits_template: stripTags(r.benefits_template),
