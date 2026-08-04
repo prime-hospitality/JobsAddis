@@ -23,7 +23,7 @@ const EMPTY: EmployerProfileData = {
 
 const STYLES = `
   .cpt-card {
-    background: #fff; border: 1px solid #e2e8f0; border-radius: 14px;
+    background: #fff; border: 1px solid #E2E5EC; border-radius: 14px;
     box-shadow: 0 1px 4px rgba(0,0,0,0.04); padding: 28px;
   }
   .cpt-cols { display: grid; grid-template-columns: 1fr; gap: 28px; }
@@ -47,48 +47,48 @@ const STYLES = `
   }
   .cpt-avatar:hover .cpt-avatar-overlay { opacity: 1; }
   .cpt-remove-link {
-    border: none; background: none; color: #ef4444; font-size: 12.5px; font-weight: 600;
+    border: none; background: none; color: #E5484D; font-size: 12.5px; font-weight: 600;
     cursor: pointer; font-family: inherit; padding: 0;
   }
   .cpt-remove-link:hover { text-decoration: underline; }
-  .cpt-avatar-error { font-size: 11.5px; color: #dc2626; font-weight: 600; text-align: center; max-width: 140px; }
+  .cpt-avatar-error { font-size: 11.5px; color: #E5484D; font-weight: 600; text-align: center; max-width: 140px; }
 
   .cpt-fields { display: flex; flex-direction: column; gap: 18px; }
   .cpt-field { display: flex; flex-direction: column; gap: 6px; }
-  .cpt-label { font-size: 12.5px; font-weight: 600; color: #334155; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
-  .cpt-counter { font-size: 11px; font-weight: 600; color: #94a3b8; }
+  .cpt-label { font-size: 12.5px; font-weight: 600; color: #343A46; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .cpt-counter { font-size: 11px; font-weight: 600; color: #9AA1B1; }
 
   .cpt-input, .cpt-select, .cpt-textarea {
     width: 100%; border: 1px solid #dbe3ec; border-radius: 10px; padding: 10px 12px;
-    font-size: 13.5px; color: #0f172a; font-family: inherit; background: #fff;
+    font-size: 13.5px; color: #141821; font-family: inherit; background: #fff;
     transition: border-color .15s ease, box-shadow .15s ease;
   }
   .cpt-input:focus, .cpt-select:focus, .cpt-textarea:focus {
-    outline: none; border-color: #0284c7; box-shadow: 0 0 0 3px rgba(2,132,199,0.12);
+    outline: none; border-color: #1B5CBF; box-shadow: 0 0 0 3px rgba(2,132,199,0.12);
   }
   .cpt-textarea { resize: vertical; min-height: 110px; line-height: 1.55; }
   .cpt-select { appearance: none; -webkit-appearance: none; cursor: pointer; padding-right: 34px;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6' fill='none'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%2364748b' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
     background-repeat: no-repeat; background-position: right 12px center;
   }
-  .cpt-error-text { font-size: 11.5px; font-weight: 600; color: #dc2626; margin: 0; }
+  .cpt-error-text { font-size: 11.5px; font-weight: 600; color: #E5484D; margin: 0; }
 
   .cpt-footer { display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px; }
   .cpt-btn-save {
-    padding: 10px 22px; border: none; background: #0284c7; color: #fff;
+    padding: 10px 22px; border: none; background: #1B5CBF; color: #fff;
     font-size: 13.5px; font-weight: 700; border-radius: 10px; cursor: pointer;
     display: inline-flex; align-items: center; gap: 8px; transition: background .15s ease;
     font-family: inherit; box-shadow: 0 1px 2px rgba(2,132,199,0.3);
   }
-  .cpt-btn-save:hover { background: #0369a1; }
+  .cpt-btn-save:hover { background: #164A9C; }
   .cpt-btn-save:disabled { opacity: .6; cursor: not-allowed; }
 
   .cpt-banner {
     display: flex; align-items: center; gap: 8px; border-radius: 10px;
     padding: 11px 14px; font-size: 13px; font-weight: 600; margin-bottom: 16px;
   }
-  .cpt-banner.success { background: #ecfdf5; border: 1px solid #a7f3d0; color: #047857; }
-  .cpt-banner.error { background: #fef2f2; border: 1px solid #fecaca; color: #b91c1c; }
+  .cpt-banner.success { background: #E7F7EE; border: 1px solid #8FD9B0; color: #0E8442; }
+  .cpt-banner.error { background: #FDECEC; border: 1px solid #fecaca; color: #b91c1c; }
 
   @keyframes cpt-spin { to { transform: rotate(360deg); } }
   .cpt-spin { animation: cpt-spin 1s linear infinite; }
@@ -243,7 +243,7 @@ export default function CompanyProfileTab() {
     return (
       <div style={{ maxWidth: 760, margin: "0 auto" }}>
         <style>{STYLES}</style>
-        <div style={{ textAlign: "center", color: "#94a3b8", padding: "56px 0", fontSize: 14 }}>Loading your company profile…</div>
+        <div style={{ textAlign: "center", color: "#9AA1B1", padding: "56px 0", fontSize: 14 }}>Loading your company profile…</div>
       </div>
     );
   }
@@ -253,8 +253,8 @@ export default function CompanyProfileTab() {
       <style>{STYLES}</style>
 
       <div style={{ marginBottom: 18 }}>
-        <h2 style={{ fontSize: 18, fontWeight: 800, color: "#0f172a", margin: 0, letterSpacing: "-.02em" }}>Company Profile</h2>
-        <p style={{ fontSize: 13, color: "#64748b", margin: "5px 0 0 0" }}>
+        <h2 style={{ fontSize: 18, fontWeight: 800, color: "#141821", margin: 0, letterSpacing: "-.02em" }}>Company Profile</h2>
+        <p style={{ fontSize: 13, color: "#6E7686", margin: "5px 0 0 0" }}>
           This is how your business appears to job seekers across the app.
         </p>
       </div>

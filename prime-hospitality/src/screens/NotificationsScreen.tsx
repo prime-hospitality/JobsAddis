@@ -251,12 +251,12 @@ export default function NotificationsScreen({ onSelectJob, isEmployer = false }:
                         ? "var(--card)"
                         : n.type === "vacancy_alert"
                         ? "rgba(139, 92, 246, 0.08)"
-                        : "rgba(5,150,105,0.06)",
+                        : "rgba(27,92,191,0.06)",
                       border: n.read
                         ? "1px solid var(--border)"
                         : n.type === "vacancy_alert"
                         ? "1px solid rgba(139, 92, 246, 0.2)"
-                        : "1px solid rgba(5,150,105,0.2)",
+                        : "1px solid rgba(27,92,191,0.2)",
                       borderRadius: 16, padding: 16,
                       display: "flex", gap: 14, alignItems: "flex-start",
                     }}
@@ -264,9 +264,9 @@ export default function NotificationsScreen({ onSelectJob, isEmployer = false }:
                     <div style={{
                       width: 40, height: 40, borderRadius: 12, flexShrink: 0,
                       background: n.type === "shortlisted"
-                        ? "linear-gradient(135deg, #059669 0%, #047857 100%)"
+                        ? "linear-gradient(135deg, #1B5CBF 0%, #164A9C 100%)"
                         : n.type === "vacancy_alert"
-                        ? "linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%)"
+                        ? "linear-gradient(135deg, #4A80D3 0%, #164A9C 100%)"
                         : "var(--surface-elevated)",
                       display: "flex", alignItems: "center", justifyContent: "center",
                     }}>
@@ -550,7 +550,7 @@ export default function NotificationsScreen({ onSelectJob, isEmployer = false }:
                     disabled={isSaving || saveSuccess}
                     style={{
                       width: "100%", padding: "14px", borderRadius: 12,
-                      background: saveSuccess ? "#10B981" : "var(--brand)",
+                      background: saveSuccess ? "#4A80D3" : "var(--brand)",
                       border: "none", color: "#fff", fontSize: 15, fontWeight: 700,
                       cursor: (isSaving || saveSuccess) ? "not-allowed" : "pointer",
                       display: "flex", alignItems: "center", justifyContent: "center", gap: 8,

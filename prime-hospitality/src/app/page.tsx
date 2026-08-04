@@ -369,11 +369,11 @@ export default function App() {
             display: "flex", alignItems: "center", justifyContent: "center",
             overflow: "hidden",
             background: "linear-gradient(145deg, rgba(45,50,70,1) 0%, rgba(15,20,35,1) 100%)",
-            boxShadow: "0 12px 24px rgba(0,0,0,0.7), 0 4px 8px rgba(0,0,0,0.5), inset 0 2px 2px rgba(255,255,255,0.15), inset 0 -2px 4px rgba(0,0,0,0.4), inset 0 0 0 1px rgba(5,150,105,0.5)",
+            boxShadow: "0 12px 24px rgba(0,0,0,0.7), 0 4px 8px rgba(0,0,0,0.5), inset 0 2px 2px rgba(255,255,255,0.15), inset 0 -2px 4px rgba(0,0,0,0.4), inset 0 0 0 1px rgba(27,92,191,0.5)",
           }}
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logo.png" alt="Prime Hospitality Logo" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+          <img src="/logo.webp" alt="Prime Hospitality Logo" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
         </motion.div>
       </div>
     );
@@ -382,10 +382,10 @@ export default function App() {
   // Handle Banned State
   if (isBanned) {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100dvh', padding: 20, textAlign: 'center', background: '#f9fafb' }}>
-        <AlertCircle size={64} color="#EF4444" style={{ marginBottom: 24 }} />
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100dvh', padding: 20, textAlign: 'center', background: '#F7F8FA' }}>
+        <AlertCircle size={64} color="#E5484D" style={{ marginBottom: 24 }} />
         <h2 style={{ color: '#111827', fontSize: 28, fontWeight: 'bold', marginBottom: 12 }}>{t("app.accountSuspended")}</h2>
-        <p style={{ color: '#6B7280', fontSize: 16, lineHeight: 1.5 }}>
+        <p style={{ color: '#6E7686', fontSize: 16, lineHeight: 1.5 }}>
           {t("app.bannedLine1")}
           <br />
           {t("app.bannedLine2")}
@@ -567,9 +567,9 @@ export default function App() {
                   padding: "10px 18px",
                   borderRadius: 100,
                   background: cvJustDone
-                    ? "linear-gradient(135deg, #059669 0%, #047857 100%)"
+                    ? "linear-gradient(135deg, #1B5CBF 0%, #164A9C 100%)"
                     : cvFailed
-                    ? "linear-gradient(135deg, #DC2626 0%, #B91C1C 100%)"
+                    ? "linear-gradient(135deg, #E5484D 0%, #B91C1C 100%)"
                     : "var(--surface-elevated)",
                   border: cvJustDone
                     ? "1px solid rgba(74,222,128,0.4)"
@@ -577,7 +577,7 @@ export default function App() {
                     ? "1px solid rgba(248,113,113,0.4)"
                     : "1px solid var(--border-active)",
                   boxShadow: cvJustDone
-                    ? "0 8px 24px rgba(5,150,105,0.35)"
+                    ? "0 8px 24px rgba(27,92,191,0.35)"
                     : cvFailed
                     ? "0 8px 24px rgba(220,38,38,0.35)"
                     : "0 8px 24px rgba(0,0,0,0.2)",

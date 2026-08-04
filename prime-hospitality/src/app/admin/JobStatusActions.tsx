@@ -30,22 +30,22 @@ function formatScheduled(iso?: string | null) {
 export function getJobStatusMeta(job: AdminJobLike): StatusMeta {
   switch (job.status) {
     case "active":
-      return { label: "Active", bg: "#d1fae5", color: "#065f46" };
+      return { label: "Active", bg: "#E7F7EE", color: "#0E8442" };
     case "pending":
-      return { label: "Pending Review", bg: "#fef3c7", color: "#92400e" };
+      return { label: "Pending Review", bg: "#FDF1E7", color: "#B45309" };
     case "scheduled": {
       const when = formatScheduled(job.scheduled_at);
       const base = job.pre_approved ? "Scheduled ✓ Approved" : "Scheduled";
-      return { label: when ? `${base} · ${when}` : base, bg: "#dbeafe", color: "#1e40af" };
+      return { label: when ? `${base} · ${when}` : base, bg: "#D9E5F8", color: "#164A9C" };
     }
     case "closed":
-      return { label: "Closed", bg: "#e5e7eb", color: "#374151" };
+      return { label: "Closed", bg: "#E2E5EC", color: "#343A46" };
     case "expired":
-      return { label: "Expired", bg: "#fee2e2", color: "#991b1b" };
+      return { label: "Expired", bg: "#fee2e2", color: "#E5484D" };
     case "rejected":
-      return { label: "Rejected", bg: "#fee2e2", color: "#991b1b" };
+      return { label: "Rejected", bg: "#fee2e2", color: "#E5484D" };
     default:
-      return { label: job.status, bg: "#f1f5f9", color: "#475569" };
+      return { label: job.status, bg: "#EFF1F5", color: "#4C5361" };
   }
 }
 
@@ -80,10 +80,10 @@ type ActionHandlers = {
   onRepost: () => void;
 };
 
-const AMBER = "#f59e0b";
-const EMERALD = "#059669";
-const RED = "#dc2626";
-const NAVY = "#0f172a";
+const AMBER = "#B45309";
+const EMERALD = "#12A150";
+const RED = "#E5484D";
+const NAVY = "#141821";
 
 export function JobActionButtons({
   job,

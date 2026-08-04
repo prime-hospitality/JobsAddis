@@ -822,7 +822,7 @@ export default function SearchScreen({ onJobSelect, seekerYears, seekerCategorie
                   fontSize: 13, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0,
                   background: "rgba(239, 68, 68, 0.1)", 
                   border: "1px solid rgba(239, 68, 68, 0.2)",
-                  color: "#EF4444",
+                  color: "#E5484D",
                 }}
               >
                 <X size={14} /> {t("search.clear")}
@@ -836,7 +836,7 @@ export default function SearchScreen({ onJobSelect, seekerYears, seekerCategorie
                 padding: "8px 14px", borderRadius: 100,
                 fontSize: 13, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0,
                 background: selectedTypes.length > 0 ? "var(--brand-subtle)" : "var(--surface-elevated)",
-                border: selectedTypes.length > 0 ? "2px solid var(--brand)" : "2px solid #9CA3AF",
+                border: selectedTypes.length > 0 ? "2px solid var(--brand)" : "2px solid #9AA1B1",
                 color: selectedTypes.length > 0 ? "var(--brand)" : "var(--text-primary)",
               }}
             >
@@ -855,7 +855,7 @@ export default function SearchScreen({ onJobSelect, seekerYears, seekerCategorie
                 padding: "8px 14px", borderRadius: 100,
                 fontSize: 13, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0,
                 background: selectedCategories.length > 0 ? "var(--brand-subtle)" : "var(--surface-elevated)",
-                border: selectedCategories.length > 0 ? "2px solid var(--brand)" : "2px solid #9CA3AF",
+                border: selectedCategories.length > 0 ? "2px solid var(--brand)" : "2px solid #9AA1B1",
                 color: selectedCategories.length > 0 ? "var(--brand)" : "var(--text-primary)",
               }}
             >
@@ -872,7 +872,7 @@ export default function SearchScreen({ onJobSelect, seekerYears, seekerCategorie
                 padding: "8px 14px", borderRadius: 100,
                 fontSize: 13, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0,
                 background: selectedExperience.length > 0 ? "var(--brand-subtle)" : "var(--surface-elevated)",
-                border: selectedExperience.length > 0 ? "2px solid var(--brand)" : "2px solid #9CA3AF",
+                border: selectedExperience.length > 0 ? "2px solid var(--brand)" : "2px solid #9AA1B1",
                 color: selectedExperience.length > 0 ? "var(--brand)" : "var(--text-primary)",
               }}
             >
@@ -888,7 +888,7 @@ export default function SearchScreen({ onJobSelect, seekerYears, seekerCategorie
                 padding: "8px 14px", borderRadius: 100,
                 fontSize: 13, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0,
                 background: postedWithin !== "Any date" ? "var(--brand-subtle)" : "var(--surface-elevated)",
-                border: postedWithin !== "Any date" ? "2px solid var(--brand)" : "2px solid #9CA3AF",
+                border: postedWithin !== "Any date" ? "2px solid var(--brand)" : "2px solid #9AA1B1",
                 color: postedWithin !== "Any date" ? "var(--brand)" : "var(--text-primary)",
               }}
             >
@@ -927,7 +927,7 @@ export default function SearchScreen({ onJobSelect, seekerYears, seekerCategorie
                 borderRadius: 14, padding: 20, textAlign: "center", marginTop: 20,
               }}
             >
-              <p style={{ color: "#FCA5A5", fontSize: 14, marginBottom: 12 }}>{error}</p>
+              <p style={{ color: "var(--error)", fontSize: 14, marginBottom: 12 }}>{error}</p>
               <button
                 onClick={() => doSearch(query, selectedTypes, selectedCategories, selectedExperience, postedWithin, 0)}
                 style={{ fontSize: 13, fontWeight: 600, color: "var(--brand)", background: "none", border: "none", cursor: "pointer" }}
@@ -947,8 +947,8 @@ export default function SearchScreen({ onJobSelect, seekerYears, seekerCategorie
               <div
                 style={{
                   width: 72, height: 72, borderRadius: 20,
-                  background: "rgba(5,150,105,0.06)",
-                  border: "1px solid rgba(5,150,105,0.12)",
+                  background: "rgba(27,92,191,0.06)",
+                  border: "1px solid rgba(27,92,191,0.12)",
                   display: "flex", alignItems: "center", justifyContent: "center",
                   margin: "0 auto 20px", fontSize: 32,
                 }}
@@ -1172,9 +1172,9 @@ export default function SearchScreen({ onJobSelect, seekerYears, seekerCategorie
                             <span
                               style={{
                                 fontSize: 12, fontWeight: 700,
-                                color: "var(--success)",
-                                background: "rgba(74,222,128,0.08)",
-                                border: "1px solid rgba(74,222,128,0.2)",
+                                color: "var(--text-primary)",
+                                background: "var(--action-subtle)",
+                                border: "1px solid rgba(242, 240, 18, 0.55)",
                                 borderRadius: 100, padding: "3px 9px",
                               }}
                             >

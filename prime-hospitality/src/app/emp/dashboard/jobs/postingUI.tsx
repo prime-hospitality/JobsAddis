@@ -6,12 +6,12 @@ import { AlertTriangle, Trash2 } from "lucide-react";
 /**
  * Shared visual system for the "Manage Job Postings" section (Post + Vacancy
  * Template tabs). One source of truth so both tabs are provably the same
- * design language — dashboard-native: white surfaces on #f8fafc, blue primary,
+ * design language — dashboard-native: white surfaces on #F7F8FA, blue primary,
  * Inter. Deliberately does NOT use the consumer app's theme variables.
  */
 
 export const POSTING_STYLES = `
-  .mjp-scope { color: #0f172a; }
+  .mjp-scope { color: #141821; }
 
   .mjp-card {
     background: #fff;
@@ -33,22 +33,22 @@ export const POSTING_STYLES = `
   .mjp-card-accent { height: 3px; flex-shrink: 0; }
 
   .mjp-eyebrow {
-    font-size: 11px; font-weight: 700; color: #94a3b8;
+    font-size: 11px; font-weight: 700; color: #9AA1B1;
     text-transform: uppercase; letter-spacing: .06em; margin: 0 0 3px 0;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
   .mjp-title {
-    font-size: 16px; font-weight: 800; color: #0f172a;
+    font-size: 16px; font-weight: 800; color: #141821;
     line-height: 1.25; margin: 0; letter-spacing: -.01em;
   }
 
   .mjp-chip {
     display: inline-flex; align-items: center; gap: 5px;
-    background: #f8fafc; border: 1px solid #eef2f7; color: #475569;
+    background: #F7F8FA; border: 1px solid #eef2f7; color: #4C5361;
     font-size: 11.5px; font-weight: 600; padding: 4px 10px; border-radius: 8px;
     white-space: nowrap;
   }
-  .mjp-chip.salary { background: #eff6ff; border-color: #dbeafe; color: #0369a1; }
+  .mjp-chip.salary { background: #EEF3FC; border-color: #D9E5F8; color: #164A9C; }
 
   .mjp-status {
     display: inline-flex; align-items: center; gap: 6px;
@@ -62,50 +62,50 @@ export const POSTING_STYLES = `
     display: flex; align-items: center; justify-content: center;
     cursor: pointer; transition: all .15s ease; border: 1px solid; background: #fff;
   }
-  .mjp-iconbtn.edit { border-color: #e2e8f0; color: #64748b; }
-  .mjp-iconbtn.edit:hover { background: #eff6ff; border-color: #bfdbfe; color: #0284c7; }
-  .mjp-iconbtn.danger { border-color: #e2e8f0; color: #94a3b8; }
-  .mjp-iconbtn.danger:hover { background: #fef2f2; border-color: #fecaca; color: #ef4444; }
-  .mjp-iconbtn.repost { border-color: #e2e8f0; color: #64748b; }
-  .mjp-iconbtn.repost:hover { background: #ecfdf5; border-color: #a7f3d0; color: #059669; }
-  .mjp-iconbtn.hire { border-color: #e2e8f0; color: #64748b; }
+  .mjp-iconbtn.edit { border-color: #E2E5EC; color: #6E7686; }
+  .mjp-iconbtn.edit:hover { background: #EEF3FC; border-color: #D9E5F8; color: #1B5CBF; }
+  .mjp-iconbtn.danger { border-color: #E2E5EC; color: #9AA1B1; }
+  .mjp-iconbtn.danger:hover { background: #FDECEC; border-color: #fecaca; color: #E5484D; }
+  .mjp-iconbtn.repost { border-color: #E2E5EC; color: #6E7686; }
+  .mjp-iconbtn.repost:hover { background: #E7F7EE; border-color: #8FD9B0; color: #12A150; }
+  .mjp-iconbtn.hire { border-color: #E2E5EC; color: #6E7686; }
   .mjp-iconbtn.hire:hover { background: #eef2ff; border-color: #c7d2fe; color: #4f46e5; }
   /* Telegram's own blue on hover — this is the one action on the card that
      leaves the app entirely, and colouring it like the destination is the
      cheapest way to say so before the tooltip does. */
-  .mjp-iconbtn.tgboost { border-color: #e2e8f0; color: #64748b; }
+  .mjp-iconbtn.tgboost { border-color: #E2E5EC; color: #6E7686; }
   .mjp-iconbtn.tgboost:hover:not(:disabled) { background: #e7f5fd; border-color: #a8dcfa; color: #229ED9; }
   .mjp-iconbtn:disabled { opacity: .4; cursor: not-allowed; }
 
   .mjp-btn-primary {
     display: inline-flex; align-items: center; justify-content: center; gap: 7px;
-    background: #0284c7; color: #fff; border: none;
+    background: #1B5CBF; color: #fff; border: none;
     padding: 10px 16px; border-radius: 10px;
     font-size: 13.5px; font-weight: 700; cursor: pointer;
     transition: background .15s ease; box-shadow: 0 1px 2px rgba(2,132,199,0.25);
   }
-  .mjp-btn-primary:hover { background: #0369a1; }
+  .mjp-btn-primary:hover { background: #164A9C; }
   .mjp-btn-primary:disabled { opacity: .55; cursor: not-allowed; }
 
   .mjp-btn-post {
     flex: 1;
     display: inline-flex; align-items: center; justify-content: center; gap: 7px;
-    background: #0284c7; color: #fff; border: none;
+    background: #1B5CBF; color: #fff; border: none;
     padding: 10px 14px; border-radius: 10px;
     font-size: 13px; font-weight: 700; cursor: pointer;
     transition: background .15s ease;
   }
-  .mjp-btn-post:hover { background: #0369a1; }
-  .mjp-btn-post.posted { background: #ecfdf5; color: #047857; }
+  .mjp-btn-post:hover { background: #164A9C; }
+  .mjp-btn-post.posted { background: #E7F7EE; color: #0E8442; }
   .mjp-btn-post:disabled { cursor: default; }
 
   .mjp-btn-icon-ghost {
     display: inline-flex; align-items: center; justify-content: center;
     padding: 10px 13px; border-radius: 10px;
-    background: #fff; color: #0369a1; border: 1px solid #dbeafe;
+    background: #fff; color: #164A9C; border: 1px solid #D9E5F8;
     cursor: pointer; transition: all .15s ease;
   }
-  .mjp-btn-icon-ghost:hover { background: #eff6ff; border-color: #bae6fd; }
+  .mjp-btn-icon-ghost:hover { background: #EEF3FC; border-color: #bae6fd; }
 
   .mjp-tabs {
     display: inline-flex; background: #eef2f7; border: 1px solid #e4e9f0;
@@ -113,17 +113,17 @@ export const POSTING_STYLES = `
   }
   .mjp-tab {
     display: inline-flex; align-items: center; gap: 8px;
-    border: none; background: transparent; color: #64748b;
+    border: none; background: transparent; color: #6E7686;
     font-size: 14px; font-weight: 600; padding: 8px 16px; border-radius: 9px;
     cursor: pointer; transition: all .15s ease; font-family: inherit;
   }
-  .mjp-tab:hover { color: #0f172a; }
-  .mjp-tab.active { background: #fff; color: #0284c7; box-shadow: 0 1px 3px rgba(16,24,40,0.12); }
+  .mjp-tab:hover { color: #141821; }
+  .mjp-tab.active { background: #fff; color: #1B5CBF; box-shadow: 0 1px 3px rgba(16,24,40,0.12); }
   .mjp-tab .count {
     font-size: 11px; font-weight: 700; padding: 1px 7px; border-radius: 999px;
-    background: #e2e8f0; color: #64748b; min-width: 20px; text-align: center;
+    background: #E2E5EC; color: #6E7686; min-width: 20px; text-align: center;
   }
-  .mjp-tab.active .count { background: #e0f2fe; color: #0284c7; }
+  .mjp-tab.active .count { background: #e0f2fe; color: #1B5CBF; }
 
   .mjp-stat {
     background: #fff; border: 1px solid #e9eef4; border-radius: 12px;
@@ -133,11 +133,11 @@ export const POSTING_STYLES = `
     width: 38px; height: 38px; border-radius: 10px;
     display: flex; align-items: center; justify-content: center; flex-shrink: 0;
   }
-  .mjp-stat-val { font-size: 20px; font-weight: 800; color: #0f172a; line-height: 1; letter-spacing: -.02em; }
-  .mjp-stat-lbl { font-size: 11px; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: .04em; margin-top: 4px; }
+  .mjp-stat-val { font-size: 20px; font-weight: 800; color: #141821; line-height: 1; letter-spacing: -.02em; }
+  .mjp-stat-lbl { font-size: 11px; font-weight: 600; color: #9AA1B1; text-transform: uppercase; letter-spacing: .04em; margin-top: 4px; }
 
   .mjp-empty {
-    background: #fff; border: 1px dashed #cbd5e1; border-radius: 16px;
+    background: #fff; border: 1px dashed #CBD0DA; border-radius: 16px;
     padding: 56px 32px; text-align: center;
   }
 
@@ -150,12 +150,12 @@ export const POSTING_STYLES = `
   .mjp-filter-select {
     appearance: none; -webkit-appearance: none;
     background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6' fill='none'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%2364748b' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 12px center;
-    border: 1px solid #e2e8f0; border-radius: 9px;
+    border: 1px solid #E2E5EC; border-radius: 9px;
     padding: 8px 32px 8px 12px;
-    font-size: 12.5px; font-weight: 600; color: #334155;
+    font-size: 12.5px; font-weight: 600; color: #343A46;
     cursor: pointer; transition: border-color .15s ease; font-family: inherit;
   }
-  .mjp-filter-select:hover { border-color: #cbd5e1; }
+  .mjp-filter-select:hover { border-color: #CBD0DA; }
   .mjp-filter-select:focus { outline: none; border-color: #93c5fd; }
 
   @keyframes mjp-spin { to { transform: rotate(360deg); } }
@@ -176,19 +176,19 @@ export const POSTING_STYLES = `
   .mjp-alert-icon {
     width: 52px; height: 52px; border-radius: 14px; margin: 0 auto;
     display: flex; align-items: center; justify-content: center;
-    background: #fef2f2; border: 1px solid #fecaca; color: #dc2626;
+    background: #FDECEC; border: 1px solid #fecaca; color: #E5484D;
   }
   .mjp-alert-title {
-    font-size: 16.5px; font-weight: 800; color: #0f172a;
+    font-size: 16.5px; font-weight: 800; color: #141821;
     letter-spacing: -.01em; margin: 14px 0 0;
   }
   .mjp-alert-message {
-    font-size: 13.5px; color: #64748b; line-height: 1.55; margin: 6px 0 0;
+    font-size: 13.5px; color: #6E7686; line-height: 1.55; margin: 6px 0 0;
   }
   .mjp-alert-footer { padding: 0 22px 22px; }
   .mjp-btn-danger {
     width: 100%; display: inline-flex; align-items: center; justify-content: center;
-    background: #dc2626; color: #fff; border: none;
+    background: #E5484D; color: #fff; border: none;
     padding: 11px 16px; border-radius: 10px;
     font-size: 13.5px; font-weight: 700; cursor: pointer;
     transition: background .15s ease; box-shadow: 0 1px 2px rgba(220,38,38,0.25);
@@ -198,12 +198,12 @@ export const POSTING_STYLES = `
   .mjp-alert-footer.two { display: flex; gap: 10px; }
   .mjp-btn-neutral {
     flex: 1; display: inline-flex; align-items: center; justify-content: center;
-    background: #fff; color: #475569; border: 1px solid #e2e8f0;
+    background: #fff; color: #4C5361; border: 1px solid #E2E5EC;
     padding: 11px 16px; border-radius: 10px;
     font-size: 13.5px; font-weight: 600; cursor: pointer;
     transition: all .15s ease; font-family: inherit;
   }
-  .mjp-btn-neutral:hover { background: #f8fafc; color: #0f172a; }
+  .mjp-btn-neutral:hover { background: #F7F8FA; color: #141821; }
 `;
 
 export function PostingStyles() {
@@ -214,12 +214,12 @@ export function PostingStyles() {
 type StatusMeta = { label: string; text: string; bg: string; border: string; dot: string; accent: string };
 
 export const STATUS_META: Record<string, StatusMeta> = {
-  active:    { label: "Live",         text: "#047857", bg: "#ecfdf5", border: "#a7f3d0", dot: "#10b981", accent: "#10b981" },
-  pending:   { label: "Under Review", text: "#b45309", bg: "#fffbeb", border: "#fde68a", dot: "#f59e0b", accent: "#f59e0b" },
-  scheduled: { label: "Scheduled",    text: "#0369a1", bg: "#f0f9ff", border: "#bae6fd", dot: "#0ea5e9", accent: "#0ea5e9" },
-  closed:    { label: "Closed",       text: "#475569", bg: "#f8fafc", border: "#e2e8f0", dot: "#94a3b8", accent: "#cbd5e1" },
-  expired:   { label: "Expired",      text: "#b91c1c", bg: "#fef2f2", border: "#fecaca", dot: "#ef4444", accent: "#ef4444" },
-  rejected:  { label: "Rejected",     text: "#b91c1c", bg: "#fef2f2", border: "#fecaca", dot: "#ef4444", accent: "#ef4444" },
+  active:    { label: "Live",         text: "#0E8442", bg: "#E7F7EE", border: "#8FD9B0", dot: "#12A150", accent: "#12A150" },
+  pending:   { label: "Under Review", text: "#b45309", bg: "#fffbeb", border: "#fde68a", dot: "#B45309", accent: "#B45309" },
+  scheduled: { label: "Scheduled",    text: "#164A9C", bg: "#f0f9ff", border: "#bae6fd", dot: "#4A80D3", accent: "#4A80D3" },
+  closed:    { label: "Closed",       text: "#4C5361", bg: "#F7F8FA", border: "#E2E5EC", dot: "#9AA1B1", accent: "#CBD0DA" },
+  expired:   { label: "Expired",      text: "#b91c1c", bg: "#FDECEC", border: "#fecaca", dot: "#E5484D", accent: "#E5484D" },
+  rejected:  { label: "Rejected",     text: "#b91c1c", bg: "#FDECEC", border: "#fecaca", dot: "#E5484D", accent: "#E5484D" },
 };
 
 /** Repost arrow with Telegram's paper plane tucked into it.
@@ -331,9 +331,9 @@ export function ConfirmModal({
   onConfirm: () => void;
   onCancel: () => void;
 }) {
-  const iconBg = tone === "danger" ? "#fef2f2" : "#eff6ff";
-  const iconBorder = tone === "danger" ? "#fecaca" : "#bfdbfe";
-  const iconColor = tone === "danger" ? "#dc2626" : "#0284c7";
+  const iconBg = tone === "danger" ? "#FDECEC" : "#EEF3FC";
+  const iconBorder = tone === "danger" ? "#fecaca" : "#D9E5F8";
+  const iconColor = tone === "danger" ? "#E5484D" : "#1B5CBF";
   const confirmClass = tone === "danger" ? "mjp-btn-danger" : "mjp-btn-primary";
   return (
     <div className="mjp-alert-overlay" onClick={loading ? undefined : onCancel}>

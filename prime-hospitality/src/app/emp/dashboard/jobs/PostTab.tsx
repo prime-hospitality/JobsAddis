@@ -134,8 +134,8 @@ export default function PostTab({ data, loading, reload }: { data: PostingData; 
       {/* Header */}
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, marginBottom: 18, flexWrap: "wrap" }}>
         <div>
-          <h2 style={{ fontSize: 18, fontWeight: 800, color: "#0f172a", margin: 0, letterSpacing: "-.02em" }}>Your Job Postings</h2>
-          <p style={{ fontSize: 13, color: "#64748b", margin: "5px 0 0 0" }}>
+          <h2 style={{ fontSize: 18, fontWeight: 800, color: "#141821", margin: 0, letterSpacing: "-.02em" }}>Your Job Postings</h2>
+          <p style={{ fontSize: 13, color: "#6E7686", margin: "5px 0 0 0" }}>
             {autoPublish ? "Your posts go live instantly." : "New posts get a quick review before going live."}
           </p>
         </div>
@@ -152,11 +152,11 @@ export default function PostTab({ data, loading, reload }: { data: PostingData; 
       {/* Stat strip */}
       {!loading && (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 12, marginBottom: 20 }}>
-          <Stat icon={<ListChecks size={18} />} value={jobs.length} label="Total Posts" tint="#0284c7" />
-          <Stat icon={<Radio size={18} />} value={liveCount} label="Live" tint="#059669" />
-          <Stat icon={<Hourglass size={18} />} value={reviewCount} label="Under Review" tint="#d97706" />
+          <Stat icon={<ListChecks size={18} />} value={jobs.length} label="Total Posts" tint="#1B5CBF" />
+          <Stat icon={<Radio size={18} />} value={liveCount} label="Live" tint="#12A150" />
+          <Stat icon={<Hourglass size={18} />} value={reviewCount} label="Under Review" tint="#B45309" />
           {scheduledCount > 0 && (
-            <Stat icon={<CalendarClock size={18} />} value={scheduledCount} label="Scheduled" tint="#0ea5e9" />
+            <Stat icon={<CalendarClock size={18} />} value={scheduledCount} label="Scheduled" tint="#4A80D3" />
           )}
           <Stat
             icon={<Clock size={18} />}
@@ -168,14 +168,14 @@ export default function PostTab({ data, loading, reload }: { data: PostingData; 
       )}
 
       {successNote && (
-        <div style={{ display: "flex", alignItems: "center", gap: 8, background: "#ecfdf5", border: "1px solid #a7f3d0", color: "#047857", borderRadius: 10, padding: "11px 14px", fontSize: 13, fontWeight: 600, marginBottom: 16 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, background: "#E7F7EE", border: "1px solid #8FD9B0", color: "#0E8442", borderRadius: 10, padding: "11px 14px", fontSize: 13, fontWeight: 600, marginBottom: 16 }}>
           <CheckCircle2 size={16} /> {successNote}
         </div>
       )}
 
       {!loading && jobs.length > 0 && (
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 14 }}>
-          <p style={{ fontSize: 12.5, color: "#94a3b8", fontWeight: 600, margin: 0 }}>
+          <p style={{ fontSize: 12.5, color: "#9AA1B1", fontWeight: 600, margin: 0 }}>
             Showing {filteredJobs.length} of {jobs.length} posting{jobs.length === 1 ? "" : "s"}
           </p>
           <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
@@ -186,7 +186,7 @@ export default function PostTab({ data, loading, reload }: { data: PostingData; 
               // Seven fixed statuses, all visible at once — nothing to search for.
               searchable={false}
               minWidth={190}
-              icon={<ListFilter size={14} color="#94a3b8" style={{ flexShrink: 0 }} />}
+              icon={<ListFilter size={14} color="#9AA1B1" style={{ flexShrink: 0 }} />}
               options={[
                 { value: "all", label: "All Statuses", count: jobs.length },
                 // Same order and colours as the pills on the cards below, so the
@@ -204,25 +204,25 @@ export default function PostTab({ data, loading, reload }: { data: PostingData; 
       )}
 
       {loading ? (
-        <div style={{ textAlign: "center", color: "#94a3b8", padding: "56px 0", fontSize: 14 }}>Loading your postings…</div>
+        <div style={{ textAlign: "center", color: "#9AA1B1", padding: "56px 0", fontSize: 14 }}>Loading your postings…</div>
       ) : jobs.length === 0 ? (
         <div className="mjp-empty">
-          <div style={{ width: 56, height: 56, borderRadius: 16, background: "#eff6ff", color: "#0284c7", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
+          <div style={{ width: 56, height: 56, borderRadius: 16, background: "#EEF3FC", color: "#1B5CBF", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
             <Briefcase size={26} strokeWidth={1.75} />
           </div>
-          <h4 style={{ fontSize: 16, fontWeight: 700, color: "#0f172a", marginBottom: 6 }}>No job postings yet</h4>
-          <p style={{ fontSize: 13.5, color: "#64748b", margin: "0 0 20px 0" }}>Publish your first vacancy and it&apos;ll show up here.</p>
+          <h4 style={{ fontSize: 16, fontWeight: 700, color: "#141821", marginBottom: 6 }}>No job postings yet</h4>
+          <p style={{ fontSize: 13.5, color: "#6E7686", margin: "0 0 20px 0" }}>Publish your first vacancy and it&apos;ll show up here.</p>
           <button className="mjp-btn-primary" style={{ margin: "0 auto" }} onClick={() => setFormModal({ mode: "create", value: emptyVacancyForm() })} disabled={limitReached}>
             <Plus size={16} /> Post Now
           </button>
         </div>
       ) : filteredJobs.length === 0 ? (
         <div className="mjp-empty">
-          <div style={{ width: 56, height: 56, borderRadius: 16, background: "#f8fafc", color: "#94a3b8", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
+          <div style={{ width: 56, height: 56, borderRadius: 16, background: "#F7F8FA", color: "#9AA1B1", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
             <ListFilter size={24} strokeWidth={1.75} />
           </div>
-          <h4 style={{ fontSize: 16, fontWeight: 700, color: "#0f172a", marginBottom: 6 }}>No postings match this filter</h4>
-          <p style={{ fontSize: 13.5, color: "#64748b", margin: "0 0 20px 0" }}>Try a different status, or clear the filter.</p>
+          <h4 style={{ fontSize: 16, fontWeight: 700, color: "#141821", marginBottom: 6 }}>No postings match this filter</h4>
+          <p style={{ fontSize: 13.5, color: "#6E7686", margin: "0 0 20px 0" }}>Try a different status, or clear the filter.</p>
           <button className="mjp-btn-primary" style={{ margin: "0 auto" }} onClick={() => setStatusFilter("all")}>
             Clear Filter
           </button>
@@ -289,7 +289,7 @@ export default function PostTab({ data, loading, reload }: { data: PostingData; 
                     style={{
                       display: "inline-flex", alignItems: "center", gap: 6, alignSelf: "flex-start",
                       fontSize: 12, fontWeight: 700, textDecoration: "none",
-                      color: applicantCount > 0 ? "#0284c7" : "#94a3b8",
+                      color: applicantCount > 0 ? "#1B5CBF" : "#9AA1B1",
                     }}
                   >
                     <Users size={12} />
@@ -301,7 +301,7 @@ export default function PostTab({ data, loading, reload }: { data: PostingData; 
                   </Link>
 
                   {deadlineSoon && (
-                    <div style={{ display: "flex", alignItems: "center", gap: 6, background: "#fffbeb", border: "1px solid #fde68a", color: "#92400e", borderRadius: 8, padding: "6px 10px", fontSize: 11.5, fontWeight: 600 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, background: "#fffbeb", border: "1px solid #fde68a", color: "#B45309", borderRadius: 8, padding: "6px 10px", fontSize: 11.5, fontWeight: 600 }}>
                       <AlertTriangle size={12} style={{ flexShrink: 0 }} />
                       {subscriptionExpired ? (
                         // Extending is impossible while the subscription is lapsed --
@@ -314,7 +314,7 @@ export default function PostTab({ data, loading, reload }: { data: PostingData; 
                           <span>Deadline about to end in {Math.max(1, Math.ceil(msToDeadline! / 3600000))}h.</span>
                           <button
                             onClick={() => openEditForExtend(job)}
-                            style={{ background: "none", border: "none", padding: 0, color: "#92400e", fontWeight: 700, textDecoration: "underline", cursor: "pointer", fontSize: 11.5 }}
+                            style={{ background: "none", border: "none", padding: 0, color: "#B45309", fontWeight: 700, textDecoration: "underline", cursor: "pointer", fontSize: 11.5 }}
                           >
                             Click here to extend
                           </button>
@@ -324,14 +324,14 @@ export default function PostTab({ data, loading, reload }: { data: PostingData; 
                   )}
 
                   {needsAdvisory && (
-                    <div style={{ display: "flex", flexDirection: "column", gap: 6, background: "#fef2f2", border: "1px solid #fecaca", color: "#991b1b", borderRadius: 8, padding: "8px 10px", fontSize: 11.5 }}>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 6, background: "#FDECEC", border: "1px solid #fecaca", color: "#E5484D", borderRadius: 8, padding: "8px 10px", fontSize: 11.5 }}>
                       <span style={{ fontWeight: 600 }}>
                         Deadline ended — {applicantCount} applied, {shortlistedCount} shortlisted.
                       </span>
                       <div style={{ display: "flex", gap: 12 }}>
                         <button
                           onClick={() => setFillTarget({ id: job.id, title: job.title })}
-                          style={{ background: "none", border: "none", padding: 0, color: "#991b1b", fontWeight: 700, textDecoration: "underline", cursor: "pointer", fontSize: 11.5 }}
+                          style={{ background: "none", border: "none", padding: 0, color: "#E5484D", fontWeight: 700, textDecoration: "underline", cursor: "pointer", fontSize: 11.5 }}
                         >
                           Mark as filled
                         </button>
@@ -344,7 +344,7 @@ export default function PostTab({ data, loading, reload }: { data: PostingData; 
                             // button in the footer, which is already shown for
                             // this exact job).
                             onClick={() => handleRepostClick(job, true)}
-                            style={{ background: "none", border: "none", padding: 0, color: "#991b1b", fontWeight: 700, textDecoration: "underline", cursor: "pointer", fontSize: 11.5 }}
+                            style={{ background: "none", border: "none", padding: 0, color: "#E5484D", fontWeight: 700, textDecoration: "underline", cursor: "pointer", fontSize: 11.5 }}
                           >
                             Extend deadline
                           </button>
@@ -354,19 +354,19 @@ export default function PostTab({ data, loading, reload }: { data: PostingData; 
                   )}
 
                   <div style={{ flex: 1 }} />
-                  <div style={{ height: 1, background: "#f1f5f9" }} />
+                  <div style={{ height: 1, background: "#EFF1F5" }} />
 
                   {/* Footer: dates + actions */}
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
                     {job.status === "scheduled" && job.scheduled_at ? (
-                      <div style={{ fontSize: 11.5, color: "#0369a1", fontWeight: 600, display: "flex", alignItems: "center", gap: 5, minWidth: 0 }}>
+                      <div style={{ fontSize: 11.5, color: "#164A9C", fontWeight: 600, display: "flex", alignItems: "center", gap: 5, minWidth: 0 }}>
                         <CalendarClock size={12} style={{ flexShrink: 0 }} />
                         <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                           Publishes {new Date(job.scheduled_at).toLocaleDateString()} at {new Date(job.scheduled_at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}
                         </span>
                       </div>
                     ) : (
-                      <div style={{ fontSize: 11.5, color: "#94a3b8", display: "flex", alignItems: "center", gap: 5, minWidth: 0 }}>
+                      <div style={{ fontSize: 11.5, color: "#9AA1B1", display: "flex", alignItems: "center", gap: 5, minWidth: 0 }}>
                         <Clock size={12} style={{ flexShrink: 0 }} />
                         <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                           {new Date(job.created_at).toLocaleDateString()}
@@ -436,7 +436,7 @@ export default function PostTab({ data, loading, reload }: { data: PostingData; 
       {deleteTarget && (
         <ConfirmModal
           title="Delete this job posting?"
-          message={<><strong style={{ color: "#0f172a" }}>{deleteTarget.title}</strong> and any applications to it will be permanently removed. This can&apos;t be undone.</>}
+          message={<><strong style={{ color: "#141821" }}>{deleteTarget.title}</strong> and any applications to it will be permanently removed. This can&apos;t be undone.</>}
           confirmLabel="Delete Posting"
           loading={deleting}
           onConfirm={handleDelete}
@@ -447,7 +447,7 @@ export default function PostTab({ data, loading, reload }: { data: PostingData; 
       {fillTarget && (
         <ConfirmModal
           title="Mark this job as filled?"
-          message={<>Job seekers will still see <strong style={{ color: "#0f172a" }}>{fillTarget.title}</strong> in the app, but as "Position Filled" — they won't be able to apply. If the role opens up again, you can repost it from here with a new deadline.</>}
+          message={<>Job seekers will still see <strong style={{ color: "#141821" }}>{fillTarget.title}</strong> in the app, but as "Position Filled" — they won't be able to apply. If the role opens up again, you can repost it from here with a new deadline.</>}
           confirmLabel="Mark as Filled"
           loadingLabel="Marking as filled…"
           icon={<UserCheck size={24} strokeWidth={1.75} />}
@@ -463,13 +463,13 @@ export default function PostTab({ data, loading, reload }: { data: PostingData; 
           title="Repost to the Telegram group?"
           message={
             <>
-              <strong style={{ color: "#0f172a" }}>{boostTarget.title}</strong> goes back to the top of the group.
+              <strong style={{ color: "#141821" }}>{boostTarget.title}</strong> goes back to the top of the group.
               Nothing changes in the app — it stays live exactly as it is, and seekers already notified
               about this vacancy won&apos;t be messaged again.
               <br />
-              <span style={{ display: "inline-block", marginTop: 8, color: "#64748b" }}>
-                Posted to the group <strong style={{ color: "#0f172a" }}>{boostTarget.used}</strong> of{" "}
-                <strong style={{ color: "#0f172a" }}>{groupBoostsPerDay}</strong> times today
+              <span style={{ display: "inline-block", marginTop: 8, color: "#6E7686" }}>
+                Posted to the group <strong style={{ color: "#141821" }}>{boostTarget.used}</strong> of{" "}
+                <strong style={{ color: "#141821" }}>{groupBoostsPerDay}</strong> times today
                 {groupBoostsPerDay - boostTarget.used - 1 > 0
                   ? ` — ${groupBoostsPerDay - boostTarget.used - 1} left after this one.`
                   : `. This is your last one for today.`}

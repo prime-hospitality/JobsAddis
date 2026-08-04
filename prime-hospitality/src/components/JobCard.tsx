@@ -125,7 +125,7 @@ function CardBody({ job }: { job: Job }) {
       <div style={{ display: "flex", alignItems: "center", gap: 5, minWidth: 0 }}>
         {/* Salary */}
         <span
-          className="badge badge-brand"
+          className="badge badge-salary"
           style={{ flexShrink: 0, whiteSpace: "nowrap", padding: "4px 9px" }}
         >
           {formatSalary(job.salaryMin, job.salaryMax, t)}

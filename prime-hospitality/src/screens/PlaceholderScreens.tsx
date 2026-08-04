@@ -47,14 +47,14 @@ export function ApplicationsScreen() {
         transition={{ duration: 0.25 }}
         style={{
           background: "var(--card)",
-          border: "1px solid rgba(5,150,105,0.15)",
+          border: "1px solid rgba(27,92,191,0.15)",
           borderRadius: 16,
           padding: 16,
           marginBottom: 12,
         }}
       >
         <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
-          <div style={{ fontSize: 24, width: 44, height: 44, borderRadius: 12, background: "rgba(5,150,105,0.08)", border: "1px solid rgba(5,150,105,0.15)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+          <div style={{ fontSize: 24, width: 44, height: 44, borderRadius: 12, background: "rgba(27,92,191,0.08)", border: "1px solid rgba(27,92,191,0.15)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
             🏨
           </div>
           <div style={{ flex: 1 }}>
@@ -111,7 +111,7 @@ export function ProfileScreen() {
         transition={{ duration: 0.25 }}
         style={{
           background: "linear-gradient(135deg, var(--surface-elevated) 0%, var(--card) 100%)",
-          border: "1px solid rgba(5,150,105,0.15)",
+          border: "1px solid rgba(27,92,191,0.15)",
           borderRadius: 20,
           padding: 20,
           marginBottom: 20,
@@ -124,9 +124,9 @@ export function ProfileScreen() {
         <div
           style={{
             width: 60, height: 60, borderRadius: "50%",
-            background: "linear-gradient(135deg, #059669 0%, #047857 100%)",
+            background: "linear-gradient(135deg, #1B5CBF 0%, #164A9C 100%)",
             display: "flex", alignItems: "center", justifyContent: "center",
-            fontSize: 24, fontWeight: 800, color: "#0A0F1E",
+            fontSize: 24, fontWeight: 800, color: "var(--text-on-brand)",
             flexShrink: 0,
           }}
         >
@@ -217,7 +217,7 @@ function PlaceholderScreen({
           style={{
             width: 80, height: 80, borderRadius: 24,
             background: isBrand ? "var(--brand-subtle)" : "var(--card)",
-            border: isBrand ? "1px solid rgba(34, 197, 94, 0.2)" : "1px solid var(--border)",
+            border: isBrand ? "1px solid var(--border-active)" : "1px solid var(--border)",
             boxShadow: "var(--card-shadow)",
             display: "flex", alignItems: "center", justifyContent: "center",
             fontSize: 36, marginBottom: 20,

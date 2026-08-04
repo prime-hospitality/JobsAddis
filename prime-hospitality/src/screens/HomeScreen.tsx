@@ -240,13 +240,13 @@ export default function HomeScreen({ onJobSelect, onSearchPress, onBellPress, un
                     alignItems: "center",
                     justifyContent: "center",
                     background: "#fff",
-                    border: "1.5px solid #e2e8f0",
+                    border: "1.5px solid #E2E5EC",
                     boxShadow: "0 1px 4px 0 rgba(27,58,92,0.10)",
                     flexShrink: 0,
                   }}
                 >
                   <img 
-                    src="/addis_jobs_logo.png" 
+                    src="/addis_jobs_logo.webp" 
                     alt="JobsAdis Logo" 
                     style={{ 
                       width: "85%", 
@@ -362,7 +362,7 @@ export default function HomeScreen({ onJobSelect, onSearchPress, onBellPress, un
                   <div style={{ position: "absolute", width: 8, height: 8, borderRadius: "50%", background: "var(--brand)", bottom: 20, left: -10, opacity: 0.6 }} />
                   <div style={{ position: "absolute", width: 14, height: 14, borderRadius: "50%", background: "var(--brand-dim)", top: 40, right: -15, opacity: 0.7 }} />
                   <img 
-                    src="/hero_illustration.png" 
+                    src="/hero_illustration.webp" 
                     alt="Briefcase illustration" 
                     style={{ 
                       position: "absolute", top: 0, left: 0, width: "100%", height: "100%", objectFit: "contain", mixBlendMode: "multiply",
@@ -370,7 +370,7 @@ export default function HomeScreen({ onJobSelect, onSearchPress, onBellPress, un
                     }} 
                   />
                   <img 
-                    src="/hero_illustration_dark.png" 
+                    src="/hero_illustration_dark.webp" 
                     alt="Briefcase illustration dark" 
                     style={{ 
                       position: "absolute", top: 0, left: 0, width: "100%", height: "100%", objectFit: "contain", mixBlendMode: "screen",
@@ -491,17 +491,17 @@ export default function HomeScreen({ onJobSelect, onSearchPress, onBellPress, un
                 <button 
                   onClick={onSearchPress}
                   style={{ 
-                  background: "var(--brand)", 
-                  color: "white", 
-                  padding: "10px 20px", 
-                  borderRadius: 12, 
-                  fontWeight: 600, 
-                  fontSize: 14, 
-                  border: "none", 
-                  display: "inline-flex", 
-                  alignItems: "center", 
+                  background: "var(--action)",
+                  color: "var(--action-ink)",
+                  padding: "10px 20px",
+                  borderRadius: "var(--radius-pill)",
+                  fontWeight: 700,
+                  fontSize: 14,
+                  border: "none",
+                  display: "inline-flex",
+                  alignItems: "center",
                   gap: 8,
-                  boxShadow: "0 4px 12px rgba(34, 197, 94, 0.3)",
+                  boxShadow: "var(--shadow-action)",
                   cursor: "pointer"
                 }}>
                   {t("home.findJobs")} <span style={{ fontSize: 16 }}>→</span>
@@ -511,7 +511,7 @@ export default function HomeScreen({ onJobSelect, onSearchPress, onBellPress, un
               {/* Illustration for Slide 2 */}
               <div style={{ position: "absolute", right: -30, bottom: -10, width: 180, height: 180, zIndex: 0 }}>
                 <img 
-                  src="/hero_slide_2.png" 
+                  src="/hero_slide_2.webp" 
                   alt="Chair and suitcase illustration" 
                   style={{ 
                     position: "absolute", top: 0, left: 0, width: "100%", height: "100%", objectFit: "contain", mixBlendMode: "multiply",
@@ -519,7 +519,7 @@ export default function HomeScreen({ onJobSelect, onSearchPress, onBellPress, un
                   }} 
                 />
                 <img 
-                  src="/hero_slide_2_dark.png" 
+                  src="/hero_slide_2_dark.webp" 
                   alt="Chair and suitcase illustration dark mode" 
                   style={{ 
                     position: "absolute", top: 0, left: 0, width: "100%", height: "100%", objectFit: "contain", mixBlendMode: "screen",
@@ -707,7 +707,7 @@ export default function HomeScreen({ onJobSelect, onSearchPress, onBellPress, un
 
           {!isLoading && error && (
             <div style={{ textAlign: "center", padding: "40px 20px" }}>
-              <p style={{ color: "#FCA5A5", fontSize: 14, marginBottom: 12 }}>{error}</p>
+              <p style={{ color: "var(--error)", fontSize: 14, marginBottom: 12 }}>{error}</p>
               <button
                 onClick={refetch}
                 style={{

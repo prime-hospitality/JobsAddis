@@ -120,11 +120,11 @@ function ApplicantCard({
           style={{
             width: 46, height: 46, borderRadius: "50%", flexShrink: 0,
             background: p?.gender === "female"
-              ? "linear-gradient(135deg, #059669 0%, #0D9488 100%)"
-              : "linear-gradient(135deg, #047857 0%, #065F46 100%)",
+              ? "linear-gradient(135deg, #1B5CBF 0%, #4A80D3 100%)"
+              : "linear-gradient(135deg, #164A9C 0%, #113978 100%)",
             display: "flex", alignItems: "center", justifyContent: "center",
             fontSize: 16, fontWeight: 800, color: "#fff",
-            boxShadow: "0 4px 12px rgba(5,150,105,0.25)",
+            boxShadow: "0 4px 12px rgba(27,92,191,0.25)",
           }}
         >
           {getInitials(name)}
@@ -140,16 +140,16 @@ function ApplicantCard({
             <span style={{
               fontSize: 10, fontWeight: 700, borderRadius: 100, padding: "2px 7px",
               background: score === 100
-                ? "rgba(5,150,105,0.12)"
+                ? "var(--success-soft)"
                 : score >= 80
-                ? "rgba(99,102,241,0.1)"
-                : "rgba(245,158,11,0.09)",
+                ? "var(--brand-subtle)"
+                : "var(--warning-soft)",
               border: score === 100
-                ? "1px solid rgba(5,150,105,0.28)"
+                ? "1px solid transparent"
                 : score >= 80
-                ? "1px solid rgba(99,102,241,0.22)"
-                : "1px solid rgba(245,158,11,0.28)",
-              color: score === 100 ? "var(--brand)" : score >= 80 ? "#818CF8" : "#F59E0B",
+                ? "1px solid var(--border-active)"
+                : "1px solid transparent",
+              color: score === 100 ? "var(--success)" : score >= 80 ? "var(--brand)" : "var(--warning)",
               flexShrink: 0,
             }}>
               {score}%
@@ -178,8 +178,8 @@ function ApplicantCard({
             disabled={!!actionLoading}
             style={{
               flex: 1, padding: "9px 0", borderRadius: 10, fontSize: 13, fontWeight: 600,
-              background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.25)",
-              color: "#F59E0B", cursor: !!actionLoading ? "not-allowed" : "pointer", fontFamily: "inherit",
+              background: "rgba(180,83,9,0.08)", border: "1px solid rgba(180,83,9,0.25)",
+              color: "var(--warning)", cursor: !!actionLoading ? "not-allowed" : "pointer", fontFamily: "inherit",
               display: "flex", alignItems: "center", justifyContent: "center", gap: 5,
               opacity: isUnshortlisting ? 0.7 : 1,
             }}
@@ -195,8 +195,8 @@ function ApplicantCard({
               disabled={!!actionLoading}
               style={{
                 flex: 1, padding: "9px 0", borderRadius: 10, fontSize: 13, fontWeight: 600,
-                background: "linear-gradient(135deg, rgba(5,150,105,0.15), rgba(5,150,105,0.05))",
-                border: "1px solid rgba(5,150,105,0.3)",
+                background: "linear-gradient(135deg, rgba(27,92,191,0.15), rgba(27,92,191,0.05))",
+                border: "1px solid rgba(27,92,191,0.3)",
                 color: "var(--brand)", cursor: !!actionLoading ? "not-allowed" : "pointer", fontFamily: "inherit",
                 display: "flex", alignItems: "center", justifyContent: "center", gap: 5,
                 opacity: isShortlisting ? 0.7 : 1,
@@ -212,7 +212,7 @@ function ApplicantCard({
               style={{
                 width: 80, padding: "9px 0", borderRadius: 10, fontSize: 13, fontWeight: 600,
                 background: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.15)",
-                color: "#FCA5A5", cursor: !!actionLoading ? "not-allowed" : "pointer", fontFamily: "inherit",
+                color: "var(--error)", cursor: !!actionLoading ? "not-allowed" : "pointer", fontFamily: "inherit",
                 display: "flex", alignItems: "center", justifyContent: "center", gap: 5,
                 opacity: isDeclining ? 0.7 : 1,
               }}
@@ -496,7 +496,7 @@ export default function ApplicantManagementScreen({
 
           {!isLoading && error && (
             <div style={{ textAlign: "center", padding: 40 }}>
-              <p style={{ color: "#FCA5A5", fontSize: 14, marginBottom: 12 }}>{error}</p>
+              <p style={{ color: "var(--error)", fontSize: 14, marginBottom: 12 }}>{error}</p>
               <button onClick={() => loadApplicants()} style={{ fontSize: 13, fontWeight: 600, color: "var(--brand)", background: "none", border: "none", cursor: "pointer" }}>Try again</button>
             </div>
           )}
@@ -525,12 +525,12 @@ export default function ApplicantManagementScreen({
                         initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }}
                         style={{
                           position: "absolute", inset: 0, zIndex: 10, borderRadius: 16,
-                          background: "linear-gradient(135deg, rgba(5,150,105,0.15), rgba(5,150,105,0.05))",
-                          border: "2px solid rgba(5,150,105,0.4)",
+                          background: "linear-gradient(135deg, rgba(27,92,191,0.15), rgba(27,92,191,0.05))",
+                          border: "2px solid rgba(27,92,191,0.4)",
                           display: "flex", alignItems: "center", justifyContent: "center",
                         }}
                       >
-                        <CheckCircle size={32} color="#059669" />
+                        <CheckCircle size={32} color="#1B5CBF" />
                       </motion.div>
                     )}
                     <ApplicantCard

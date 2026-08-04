@@ -196,7 +196,7 @@ export default function JobDetailScreen({ job, isEmployer, seekerYears, seekerGe
             transition={{ duration: 0.28, delay: 0.05 }}
             style={{
               background: "linear-gradient(135deg, var(--surface-elevated) 0%, var(--card) 100%)",
-              border: "1px solid rgba(5,150,105,0.15)",
+              border: "1px solid rgba(27,92,191,0.15)",
               borderRadius: 20,
               padding: 20,
               marginBottom: 16,
@@ -512,7 +512,7 @@ export default function JobDetailScreen({ job, isEmployer, seekerYears, seekerGe
                 }}
               >
                 <AlertCircle size={15} color="var(--error)" style={{ flexShrink: 0 }} />
-                <p style={{ fontSize: 13, color: "#FCA5A5", margin: 0, lineHeight: 1.4 }}>{applyError}</p>
+                <p style={{ fontSize: 13, color: "var(--error)", margin: 0, lineHeight: 1.4 }}>{applyError}</p>
               </div>
             )}
             {hasApplied ? (

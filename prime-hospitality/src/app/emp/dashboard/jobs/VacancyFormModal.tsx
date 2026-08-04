@@ -49,16 +49,16 @@ const STYLES = `
 
   .vfm-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 18px 22px; border-bottom: 1px solid #eef2f7; flex-shrink: 0; }
   .vfm-header-l { display: flex; align-items: center; gap: 13px; min-width: 0; }
-  .vfm-header-ico { width: 42px; height: 42px; border-radius: 12px; background: #e6f2fa; border: 1.5px solid #0369a1; color: #0369a1; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .vfm-header-ico { width: 42px; height: 42px; border-radius: 12px; background: #e6f2fa; border: 1.5px solid #164A9C; color: #164A9C; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
   /* Guard only — no header title is long enough today, but both ancestors
      already carry min-width: 0, so it costs nothing to make it safe. The
      subtitle below is deliberately left to wrap. */
-  .vfm-title { font-size: 18px; font-weight: 800; color: #0f172a; letter-spacing: -.02em; margin: 0; line-height: 1.2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .vfm-sub { font-size: 12.5px; color: #64748b; margin: 2px 0 0 0; }
-  .vfm-close { width: 36px; height: 36px; border-radius: 9px; border: 1px solid #e2e8f0; background: #fff; color: #94a3b8; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all .15s ease; flex-shrink: 0; }
-  .vfm-close:hover { background: #f1f5f9; color: #0f172a; }
+  .vfm-title { font-size: 18px; font-weight: 800; color: #141821; letter-spacing: -.02em; margin: 0; line-height: 1.2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .vfm-sub { font-size: 12.5px; color: #6E7686; margin: 2px 0 0 0; }
+  .vfm-close { width: 36px; height: 36px; border-radius: 9px; border: 1px solid #E2E5EC; background: #fff; color: #9AA1B1; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all .15s ease; flex-shrink: 0; }
+  .vfm-close:hover { background: #EFF1F5; color: #141821; }
 
-  .vfm-body { flex: 1; overflow-y: auto; padding: 20px 22px; background: #f8fafc; }
+  .vfm-body { flex: 1; overflow-y: auto; padding: 20px 22px; background: #F7F8FA; }
   .vfm-cols { display: grid; grid-template-columns: 1fr; gap: 16px; align-items: stretch; }
   /* 360px, not 340: the Application Deadline label plus its "Plan ends …" pill
      needs ~279px and the pill cannot shrink, so at 340 it wrapped to two lines.
@@ -68,12 +68,12 @@ const STYLES = `
 
   .vfm-panel { background: #fff; border: 1px solid #e9eef4; border-radius: 14px; padding: 18px; display: flex; flex-direction: column; gap: 18px; }
 
-  .vfm-panel-title { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 800; color: #0f172a; letter-spacing: -.01em; padding-bottom: 12px; border-bottom: 1px solid #eef2f7; }
+  .vfm-panel-title { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 800; color: #141821; letter-spacing: -.01em; padding-bottom: 12px; border-bottom: 1px solid #eef2f7; }
 
   .vfm-sec { display: flex; flex-direction: column; gap: 12px; }
   .vfm-sec-h { display: flex; align-items: center; gap: 7px; font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; }
-  .vfm-sec-h.blue { color: #0284c7; }
-  .vfm-sec-h.green { color: #059669; }
+  .vfm-sec-h.blue { color: #1B5CBF; }
+  .vfm-sec-h.green { color: #12A150; }
   .vfm-divider { height: 1px; background: #eef2f7; }
 
   /* min-width: 0 on the field and minmax(0,1fr) on the track are both needed:
@@ -83,30 +83,30 @@ const STYLES = `
      column and squeezes the field beside it. */
   .vfm-field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
   .vfm-row2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
-  .vfm-label { font-size: 12.5px; font-weight: 600; color: #334155; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
-  .vfm-req { color: #ef4444; font-weight: 700; }
-  .vfm-error-text { font-size: 11.5px; font-weight: 600; color: #dc2626; margin: -2px 0 0; }
+  .vfm-label { font-size: 12.5px; font-weight: 600; color: #343A46; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .vfm-req { color: #E5484D; font-weight: 700; }
+  .vfm-error-text { font-size: 11.5px; font-weight: 600; color: #E5484D; margin: -2px 0 0; }
 
   /* min-width: 0 again here, not just on .vfm-field — the publish date and time
      inputs are bare grid children with no field wrapper to inherit it from. */
   .vfm-input, .vfm-select, .vfm-textarea {
     width: 100%; min-width: 0; background: #fff; border: 1px solid #dbe3ec; border-radius: 10px;
-    padding: 10px 12px; font-size: 13.5px; color: #0f172a; font-family: inherit;
+    padding: 10px 12px; font-size: 13.5px; color: #141821; font-family: inherit;
     outline: none; transition: border-color .15s ease, box-shadow .15s ease;
   }
   .vfm-input::placeholder, .vfm-textarea::placeholder { color: #9aa7b8; }
-  .vfm-input:focus, .vfm-select:focus, .vfm-textarea:focus { border-color: #0284c7; box-shadow: 0 0 0 3px rgba(2,132,199,0.12); }
-  .vfm-input.error, .vfm-textarea.error { border-color: #ef4444; }
+  .vfm-input:focus, .vfm-select:focus, .vfm-textarea:focus { border-color: #1B5CBF; box-shadow: 0 0 0 3px rgba(2,132,199,0.12); }
+  .vfm-input.error, .vfm-textarea.error { border-color: #E5484D; }
   .vfm-input.error:focus, .vfm-textarea.error:focus { box-shadow: 0 0 0 3px rgba(239,68,68,0.12); }
   .vfm-select { appearance: none; -webkit-appearance: none; cursor: pointer; padding-right: 34px; background-image: ${CHEVRON}; background-repeat: no-repeat; background-position: right 11px center; }
   .vfm-textarea { resize: none; line-height: 1.55; }
 
   .vfm-input-icon { position: relative; }
-  .vfm-input-icon > .ico { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); color: #94a3b8; pointer-events: none; display: flex; }
+  .vfm-input-icon > .ico { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); color: #9AA1B1; pointer-events: none; display: flex; }
   .vfm-input-icon .vfm-input { padding-left: 34px; }
 
   .vfm-money { position: relative; }
-  .vfm-money-cur { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 12px; font-weight: 600; color: #94a3b8; pointer-events: none; }
+  .vfm-money-cur { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 12px; font-weight: 600; color: #9AA1B1; pointer-events: none; }
   .vfm-money .vfm-input { padding-left: 44px; }
 
   /* Scrolls rather than truncates: the tabs are nowrap by design ("Requirement
@@ -115,43 +115,43 @@ const STYLES = `
      and clipped the salary tabs on narrow screens. */
   .vfm-seg { display: flex; background: #eef2f7; border: 1px solid #e4e9f0; border-radius: 10px; padding: 3px; gap: 3px; overflow-x: auto; scrollbar-width: none; }
   .vfm-seg::-webkit-scrollbar { display: none; }
-  .vfm-seg-btn { flex: 1; border: none; background: transparent; color: #64748b; font-size: 12px; font-weight: 700; padding: 7px 8px; border-radius: 7px; cursor: pointer; transition: all .15s ease; font-family: inherit; white-space: nowrap; }
-  .vfm-seg-btn:hover:not(.active) { color: #334155; }
-  .vfm-seg-btn.active { background: #fff; color: #0284c7; box-shadow: 0 1px 2px rgba(16,24,40,0.14); }
+  .vfm-seg-btn { flex: 1; border: none; background: transparent; color: #6E7686; font-size: 12px; font-weight: 700; padding: 7px 8px; border-radius: 7px; cursor: pointer; transition: all .15s ease; font-family: inherit; white-space: nowrap; }
+  .vfm-seg-btn:hover:not(.active) { color: #343A46; }
+  .vfm-seg-btn.active { background: #fff; color: #1B5CBF; box-shadow: 0 1px 2px rgba(16,24,40,0.14); }
   .vfm-seg.inline { display: inline-flex; }
   .vfm-seg.inline .vfm-seg-btn { flex: 0 0 auto; padding: 6px 14px; }
 
-  .vfm-hint { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: #94a3b8; background: #eef2f7; padding: 2px 8px; border-radius: 999px; flex-shrink: 0; }
+  .vfm-hint { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: #9AA1B1; background: #eef2f7; padding: 2px 8px; border-radius: 999px; flex-shrink: 0; }
   /* The derived-department pill. Sentence case because "Management &
      Administration" is ~182px uppercase-with-tracking against ~146px plain, and
      the label only has ~250px to spare. Blue-on-pale-blue (the .vfm-header-ico
      pair) marks it as something the system worked out, not an instruction like
      the grey hints. It shrinks and ellipsises rather than wrapping the label. */
-  .vfm-hint.dept { text-transform: none; letter-spacing: 0; font-size: 10.5px; color: #0369a1; background: #e6f2fa; flex-shrink: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .vfm-hint.dept { text-transform: none; letter-spacing: 0; font-size: 10.5px; color: #164A9C; background: #e6f2fa; flex-shrink: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
   .vfm-suggest { position: absolute; top: 100%; left: 0; right: 0; margin-top: 6px; background: #fff; border: 1px solid #e6ebf2; border-radius: 10px; box-shadow: 0 14px 34px -12px rgba(15,23,42,0.28); z-index: 60; max-height: 224px; overflow-y: auto; overflow-x: hidden; }
-  .vfm-suggest-item { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 9px 12px; border: none; border-bottom: 1px solid #f1f5f9; background: #fff; cursor: pointer; text-align: left; font-family: inherit; transition: background .12s ease; }
+  .vfm-suggest-item { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 9px 12px; border: none; border-bottom: 1px solid #EFF1F5; background: #fff; cursor: pointer; text-align: left; font-family: inherit; transition: background .12s ease; }
   .vfm-suggest-item:last-child { border-bottom: none; }
   .vfm-suggest-item:hover { background: #f0f9ff; }
   /* flex-basis auto, not 0, so a long name and a long sub-city label shrink in
      proportion instead of the name collapsing first. */
-  .vfm-suggest-name { font-size: 13px; font-weight: 600; color: #0f172a; flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .vfm-suggest-meta { font-size: 11px; color: #94a3b8; background: #f1f5f9; padding: 1px 8px; border-radius: 999px; white-space: nowrap; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+  .vfm-suggest-name { font-size: 13px; font-weight: 600; color: #141821; flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .vfm-suggest-meta { font-size: 11px; color: #9AA1B1; background: #EFF1F5; padding: 1px 8px; border-radius: 999px; white-space: nowrap; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 
   .vfm-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 22px; border-top: 1px solid #eef2f7; background: #fff; flex-shrink: 0; }
-  .vfm-foot-note { font-size: 12px; color: #94a3b8; }
+  .vfm-foot-note { font-size: 12px; color: #9AA1B1; }
   .vfm-actions { display: flex; gap: 10px; }
-  .vfm-btn-cancel { padding: 9px 18px; border: 1px solid #e2e8f0; background: #fff; color: #475569; font-size: 13.5px; font-weight: 600; border-radius: 10px; cursor: pointer; transition: all .15s ease; font-family: inherit; }
-  .vfm-btn-cancel:hover { background: #f8fafc; color: #0f172a; }
-  .vfm-btn-save { padding: 9px 22px; border: none; background: #0284c7; color: #fff; font-size: 13.5px; font-weight: 700; border-radius: 10px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; transition: background .15s ease; font-family: inherit; box-shadow: 0 1px 2px rgba(2,132,199,0.3); }
-  .vfm-btn-save:hover { background: #0369a1; }
+  .vfm-btn-cancel { padding: 9px 18px; border: 1px solid #E2E5EC; background: #fff; color: #4C5361; font-size: 13.5px; font-weight: 600; border-radius: 10px; cursor: pointer; transition: all .15s ease; font-family: inherit; }
+  .vfm-btn-cancel:hover { background: #F7F8FA; color: #141821; }
+  .vfm-btn-save { padding: 9px 22px; border: none; background: #1B5CBF; color: #fff; font-size: 13.5px; font-weight: 700; border-radius: 10px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; transition: background .15s ease; font-family: inherit; box-shadow: 0 1px 2px rgba(2,132,199,0.3); }
+  .vfm-btn-save:hover { background: #164A9C; }
   .vfm-btn-save:disabled { opacity: .6; cursor: not-allowed; }
 
   @keyframes vfm-spin { to { transform: rotate(360deg); } }
   .vfm-spin { animation: vfm-spin 1s linear infinite; }
 
   @keyframes vfm-pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(2,132,199,0); } 50% { box-shadow: 0 0 0 4px rgba(2,132,199,0.25); } }
-  .vfm-input.deadline-pulse { animation: vfm-pulse 0.6s ease-in-out 2; border-color: #0284c7; }
+  .vfm-input.deadline-pulse { animation: vfm-pulse 0.6s ease-in-out 2; border-color: #1B5CBF; }
 `;
 
 export default function VacancyFormModal({
@@ -509,7 +509,7 @@ export default function VacancyFormModal({
 
             {/* Right panel — content */}
             <div className="vfm-panel">
-              <div className="vfm-panel-title"><ClipboardList size={17} color="#0284c7" /> Job Content</div>
+              <div className="vfm-panel-title"><ClipboardList size={17} color="#1B5CBF" /> Job Content</div>
 
               <div className="vfm-field">
                 <label className="vfm-label">

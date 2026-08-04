@@ -276,7 +276,7 @@ function Step1_JobField({ state, updateState, onNext, config }: StepProps) {
                 isShaking
                   ? { x: [-5, 5, -5, 5, 0] }
                   : cat.label === "Other" && state.selectedCategories.length === 0
-                  ? { scale: [1, 1.06, 1], boxShadow: ["0 0 0px rgba(34,197,94,0)", "0 0 8px rgba(34,197,94,0.45)", "0 0 0px rgba(34,197,94,0)"] }
+                  ? { scale: [1, 1.06, 1], boxShadow: ["0 0 0px rgba(27,92,191,0)", "0 0 8px rgba(27,92,191,0.45)", "0 0 0px rgba(27,92,191,0)"] }
                   : {}
               }
               transition={
@@ -291,10 +291,10 @@ function Step1_JobField({ state, updateState, onNext, config }: StepProps) {
                 background: isSelected 
                   ? "rgba(230, 126, 34, 0.12)" 
                   : (cat.label === "Other" && state.selectedCategories.length === 0)
-                  ? "rgba(34, 197, 94, 0.08)"
+                  ? "var(--brand-subtle)"
                   : "transparent",
                 border: (cat.label === "Other" && state.selectedCategories.length === 0)
-                  ? "1px solid rgba(34, 197, 94, 0.25)"
+                  ? "1px solid var(--border-active)"
                   : "none",
                 padding: "6px 12px",
                 borderRadius: 20,
@@ -349,7 +349,7 @@ function Step1_JobField({ state, updateState, onNext, config }: StepProps) {
             marginTop: 8,
             padding: "9px 14px",
             borderRadius: 12,
-            background: "rgba(34,197,94,0.07)",
+            background: "var(--brand-subtle)",
             borderLeft: "3px solid var(--brand)",
             display: "flex", alignItems: "center", gap: 8,
           }}
@@ -502,7 +502,7 @@ function Step2_Contact({ state, updateState, onNext, config }: StepProps) {
 
   return (
     <div style={{ padding: "130px 20px 40px", flex: 1, display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center" }}>
-      <div style={{ width: 80, height: 80, borderRadius: "50%", background: "rgba(5,150,105,0.1)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 24 }}>
+      <div style={{ width: 80, height: 80, borderRadius: "50%", background: "rgba(27,92,191,0.1)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 24 }}>
         <Smartphone size={36} color="var(--brand)" />
       </div>
       <h1 style={{ fontSize: 26, fontWeight: 800, color: "var(--text-primary)", marginBottom: 12, lineHeight: 1.2 }}>
@@ -569,7 +569,7 @@ function SearchableLocationDropdown({ value, onSelect }: { value: string; onSele
           padding: "14px 16px",
           borderRadius: 12,
           border: value ? "1.5px solid var(--brand)" : "1px solid var(--border)",
-          background: value ? "rgba(34,197,94,0.06)" : "var(--card)",
+          background: value ? "var(--brand-subtle)" : "var(--card)",
           color: value ? "var(--text-primary)" : "var(--text-muted)",
           fontSize: 15,
           fontWeight: value ? 600 : 400,
@@ -872,21 +872,21 @@ function Step4_Personal({ state, updateState, onNext, config }: StepProps) {
                     flex: 1, padding: "16px 12px", borderRadius: 16, cursor: "pointer",
                     fontFamily: "inherit", display: "flex", flexDirection: "column",
                     alignItems: "center", gap: 10,
-                    background: isSelected ? "rgba(5,150,105,0.12)" : "var(--card)",
+                    background: isSelected ? "rgba(27,92,191,0.12)" : "var(--card)",
                     border: isSelected ? "1.5px solid var(--brand)" : "1px solid var(--border)",
                   }}
                 >
                   {g === "male" ? (
                     <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
-                      <circle cx="20" cy="11" r="7" fill={isSelected ? "#059669" : "#8B9BBE"} />
-                      <path d="M8 38c0-6.627 5.373-12 12-12s12 5.373 12 12" stroke={isSelected ? "#059669" : "#8B9BBE"} strokeWidth="3" strokeLinecap="round" fill="none"/>
+                      <circle cx="20" cy="11" r="7" fill={isSelected ? "var(--brand)" : "var(--text-muted)"} />
+                      <path d="M8 38c0-6.627 5.373-12 12-12s12 5.373 12 12" stroke={isSelected ? "var(--brand)" : "var(--text-muted)"} strokeWidth="3" strokeLinecap="round" fill="none"/>
                     </svg>
                   ) : (
                     <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
-                      <circle cx="20" cy="11" r="7" fill={isSelected ? "#059669" : "#8B9BBE"} />
-                      <path d="M20 18v4M11 26c0-2.761 4.029-5 9-5s9 2.239 9 5" stroke={isSelected ? "#059669" : "#8B9BBE"} strokeWidth="2.5" strokeLinecap="round" fill="none"/>
-                      <path d="M13 32c0 0 1.5-4 7-4s7 4 7 4" stroke={isSelected ? "#059669" : "#8B9BBE"} strokeWidth="2.5" strokeLinecap="round" fill="none"/>
-                      <ellipse cx="20" cy="31" rx="7" ry="4" fill={isSelected ? "rgba(5,150,105,0.2)" : "rgba(139,155,190,0.15)"}/>
+                      <circle cx="20" cy="11" r="7" fill={isSelected ? "var(--brand)" : "var(--text-muted)"} />
+                      <path d="M20 18v4M11 26c0-2.761 4.029-5 9-5s9 2.239 9 5" stroke={isSelected ? "var(--brand)" : "var(--text-muted)"} strokeWidth="2.5" strokeLinecap="round" fill="none"/>
+                      <path d="M13 32c0 0 1.5-4 7-4s7 4 7 4" stroke={isSelected ? "var(--brand)" : "var(--text-muted)"} strokeWidth="2.5" strokeLinecap="round" fill="none"/>
+                      <ellipse cx="20" cy="31" rx="7" ry="4" fill={isSelected ? "rgba(27,92,191,0.2)" : "rgba(154,161,177,0.15)"}/>
                     </svg>
                   )}
                   <span style={{
@@ -969,9 +969,9 @@ function Step5_CV({ state, updateState, onNext, config }: StepProps) {
           whileTap={{ scale: 0.98 }}
           onClick={() => fileInputRef.current?.click()}
           style={{
-            border: "2px dashed rgba(5,150,105,0.4)", borderRadius: 20, padding: 40,
+            border: "2px dashed rgba(27,92,191,0.4)", borderRadius: 20, padding: 40,
             display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-            background: "rgba(5,150,105,0.05)", cursor: "pointer", minHeight: 200
+            background: "rgba(27,92,191,0.05)", cursor: "pointer", minHeight: 200
           }}
         >
           {state.cvFile ? (

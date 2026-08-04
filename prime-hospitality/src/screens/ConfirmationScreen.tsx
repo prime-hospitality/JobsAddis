@@ -55,7 +55,7 @@ export default function ConfirmationScreen({ businessName, jobTitle, onBrowseMor
             width: 280,
             height: 280,
             borderRadius: "50%",
-            background: "radial-gradient(circle, rgba(5,150,105,0.12) 0%, transparent 70%)",
+            background: "radial-gradient(circle, rgba(27,92,191,0.12) 0%, transparent 70%)",
             pointerEvents: "none",
           }}
         />
@@ -81,7 +81,7 @@ export default function ConfirmationScreen({ businessName, jobTitle, onBrowseMor
                 position: "absolute",
                 inset: -16,
                 borderRadius: "50%",
-                border: "2px solid rgba(5,150,105,0.3)",
+                border: "2px solid rgba(27,92,191,0.3)",
                 willChange: "transform, opacity",
               }}
             />
@@ -92,14 +92,14 @@ export default function ConfirmationScreen({ businessName, jobTitle, onBrowseMor
               width: 88,
               height: 88,
               borderRadius: "50%",
-              background: "linear-gradient(135deg, rgba(5,150,105,0.2) 0%, rgba(5,150,105,0.05) 100%)",
-              border: "2px solid rgba(5,150,105,0.4)",
+              background: "linear-gradient(135deg, rgba(27,92,191,0.2) 0%, rgba(27,92,191,0.05) 100%)",
+              border: "2px solid rgba(27,92,191,0.4)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
             }}
           >
-            <CheckCircle size={44} color="#059669" strokeWidth={1.8} />
+            <CheckCircle size={44} color="#1B5CBF" strokeWidth={1.8} />
           </div>
         </motion.div>
 

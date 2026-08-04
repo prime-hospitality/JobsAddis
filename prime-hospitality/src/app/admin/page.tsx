@@ -7,7 +7,7 @@ import { verifySessionValue } from "@/lib/signedSession";
 export const metadata = {
   title: "JobsAdis Admin",
   icons: {
-    icon: "/addis_jobs_logo.png",
+    icon: "/addis_jobs_logo.webp",
   },
 };
 

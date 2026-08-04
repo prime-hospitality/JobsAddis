@@ -8,7 +8,7 @@ const PALETTE: { from: string; to: string; letter: string }[] = [
   { from: "#4338ca", to: "#1e1b4b", letter: "#e0e7ff" }, // indigo
   { from: "#b45309", to: "#78350f", letter: "#fde68a" }, // amber
   { from: "#0f766e", to: "#134e4a", letter: "#ccfbf1" }, // teal
-  { from: "#15803d", to: "#14532d", letter: "#dcfce7" }, // forest
+  { from: "#164A9C", to: "#14532d", letter: "#EEF3FC" }, // forest
   { from: "#be185d", to: "#831843", letter: "#fbcfe8" }, // rose
   { from: "#c2410c", to: "#7c2d12", letter: "#fed7aa" }, // terracotta
 ];

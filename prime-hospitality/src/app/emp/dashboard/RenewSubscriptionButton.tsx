@@ -71,7 +71,7 @@ export default function RenewSubscriptionButton({
           type="button"
           onClick={handleSend}
           disabled={phase === "sending"}
-          style={{ background: "#0f172a", color: "#fff", border: "none", padding: "8px 16px", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: phase === "sending" ? "not-allowed" : "pointer", opacity: phase === "sending" ? 0.7 : 1 }}
+          style={{ background: "#141821", color: "#fff", border: "none", padding: "8px 16px", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: phase === "sending" ? "not-allowed" : "pointer", opacity: phase === "sending" ? 0.7 : 1 }}
         >
           {phase === "sending" ? "Sending..." : "Send"}
         </button>
@@ -83,7 +83,7 @@ export default function RenewSubscriptionButton({
         >
           Cancel
         </button>
-        {error && <span style={{ fontSize: 12, color: "#ef4444", width: "100%" }}>{error}</span>}
+        {error && <span style={{ fontSize: 12, color: "#E5484D", width: "100%" }}>{error}</span>}
       </div>
     );
   }
@@ -94,7 +94,7 @@ export default function RenewSubscriptionButton({
         <button
           type="button"
           disabled
-          style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "#0f172a", color: "#fff", border: "none", padding: "10px 18px", borderRadius: 10, fontSize: 14, fontWeight: 700, opacity: 0.5, cursor: "not-allowed", flexShrink: 0 }}
+          style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "#141821", color: "#fff", border: "none", padding: "10px 18px", borderRadius: 10, fontSize: 14, fontWeight: 700, opacity: 0.5, cursor: "not-allowed", flexShrink: 0 }}
         >
           {seen ? "Seen — Waiting for Call" : "Sent — Waiting for Admin"}
         </button>
@@ -111,7 +111,7 @@ export default function RenewSubscriptionButton({
     <button
       type="button"
       onClick={() => setPhase("confirm")}
-      style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "#0f172a", color: "#fff", border: "none", padding: "10px 18px", borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: "pointer", flexShrink: 0 }}
+      style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "#141821", color: "#fff", border: "none", padding: "10px 18px", borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: "pointer", flexShrink: 0 }}
     >
       Renew Subscription
     </button>

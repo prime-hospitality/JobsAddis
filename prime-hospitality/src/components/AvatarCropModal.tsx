@@ -146,9 +146,9 @@ export default function AvatarCropModal({
   const naturalCropSize = displayScale > 0 ? box.size / displayScale : 0;
   const quality: "good" | "okay" | "bad" = naturalCropSize >= OUTPUT_SIZE ? "good" : naturalCropSize >= OUTPUT_SIZE * 0.5 ? "okay" : "bad";
   const qualityMeta = {
-    good: { label: t("avatarCrop.qualityGood"), color: "#059669", Icon: CheckCircle2 },
-    okay: { label: t("avatarCrop.qualityOkay"), color: "#d97706", Icon: Info },
-    bad: { label: t("avatarCrop.qualityBad"), color: "#dc2626", Icon: AlertTriangle },
+    good: { label: t("avatarCrop.qualityGood"), color: "#1B5CBF", Icon: CheckCircle2 },
+    okay: { label: t("avatarCrop.qualityOkay"), color: "#B45309", Icon: Info },
+    bad: { label: t("avatarCrop.qualityBad"), color: "#E5484D", Icon: AlertTriangle },
   }[quality];
 
   const handleConfirm = () => {
@@ -179,8 +179,8 @@ export default function AvatarCropModal({
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.6)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 20000, padding: 16 }}>
       <div style={{ background: "#fff", borderRadius: 16, padding: 24, width: "100%", maxWidth: 380, boxShadow: "0 24px 48px -16px rgba(15,23,42,0.35)" }}>
-        <h3 style={{ margin: "0 0 4px", fontSize: 16, fontWeight: 700, color: "#0f172a" }}>{t("avatarCrop.title")}</h3>
-        <p style={{ margin: "0 0 16px", fontSize: 12.5, color: "#64748b", lineHeight: 1.5 }}>
+        <h3 style={{ margin: "0 0 4px", fontSize: 16, fontWeight: 700, color: "#141821" }}>{t("avatarCrop.title")}</h3>
+        <p style={{ margin: "0 0 16px", fontSize: 12.5, color: "#6E7686", lineHeight: 1.5 }}>
           {t("avatarCrop.instructions")}
         </p>
 
@@ -192,7 +192,7 @@ export default function AvatarCropModal({
             margin: "0 auto",
             borderRadius: 12,
             overflow: "hidden",
-            background: "#0f172a",
+            background: "#141821",
           }}
         >
           <img
@@ -244,7 +244,7 @@ export default function AvatarCropModal({
                     width: 16,
                     height: 16,
                     background: "#fff",
-                    border: "2px solid #0284c7",
+                    border: "2px solid #1B5CBF",
                     borderRadius: "50%",
                     touchAction: "none",
                     ...HANDLE_STYLE[corner],
@@ -266,7 +266,7 @@ export default function AvatarCropModal({
           <button
             type="button"
             onClick={onCancel}
-            style={{ background: "#f1f5f9", color: "#334155", border: "none", padding: "9px 16px", borderRadius: 9, fontSize: 13.5, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}
+            style={{ background: "#EFF1F5", color: "#343A46", border: "none", padding: "9px 16px", borderRadius: 9, fontSize: 13.5, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}
           >
             {t("common.cancel")}
           </button>
@@ -274,7 +274,7 @@ export default function AvatarCropModal({
             type="button"
             onClick={handleConfirm}
             disabled={!loaded || processing}
-            style={{ background: "#0284c7", color: "#fff", border: "none", padding: "9px 18px", borderRadius: 9, fontSize: 13.5, fontWeight: 700, cursor: loaded && !processing ? "pointer" : "not-allowed", opacity: loaded && !processing ? 1 : 0.6, fontFamily: "inherit" }}
+            style={{ background: "#1B5CBF", color: "#fff", border: "none", padding: "9px 18px", borderRadius: 9, fontSize: 13.5, fontWeight: 700, cursor: loaded && !processing ? "pointer" : "not-allowed", opacity: loaded && !processing ? 1 : 0.6, fontFamily: "inherit" }}
           >
             {processing ? t("avatarCrop.saving") : t("avatarCrop.usePhoto")}
           </button>

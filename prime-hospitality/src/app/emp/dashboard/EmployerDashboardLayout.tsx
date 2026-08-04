@@ -198,7 +198,7 @@ export default function EmployerDashboardLayout({
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 'Inter', sans-serif; background: #f8fafc; }
+        body { font-family: 'Inter', sans-serif; background: #F7F8FA; }
 
         .emp-sidebar-link {
           display: flex; align-items: center; gap: 12px;
@@ -206,14 +206,14 @@ export default function EmployerDashboardLayout({
           font-size: 14px; font-weight: 500; cursor: pointer;
           transition: all 0.18s ease; text-decoration: none;
           border: none; background: transparent; width: 100%; text-align: left;
-          color: #64748b;
+          color: #6E7686;
         }
-        .emp-sidebar-link:hover { background: #f1f5f9; color: #0f172a; }
-        .emp-sidebar-link.active { background: #eff6ff; color: #0284c7; font-weight: 600; }
-        .emp-sidebar-link.active svg { stroke: #0284c7; }
+        .emp-sidebar-link:hover { background: #EFF1F5; color: #141821; }
+        .emp-sidebar-link.active { background: #EEF3FC; color: #1B5CBF; font-weight: 600; }
+        .emp-sidebar-link.active svg { stroke: #1B5CBF; }
 
-        .emp-topbar-btn { background: none; border: none; cursor: pointer; padding: 8px; border-radius: 8px; display: flex; align-items: center; justify-content: center; transition: background 0.15s; color: #64748b; }
-        .emp-topbar-btn:hover { background: #f1f5f9; color: #0f172a; }
+        .emp-topbar-btn { background: none; border: none; cursor: pointer; padding: 8px; border-radius: 8px; display: flex; align-items: center; justify-content: center; transition: background 0.15s; color: #6E7686; }
+        .emp-topbar-btn:hover { background: #EFF1F5; color: #141821; }
 
         .emp-sidebar-overlay { display: none; }
         /* Hamburger and the drawer's close button only exist on mobile. Keep
@@ -243,7 +243,7 @@ export default function EmployerDashboardLayout({
         }
       `}</style>
 
-      <div className="emp-shell" style={{ display: "flex", height: "100vh", overflow: "hidden", background: "#f8fafc" }}>
+      <div className="emp-shell" style={{ display: "flex", height: "100vh", overflow: "hidden", background: "#F7F8FA" }}>
         {/* Mobile overlay */}
         {sidebarOpen && (
           <div className="emp-sidebar-overlay" onClick={() => setSidebarOpen(false)} />
@@ -255,7 +255,7 @@ export default function EmployerDashboardLayout({
           style={{
             width: 240,
             background: "#fff",
-            borderRight: "1px solid #e2e8f0",
+            borderRight: "1px solid #E2E5EC",
             display: "flex",
             flexDirection: "column",
             zIndex: 40,
@@ -264,19 +264,19 @@ export default function EmployerDashboardLayout({
           }}
         >
           {/* Brand */}
-          <div style={{ padding: "20px 20px 16px", borderBottom: "1px solid #f1f5f9", display: "flex", alignItems: "center", gap: 10 }}>
-            <div style={{ width: 36, height: 36, borderRadius: 10, background: "#eff6ff", border: "1px solid #bfdbfe", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-              <img src="/addis_jobs_logo.png" alt="JobsAdis" style={{ width: 22, height: 22, objectFit: "contain" }} />
+          <div style={{ padding: "20px 20px 16px", borderBottom: "1px solid #EFF1F5", display: "flex", alignItems: "center", gap: 10 }}>
+            <div style={{ width: 36, height: 36, borderRadius: 10, background: "#EEF3FC", border: "1px solid #D9E5F8", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              <img src="/addis_jobs_logo.webp" alt="JobsAdis" style={{ width: 22, height: 22, objectFit: "contain" }} />
             </div>
             <div>
-              <div style={{ fontSize: 14, fontWeight: 800, color: "#0f172a", letterSpacing: "-0.01em", lineHeight: 1 }}>JobsAdis</div>
+              <div style={{ fontSize: 14, fontWeight: 800, color: "#141821", letterSpacing: "-0.01em", lineHeight: 1 }}>JobsAdis</div>
               <div style={{ fontSize: 8, fontWeight: 900, color: "#B08D57", letterSpacing: "0.05em", textTransform: "uppercase", marginTop: 2 }}>A.A Hotel Associates Union</div>
-              <div style={{ fontSize: 10, color: "#94a3b8", fontWeight: 500, marginTop: 2 }}>Employer Dashboard</div>
+              <div style={{ fontSize: 10, color: "#9AA1B1", fontWeight: 500, marginTop: 2 }}>Employer Dashboard</div>
             </div>
             <button
               onClick={() => setSidebarOpen(false)}
               aria-label="Close navigation menu"
-              style={{ marginLeft: "auto", alignItems: "center", background: "none", border: "none", cursor: "pointer", color: "#94a3b8", padding: 4 }}
+              style={{ marginLeft: "auto", alignItems: "center", background: "none", border: "none", cursor: "pointer", color: "#9AA1B1", padding: 4 }}
               className="emp-sidebar-close"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
@@ -284,19 +284,19 @@ export default function EmployerDashboardLayout({
           </div>
 
           {/* Employer info chip */}
-          <div style={{ padding: "12px 16px", borderBottom: "1px solid #f1f5f9" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, background: "#f8fafc", borderRadius: 10, padding: "8px 10px", border: "1px solid #e2e8f0" }}>
+          <div style={{ padding: "12px 16px", borderBottom: "1px solid #EFF1F5" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, background: "#F7F8FA", borderRadius: 10, padding: "8px 10px", border: "1px solid #E2E5EC" }}>
               <EmployerAvatar name={session?.businessName || "?"} logoUrl={session?.logoUrl} size={32} radius={8} fontSize={14} />
               <div style={{ minWidth: 0 }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: "#0f172a", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{session?.businessName}</div>
-                <div style={{ fontSize: 10, color: "#94a3b8", marginTop: 1 }}>{session?.businessType}</div>
+                <div style={{ fontSize: 12, fontWeight: 700, color: "#141821", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{session?.businessName}</div>
+                <div style={{ fontSize: 10, color: "#9AA1B1", marginTop: 1 }}>{session?.businessType}</div>
               </div>
             </div>
           </div>
 
           {/* Nav */}
           <nav style={{ flex: 1, overflowY: "auto", padding: "12px 12px" }}>
-            <p style={{ fontSize: 10, fontWeight: 700, color: "#cbd5e1", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8, paddingLeft: 4 }}>Main Menu</p>
+            <p style={{ fontSize: 10, fontWeight: 700, color: "#CBD0DA", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8, paddingLeft: 4 }}>Main Menu</p>
             <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
               {navItems.map((item) => {
                 const isActive = pathname === item.href || (item.href !== "/emp/dashboard" && pathname.startsWith(item.href));
@@ -310,7 +310,7 @@ export default function EmployerDashboardLayout({
                     {item.icon}
                     <span>{item.label}</span>
                     {badge > 0 && (
-                      <span style={{ marginLeft: "auto", background: "#ef4444", color: "#fff", borderRadius: 20, minWidth: 20, height: 20, padding: "0 6px", fontSize: 11, fontWeight: 700, display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+                      <span style={{ marginLeft: "auto", background: "#E5484D", color: "#fff", borderRadius: 20, minWidth: 20, height: 20, padding: "0 6px", fontSize: 11, fontWeight: 700, display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
                         {badge > 99 ? "99+" : badge}
                       </span>
                     )}
@@ -321,12 +321,12 @@ export default function EmployerDashboardLayout({
           </nav>
 
           {/* Logout */}
-          <div style={{ padding: "12px 12px", borderTop: "1px solid #f1f5f9" }}>
+          <div style={{ padding: "12px 12px", borderTop: "1px solid #EFF1F5" }}>
             <button
               onClick={handleLogout}
               disabled={loggingOut}
-              style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "10px 14px", borderRadius: 10, border: "none", background: "transparent", cursor: loggingOut ? "not-allowed" : "pointer", color: "#ef4444", fontSize: 14, fontWeight: 600, transition: "background 0.15s" }}
-              onMouseEnter={(e) => (e.currentTarget.style.background = "#fef2f2")}
+              style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "10px 14px", borderRadius: 10, border: "none", background: "transparent", cursor: loggingOut ? "not-allowed" : "pointer", color: "#E5484D", fontSize: 14, fontWeight: 600, transition: "background 0.15s" }}
+              onMouseEnter={(e) => (e.currentTarget.style.background = "#FDECEC")}
               onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
@@ -338,7 +338,7 @@ export default function EmployerDashboardLayout({
         {/* Main content */}
         <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0, overflow: "hidden" }}>
           {/* Top bar */}
-          <header className="emp-topbar" style={{ height: 64, background: "#fff", borderBottom: "1px solid #e2e8f0", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 24px", flexShrink: 0, zIndex: 10 }}>
+          <header className="emp-topbar" style={{ height: 64, background: "#fff", borderBottom: "1px solid #E2E5EC", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 24px", flexShrink: 0, zIndex: 10 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 14, minWidth: 0 }}>
               {/* Mobile hamburger */}
               <button
@@ -349,7 +349,7 @@ export default function EmployerDashboardLayout({
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
               </button>
-              <h1 className="emp-page-title" style={{ fontSize: 20, fontWeight: 800, color: "#0f172a", letterSpacing: "-0.02em", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{pageTitle}</h1>
+              <h1 className="emp-page-title" style={{ fontSize: 20, fontWeight: 800, color: "#141821", letterSpacing: "-0.02em", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{pageTitle}</h1>
             </div>
 
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -358,7 +358,7 @@ export default function EmployerDashboardLayout({
                 <button className="emp-topbar-btn" onClick={() => setNotifOpen(!notifOpen)} style={{ position: "relative" }}>
                   <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
                   {unreadCount > 0 && (
-                    <span style={{ position: "absolute", top: -2, right: -2, width: 16, height: 16, borderRadius: "50%", background: "#ef4444", color: "#fff", fontSize: 9, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", border: "2px solid #fff" }}>
+                    <span style={{ position: "absolute", top: -2, right: -2, width: 16, height: 16, borderRadius: "50%", background: "#E5484D", color: "#fff", fontSize: 9, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", border: "2px solid #fff" }}>
                       {unreadCount}
                     </span>
                   )}
@@ -366,28 +366,28 @@ export default function EmployerDashboardLayout({
                 {notifOpen && (
                   <>
                     <div style={{ position: "fixed", inset: 0, zIndex: 40 }} onClick={() => setNotifOpen(false)} />
-                    <div className="emp-notif-panel" style={{ position: "absolute", right: 0, top: "calc(100% + 8px)", background: "#fff", border: "1px solid #e2e8f0", borderRadius: 16, boxShadow: "0 10px 25px -5px rgba(0,0,0,0.1)", zIndex: 50, width: 320, overflow: "hidden" }}>
-                      <div style={{ padding: "12px 16px", borderBottom: "1px solid #f1f5f9", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                        <span style={{ fontSize: 14, fontWeight: 700, color: "#0f172a" }}>Notifications</span>
+                    <div className="emp-notif-panel" style={{ position: "absolute", right: 0, top: "calc(100% + 8px)", background: "#fff", border: "1px solid #E2E5EC", borderRadius: 16, boxShadow: "0 10px 25px -5px rgba(0,0,0,0.1)", zIndex: 50, width: 320, overflow: "hidden" }}>
+                      <div style={{ padding: "12px 16px", borderBottom: "1px solid #EFF1F5", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <span style={{ fontSize: 14, fontWeight: 700, color: "#141821" }}>Notifications</span>
                         {unreadCount > 0 && (
-                          <span style={{ fontSize: 11, fontWeight: 600, color: "#0284c7" }}>{unreadCount} unread</span>
+                          <span style={{ fontSize: 11, fontWeight: 600, color: "#1B5CBF" }}>{unreadCount} unread</span>
                         )}
                       </div>
                       <div style={{ maxHeight: 280, overflowY: "auto" }}>
                         {notifications.length === 0 ? (
-                          <div style={{ padding: "24px 16px", textAlign: "center", color: "#94a3b8", fontSize: 13 }}>
+                          <div style={{ padding: "24px 16px", textAlign: "center", color: "#9AA1B1", fontSize: 13 }}>
                             No notifications yet
                           </div>
                         ) : (
                           notifications.map((notif) => {
                             let text = "";
-                            let bg = "#f8fafc";
+                            let bg = "#F7F8FA";
                             if (notif.type === "job_expiring") {
                               text = `Your job post "${notif.job_title}" has 2 days left. Extend it before it goes offline!`;
                               bg = "#fffbeb";
                             } else if (notif.type === "subscription_expired") {
                               text = `Your subscription has expired. Your existing job posts stay live until their own deadline, but new applicants are locked until you renew.`;
-                              bg = "#fef2f2";
+                              bg = "#FDECEC";
                             } else if (notif.type === "subscription_expiring") {
                               text = `Your subscription has a day left. Once it ends, you won't be able to post new jobs until you renew.`;
                               bg = "#fffbeb";
@@ -396,7 +396,7 @@ export default function EmployerDashboardLayout({
                               bg = "#f5f3ff";
                             } else {
                               text = `Someone applied to your "${notif.job_title}" position.`;
-                              bg = "#eff6ff";
+                              bg = "#EEF3FC";
                             }
                             return (
                               <div
@@ -419,18 +419,18 @@ export default function EmployerDashboardLayout({
                                 }}
                                 style={{
                                   padding: "12px 16px",
-                                  borderBottom: "1px solid #f1f5f9",
+                                  borderBottom: "1px solid #EFF1F5",
                                   fontSize: 13,
-                                  color: "#374151",
+                                  color: "#343A46",
                                   cursor: "pointer",
                                   background: bg,
                                   transition: "background 0.15s",
                                 }}
-                                onMouseEnter={(e) => (e.currentTarget.style.background = "#f1f5f9")}
+                                onMouseEnter={(e) => (e.currentTarget.style.background = "#EFF1F5")}
                                 onMouseLeave={(e) => (e.currentTarget.style.background = bg)}
                               >
                                 <p style={{ margin: 0, lineHeight: 1.4, fontWeight: 600 }}>{text}</p>
-                                <span style={{ fontSize: 10, color: "#94a3b8", marginTop: 4, display: "block" }}>
+                                <span style={{ fontSize: 10, color: "#9AA1B1", marginTop: 4, display: "block" }}>
                                   {new Date(notif.created_at).toLocaleDateString()}
                                 </span>
                               </div>
@@ -448,27 +448,27 @@ export default function EmployerDashboardLayout({
                 <button
                   className="emp-profile-btn"
                   onClick={handleToggleProfile}
-                  style={{ display: "flex", alignItems: "center", gap: 10, padding: "6px 10px 6px 6px", borderRadius: 10, border: "1px solid #e2e8f0", background: "#fff", cursor: "pointer", transition: "border-color 0.15s" }}
+                  style={{ display: "flex", alignItems: "center", gap: 10, padding: "6px 10px 6px 6px", borderRadius: 10, border: "1px solid #E2E5EC", background: "#fff", cursor: "pointer", transition: "border-color 0.15s" }}
                 >
                   <EmployerAvatar name={session?.businessName || "?"} logoUrl={session?.logoUrl} size={30} radius={8} fontSize={13} />
                   <div className="emp-profile-meta" style={{ textAlign: "left" }}>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: "#0f172a", lineHeight: 1 }}>{session?.businessName || "Employer"}</div>
-                    <div style={{ fontSize: 10, color: "#94a3b8", marginTop: 2 }}>{session?.businessType || "Company"}</div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: "#141821", lineHeight: 1 }}>{session?.businessName || "Employer"}</div>
+                    <div style={{ fontSize: 10, color: "#9AA1B1", marginTop: 2 }}>{session?.businessType || "Company"}</div>
                   </div>
-                  <svg className="emp-profile-caret" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                  <svg className="emp-profile-caret" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9AA1B1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
                 </button>
 
                 {profileOpen && (
                   <>
                     <div style={{ position: "fixed", inset: 0, zIndex: 40 }} onClick={() => setProfileOpen(false)} />
-                    <div style={{ position: "absolute", right: 0, top: "calc(100% + 8px)", background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.1)", zIndex: 50, minWidth: 180, overflow: "hidden" }}>
-                      <div style={{ padding: "12px 14px", borderBottom: "1px solid #f1f5f9" }}>
-                        <p style={{ fontSize: 13, fontWeight: 700, color: "#0f172a", margin: 0 }}>{session?.businessName}</p>
-                        <p style={{ fontSize: 11, color: "#94a3b8", margin: "2px 0 0 0" }}>TG: {session?.telegramId}</p>
+                    <div style={{ position: "absolute", right: 0, top: "calc(100% + 8px)", background: "#fff", border: "1px solid #E2E5EC", borderRadius: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.1)", zIndex: 50, minWidth: 180, overflow: "hidden" }}>
+                      <div style={{ padding: "12px 14px", borderBottom: "1px solid #EFF1F5" }}>
+                        <p style={{ fontSize: 13, fontWeight: 700, color: "#141821", margin: 0 }}>{session?.businessName}</p>
+                        <p style={{ fontSize: 11, color: "#9AA1B1", margin: "2px 0 0 0" }}>TG: {session?.telegramId}</p>
                       </div>
 
                       {accounts.length > 1 && (
-                        <div style={{ borderBottom: "1px solid #f1f5f9", padding: "6px 0" }}>
+                        <div style={{ borderBottom: "1px solid #EFF1F5", padding: "6px 0" }}>
                           {accounts.map((acc) => {
                             const isActive = acc.employerId === session?.employerId;
                             return (
@@ -479,15 +479,15 @@ export default function EmployerDashboardLayout({
                               >
                                 <EmployerAvatar name={acc.businessName || "?"} logoUrl={acc.logoUrl} size={26} radius={7} fontSize={11} />
                                 <div style={{ flex: 1, minWidth: 0 }}>
-                                  <div style={{ fontSize: 12.5, fontWeight: 600, color: "#0f172a", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{acc.businessName}</div>
+                                  <div style={{ fontSize: 12.5, fontWeight: 600, color: "#141821", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{acc.businessName}</div>
                                 </div>
                                 {isActive ? (
-                                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0284c7" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1B5CBF" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
                                 ) : (
                                   <button
                                     onClick={(e) => handleRemoveAccount(e, acc.employerId)}
                                     title="Sign out of this account"
-                                    style={{ background: "transparent", border: "none", cursor: "pointer", color: "#cbd5e1", padding: 2, display: "flex", flexShrink: 0 }}
+                                    style={{ background: "transparent", border: "none", cursor: "pointer", color: "#CBD0DA", padding: 2, display: "flex", flexShrink: 0 }}
                                   >
                                     <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                                   </button>
@@ -500,21 +500,21 @@ export default function EmployerDashboardLayout({
 
                       <button
                         onClick={() => { setProfileOpen(false); router.push("/emp"); }}
-                        style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "10px 14px", border: "none", background: "transparent", cursor: "pointer", fontSize: 13, fontWeight: 600, color: "#0284c7", borderBottom: "1px solid #f1f5f9" }}
+                        style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "10px 14px", border: "none", background: "transparent", cursor: "pointer", fontSize: 13, fontWeight: 600, color: "#1B5CBF", borderBottom: "1px solid #EFF1F5" }}
                       >
                         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                         Add Another Account
                       </button>
                       <button
                         onClick={() => { setProfileOpen(false); router.push("/emp/dashboard/profile"); }}
-                        style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "10px 14px", border: "none", background: "transparent", cursor: "pointer", fontSize: 13, fontWeight: 500, color: "#374151" }}
+                        style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "10px 14px", border: "none", background: "transparent", cursor: "pointer", fontSize: 13, fontWeight: 500, color: "#343A46" }}
                       >
                         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
                         Company Profile
                       </button>
                       <button
                         onClick={handleLogout}
-                        style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "10px 14px", border: "none", background: "transparent", cursor: "pointer", fontSize: 13, fontWeight: 500, color: "#ef4444", borderTop: "1px solid #f1f5f9" }}
+                        style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "10px 14px", border: "none", background: "transparent", cursor: "pointer", fontSize: 13, fontWeight: 500, color: "#E5484D", borderTop: "1px solid #EFF1F5" }}
                       >
                         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
                         Sign Out

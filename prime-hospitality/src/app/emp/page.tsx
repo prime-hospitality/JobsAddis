@@ -223,24 +223,24 @@ export default function EmployerLoginPage() {
         }
         .btn-primary:hover:not(:disabled) {
           transform: translateY(-1px);
-          background: #16a34a !important;
-          box-shadow: 0 6px 16px rgba(34,197,94,0.2) !important;
+          background: #F4F22B !important;
+          box-shadow: 0 6px 16px rgba(242,240,18,0.38) !important;
         }
         .btn-primary:active:not(:disabled) {
           transform: translateY(0);
-          background: #15803d !important;
+          background: #D2D000 !important;
           box-shadow: none !important;
         }
         .input-field {
           transition: all 0.2s ease;
         }
         .input-field:focus {
-          border-color: #22c55e !important;
-          box-shadow: 0 0 0 4px rgba(34,197,94,0.1) !important;
+          border-color: #1B5CBF !important;
+          box-shadow: 0 0 0 4px rgba(27,92,191,0.22) !important;
           outline: none;
         }
         .back-btn:hover {
-          color: #16a34a !important;
+          color: #164A9C !important;
         }
 
         /* Dot pattern background */
@@ -254,7 +254,7 @@ export default function EmployerLoginPage() {
         className="dot-bg"
         style={{
           minHeight: "100vh",
-          background: "#F9FAFB",
+          background: "#F7F8FA",
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
@@ -266,13 +266,13 @@ export default function EmployerLoginPage() {
       >
         {/* Logo Header */}
         <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 40, animation: "fadeIn 0.4s ease-out" }}>
-          <div style={{ width: 44, height: 44, borderRadius: 12, background: "#ffffff", border: "1px solid #e5e7eb", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
-            <img src="/addis_jobs_logo.png" alt="JobsAdis" style={{ width: 28, height: 28, objectFit: "contain" }} />
+          <div style={{ width: 44, height: 44, borderRadius: 12, background: "#ffffff", border: "1px solid #E2E5EC", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
+            <img src="/addis_jobs_logo.webp" alt="JobsAdis" style={{ width: 28, height: 28, objectFit: "contain" }} />
           </div>
           <div>
             <span style={{ fontSize: 18, fontWeight: 800, color: "#111827", letterSpacing: "-0.02em", display: "block", lineHeight: 1 }}>JobsAdis</span>
             <span style={{ fontSize: 10, fontWeight: 900, color: "#B08D57", letterSpacing: "0.05em", textTransform: "uppercase", display: "block", marginTop: 2 }}>A.A Hotel Associates Union</span>
-            <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 600, marginTop: 4 }}>EMPLOYER DASHBOARD</div>
+            <div style={{ fontSize: 11, color: "#6E7686", fontWeight: 600, marginTop: 4 }}>EMPLOYER DASHBOARD</div>
           </div>
         </div>
 
@@ -281,7 +281,7 @@ export default function EmployerLoginPage() {
           className="login-card"
           style={{
             background: "#ffffff",
-            border: "1px solid #e5e7eb",
+            border: "1px solid #E2E5EC",
             borderRadius: 24,
             padding: "40px 36px",
             width: "100%",
@@ -292,11 +292,11 @@ export default function EmployerLoginPage() {
           {/* Step indicator — hide on blocked states */}
           {step !== "rejected" && step !== "not_found" && (
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 28 }}>
-            <div style={{ width: 28, height: 28, borderRadius: "50%", background: step === "telegram" ? "#22c55e" : "#f0fdf4", border: step === "telegram" ? "2px solid #22c55e" : "2px solid #bbf7d0", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: step === "telegram" ? "#fff" : "#16a34a", transition: "all 0.3s", flexShrink: 0 }}>
+            <div style={{ width: 28, height: 28, borderRadius: "50%", background: step === "telegram" ? "#1B5CBF" : "#EEF3FC", border: step === "telegram" ? "2px solid #1B5CBF" : "2px solid #D9E5F8", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: step === "telegram" ? "#fff" : "#164A9C", transition: "all 0.3s", flexShrink: 0 }}>
               {step === "auth" ? "✓" : "1"}
             </div>
-            <div style={{ flex: 1, height: 2, background: step === "auth" ? "#22c55e" : "#e5e7eb", borderRadius: 2, transition: "background 0.5s" }} />
-            <div style={{ width: 28, height: 28, borderRadius: "50%", background: step === "auth" ? "#22c55e" : "#f9fafb", border: `2px solid ${step === "auth" ? "#22c55e" : "#e5e7eb"}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: step === "auth" ? "#fff" : "#9ca3af", transition: "all 0.3s", flexShrink: 0 }}>
+            <div style={{ flex: 1, height: 2, background: step === "auth" ? "#1B5CBF" : "#E2E5EC", borderRadius: 2, transition: "background 0.5s" }} />
+            <div style={{ width: 28, height: 28, borderRadius: "50%", background: step === "auth" ? "#1B5CBF" : "#F7F8FA", border: `2px solid ${step === "auth" ? "#1B5CBF" : "#E2E5EC"}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: step === "auth" ? "#fff" : "#9AA1B1", transition: "all 0.3s", flexShrink: 0 }}>
               2
             </div>
           </div>
@@ -306,34 +306,34 @@ export default function EmployerLoginPage() {
           {step === "rejected" && (
             <div className="auth-step" style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", gap: 0 }}>
               {/* Icon */}
-              <div style={{ width: 64, height: 64, borderRadius: "50%", background: "#fef2f2", border: "2px solid #fecaca", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 20, flexShrink: 0 }}>
-                <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg>
+              <div style={{ width: 64, height: 64, borderRadius: "50%", background: "#FDECEC", border: "2px solid #fecaca", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 20, flexShrink: 0 }}>
+                <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#E5484D" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg>
               </div>
               <h2 style={{ fontSize: 22, fontWeight: 800, color: "#111827", letterSpacing: "-0.03em", marginBottom: 8, lineHeight: 1.2 }}>Account Rejected</h2>
-              <p style={{ fontSize: 14, color: "#6b7280", lineHeight: 1.6, marginBottom: 28, maxWidth: 300 }}>
-                Your employer account <strong style={{ color: "#374151" }}>{employerName}</strong> has been reviewed and rejected by the JobsAdis team.
+              <p style={{ fontSize: 14, color: "#6E7686", lineHeight: 1.6, marginBottom: 28, maxWidth: 300 }}>
+                Your employer account <strong style={{ color: "#343A46" }}>{employerName}</strong> has been reviewed and rejected by the JobsAdis team.
               </p>
 
               {/* Contact card */}
-              <div style={{ width: "100%", background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 14, overflow: "hidden", marginBottom: 24 }}>
-                <div style={{ padding: "10px 16px", borderBottom: "1px solid #e2e8f0", background: "#f1f5f9" }}>
-                  <p style={{ fontSize: 11, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.07em", margin: 0 }}>Contact Support</p>
+              <div style={{ width: "100%", background: "#F7F8FA", border: "1px solid #E2E5EC", borderRadius: 14, overflow: "hidden", marginBottom: 24 }}>
+                <div style={{ padding: "10px 16px", borderBottom: "1px solid #E2E5EC", background: "#EFF1F5" }}>
+                  <p style={{ fontSize: 11, fontWeight: 700, color: "#6E7686", textTransform: "uppercase", letterSpacing: "0.07em", margin: 0 }}>Contact Support</p>
                 </div>
                 {/* Phone */}
                 <a
                   href="tel:+251911234567"
-                  style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", textDecoration: "none", borderBottom: "1px solid #f1f5f9", transition: "background 0.15s" }}
-                  onMouseEnter={e => (e.currentTarget.style.background = "#f0fdf4")}
+                  style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", textDecoration: "none", borderBottom: "1px solid #EFF1F5", transition: "background 0.15s" }}
+                  onMouseEnter={e => (e.currentTarget.style.background = "#EEF3FC")}
                   onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
                 >
-                  <div style={{ width: 36, height: 36, borderRadius: 10, background: "#dcfce7", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.71 3.37 2 2 0 0 1 3.68 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.65a16 16 0 0 0 6.04 6.04l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                  <div style={{ width: 36, height: 36, borderRadius: 10, background: "#EEF3FC", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#164A9C" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.71 3.37 2 2 0 0 1 3.68 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.65a16 16 0 0 0 6.04 6.04l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
                   </div>
                   <div style={{ textAlign: "left" }}>
-                    <p style={{ fontSize: 11, fontWeight: 600, color: "#94a3b8", margin: 0, marginBottom: 2 }}>Phone</p>
+                    <p style={{ fontSize: 11, fontWeight: 600, color: "#9AA1B1", margin: 0, marginBottom: 2 }}>Phone</p>
                     <p style={{ fontSize: 14, fontWeight: 700, color: "#111827", margin: 0 }}>+251 911 234 567</p>
                   </div>
-                  <svg style={{ marginLeft: "auto" }} xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+                  <svg style={{ marginLeft: "auto" }} xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9AA1B1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
                 </a>
                 {/* Telegram */}
                 <a
@@ -341,24 +341,24 @@ export default function EmployerLoginPage() {
                   target="_blank"
                   rel="noopener noreferrer"
                   style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", textDecoration: "none", transition: "background 0.15s" }}
-                  onMouseEnter={e => (e.currentTarget.style.background = "#eff6ff")}
+                  onMouseEnter={e => (e.currentTarget.style.background = "#EEF3FC")}
                   onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
                 >
-                  <div style={{ width: 36, height: 36, borderRadius: 10, background: "#dbeafe", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <div style={{ width: 36, height: 36, borderRadius: 10, background: "#D9E5F8", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
                   </div>
                   <div style={{ textAlign: "left" }}>
-                    <p style={{ fontSize: 11, fontWeight: 600, color: "#94a3b8", margin: 0, marginBottom: 2 }}>Telegram</p>
+                    <p style={{ fontSize: 11, fontWeight: 600, color: "#9AA1B1", margin: 0, marginBottom: 2 }}>Telegram</p>
                     <p style={{ fontSize: 14, fontWeight: 700, color: "#111827", margin: 0 }}>@AddisjobsSupport</p>
                   </div>
-                  <svg style={{ marginLeft: "auto" }} xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+                  <svg style={{ marginLeft: "auto" }} xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9AA1B1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
                 </a>
               </div>
 
               <button
                 type="button"
                 onClick={() => { setStep("telegram"); setTelegramId(""); setAuthCode(""); setError(""); }}
-                style={{ fontSize: 13, color: "#6b7280", background: "none", border: "none", cursor: "pointer", fontFamily: "Inter, sans-serif", fontWeight: 500, display: "flex", alignItems: "center", gap: 4 }}
+                style={{ fontSize: 13, color: "#6E7686", background: "none", border: "none", cursor: "pointer", fontFamily: "Inter, sans-serif", fontWeight: 500, display: "flex", alignItems: "center", gap: 4 }}
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
                 Try a different account
@@ -371,33 +371,33 @@ export default function EmployerLoginPage() {
             <div className="auth-step" style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", gap: 0 }}>
               {/* Icon */}
               <div style={{ width: 64, height: 64, borderRadius: "50%", background: "#fffbeb", border: "2px solid #fde68a", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 20, flexShrink: 0 }}>
-                <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#d97706" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#B45309" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
               </div>
               <h2 style={{ fontSize: 22, fontWeight: 800, color: "#111827", letterSpacing: "-0.03em", marginBottom: 8, lineHeight: 1.2 }}>Account Not Found</h2>
-              <p style={{ fontSize: 14, color: "#6b7280", lineHeight: 1.6, marginBottom: 28, maxWidth: 300 }}>
+              <p style={{ fontSize: 14, color: "#6E7686", lineHeight: 1.6, marginBottom: 28, maxWidth: 300 }}>
                 Your employer account could not be found. It may have been removed. Please contact the JobsAdis team for assistance.
               </p>
 
               {/* Contact card */}
-              <div style={{ width: "100%", background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 14, overflow: "hidden", marginBottom: 24 }}>
-                <div style={{ padding: "10px 16px", borderBottom: "1px solid #e2e8f0", background: "#fefce8", borderTop: "3px solid #fbbf24" }}>
-                  <p style={{ fontSize: 11, fontWeight: 700, color: "#92400e", textTransform: "uppercase", letterSpacing: "0.07em", margin: 0 }}>Contact Support</p>
+              <div style={{ width: "100%", background: "#F7F8FA", border: "1px solid #E2E5EC", borderRadius: 14, overflow: "hidden", marginBottom: 24 }}>
+                <div style={{ padding: "10px 16px", borderBottom: "1px solid #E2E5EC", background: "#FDF1E7", borderTop: "3px solid #B45309" }}>
+                  <p style={{ fontSize: 11, fontWeight: 700, color: "#B45309", textTransform: "uppercase", letterSpacing: "0.07em", margin: 0 }}>Contact Support</p>
                 </div>
                 {/* Phone */}
                 <a
                   href="tel:+251911234567"
-                  style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", textDecoration: "none", borderBottom: "1px solid #f1f5f9", transition: "background 0.15s" }}
-                  onMouseEnter={e => (e.currentTarget.style.background = "#f0fdf4")}
+                  style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", textDecoration: "none", borderBottom: "1px solid #EFF1F5", transition: "background 0.15s" }}
+                  onMouseEnter={e => (e.currentTarget.style.background = "#EEF3FC")}
                   onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
                 >
-                  <div style={{ width: 36, height: 36, borderRadius: 10, background: "#dcfce7", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.71 3.37 2 2 0 0 1 3.68 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.65a16 16 0 0 0 6.04 6.04l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                  <div style={{ width: 36, height: 36, borderRadius: 10, background: "#EEF3FC", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#164A9C" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.71 3.37 2 2 0 0 1 3.68 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.65a16 16 0 0 0 6.04 6.04l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
                   </div>
                   <div style={{ textAlign: "left" }}>
-                    <p style={{ fontSize: 11, fontWeight: 600, color: "#94a3b8", margin: 0, marginBottom: 2 }}>Phone</p>
+                    <p style={{ fontSize: 11, fontWeight: 600, color: "#9AA1B1", margin: 0, marginBottom: 2 }}>Phone</p>
                     <p style={{ fontSize: 14, fontWeight: 700, color: "#111827", margin: 0 }}>+251 911 234 567</p>
                   </div>
-                  <svg style={{ marginLeft: "auto" }} xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+                  <svg style={{ marginLeft: "auto" }} xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9AA1B1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
                 </a>
                 {/* Telegram */}
                 <a
@@ -405,24 +405,24 @@ export default function EmployerLoginPage() {
                   target="_blank"
                   rel="noopener noreferrer"
                   style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", textDecoration: "none", transition: "background 0.15s" }}
-                  onMouseEnter={e => (e.currentTarget.style.background = "#eff6ff")}
+                  onMouseEnter={e => (e.currentTarget.style.background = "#EEF3FC")}
                   onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
                 >
-                  <div style={{ width: 36, height: 36, borderRadius: 10, background: "#dbeafe", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <div style={{ width: 36, height: 36, borderRadius: 10, background: "#D9E5F8", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
                   </div>
                   <div style={{ textAlign: "left" }}>
-                    <p style={{ fontSize: 11, fontWeight: 600, color: "#94a3b8", margin: 0, marginBottom: 2 }}>Telegram</p>
+                    <p style={{ fontSize: 11, fontWeight: 600, color: "#9AA1B1", margin: 0, marginBottom: 2 }}>Telegram</p>
                     <p style={{ fontSize: 14, fontWeight: 700, color: "#111827", margin: 0 }}>@AddisjobsSupport</p>
                   </div>
-                  <svg style={{ marginLeft: "auto" }} xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+                  <svg style={{ marginLeft: "auto" }} xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9AA1B1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
                 </a>
               </div>
 
               <button
                 type="button"
                 onClick={() => { setStep("telegram"); setTelegramId(""); setAuthCode(""); setError(""); }}
-                style={{ fontSize: 13, color: "#6b7280", background: "none", border: "none", cursor: "pointer", fontFamily: "Inter, sans-serif", fontWeight: 500, display: "flex", alignItems: "center", gap: 4 }}
+                style={{ fontSize: 13, color: "#6E7686", background: "none", border: "none", cursor: "pointer", fontFamily: "Inter, sans-serif", fontWeight: 500, display: "flex", alignItems: "center", gap: 4 }}
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
                 Try a different account
@@ -436,7 +436,7 @@ export default function EmployerLoginPage() {
               <h1 style={{ fontSize: 26, fontWeight: 800, color: "#111827", letterSpacing: "-0.03em", lineHeight: 1.1, marginBottom: 6 }}>
                 {step === "telegram" ? "Employer Sign In" : `Welcome back!`}
               </h1>
-              <p style={{ fontSize: 14, color: "#6b7280", lineHeight: 1.5 }}>
+              <p style={{ fontSize: 14, color: "#6E7686", lineHeight: 1.5 }}>
                 {step === "telegram" && "Enter your Telegram ID to access your employer dashboard"}
                 {step === "auth" && "Enter the 5-digit code provided by your admin"}
                 {step === "password" && "Enter your password to access your dashboard"}
@@ -451,7 +451,7 @@ export default function EmployerLoginPage() {
               {/* Accounts already signed into this browser -- password still required */}
               {switcherAccounts.length > 0 && (
                 <div style={{ display: "flex", flexDirection: "column", gap: 8, animation: "fadeSlideUp 0.3s ease-out" }}>
-                  <p style={{ fontSize: 11, fontWeight: 700, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.06em", margin: 0 }}>
+                  <p style={{ fontSize: 11, fontWeight: 700, color: "#6E7686", textTransform: "uppercase", letterSpacing: "0.06em", margin: 0 }}>
                     Signed in on this browser
                   </p>
                   {switcherAccounts.map((acc) => (
@@ -459,46 +459,46 @@ export default function EmployerLoginPage() {
                       key={acc.employerId}
                       type="button"
                       onClick={() => handleSelectSwitcherAccount(acc)}
-                      style={{ display: "flex", alignItems: "center", gap: 10, background: "#f9fafb", border: "1px solid #e5e7eb", borderRadius: 12, padding: "10px 14px", cursor: "pointer", textAlign: "left" }}
+                      style={{ display: "flex", alignItems: "center", gap: 10, background: "#F7F8FA", border: "1px solid #E2E5EC", borderRadius: 12, padding: "10px 14px", cursor: "pointer", textAlign: "left" }}
                     >
                       <EmployerAvatar name={acc.businessName || "?"} logoUrl={acc.logoUrl} size={34} radius={17} fontSize={14} />
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <p style={{ fontSize: 13, fontWeight: 700, color: "#111827", margin: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{acc.businessName}</p>
-                        <p style={{ fontSize: 12, color: "#6b7280", margin: 0 }}>ID: {acc.telegramId}</p>
+                        <p style={{ fontSize: 12, color: "#6E7686", margin: 0 }}>ID: {acc.telegramId}</p>
                       </div>
-                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9AA1B1" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
                     </button>
                   ))}
-                  <p style={{ fontSize: 12, color: "#9ca3af", margin: "2px 0 0 0" }}>Or sign into a different account below</p>
+                  <p style={{ fontSize: 12, color: "#9AA1B1", margin: "2px 0 0 0" }}>Or sign into a different account below</p>
                 </div>
               )}
 
               {/* Saved account chip -- only when it's not already covered by the list above */}
               {savedId && !switcherAccounts.some((a) => String(a.telegramId) === savedId) && (
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 12, padding: "10px 14px", animation: "fadeSlideUp 0.3s ease-out" }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "#EEF3FC", border: "1px solid #D9E5F8", borderRadius: 12, padding: "10px 14px", animation: "fadeSlideUp 0.3s ease-out" }}>
                   <button
                     type="button"
                     onClick={handleUseSaved}
                     style={{ display: "flex", alignItems: "center", gap: 10, background: "none", border: "none", cursor: "pointer", padding: 0, flex: 1, textAlign: "left" }}
                   >
-                    <div style={{ width: 34, height: 34, borderRadius: "50%", background: "#22c55e", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    <div style={{ width: 34, height: 34, borderRadius: "50%", background: "#1B5CBF", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                     </div>
                     <div>
-                      {savedName && <p style={{ fontSize: 13, fontWeight: 700, color: "#15803d", margin: 0 }}>{savedName}</p>}
-                      <p style={{ fontSize: 12, color: "#16a34a", margin: 0, fontWeight: 500 }}>ID: {savedId}</p>
+                      {savedName && <p style={{ fontSize: 13, fontWeight: 700, color: "#164A9C", margin: 0 }}>{savedName}</p>}
+                      <p style={{ fontSize: 12, color: "#164A9C", margin: 0, fontWeight: 500 }}>ID: {savedId}</p>
                     </div>
                     <div style={{ marginLeft: "auto", paddingLeft: 8 }}>
-                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#164A9C" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
                     </div>
                   </button>
                   <button
                     type="button"
                     onClick={handleForgetSaved}
                     title="Forget this account"
-                    style={{ marginLeft: 8, background: "none", border: "none", cursor: "pointer", color: "#9ca3af", padding: 4, display: "flex", alignItems: "center", flexShrink: 0, borderRadius: 6, transition: "color 0.15s" }}
-                    onMouseEnter={e => (e.currentTarget.style.color = "#ef4444")}
-                    onMouseLeave={e => (e.currentTarget.style.color = "#9ca3af")}
+                    style={{ marginLeft: 8, background: "none", border: "none", cursor: "pointer", color: "#9AA1B1", padding: 4, display: "flex", alignItems: "center", flexShrink: 0, borderRadius: 6, transition: "color 0.15s" }}
+                    onMouseEnter={e => (e.currentTarget.style.color = "#E5484D")}
+                    onMouseLeave={e => (e.currentTarget.style.color = "#9AA1B1")}
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
                   </button>
@@ -510,7 +510,7 @@ export default function EmployerLoginPage() {
                   {savedId ? "Or enter a different ID" : "Telegram ID"}
                 </label>
                 <div style={{ position: "relative" }}>
-                  <div style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }}>
+                  <div style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "#9AA1B1" }}>
                     <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
                   </div>
                   <input
@@ -531,7 +531,7 @@ export default function EmployerLoginPage() {
                       paddingTop: 14,
                       paddingBottom: 14,
                       borderRadius: 12,
-                      border: `1.5px solid ${error === "not_registered" ? "#ef4444" : "#e5e7eb"}`,
+                      border: `1.5px solid ${error === "not_registered" ? "#E5484D" : "#E2E5EC"}`,
                       background: "#ffffff",
                       color: "#111827",
                       fontSize: 16,
@@ -543,19 +543,19 @@ export default function EmployerLoginPage() {
 
                 {/* Not registered error */}
                 {error === "not_registered" && (
-                  <div className="error-shake" style={{ marginTop: 10, display: "flex", alignItems: "flex-start", gap: 8, background: "#fef2f2", border: "1px solid #fca5a5", borderRadius: 10, padding: "10px 14px" }}>
-                    <div style={{ marginTop: 1, flexShrink: 0, color: "#ef4444" }}>
+                  <div className="error-shake" style={{ marginTop: 10, display: "flex", alignItems: "flex-start", gap: 8, background: "#FDECEC", border: "1px solid #F2A0A2", borderRadius: 10, padding: "10px 14px" }}>
+                    <div style={{ marginTop: 1, flexShrink: 0, color: "#E5484D" }}>
                       <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg>
                     </div>
                     <div>
-                      <p style={{ fontSize: 13, fontWeight: 700, color: "#991b1b", marginBottom: 2 }}>Not Registered</p>
+                      <p style={{ fontSize: 13, fontWeight: 700, color: "#E5484D", marginBottom: 2 }}>Not Registered</p>
                       <p style={{ fontSize: 12, color: "#b91c1c", lineHeight: 1.4 }}>This Telegram ID is not registered as an employer. Please contact your administrator.</p>
                     </div>
                   </div>
                 )}
 
                 {error && error !== "not_registered" && (
-                  <p style={{ marginTop: 8, fontSize: 13, color: "#ef4444" }}>{error}</p>
+                  <p style={{ marginTop: 8, fontSize: 13, color: "#E5484D" }}>{error}</p>
                 )}
               </div>
 
@@ -568,8 +568,8 @@ export default function EmployerLoginPage() {
                   padding: "15px",
                   borderRadius: 12,
                   border: "none",
-                  background: loading || !telegramId ? "#86efac" : "#22c55e",
-                  color: "#fff",
+                  background: loading || !telegramId ? "#F8F78A" : "#F2F012",
+                  color: "#141821",
                   fontSize: 15,
                   fontWeight: 700,
                   cursor: loading || !telegramId ? "not-allowed" : "pointer",
@@ -598,19 +598,19 @@ export default function EmployerLoginPage() {
           {step === "auth" && (
             <form className="auth-step" onSubmit={handleAuthCode} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
               {/* Employer badge */}
-              <div style={{ display: "flex", alignItems: "center", gap: 10, background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 10, padding: "10px 14px", marginBottom: 4 }}>
-                <div style={{ width: 32, height: 32, borderRadius: "50%", background: "#22c55e", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, background: "#EEF3FC", border: "1px solid #D9E5F8", borderRadius: 10, padding: "10px 14px", marginBottom: 4 }}>
+                <div style={{ width: 32, height: 32, borderRadius: "50%", background: "#1B5CBF", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="16" height="20" x="4" y="2" rx="2" ry="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01"/><path d="M16 6h.01"/><path d="M12 6h.01"/><path d="M12 10h.01"/><path d="M12 14h.01"/><path d="M16 10h.01"/><path d="M16 14h.01"/><path d="M8 10h.01"/><path d="M8 14h.01"/></svg>
                 </div>
                 <div>
-                  <p style={{ fontSize: 13, fontWeight: 700, color: "#16a34a", margin: 0 }}>{employerName}</p>
-                  <p style={{ fontSize: 11, color: "#15803d", margin: 0 }}>ID: {telegramId}</p>
+                  <p style={{ fontSize: 13, fontWeight: 700, color: "#164A9C", margin: 0 }}>{employerName}</p>
+                  <p style={{ fontSize: 11, color: "#164A9C", margin: 0 }}>ID: {telegramId}</p>
                 </div>
                 <button
                   type="button"
                   className="back-btn"
                   onClick={() => { setStep("telegram"); setAuthCode(""); setError(""); }}
-                  style={{ marginLeft: "auto", background: "none", border: "none", cursor: "pointer", color: "#6b7280", fontSize: 11, fontWeight: 600, display: "flex", alignItems: "center", gap: 4, transition: "color 0.2s" }}
+                  style={{ marginLeft: "auto", background: "none", border: "none", cursor: "pointer", color: "#6E7686", fontSize: 11, fontWeight: 600, display: "flex", alignItems: "center", gap: 4, transition: "color 0.2s" }}
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
                   Change
@@ -622,7 +622,7 @@ export default function EmployerLoginPage() {
                   Authorization Code
                 </label>
                 <div style={{ position: "relative" }}>
-                  <div style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }}>
+                  <div style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "#9AA1B1" }}>
                     <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
                   </div>
                   <input
@@ -645,7 +645,7 @@ export default function EmployerLoginPage() {
                       paddingTop: 14,
                       paddingBottom: 14,
                       borderRadius: 12,
-                      border: `1.5px solid ${error ? "#ef4444" : "#e5e7eb"}`,
+                      border: `1.5px solid ${error ? "#E5484D" : "#E2E5EC"}`,
                       background: "#ffffff",
                       color: "#111827",
                       fontSize: 24,
@@ -658,11 +658,11 @@ export default function EmployerLoginPage() {
                 </div>
 
                 {error && (
-                  <div className="error-shake" style={{ marginTop: 10, display: "flex", alignItems: "flex-start", gap: 8, background: "#fef2f2", border: "1px solid #fca5a5", borderRadius: 10, padding: "10px 14px" }}>
-                    <div style={{ marginTop: 1, flexShrink: 0, color: "#ef4444" }}>
+                  <div className="error-shake" style={{ marginTop: 10, display: "flex", alignItems: "flex-start", gap: 8, background: "#FDECEC", border: "1px solid #F2A0A2", borderRadius: 10, padding: "10px 14px" }}>
+                    <div style={{ marginTop: 1, flexShrink: 0, color: "#E5484D" }}>
                       <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg>
                     </div>
-                    <p style={{ fontSize: 13, color: "#991b1b", margin: 0 }}>{error}</p>
+                    <p style={{ fontSize: 13, color: "#E5484D", margin: 0 }}>{error}</p>
                   </div>
                 )}
               </div>
@@ -676,8 +676,8 @@ export default function EmployerLoginPage() {
                   padding: "15px",
                   borderRadius: 12,
                   border: "none",
-                  background: loading || authCode.length !== 5 ? "#86efac" : "#22c55e",
-                  color: "#fff",
+                  background: loading || authCode.length !== 5 ? "#F8F78A" : "#F2F012",
+                  color: "#141821",
                   fontSize: 15,
                   fontWeight: 700,
                   cursor: loading || authCode.length !== 5 ? "not-allowed" : "pointer",
@@ -708,7 +708,7 @@ export default function EmployerLoginPage() {
             <form className="auth-step" onSubmit={handleSetupPassword} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
               <div style={{ textAlign: "center", marginBottom: 12 }}>
                 <h2 style={{ fontSize: 22, fontWeight: 800, color: "#111827", letterSpacing: "-0.03em", marginBottom: 6 }}>Create Profile Password</h2>
-                <p style={{ fontSize: 13, color: "#6b7280", lineHeight: 1.5 }}>
+                <p style={{ fontSize: 13, color: "#6E7686", lineHeight: 1.5 }}>
                   Set a password for your account.
                 </p>
               </div>
@@ -718,7 +718,7 @@ export default function EmployerLoginPage() {
                   New Password
                 </label>
                 <div style={{ position: "relative" }}>
-                  <div style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }}>
+                  <div style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "#9AA1B1" }}>
                     <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
                   </div>
                   <input
@@ -728,7 +728,7 @@ export default function EmployerLoginPage() {
                     onChange={(e) => { setPassword(e.target.value); setError(""); }}
                     placeholder="At least 6 characters"
                     required
-                    style={{ width: "100%", paddingLeft: 42, paddingRight: 14, paddingTop: 14, paddingBottom: 14, borderRadius: 12, border: "1.5px solid #e5e7eb", background: "#ffffff", color: "#111827", fontSize: 16, fontWeight: 500, fontFamily: "Inter, sans-serif" }}
+                    style={{ width: "100%", paddingLeft: 42, paddingRight: 14, paddingTop: 14, paddingBottom: 14, borderRadius: 12, border: "1.5px solid #E2E5EC", background: "#ffffff", color: "#111827", fontSize: 16, fontWeight: 500, fontFamily: "Inter, sans-serif" }}
                   />
                 </div>
               </div>
@@ -738,7 +738,7 @@ export default function EmployerLoginPage() {
                   Confirm Password
                 </label>
                 <div style={{ position: "relative" }}>
-                  <div style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }}>
+                  <div style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "#9AA1B1" }}>
                     <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
                   </div>
                   <input
@@ -748,18 +748,18 @@ export default function EmployerLoginPage() {
                     onChange={(e) => { setConfirmPassword(e.target.value); setError(""); }}
                     placeholder="Confirm your password"
                     required
-                    style={{ width: "100%", paddingLeft: 42, paddingRight: 14, paddingTop: 14, paddingBottom: 14, borderRadius: 12, border: "1.5px solid #e5e7eb", background: "#ffffff", color: "#111827", fontSize: 16, fontWeight: 500, fontFamily: "Inter, sans-serif" }}
+                    style={{ width: "100%", paddingLeft: 42, paddingRight: 14, paddingTop: 14, paddingBottom: 14, borderRadius: 12, border: "1.5px solid #E2E5EC", background: "#ffffff", color: "#111827", fontSize: 16, fontWeight: 500, fontFamily: "Inter, sans-serif" }}
                   />
                 </div>
               </div>
 
-              {error && <p style={{ marginTop: 2, fontSize: 13, color: "#ef4444" }}>{error}</p>}
+              {error && <p style={{ marginTop: 2, fontSize: 13, color: "#E5484D" }}>{error}</p>}
 
               <button
                 className="btn-primary"
                 type="submit"
                 disabled={loading || !password || !confirmPassword}
-                style={{ width: "100%", padding: "15px", borderRadius: 12, border: "none", background: loading || !password || !confirmPassword ? "#86efac" : "#22c55e", color: "#fff", fontSize: 15, fontWeight: 700, cursor: loading || !password || !confirmPassword ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginTop: 8 }}
+                style={{ width: "100%", padding: "15px", borderRadius: 12, border: "none", background: loading || !password || !confirmPassword ? "#F8F78A" : "#F2F012", color: "#141821", fontSize: 15, fontWeight: 700, cursor: loading || !password || !confirmPassword ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginTop: 8 }}
               >
                 {loading ? (
                   <>
@@ -777,19 +777,19 @@ export default function EmployerLoginPage() {
           {step === "password" && (
             <form className="auth-step" onSubmit={handleLoginPassword} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
               {/* Employer badge */}
-              <div style={{ display: "flex", alignItems: "center", gap: 10, background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 10, padding: "10px 14px", marginBottom: 4 }}>
-                <div style={{ width: 32, height: 32, borderRadius: "50%", background: "#22c55e", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, background: "#EEF3FC", border: "1px solid #D9E5F8", borderRadius: 10, padding: "10px 14px", marginBottom: 4 }}>
+                <div style={{ width: 32, height: 32, borderRadius: "50%", background: "#1B5CBF", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="16" height="20" x="4" y="2" rx="2" ry="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01"/><path d="M16 6h.01"/><path d="M12 6h.01"/><path d="M12 10h.01"/><path d="M12 14h.01"/><path d="M16 10h.01"/><path d="M16 14h.01"/><path d="M8 10h.01"/><path d="M8 14h.01"/></svg>
                 </div>
                 <div>
-                  <p style={{ fontSize: 13, fontWeight: 700, color: "#16a34a", margin: 0 }}>{employerName}</p>
-                  <p style={{ fontSize: 11, color: "#15803d", margin: 0 }}>ID: {telegramId}</p>
+                  <p style={{ fontSize: 13, fontWeight: 700, color: "#164A9C", margin: 0 }}>{employerName}</p>
+                  <p style={{ fontSize: 11, color: "#164A9C", margin: 0 }}>ID: {telegramId}</p>
                 </div>
                 <button
                   type="button"
                   className="back-btn"
                   onClick={() => { setStep("telegram"); setPassword(""); setError(""); }}
-                  style={{ marginLeft: "auto", background: "none", border: "none", cursor: "pointer", color: "#6b7280", fontSize: 11, fontWeight: 600, display: "flex", alignItems: "center", gap: 4, transition: "color 0.2s" }}
+                  style={{ marginLeft: "auto", background: "none", border: "none", cursor: "pointer", color: "#6E7686", fontSize: 11, fontWeight: 600, display: "flex", alignItems: "center", gap: 4, transition: "color 0.2s" }}
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
                   Change
@@ -801,7 +801,7 @@ export default function EmployerLoginPage() {
                   Password
                 </label>
                 <div style={{ position: "relative" }}>
-                  <div style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }}>
+                  <div style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "#9AA1B1" }}>
                     <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
                   </div>
                   <input
@@ -811,17 +811,17 @@ export default function EmployerLoginPage() {
                     onChange={(e) => { setPassword(e.target.value); setError(""); }}
                     placeholder="Enter your password"
                     required
-                    style={{ width: "100%", paddingLeft: 42, paddingRight: 14, paddingTop: 14, paddingBottom: 14, borderRadius: 12, border: "1.5px solid #e5e7eb", background: "#ffffff", color: "#111827", fontSize: 16, fontWeight: 500, fontFamily: "Inter, sans-serif" }}
+                    style={{ width: "100%", paddingLeft: 42, paddingRight: 14, paddingTop: 14, paddingBottom: 14, borderRadius: 12, border: "1.5px solid #E2E5EC", background: "#ffffff", color: "#111827", fontSize: 16, fontWeight: 500, fontFamily: "Inter, sans-serif" }}
                   />
                 </div>
-                {error && <p style={{ marginTop: 8, fontSize: 13, color: "#ef4444" }}>{error}</p>}
+                {error && <p style={{ marginTop: 8, fontSize: 13, color: "#E5484D" }}>{error}</p>}
               </div>
 
               <button
                 className="btn-primary"
                 type="submit"
                 disabled={loading || !password}
-                style={{ width: "100%", padding: "15px", borderRadius: 12, border: "none", background: loading || !password ? "#86efac" : "#22c55e", color: "#fff", fontSize: 15, fontWeight: 700, cursor: loading || !password ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginTop: 8 }}
+                style={{ width: "100%", padding: "15px", borderRadius: 12, border: "none", background: loading || !password ? "#F8F78A" : "#F2F012", color: "#141821", fontSize: 15, fontWeight: 700, cursor: loading || !password ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginTop: 8 }}
               >
                 {loading ? (
                   <>
@@ -837,7 +837,7 @@ export default function EmployerLoginPage() {
         </div>
 
         {/* Footer */}
-        <p style={{ marginTop: 28, fontSize: 12, color: "#6b7280", textAlign: "center", animation: "fadeIn 0.6s ease-out 0.3s both" }}>
+        <p style={{ marginTop: 28, fontSize: 12, color: "#6E7686", textAlign: "center", animation: "fadeIn 0.6s ease-out 0.3s both" }}>
           Powered by <span style={{ color: "#111827", fontWeight: 600 }}>JobsAdis Platform</span>
         </p>
       </div>

@@ -14,7 +14,7 @@ export const viewport: Viewport = {
   maximumScale: 1,
   userScalable: false,
   viewportFit: "cover",
-  themeColor: "#0A0F1E",
+  themeColor: "#0C1017",
 };
 
 import { CvUploadProvider } from "@/hooks/useCvUpload";
@@ -35,13 +35,13 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <head>
         {/* Preload the splash logo so it's in cache before the loading screen renders */}
-        <link rel="preload" href="/logo.png" as="image" />
+        <link rel="preload" href="/logo.webp" as="image" />
         {/* Preload admin login logo */}
-        <link rel="preload" href="/pbg_logo.png" as="image" />
+        <link rel="preload" href="/pbg_logo.webp" as="image" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Noto+Sans+Ethiopic:wght@400;500;600;700;800&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,600;1,700;1,800&family=Inter:wght@300;400;500;600;700;800&family=Noto+Sans+Ethiopic:wght@400;500;600;700;800&display=swap"
           rel="stylesheet"
         />
         <meta name="telegram:web-app" content="true" />
@@ -66,16 +66,16 @@ export default function RootLayout({
                 if (isDark) {
                   document.documentElement.setAttribute('data-theme', 'dark');
                   document.documentElement.style.colorScheme = 'dark';
-                  document.documentElement.style.backgroundColor = '#121212';
+                  document.documentElement.style.backgroundColor = '#0C1017';
                 } else {
                   document.documentElement.removeAttribute('data-theme');
                   document.documentElement.style.colorScheme = 'light';
-                  document.documentElement.style.backgroundColor = '#F9FAFB';
+                  document.documentElement.style.backgroundColor = '#F7F8FA';
                 }
                 if (window.Telegram && window.Telegram.WebApp) {
                   var tg = window.Telegram.WebApp;
-                  var bg = isDark ? '#121212' : '#F9FAFB';
-                  var surface = isDark ? '#1A1A1A' : '#FFFFFF';
+                  var bg = isDark ? '#0C1017' : '#F7F8FA';
+                  var surface = isDark ? '#141924' : '#FFFFFF';
                   if (tg.setHeaderColor) tg.setHeaderColor(bg);
                   if (tg.setBackgroundColor) tg.setBackgroundColor(bg);
                   if (tg.setBottomBarColor) tg.setBottomBarColor(surface);

@@ -49,10 +49,10 @@ interface Application {
 }
 
 const STATUS_CONFIG: Record<Application["status"], { labelKey: TKey; color: string; bg: string; border: string; emoji: string }> = {
-  pending:     { labelKey: "applications.status.pending",     color: "#8B9BBE",  bg: "rgba(139,155,190,0.08)", border: "rgba(139,155,190,0.2)",  emoji: "📋" },
-  reviewed:    { labelKey: "applications.status.reviewed",    color: "#60A5FA",  bg: "rgba(96,165,250,0.08)",  border: "rgba(96,165,250,0.2)",   emoji: "👀" },
-  shortlisted: { labelKey: "applications.status.shortlisted", color: "#4ADE80",  bg: "rgba(74,222,128,0.08)",  border: "rgba(74,222,128,0.2)",   emoji: "⭐" },
-  rejected:    { labelKey: "applications.status.rejected",    color: "#FCA5A5",  bg: "rgba(252,165,165,0.06)", border: "rgba(252,165,165,0.15)", emoji: "✗" },
+  pending:     { labelKey: "applications.status.pending",     color: "var(--text-muted)", bg: "var(--surface-sunken)", border: "var(--border)",        emoji: "📋" },
+  reviewed:    { labelKey: "applications.status.reviewed",    color: "var(--info)",       bg: "var(--info-soft)",      border: "var(--border-active)", emoji: "👀" },
+  shortlisted: { labelKey: "applications.status.shortlisted", color: "var(--success)",    bg: "var(--success-soft)",   border: "transparent",          emoji: "⭐" },
+  rejected:    { labelKey: "applications.status.rejected",    color: "var(--error)",      bg: "var(--error-soft)",     border: "transparent",          emoji: "✗" },
 };
 
 
@@ -158,7 +158,7 @@ export default function ApplicationsScreen() {
                 borderRadius: 14, padding: 20, textAlign: "center",
               }}
             >
-              <p style={{ color: "#FCA5A5", fontSize: 14, marginBottom: 12 }}>{t("applications.loadError")}</p>
+              <p style={{ color: "var(--error)", fontSize: 14, marginBottom: 12 }}>{t("applications.loadError")}</p>
               <button
                 onClick={loadApplications}
                 style={{
@@ -226,8 +226,8 @@ export default function ApplicationsScreen() {
                         <div
                           style={{
                             width: 44, height: 44, borderRadius: 12,
-                            background: "rgba(5,150,105,0.08)",
-                            border: "1px solid rgba(5,150,105,0.15)",
+                            background: "rgba(27,92,191,0.08)",
+                            border: "1px solid rgba(27,92,191,0.15)",
                             display: "flex", alignItems: "center", justifyContent: "center",
                             fontSize: 20, flexShrink: 0,
                           }}
