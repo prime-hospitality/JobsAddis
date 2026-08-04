@@ -3,6 +3,7 @@ import { crypto } from "https://deno.land/std@0.168.0/crypto/mod.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { miniAppUrl } from "../_shared/telegram.ts";
 import { serviceKey } from "../_shared/serviceKey.ts";
+import { CV_SIGNED_URL_TTL_SECONDS, RESUMES_BUCKET, resumeStoragePath } from "../_shared/resumes.ts";
 import {
   buildJobDescription,
   buildRequirementsJson,
@@ -256,11 +257,10 @@ serve(async (req: Request) => {
           
           // Delete old CV in dev mode if it exists
           const { data: profile } = await supabase.from("profiles").select("cv_url").eq("telegram_id", mockTelegramId).single();
-          if (profile?.cv_url && profile.cv_url !== cvUrl) {
-            const parts = profile.cv_url.split("/resumes/");
-            if (parts.length === 2) {
-              await supabase.storage.from("resumes").remove([parts[1]]).catch(console.error);
-            }
+          const oldDevPath = resumeStoragePath(profile?.cv_url);
+          if (oldDevPath && profile?.cv_url !== cvUrl) {
+            const { error: removeErr } = await supabase.storage.from(RESUMES_BUCKET).remove([oldDevPath]);
+            if (removeErr) console.error("[DEV] Failed to delete old CV:", removeErr);
           }
 
           await supabase.from("profiles").update({ cv_url: cvUrl }).eq("telegram_id", mockTelegramId);
@@ -544,16 +544,14 @@ serve(async (req: Request) => {
         .eq("telegram_id", telegramId)
         .single();
 
-      // 2. If it exists and is different, delete it from storage
-      if (profile?.cv_url && profile.cv_url !== cvUrl) {
-        const parts = profile.cv_url.split("/resumes/");
-        if (parts.length === 2) {
-          const path = parts[1];
-          // Delete old cv
-          await supabase.storage.from("resumes").remove([path]).catch(err => {
-             console.error("Failed to delete old CV:", err);
-          });
-        }
+      // 2. If it exists and is different, delete it from storage. Uploads are
+      //    timestamped rather than overwritten (anon clients have no UPDATE policy
+      //    on storage.objects), so without this every replacement CV would leave
+      //    the previous file orphaned in the bucket forever.
+      const oldPath = resumeStoragePath(profile?.cv_url);
+      if (oldPath && profile?.cv_url !== cvUrl) {
+        const { error: removeErr } = await supabase.storage.from(RESUMES_BUCKET).remove([oldPath]);
+        if (removeErr) console.error("Failed to delete old CV:", removeErr);
       }
 
       // 3. Update the profile with new CV url
@@ -707,13 +705,14 @@ serve(async (req: Request) => {
       }
 
       // cv_url holds either a legacy public URL or a bare storage path.
-      const marker = "/resumes/";
-      const idx = storedCv.indexOf(marker);
-      const path = idx !== -1 ? storedCv.slice(idx + marker.length).split("?")[0] : storedCv.replace(/^\/+/, "");
+      const path = resumeStoragePath(storedCv);
+      if (!path) {
+        return new Response(JSON.stringify({ error: "No CV uploaded." }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
 
       const { data: signed, error: signErr } = await supabase.storage
-        .from("resumes")
-        .createSignedUrl(path, 300);
+        .from(RESUMES_BUCKET)
+        .createSignedUrl(path, CV_SIGNED_URL_TTL_SECONDS);
 
       if (signErr || !signed?.signedUrl) {
         return new Response(JSON.stringify({ error: "Could not open your CV. Please try again." }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
