@@ -265,7 +265,7 @@ export default function EmployerDashboardLayout({
         >
           {/* Brand */}
           <div style={{ padding: "20px 20px 16px", borderBottom: "1px solid #EFF1F5", display: "flex", alignItems: "center", gap: 10 }}>
-            <div style={{ width: 36, height: 36, borderRadius: 10, background: "#EEF3FC", border: "1px solid #D9E5F8", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <div style={{ width: 36, height: 36, borderRadius: 10, background: "#F2F012", border: "1px solid #E2E5EC", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
               <img src="/addis_jobs_logo.webp" alt="JobsAdis" style={{ width: 22, height: 22, objectFit: "contain" }} />
             </div>
             <div>

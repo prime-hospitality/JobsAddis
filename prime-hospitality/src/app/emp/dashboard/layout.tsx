@@ -60,7 +60,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
         }}>
           {/* Logo */}
           <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 40 }}>
-            <div style={{ width: 44, height: 44, borderRadius: 12, background: "#fff", border: "1px solid #E2E5EC", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
+            <div style={{ width: 44, height: 44, borderRadius: 12, background: "#F2F012", border: "1px solid #E2E5EC", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
               <img src="/addis_jobs_logo.webp" alt="JobsAdis" style={{ width: 28, height: 28, objectFit: "contain" }} />
             </div>
             <div>

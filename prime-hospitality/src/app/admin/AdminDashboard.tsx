@@ -1538,7 +1538,7 @@ export default function AdminDashboard({ initialData, initialUi = {} }: { initia
               display: "flex", alignItems: "center", justifyContent: "center",
               overflow: "hidden",
               marginRight: 10,
-              background: "#fff",
+              background: "#F2F012",
               border: "1.5px solid #E2E5EC",
               boxShadow: "0 1px 4px 0 rgba(27,58,92,0.10)",
             }}
