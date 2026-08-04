@@ -350,36 +350,42 @@ export default function HomeScreen({ onJobSelect, onSearchPress, onBellPress, un
                 </div>
 
                 {/* Illustration */}
-                <div style={{ 
-                  width: 120, 
-                  height: 120, 
-                  borderRadius: "50%", 
-                  background: "var(--brand-subtle)", 
-                  display: "flex", 
-                  alignItems: "center", 
-                  justifyContent: "center", 
+                {/* Sized to the design system's seeker kit: the render is larger
+                    than its disc and sits proud of it (left/top -11), so the
+                    case breaks the circle rather than being boxed by it. The
+                    207px height overhangs the 172px disc by 24px, which the
+                    slide's own 24px bottom padding absorbs — keep them in step
+                    or the carousel's overflow:hidden will clip the wheels. */}
+                <div style={{
+                  width: 177,
+                  height: 172,
+                  borderRadius: "50%",
+                  background: "var(--blue-100)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
                   position: "relative",
                   flexShrink: 0,
-                  marginLeft: 16
+                  marginLeft: 8
                 }}>
-                  <div style={{ position: "absolute", width: 12, height: 12, borderRadius: "50%", background: "var(--brand-light)", top: 10, left: -20, opacity: 0.8 }} />
-                  <div style={{ position: "absolute", width: 8, height: 8, borderRadius: "50%", background: "var(--brand)", bottom: 20, left: -10, opacity: 0.6 }} />
-                  <div style={{ position: "absolute", width: 14, height: 14, borderRadius: "50%", background: "var(--brand-dim)", top: 40, right: -15, opacity: 0.7 }} />
-                  <img 
-                    src="/hero_illustration.webp" 
-                    alt="Briefcase illustration" 
-                    style={{ 
-                      position: "absolute", top: 0, left: 0, width: "100%", height: "100%", objectFit: "contain", mixBlendMode: "multiply",
-                      opacity: isDark ? 0 : 1, transition: "opacity 0.3s ease" 
-                    }} 
+                  <div style={{ position: "absolute", width: 12, height: 12, borderRadius: "50%", background: "var(--action)", top: 10, left: -18, opacity: 0.9 }} />
+                  <div style={{ position: "absolute", width: 8, height: 8, borderRadius: "50%", background: "var(--brand)", bottom: 22, left: -8, opacity: 0.6 }} />
+                  <div style={{ position: "absolute", width: 14, height: 14, borderRadius: "50%", background: "var(--blue-300)", top: 40, right: -12, opacity: 0.7 }} />
+                  <img
+                    src="/hero_illustration.webp"
+                    alt="Briefcase illustration"
+                    style={{
+                      position: "absolute", top: -11, left: -11, width: 184, height: 207, objectFit: "contain", mixBlendMode: "multiply",
+                      opacity: isDark ? 0 : 1, transition: "opacity 0.3s ease"
+                    }}
                   />
-                  <img 
-                    src="/hero_illustration_dark.webp" 
-                    alt="Briefcase illustration dark" 
-                    style={{ 
-                      position: "absolute", top: 0, left: 0, width: "100%", height: "100%", objectFit: "contain", mixBlendMode: "screen",
-                      opacity: isDark ? 1 : 0, transition: "opacity 0.3s ease" 
-                    }} 
+                  <img
+                    src="/hero_illustration_dark.webp"
+                    alt="Briefcase illustration dark"
+                    style={{
+                      position: "absolute", top: -11, left: -11, width: 184, height: 207, objectFit: "contain", mixBlendMode: "screen",
+                      opacity: isDark ? 1 : 0, transition: "opacity 0.3s ease"
+                    }}
                   />
                 </div>
               </div>
