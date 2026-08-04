@@ -82,14 +82,17 @@ export function useOnboarding() {
       if (state.cvFile && state.cvUploaded) {
         try {
           const fileExt = state.cvFile.name.split(".").pop();
-          const fileName = `${telegramId}.${fileExt}`;
+          // Timestamped so a re-onboarding seeker lands on a free name. Overwriting is
+          // not an option: anon clients have no UPDATE policy on storage.objects, and
+          // `upsert` is rejected outright ("new row violates row-level security policy").
+          const fileName = `${telegramId}_${Date.now()}.${fileExt}`;
           const filePath = `cvs/${fileName}`;
 
           console.log("[CV Upload] Attempting upload to bucket 'resumes', path:", filePath);
 
           const { error: uploadError } = await supabase.storage
             .from("resumes")
-            .upload(filePath, state.cvFile, { upsert: true });
+            .upload(filePath, state.cvFile);
 
           if (uploadError) {
             // Non-fatal: log and continue without CV

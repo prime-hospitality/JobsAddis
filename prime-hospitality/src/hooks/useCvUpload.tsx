@@ -41,9 +41,12 @@ export function CvUploadProvider({ children }: { children: ReactNode }) {
       const filePath = `cvs/${fileName}`;
 
       console.log("[CV Upload] Uploading to resumes storage...");
+      // No `upsert` — anon clients have no UPDATE policy on storage.objects, and the
+      // upsert path is rejected outright ("new row violates row-level security policy")
+      // even when the name is free. The timestamp above already keeps names unique.
       const { error: uploadError } = await supabase.storage
         .from("resumes")
-        .upload(filePath, file, { upsert: true });
+        .upload(filePath, file);
 
       if (uploadError) {
         throw new Error(uploadError.message);
