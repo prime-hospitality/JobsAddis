@@ -113,11 +113,24 @@ export function GlobalFetchInterceptor() {
           animation: "fadeIn 0.2s ease-out",
         }}
       >
-        <img 
-          src="/addis_jobs_logo.webp" 
-          alt="Loading..." 
-          style={{ width: 40, height: 40, objectFit: "contain", animation: "pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite" }} 
-        />
+        {/* The mark sits bare on the brand's yellow field — it is a fill, never
+            an ink colour, so the blue mark reads directly against it. */}
+        <div
+          style={{
+            width: 58, height: 58, borderRadius: "50%",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            background: "#F2F012",
+            border: "1.5px solid #E2E5EC",
+            boxShadow: "0 4px 12px rgba(20, 24, 33, 0.05)",
+            animation: "pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite",
+          }}
+        >
+          <img
+            src="/addis_jobs_logo.webp"
+            alt="Loading..."
+            style={{ width: 40, height: 40, objectFit: "contain" }}
+          />
+        </div>
         <style>
           {`
             @keyframes pulse {

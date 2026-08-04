@@ -421,8 +421,8 @@ export const en = {
   home: {
     // Hero headings are split across lines because the second line is
     // brand-coloured and carries a decorative underline.
-    heroLine1: "Find your",
-    heroLine2: "next job",
+    heroLine1: "Find Your",
+    heroLine2: "Next Job",
     heroSubtitle: "Top hospitality jobs in Ethiopia.",
     trustedBy: "Trusted by",
     hero2Line1: "Discover",
@@ -430,7 +430,7 @@ export const en = {
     hero2Line3: "that fit you.",
     hero2Subtitle: "Find top opportunities in Ethiopia and build your future.",
     findJobs: "Find Jobs",
-    searchPlaceholder: "Search jobs in Addis Ababa…",
+    searchPlaceholder: "Search jobs, hotels, roles…",
     statOpenJobs: "Open Jobs",
     statBusinesses: "Businesses",
     statJobSeekers: "Job Seekers",

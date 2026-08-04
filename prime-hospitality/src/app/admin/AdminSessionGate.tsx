@@ -102,11 +102,24 @@ export default function AdminSessionGate({ initialUi }: { initialUi: Partial<Adm
           background: "#fff",
         }}
       >
-        <img
-          src="/addis_jobs_logo.webp"
-          alt="Loading…"
-          style={{ width: 56, height: 56, objectFit: "contain", animation: "pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite" }}
-        />
+        {/* The mark sits bare on the brand's yellow field — it is a fill, never
+            an ink colour, so the blue mark reads directly against it. */}
+        <div
+          style={{
+            width: 80, height: 80, borderRadius: "50%",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            background: "#F2F012",
+            border: "1.5px solid #E2E5EC",
+            boxShadow: "0 4px 12px rgba(20, 24, 33, 0.05)",
+            animation: "pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite",
+          }}
+        >
+          <img
+            src="/addis_jobs_logo.webp"
+            alt="Loading…"
+            style={{ width: 56, height: 56, objectFit: "contain" }}
+          />
+        </div>
         <style>{`@keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: .5; transform: scale(0.95); } }`}</style>
       </div>
     );

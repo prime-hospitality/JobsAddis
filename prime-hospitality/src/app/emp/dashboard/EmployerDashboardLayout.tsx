@@ -265,12 +265,12 @@ export default function EmployerDashboardLayout({
         >
           {/* Brand */}
           <div style={{ padding: "20px 20px 16px", borderBottom: "1px solid #EFF1F5", display: "flex", alignItems: "center", gap: 10 }}>
-            <div style={{ width: 36, height: 36, borderRadius: 10, background: "#EEF3FC", border: "1px solid #D9E5F8", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <div style={{ width: 36, height: 36, borderRadius: 10, background: "#F2F012", border: "1px solid #E2E5EC", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
               <img src="/addis_jobs_logo.webp" alt="JobsAdis" style={{ width: 22, height: 22, objectFit: "contain" }} />
             </div>
             <div>
               <div style={{ fontSize: 14, fontWeight: 800, color: "#141821", letterSpacing: "-0.01em", lineHeight: 1 }}>JobsAdis</div>
-              <div style={{ fontSize: 8, fontWeight: 900, color: "#B08D57", letterSpacing: "0.05em", textTransform: "uppercase", marginTop: 2 }}>A.A Hotel Associates Union</div>
+              <div style={{ fontSize: 8, fontWeight: 600, color: "#1B5CBF", letterSpacing: "0.03em", marginTop: 2 }}>Where Talent Meets Opportunity</div>
               <div style={{ fontSize: 10, color: "#9AA1B1", fontWeight: 500, marginTop: 2 }}>Employer Dashboard</div>
             </div>
             <button

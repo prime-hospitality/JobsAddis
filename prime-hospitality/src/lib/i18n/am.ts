@@ -401,7 +401,7 @@ export const am: DeepPartial<Catalog> = {
     hero2Line3: "ያግኙ።",
     hero2Subtitle: "በኢትዮጵያ ምርጥ እድሎችን አግኝተው መጻዒዎትን ይገንቡ።",
     findJobs: "ሥራ ፈልግ",
-    searchPlaceholder: "በአዲስ አበባ ሥራ ይፈልጉ…",
+    searchPlaceholder: "ሥራ፣ ሆቴል፣ የሥራ መደብ ይፈልጉ…",
     statOpenJobs: "ክፍት ሥራዎች",
     statBusinesses: "ተቋማት",
     statJobSeekers: "ሥራ ፈላጊዎች",
