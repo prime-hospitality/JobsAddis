@@ -270,7 +270,7 @@ export default function EmployerDashboardLayout({
             </div>
             <div>
               <div style={{ fontSize: 14, fontWeight: 800, color: "#141821", letterSpacing: "-0.01em", lineHeight: 1 }}>JobsAdis</div>
-              <div style={{ fontSize: 8, fontWeight: 900, color: "#B08D57", letterSpacing: "0.05em", textTransform: "uppercase", marginTop: 2 }}>A.A Hotel Associates Union</div>
+              <div style={{ fontSize: 8, fontWeight: 600, color: "#1B5CBF", letterSpacing: "0.03em", marginTop: 2 }}>Where Talent Meets Opportunity</div>
               <div style={{ fontSize: 10, color: "#9AA1B1", fontWeight: 500, marginTop: 2 }}>Employer Dashboard</div>
             </div>
             <button

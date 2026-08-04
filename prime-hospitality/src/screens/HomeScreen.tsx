@@ -267,8 +267,8 @@ export default function HomeScreen({ onJobSelect, onSearchPress, onBellPress, un
                   >
                     JobsAdis
                   </span>
-                  <span style={{ fontSize: 11, fontWeight: 900, color: "var(--brand-accent, #B08D57)", letterSpacing: "0.05em", textTransform: "uppercase", marginTop: 2 }}>
-                    A.A Hotel Associates Union
+                  <span style={{ fontSize: 11, fontWeight: 600, color: "var(--brand)", letterSpacing: "0.03em", marginTop: 2 }}>
+                    Where Talent Meets Opportunity
                   </span>
                 </div>
               </div>
@@ -334,9 +334,13 @@ export default function HomeScreen({ onJobSelect, onSearchPress, onBellPress, un
                     {t("home.heroLine1")}<br />
                     <span style={{ color: "var(--brand)", position: "relative", display: "inline-block" }}>
                       {t("home.heroLine2")}
-                      {/* Decorative curved underline */}
+                      {/* Decorative curved underline. Signal Yellow, not brand
+                          blue -- the design system's accent is the yellow, and
+                          a blue stroke under blue text read as a stray rule
+                          rather than a highlight. Yellow stays fill-only here:
+                          it strokes the swoosh, never the heading itself. */}
                       <svg style={{ position: "absolute", bottom: -8, left: 0, width: "100%", height: 12 }} viewBox="0 0 100 12" preserveAspectRatio="none">
-                        <path d="M0 8 Q 50 0 100 8" stroke="var(--brand)" strokeWidth="3" fill="none" strokeLinecap="round" />
+                        <path d="M0 8 Q 50 0 100 8" stroke="var(--action)" strokeWidth="3" fill="none" strokeLinecap="round" />
                       </svg>
                     </span>
                   </h1>
@@ -628,6 +632,10 @@ export default function HomeScreen({ onJobSelect, onSearchPress, onBellPress, un
                     fontSize: 15,
                     fontWeight: 800,
                     color: stat.valueColor,
+                    // Softened so three bold blue figures in a row stop competing
+                    // with the CTA. 0.9 is the floor: at 15px/800 this is normal
+                    // text for WCAG, and 0.85 already drops it under 4.5:1.
+                    opacity: 0.9,
                     lineHeight: 1,
                     marginBottom: 2,
                   }}

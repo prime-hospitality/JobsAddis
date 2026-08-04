@@ -113,7 +113,10 @@ export default function AdminLogin() {
             <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "8px" }}>
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
                 <span style={{ fontSize: "clamp(20px, 4vw, 28px)", fontWeight: 700, letterSpacing: "-0.5px", lineHeight: "1" }}>JobsAdis</span>
-                <span style={{ fontSize: "clamp(12px, 2vw, 16px)", fontWeight: 900, letterSpacing: "0.5px", color: "#FDE047", marginTop: "4px", textTransform: "uppercase" }}>A.A Hotel Associates Union</span>
+                {/* Dark gradient behind this one, so the tagline takes the
+                    design system's dark-theme brand blue rather than #1B5CBF,
+                    which would sit too close to the background to read. */}
+                <span style={{ fontSize: "clamp(12px, 2vw, 16px)", fontWeight: 600, letterSpacing: "0.03em", color: "#6E9AF0", marginTop: "4px" }}>Where Talent Meets Opportunity</span>
               </div>
             </div>
             <span style={{ fontSize: "clamp(20px, 4vw, 28px)", fontWeight: 300, letterSpacing: "-1px", marginTop: "8px" }}>Admin Dashboard</span>
