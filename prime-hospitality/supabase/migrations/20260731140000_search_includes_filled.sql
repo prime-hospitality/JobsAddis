@@ -1,7 +1,34 @@
--- A job the employer marks filled stays in the main app too, same as an
--- expired one -- only applying is blocked (client-enforced in
--- JobDetailScreen, showing "Position Filled"). A plain admin-moderated
--- close (status 'closed' with no filled_at) still drops it from results.
+-- A job marked as filled stays findable in search.
+--
+-- "Mark as Filled" sets status='closed' and stamps filled_at, which stops new
+-- applications without deleting the post. search_jobs' WHERE clause did not
+-- know that, so marking a job filled made it vanish from search outright --
+-- the removal the feature exists to avoid. Filled jobs are matched on
+-- filled_at IS NOT NULL rather than on status alone, so an admin-moderated
+-- close (also 'closed', but with no filled_at) stays hidden as before.
+--
+-- ---------------------------------------------------------------------------
+-- RECONSTRUCTED 2026-08-04. This migration was applied straight to the live
+-- database and its file was never committed -- version 20260731140000 sat in
+-- supabase_migrations.schema_migrations with no file in any branch.
+--
+-- Two things were broken by that, both silent:
+--   1. `supabase db push` refused for everyone ("Remote migration versions not
+--      found in local migrations directory"), because a remote version had no
+--      local file. Its suggested fix, `migration repair --status reverted`,
+--      would have recorded three real applied migrations as reverted.
+--   2. Anyone rebuilding search_jobs from the newest file in this repo would
+--      silently revert this change and 20260731130000 with it. That nearly
+--      happened on 2026-08-04 while adding gender_preference to the function.
+--
+-- Recovered by diffing pg_get_functiondef() against 20260731130000: the two
+-- differ by exactly the one WHERE line below, so this is the whole change and
+-- not an approximation. The rest of the body is 20260731130000 verbatim.
+--
+-- Applying this file to a fresh database reproduces the live function: it lands
+-- after 20260731130000 and before 20260801000000, which later drops and
+-- recreates search_jobs to add gender_preference to the return type.
+-- ---------------------------------------------------------------------------
 
 CREATE OR REPLACE FUNCTION public.search_jobs(
   p_keyword            text        DEFAULT NULL,
