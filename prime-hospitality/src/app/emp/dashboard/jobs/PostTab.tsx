@@ -14,8 +14,10 @@ import { isSubscriptionExpired } from "@/lib/subscriptionStatus";
 import { startOfAddisDay } from "@/lib/addisDay";
 
 export default function PostTab({ data, loading, reload }: { data: PostingData; loading: boolean; reload: () => Promise<void>; }) {
-  const { jobs, autoPublish, dailyPostLimit, packageExpiresAt, businessName, logoUrl, groupBoostsPerDay } = data;
-  const subscriptionExpired = isSubscriptionExpired(packageExpiresAt);
+  const { jobs, autoPublish, dailyPostLimit, packageExpiresAt, packageExpiresAtRaw, businessName, logoUrl, groupBoostsPerDay } = data;
+  // Raw, not the date-only field: that one rounds down to midnight UTC and
+  // would disable posting in the UI while the server still allows it.
+  const subscriptionExpired = isSubscriptionExpired(packageExpiresAtRaw);
 
   const [formModal, setFormModal] = useState<{ mode: "create" | "edit" | "repost"; jobId?: string; value: VacancyFormState } | null>(null);
   const [focusDeadlineOnOpen, setFocusDeadlineOnOpen] = useState(false);
