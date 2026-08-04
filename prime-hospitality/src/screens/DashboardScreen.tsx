@@ -131,23 +131,13 @@ function PrimaryButton({
   );
 }
 
-/** One posted job and its applicant tally. Deliberately a single number: the
- *  employer is scanning for which role landed, and everything about who applied
- *  is one tap away on the applicant screen. */
-function JobCountRow({
-  title,
-  count,
-  onOpen,
-}: {
-  title: string;
-  count: number;
-  onOpen?: () => void;
-}) {
+/** One posted job and its applicant tally. Read-only by design: this tab answers
+ *  "did the post work", nothing more. Reviewing who applied stays on the web
+ *  dashboard, so the row is not a control and must not look like one. */
+function JobCountRow({ title, count }: { title: string; count: number }) {
   const hasApplicants = count > 0;
   return (
-    <button
-      onClick={onOpen}
-      aria-label={`${title} — ${count} applicant${count === 1 ? "" : "s"}`}
+    <div
       style={{
         display: "flex",
         alignItems: "center",
@@ -159,9 +149,7 @@ function JobCountRow({
         border: "1px solid var(--border)",
         background: "var(--card)",
         color: "var(--text-primary)",
-        fontFamily: "inherit",
-        textAlign: "left",
-        cursor: onOpen ? "pointer" : "default",
+        boxSizing: "border-box",
       }}
     >
       <span
@@ -196,8 +184,7 @@ function JobCountRow({
         <Users size={12} />
         {count}
       </span>
-      {onOpen && <ChevronRight size={16} color="var(--text-muted)" style={{ flexShrink: 0 }} />}
-    </button>
+    </div>
   );
 }
 
@@ -219,8 +206,9 @@ const SCREEN_STYLES = `
  * building the template library) stays on the web dashboard.
  *
  * The Applicants tab is a tally, not a second inbox: one row per job with its
- * count, searchable by title, and tapping through hands off to
- * ApplicantManagementScreen for the actual reviewing.
+ * count, searchable by title, and nothing to tap. Reviewing who applied is a
+ * web-dashboard job, so the rows are plain readouts rather than controls that
+ * would imply a drill-down this screen does not offer.
  *
  * The signature of the screen is the publishing rail under the title: every
  * posting control states its actual outcome ("Post it live" vs "Send for
@@ -234,6 +222,9 @@ const SCREEN_STYLES = `
  * the enforcement of them.
  */
 export default function DashboardScreen({ onJobSelect }: { onJobSelect?: (jobId: string, jobTitle: string) => void }) {
+  // Reviewing applicants is a web-dashboard job; this screen only ever counts.
+  void onJobSelect;
+
   const { initData } = useTelegram();
   const reduceMotion = useReducedMotion();
 
@@ -783,7 +774,6 @@ export default function DashboardScreen({ onJobSelect }: { onJobSelect?: (jobId:
                     key={job.id}
                     title={job.title || "Untitled job"}
                     count={Number(job.application_count ?? 0)}
-                    onOpen={onJobSelect ? () => onJobSelect(job.id, job.title || "Untitled job") : undefined}
                   />
                 ))
               )}
