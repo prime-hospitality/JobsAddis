@@ -368,12 +368,18 @@ export default function App() {
             width: 72, height: 72, borderRadius: 16,
             display: "flex", alignItems: "center", justifyContent: "center",
             overflow: "hidden",
-            background: "linear-gradient(145deg, rgba(45,50,70,1) 0%, rgba(15,20,35,1) 100%)",
-            boxShadow: "0 12px 24px rgba(0,0,0,0.7), 0 4px 8px rgba(0,0,0,0.5), inset 0 2px 2px rgba(255,255,255,0.15), inset 0 -2px 4px rgba(0,0,0,0.4), inset 0 0 0 1px rgba(27,92,191,0.5)",
+            // The lockup is a rounded tile on a transparent canvas, and its own
+            // corner radius is ~10% of its width against this container's 22%.
+            // Anything behind it therefore shows through as four arcs at the
+            // corners -- which is why the old dark gradient read as a deformed
+            // edge. Filling with the tile's own Signal Yellow makes the seam
+            // disappear and the container's radius define the silhouette.
+            background: "#F2F012",
+            boxShadow: "var(--shadow-raised)",
           }}
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logo.webp" alt="Prime Hospitality Logo" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+          <img src="/logo.webp" alt="JobsAdis" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
         </motion.div>
       </div>
     );
