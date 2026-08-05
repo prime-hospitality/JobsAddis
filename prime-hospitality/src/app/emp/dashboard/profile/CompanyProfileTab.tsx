@@ -2,7 +2,8 @@
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Camera, CheckCircle2, AlertTriangle, Loader2 } from "lucide-react";
+import { Camera, CheckCircle2, AlertTriangle, Loader2, Lock } from "lucide-react";
+import { formatTin } from "@/lib/ethiopianTin";
 import { getEmployerProfile, updateEmployerProfile, EmployerProfileData } from "./actions";
 import { runSilently } from "@/lib/silentFetch";
 import { monogramPalette, monogramLetter } from "@/components/EmployerAvatar";
@@ -18,6 +19,7 @@ const EMPTY: EmployerProfileData = {
   businessType: "",
   description: "",
   logoUrl: null,
+  tinNumber: null,
   businessTypes: [],
 };
 
@@ -72,6 +74,15 @@ const STYLES = `
     background-repeat: no-repeat; background-position: right 12px center;
   }
   .cpt-error-text { font-size: 11.5px; font-weight: 600; color: #E5484D; margin: 0; }
+
+  /* TIN is captured once at onboarding and only an admin can change it, so it
+     reads as a locked value rather than an editable field. */
+  .cpt-readonly {
+    width: 100%; border: 1px solid #E2E5EC; border-radius: 10px; padding: 10px 12px;
+    font-size: 13.5px; font-weight: 600; color: #141821; background: #F7F8FA;
+    letter-spacing: 0.06em; display: flex; align-items: center; gap: 8px;
+  }
+  .cpt-hint { font-size: 11.5px; color: #9AA1B1; margin: 0; line-height: 1.5; }
 
   .cpt-footer { display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px; }
   .cpt-btn-save {
@@ -334,6 +345,17 @@ export default function CompanyProfileTab() {
                 />
               </div>
             )}
+
+            <div className="cpt-field">
+              <label className="cpt-label">TIN Number</label>
+              <div className="cpt-readonly">
+                <Lock size={13} color="#9AA1B1" style={{ flexShrink: 0 }} />
+                {data.tinNumber ? formatTin(data.tinNumber) : "—"}
+              </div>
+              <p className="cpt-hint">
+                Private to you and the JobsAdis admin team — job seekers never see it. Contact support if it needs correcting.
+              </p>
+            </div>
 
             <div className="cpt-field">
               <label className="cpt-label">

@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { checkEmployerByTelegramId, loginWithPassword, verifyEmployerAuthCode, setupEmployerPassword, getEmployerAccounts } from "./actions";
 import EmployerAvatar from "@/components/EmployerAvatar";
+import { TIN_LENGTH, normalizeTin, validateTin } from "@/lib/ethiopianTin";
 
 const SAVED_ID_KEY = "emp_saved_telegram_id";
 const SAVED_NAME_KEY = "emp_saved_employer_name";
@@ -16,6 +17,7 @@ export default function EmployerLoginPage() {
   const [authCode, setAuthCode] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [tinNumber, setTinNumber] = useState("");
   const [employerName, setEmployerName] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -131,13 +133,15 @@ export default function EmployerLoginPage() {
 
   const handleSetupPassword = async (e: React.FormEvent) => {
     e.preventDefault();
+    const tinError = validateTin(tinNumber);
+    if (tinError) return setError(tinError);
     if (password.length < 6) return setError("Password must be at least 6 characters");
     if (password !== confirmPassword) return setError("Passwords do not match");
 
     setLoading(true);
     setError("");
     try {
-      const result = await setupEmployerPassword(telegramId.trim(), authCode.trim(), password);
+      const result = await setupEmployerPassword(telegramId.trim(), authCode.trim(), password, tinNumber);
       if (!result.success) {
         setError(result.error || "Failed to setup password");
       } else {
@@ -707,9 +711,33 @@ export default function EmployerLoginPage() {
           {step === "setup_password" && (
             <form className="auth-step" onSubmit={handleSetupPassword} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
               <div style={{ textAlign: "center", marginBottom: 12 }}>
-                <h2 style={{ fontSize: 22, fontWeight: 800, color: "#111827", letterSpacing: "-0.03em", marginBottom: 6 }}>Create Profile Password</h2>
+                <h2 style={{ fontSize: 22, fontWeight: 800, color: "#111827", letterSpacing: "-0.03em", marginBottom: 6 }}>Complete Your Account</h2>
                 <p style={{ fontSize: 13, color: "#6E7686", lineHeight: 1.5 }}>
-                  Set a password for your account.
+                  Add your business TIN number and set a password.
+                </p>
+              </div>
+
+              <div>
+                <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#4b5563", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                  TIN Number
+                </label>
+                <div style={{ position: "relative" }}>
+                  <div style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "#9AA1B1" }}>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 2H9a1 1 0 0 0-1 1v2a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V3a1 1 0 0 0-1-1Z"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M8 12h8"/><path d="M8 16h5"/></svg>
+                  </div>
+                  <input
+                    className="input-field"
+                    type="text"
+                    inputMode="numeric"
+                    value={tinNumber}
+                    onChange={(e) => { setTinNumber(normalizeTin(e.target.value).replace(/\D/g, "").slice(0, TIN_LENGTH)); setError(""); }}
+                    placeholder={`${TIN_LENGTH}-digit TIN`}
+                    required
+                    style={{ width: "100%", paddingLeft: 42, paddingRight: 14, paddingTop: 14, paddingBottom: 14, borderRadius: 12, border: "1.5px solid #E2E5EC", background: "#ffffff", color: "#111827", fontSize: 16, fontWeight: 500, fontFamily: "Inter, sans-serif", letterSpacing: "0.08em" }}
+                  />
+                </div>
+                <p style={{ marginTop: 6, fontSize: 11.5, color: "#9AA1B1", lineHeight: 1.5 }}>
+                  Your Ethiopian Taxpayer Identification Number, as printed on your TIN certificate. Job seekers never see it.
                 </p>
               </div>
 
@@ -758,8 +786,8 @@ export default function EmployerLoginPage() {
               <button
                 className="btn-primary"
                 type="submit"
-                disabled={loading || !password || !confirmPassword}
-                style={{ width: "100%", padding: "15px", borderRadius: 12, border: "none", background: loading || !password || !confirmPassword ? "#F8F78A" : "#F2F012", color: "#141821", fontSize: 15, fontWeight: 700, cursor: loading || !password || !confirmPassword ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginTop: 8 }}
+                disabled={loading || !password || !confirmPassword || !!validateTin(tinNumber)}
+                style={{ width: "100%", padding: "15px", borderRadius: 12, border: "none", background: loading || !password || !confirmPassword || !!validateTin(tinNumber) ? "#F8F78A" : "#F2F012", color: "#141821", fontSize: 15, fontWeight: 700, cursor: loading || !password || !confirmPassword || !!validateTin(tinNumber) ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginTop: 8 }}
               >
                 {loading ? (
                   <>
