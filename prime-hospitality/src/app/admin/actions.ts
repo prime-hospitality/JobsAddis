@@ -1647,29 +1647,95 @@ export async function sendBroadcast(target: "all" | "job_seeker" | "employer", m
   return { success: true, sentCount: rows.length };
 }
 
-export async function getRecentBroadcasts(limit: number = 20) {
+export type BroadcastSummary = {
+  message: string;
+  created_at: string;
+  /** Notification rows this send fanned out to. */
+  recipients: number;
+  /** Recipients whose Telegram DM hasn't been dispatched yet. */
+  pendingDms: number;
+  readCount: number;
+};
+
+export async function getRecentBroadcasts(limit: number = 20): Promise<BroadcastSummary[]> {
   await requirePermission("manageConfiguration");
+  // broadcast_summary collapses the per-recipient fan-out back into one row per
+  // announcement (see migration 20260805020000).
   const { data, error } = await getSupabase()
-    .from("notifications")
-    .select("job_title, created_at")
-    .eq("type", "broadcast")
+    .from("broadcast_summary")
+    .select("message, created_at, recipients, pending_dms, read_count")
     .order("created_at", { ascending: false })
-    .limit(200);
+    .limit(limit);
 
   if (error) throw error;
 
-  // De-duplicate rows that were fanned out to many recipients from the same send.
-  const seen = new Set<string>();
-  const unique: { message: string; created_at: string }[] = [];
-  for (const row of data || []) {
-    const key = `${row.job_title}__${row.created_at}`;
-    if (!seen.has(key)) {
-      seen.add(key);
-      unique.push({ message: row.job_title, created_at: row.created_at });
-    }
-    if (unique.length >= limit) break;
+  return (data || []).map((row: any) => ({
+    message: row.message,
+    created_at: row.created_at,
+    recipients: row.recipients ?? 0,
+    pendingDms: row.pending_dms ?? 0,
+    readCount: row.read_count ?? 0,
+  }));
+}
+
+/** A broadcast is addressed by the pair that groups its rows, not by an id --
+ *  every recipient has a row of their own and they share (job_title, created_at).
+ *  Passing the original message back guards against editing a stale copy: if
+ *  someone else already changed the text, nothing matches and the caller is
+ *  told to refresh rather than silently overwriting. */
+export async function updateBroadcast(createdAt: string, originalMessage: string, newMessage: string) {
+  await requirePermission("manageConfiguration");
+  const trimmed = newMessage.trim();
+  if (!trimmed) throw new Error("Broadcast message cannot be empty.");
+
+  const { data, error } = await getSupabase()
+    .from("notifications")
+    .update({ job_title: trimmed })
+    .eq("type", "broadcast")
+    .eq("created_at", createdAt)
+    .eq("job_title", originalMessage)
+    .select("id, dm_sent_at");
+
+  if (error) throw error;
+  if (!data || data.length === 0) {
+    throw new Error("That broadcast no longer exists. Refresh and try again.");
   }
-  return unique;
+
+  // Rows already dispatched keep the text their recipient was DM'd -- Telegram
+  // messages can't be edited after the fact from here, so only the in-app
+  // announcement changes for those people.
+  const pendingDms = data.filter((r: any) => !r.dm_sent_at).length;
+  await logActivity("edit_broadcast", trimmed, {
+    before: originalMessage,
+    after: trimmed,
+    updatedCount: data.length,
+  });
+
+  return { success: true, updatedCount: data.length, alreadyDelivered: data.length - pendingDms };
+}
+
+export async function deleteBroadcast(createdAt: string, message: string) {
+  await requirePermission("manageConfiguration");
+
+  const { data, error } = await getSupabase()
+    .from("notifications")
+    .delete()
+    .eq("type", "broadcast")
+    .eq("created_at", createdAt)
+    .eq("job_title", message)
+    .select("id, dm_sent_at");
+
+  if (error) throw error;
+  if (!data || data.length === 0) {
+    throw new Error("That broadcast no longer exists. Refresh and try again.");
+  }
+
+  // Deleting an undispatched row also cancels its pending DM -- the dispatcher
+  // polls the same rows, so there's nothing left for it to send.
+  const cancelledDms = data.filter((r: any) => !r.dm_sent_at).length;
+  await logActivity("delete_broadcast", message, { deletedCount: data.length, cancelledDms });
+
+  return { success: true, deletedCount: data.length, cancelledDms };
 }
 
 // ── Activity Log ─────────────────────────────────────────────────────────────
