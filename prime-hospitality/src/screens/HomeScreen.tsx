@@ -360,7 +360,7 @@ export default function HomeScreen({ onJobSelect, onSearchPress, onBellPress, un
                   width: 177,
                   height: 172,
                   borderRadius: "50%",
-                  background: "var(--blue-100)",
+                  background: "var(--action-subtle)",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
@@ -368,14 +368,21 @@ export default function HomeScreen({ onJobSelect, onSearchPress, onBellPress, un
                   flexShrink: 0,
                   marginLeft: 8
                 }}>
-                  <div style={{ position: "absolute", width: 12, height: 12, borderRadius: "50%", background: "var(--action)", top: 10, left: -18, opacity: 0.9 }} />
-                  <div style={{ position: "absolute", width: 8, height: 8, borderRadius: "50%", background: "var(--brand)", bottom: 22, left: -8, opacity: 0.6 }} />
+                  <div style={{ position: "absolute", width: 12, height: 12, borderRadius: "50%", background: "var(--brand)", top: 10, left: -18, opacity: 0.9 }} />
+                  <div style={{ position: "absolute", width: 8, height: 8, borderRadius: "50%", background: "var(--action)", bottom: 22, left: -8, opacity: 0.9 }} />
                   <div style={{ position: "absolute", width: 14, height: 14, borderRadius: "50%", background: "var(--blue-300)", top: 40, right: -12, opacity: 0.7 }} />
+                  {/* The filter is a stopgap. These two renders still ship in the
+                      old green palette, and this swings them to brand blue in the
+                      browser — the values are tuned to these exact files and mean
+                      nothing on any other image. Delete the filter outright the
+                      moment fresh renders arrive in the brand palette; do not
+                      carry it forward or retune it for a different asset. */}
                   <img
                     src="/hero_illustration.webp"
                     alt="Briefcase illustration"
                     style={{
                       position: "absolute", top: -11, left: -11, width: 184, height: 207, objectFit: "contain", mixBlendMode: "multiply",
+                      filter: "brightness(0.92) saturate(2.4) hue-rotate(172deg) contrast(1.05)",
                       opacity: isDark ? 0 : 1, transition: "opacity 0.3s ease"
                     }}
                   />
@@ -384,6 +391,7 @@ export default function HomeScreen({ onJobSelect, onSearchPress, onBellPress, un
                     alt="Briefcase illustration dark"
                     style={{
                       position: "absolute", top: -11, left: -11, width: 184, height: 207, objectFit: "contain", mixBlendMode: "screen",
+                      filter: "brightness(0.92) saturate(2.4) hue-rotate(172deg) contrast(1.05)",
                       opacity: isDark ? 1 : 0, transition: "opacity 0.3s ease"
                     }}
                   />
@@ -639,9 +647,14 @@ export default function HomeScreen({ onJobSelect, onSearchPress, onBellPress, un
                     fontWeight: 800,
                     color: stat.valueColor,
                     // Softened so three bold blue figures in a row stop competing
-                    // with the CTA. 0.9 is the floor: at 15px/800 this is normal
-                    // text for WCAG, and 0.85 already drops it under 4.5:1.
-                    opacity: 0.9,
+                    // with the hero CTA and the job-card titles below — the strip
+                    // is a caption for the feed, not a headline.
+                    // This sits under the 4.5:1 that body text has to hold, which
+                    // is deliberate: the figure is a decorative summary and the
+                    // label beneath it carries the meaning, so nothing is lost if
+                    // the number is read as texture. Do not copy this value onto
+                    // text that has to be read.
+                    opacity: 0.65,
                     lineHeight: 1,
                     marginBottom: 2,
                   }}
