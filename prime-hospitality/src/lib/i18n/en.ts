@@ -61,6 +61,15 @@ export const en = {
   // added here has to earn its line against the detail screen one tap away.
   jobCard: {
     posted: "Posted {when}",
+    // What is left to decide on. Deliberately counted in whole days rather
+    // than shown as a date: "Closes in 3 days" is something a seeker can act
+    // on, where "Closes 8 Aug" has to be worked out first.
+    closesInDays: "Closes in {days} days",
+    closesTomorrow: "Closes tomorrow",
+    closesToday: "Last day to apply",
+    closed: "Applications closed",
+    openings: "{count} opening",
+    openingsPlural: "{count} openings",
   },
 
   // The company profile, reached only by tapping an employer's name or logo.

@@ -25,3 +25,23 @@ export function startOfAddisDay(now: number = Date.now()): Date {
   const midnightAddisLocal = Math.floor(addisLocal / DAY_MS) * DAY_MS;
   return new Date(midnightAddisLocal - ADDIS_UTC_OFFSET_MS);
 }
+
+/**
+ * Whole days from today until `deadline`, counted in Addis calendar days.
+ * 0 = closes today, 1 = tomorrow, negative = already past, null = no usable
+ * deadline.
+ *
+ * Calendar days, not a millisecond division, and this is the whole point. A
+ * raw `(deadline - now) / DAY` flips its answer as the clock moves through the
+ * day -- a job closing Friday reads "2 days" on Wednesday morning and "1 day"
+ * on Wednesday evening -- and it reads differently on a phone set to another
+ * timezone. Both sides are snapped to Addis midnight first, so every seeker
+ * sees the same number all day. Same reasoning that made the subscription
+ * banner fire a day early when it compared a date-only string to the clock.
+ */
+export function addisDaysUntil(deadline: string | null | undefined, now: number = Date.now()): number | null {
+  if (!deadline) return null;
+  const at = new Date(deadline).getTime();
+  if (!Number.isFinite(at)) return null;
+  return Math.round((startOfAddisDay(at).getTime() - startOfAddisDay(now).getTime()) / DAY_MS);
+}

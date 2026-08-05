@@ -49,6 +49,12 @@ export const am: DeepPartial<Catalog> = {
 
   jobCard: {
     posted: "የተለጠፈው {when}",
+    closesInDays: "በ{days} ቀናት ውስጥ ይዘጋል",
+    closesTomorrow: "ነገ ይዘጋል",
+    closesToday: "የማመልከቻ የመጨረሻ ቀን",
+    closed: "ማመልከቻ ተዘግቷል",
+    openings: "{count} ክፍት ቦታ",
+    openingsPlural: "{count} ክፍት ቦታዎች",
   },
 
   company: {
