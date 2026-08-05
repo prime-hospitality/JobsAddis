@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { addisDaysUntil } from "@/lib/addisDay";
 import { useRouter, usePathname } from "next/navigation";
 import { logoutEmployer, getEmployerNotifications, markAllNotificationsAsRead, getEmployerAccounts, switchEmployerAccount, removeEmployerAccount } from "../actions";
 import { getApplicantCounts } from "./applicants/actions";
@@ -383,7 +384,26 @@ export default function EmployerDashboardLayout({
                             let text = "";
                             let bg = "#F7F8FA";
                             if (notif.type === "job_expiring") {
-                              text = `Your job post "${notif.job_title}" has 2 days left. Extend it before it goes offline!`;
+                              // Counted from the job's real deadline, in Addis
+                              // calendar days. The old text was the literal
+                              // string "2 days left" for every job -- the cron
+                              // warns on anything inside 48 hours, so a post
+                              // closing in three hours said two days, and the
+                              // notification still said it a week later.
+                              const days = addisDaysUntil(notif.jobs?.deadline);
+                              text =
+                                days === null
+                                  ? `Your job post "${notif.job_title}" is closing soon. Extend it before it goes offline!`
+                                  : days < 0
+                                  // No point urging someone to extend something
+                                  // that has already gone; reposting is the
+                                  // action that is actually still open to them.
+                                  ? `Your job post "${notif.job_title}" has closed. Repost it to keep hiring.`
+                                  : days === 0
+                                  ? `Today is the last day for your job post "${notif.job_title}". Extend it before it goes offline!`
+                                  : days === 1
+                                  ? `Your job post "${notif.job_title}" closes tomorrow. Extend it before it goes offline!`
+                                  : `Your job post "${notif.job_title}" closes in ${days} days. Extend it before it goes offline!`;
                               bg = "#fffbeb";
                             } else if (notif.type === "subscription_expired") {
                               text = `Your subscription has expired. Your existing job posts stay live until their own deadline, but new applicants are locked until you renew.`;

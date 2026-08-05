@@ -7,6 +7,7 @@ import { Job } from "@/data/jobs";
 import EmployerAvatar from "@/components/EmployerAvatar";
 import CompanyTap from "@/components/CompanyTap";
 import { useT, timeAgo, type Translate } from "@/lib/i18n";
+import { addisDaysUntil } from "@/lib/addisDay";
 
 interface JobCardProps {
   job: Job;
@@ -107,21 +108,64 @@ function CardBody({ job, onCompanySelect, showCompany = true }: { job: Job; onCo
         </div>
       </div>
 
-      {/* Description — two lines, the rest on the detail screen */}
-      <p
-        style={{
-          fontSize: 13,
-          color: "var(--text-secondary)",
-          lineHeight: 1.5,
-          marginBottom: 12,
-          display: "-webkit-box",
-          WebkitLineClamp: 2,
-          WebkitBoxOrient: "vertical",
-          overflow: "hidden",
-        }}
-      >
-        {job.description}
-      </p>
+      {/* What is left to decide on, in one line of a fixed height.
+          This replaced a two-line clamp of the employer's own description,
+          which was the tallest thing on the card and the only part of it
+          nobody here controlled -- the two visible lines were usually a
+          greeting and a company boast, so the space went to whatever the
+          employer happened to type first rather than to anything a seeker
+          weighs. Both facts below are structured columns, so every card reads
+          the same way and they all stay the same height. */}
+      {(() => {
+        const days = addisDaysUntil(job.deadline);
+        const openings = job.quantity ?? 1;
+        // Amber inside three days and once it has passed, so the colour still
+        // means something on a feed where most jobs are weeks out.
+        const urgent = days !== null && days <= 3;
+        const closes =
+          days === null ? null
+          : days < 0 ? t("jobCard.closed")
+          : days === 0 ? t("jobCard.closesToday")
+          : days === 1 ? t("jobCard.closesTomorrow")
+          : t("jobCard.closesInDays", { days });
+
+        return (
+          <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 12, minWidth: 0 }}>
+            {/* A job with no usable deadline shows openings alone rather than
+                an empty slot -- the row keeps its height either way. */}
+            {closes && (
+              <>
+                <span
+                  style={{
+                    fontSize: 12.5,
+                    fontWeight: 600,
+                    color: urgent ? "var(--warning)" : "var(--text-secondary)",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 5,
+                    flexShrink: 0,
+                  }}
+                >
+                  <Clock size={12} style={{ flexShrink: 0 }} />
+                  {closes}
+                </span>
+                <span aria-hidden style={{ color: "var(--text-muted)", opacity: 0.45, fontSize: 12 }}>·</span>
+              </>
+            )}
+            <span
+              style={{
+                fontSize: 12.5,
+                color: "var(--text-secondary)",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {t(openings === 1 ? "jobCard.openings" : "jobCard.openingsPlural", { count: openings })}
+            </span>
+          </div>
+        );
+      })()}
 
       {/* Tags row.
           One line, never two: wrapping dropped the location onto a row of its
