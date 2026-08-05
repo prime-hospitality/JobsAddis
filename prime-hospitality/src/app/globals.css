@@ -687,3 +687,61 @@ body {
   box-shadow: 0 0 0 3px var(--brand-ring);
 }
 .admin-input::placeholder { color: var(--gray-400); }
+
+/* ── Console pointer shapes ────────────────────────────────────────────────
+   Admin and employer are pointer-driven desktop consoles, and almost every
+   pixel of them is text: table cells, stat figures, row labels, nav items.
+   The browser's default I-beam over all of it reads as "you can type here" on
+   things that take no typing. Both shells take the arrow instead, and the
+   I-beam goes back only to fields that really do accept text. This changes
+   the cursor glyph only — everything stays selectable and copyable.
+────────────────────────────────────────────────────────────────────────── */
+
+.admin-shell,
+.admin-shell *,
+.emp-shell,
+.emp-shell * {
+  cursor: default;
+}
+
+/* Text entry. Checkboxes and radios are excluded here and picked up as
+   pointers below, since `input` on its own would hand them the I-beam. */
+.admin-shell input:not([type="checkbox"]):not([type="radio"]),
+.admin-shell textarea,
+.admin-shell [contenteditable="true"],
+.emp-shell input:not([type="checkbox"]):not([type="radio"]),
+.emp-shell textarea,
+.emp-shell [contenteditable="true"] {
+  cursor: text;
+}
+
+/* Anything clickable. These sit at a higher specificity than the blanket
+   rule above so component classes carrying their own `cursor: pointer`
+   (.admin-btn-primary, .emp-topbar-btn, …) keep it. */
+.admin-shell a,
+.admin-shell button,
+.admin-shell select,
+.admin-shell summary,
+.admin-shell input[type="checkbox"],
+.admin-shell input[type="radio"],
+.admin-shell input[type="file"],
+.admin-shell [role="button"],
+.admin-shell [role="tab"],
+.admin-shell [role="option"],
+.emp-shell a,
+.emp-shell button,
+.emp-shell select,
+.emp-shell summary,
+.emp-shell input[type="checkbox"],
+.emp-shell input[type="radio"],
+.emp-shell input[type="file"],
+.emp-shell [role="button"],
+.emp-shell [role="tab"],
+.emp-shell [role="option"] {
+  cursor: pointer;
+}
+
+.admin-shell :disabled,
+.emp-shell :disabled {
+  cursor: not-allowed;
+}
