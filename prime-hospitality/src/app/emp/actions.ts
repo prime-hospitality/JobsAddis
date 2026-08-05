@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import bcrypt from "bcryptjs";
 import { EMPLOYER_UI_COOKIE } from "@/lib/employerUiCookie";
 import { signSessionValue, verifySessionValue } from "@/lib/signedSession";
+import { normalizeTin, validateTin, isDuplicateTin, TIN_TAKEN_ERROR } from "@/lib/ethiopianTin";
 
 const getSupabase = () => {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://placeholder.supabase.co";
@@ -153,12 +154,19 @@ export async function verifyEmployerAuthCode(telegramId: string, authNumber: str
   return { success: true };
 }
 
-/** Setup password and login */
-export async function setupEmployerPassword(telegramId: string, authNumber: string, password: string) {
+/** Setup password and login. The TIN is collected here rather than later
+ *  because this is the only moment every employer is guaranteed to pass
+ *  through -- see requireEmployerTin/saveEmployerTin for the equivalent gate
+ *  covering employers who onboarded before the TIN was required. */
+export async function setupEmployerPassword(telegramId: string, authNumber: string, password: string, tinNumber: string) {
   const verify = await verifyEmployerAuthCode(telegramId, authNumber);
   if (!verify.success) return verify;
 
   if (password.length < 6) return { success: false, error: "Password must be at least 6 characters" };
+
+  const tin = normalizeTin(tinNumber);
+  const tinError = validateTin(tin);
+  if (tinError) return { success: false, error: tinError };
 
   const supabase = getSupabase();
   const id = parseInt(telegramId, 10);
@@ -168,12 +176,18 @@ export async function setupEmployerPassword(telegramId: string, authNumber: stri
 
   const { data: employer, error: updateError } = await supabase
     .from("employers")
-    .update({ password_hash: passwordHash, authorization_number: null })
+    .update({ password_hash: passwordHash, authorization_number: null, tin_number: tin })
     .eq("user_id", user!.id)
     .select("id, business_name, business_type, status, logo_url")
     .single();
 
-  if (updateError || !employer) return { success: false, error: "Failed to setup password" };
+  if (updateError || !employer) {
+    // Nothing was written, so the account is still un-onboarded and the
+    // employer can simply retry -- but say which field was the problem.
+    if (isDuplicateTin(updateError)) return { success: false, error: TIN_TAKEN_ERROR };
+    console.error("setupEmployerPassword failed:", updateError);
+    return { success: false, error: "Failed to setup password" };
+  }
 
   const account: EmployerAccountSession = {
     employerId: employer.id,
@@ -286,6 +300,58 @@ export async function validateEmployerSession() {
   if (employer.status === "rejected") return { valid: false, reason: "rejected" as const };
 
   return { valid: true };
+}
+
+/** True when the signed-in employer still has no TIN on file. Onboarding
+ *  (setupEmployerPassword) collects it up front, so this only ever fires for
+ *  employers who were already onboarded when the TIN became required -- the
+ *  dashboard layout blocks them on a one-time form until it's supplied. */
+export async function employerNeedsTin() {
+  const session = await getEmployerSession();
+  if (!session?.employerId) return false;
+
+  const { data: employer } = await getSupabase()
+    .from("employers")
+    .select("tin_number")
+    .eq("id", session.employerId)
+    .maybeSingle();
+
+  return !!employer && !employer.tin_number;
+}
+
+/** Saves the TIN for the signed-in employer. Refuses to overwrite one that's
+ *  already set -- changing a TIN after the fact is an admin action, so a
+ *  stale tab replaying this form can't quietly rewrite it. */
+export async function saveEmployerTin(tinNumber: string) {
+  const session = await getEmployerSession();
+  if (!session?.employerId) return { success: false, error: "Please sign in again." };
+
+  const tin = normalizeTin(tinNumber);
+  const tinError = validateTin(tin);
+  if (tinError) return { success: false, error: tinError };
+
+  const supabase = getSupabase();
+  const { data: employer } = await supabase
+    .from("employers")
+    .select("tin_number")
+    .eq("id", session.employerId)
+    .maybeSingle();
+
+  if (!employer) return { success: false, error: "Employer account not found." };
+  if (employer.tin_number) return { success: true };
+
+  const { error } = await supabase
+    .from("employers")
+    .update({ tin_number: tin })
+    .eq("id", session.employerId);
+
+  if (error) {
+    if (isDuplicateTin(error)) return { success: false, error: TIN_TAKEN_ERROR };
+    console.error("saveEmployerTin failed:", error);
+    return { success: false, error: "Failed to save your TIN number. Please try again." };
+  }
+
+  return { success: true };
 }
 
 /** "Sign Out": leaves the active account, but doesn't forget it -- it (and

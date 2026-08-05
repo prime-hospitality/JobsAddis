@@ -8,6 +8,7 @@ export interface EmployerProfileData {
   businessType: string;
   description: string;
   logoUrl: string | null;
+  tinNumber: string | null;
   businessTypes: { id: string; name: string }[];
 }
 
@@ -30,7 +31,7 @@ export async function getEmployerProfile(): Promise<GetProfileResult> {
   const [employerRes, typesRes] = await Promise.all([
     supabase
       .from("employers")
-      .select("business_name, business_type, description, logo_url")
+      .select("business_name, business_type, description, logo_url, tin_number")
       .eq("id", session.employerId)
       .single(),
     supabase.from("business_types").select("id, name").order("created_at", { ascending: true }),
@@ -48,6 +49,9 @@ export async function getEmployerProfile(): Promise<GetProfileResult> {
       businessType: employerRes.data.business_type,
       description: employerRes.data.description || "",
       logoUrl: employerRes.data.logo_url || null,
+      // Read-only here on purpose -- a TIN is captured once at onboarding and
+      // only an admin can correct it, so updateEmployerProfile never writes it.
+      tinNumber: employerRes.data.tin_number || null,
       businessTypes: typesRes.data || [],
     },
   };

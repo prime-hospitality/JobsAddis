@@ -9,6 +9,7 @@ import { verifyConfigPassword } from "@/lib/appConfigPassword";
 import { signSessionValue, verifySessionValue } from "@/lib/signedSession";
 import { startOfAddisDay } from "@/lib/addisDay";
 import { isSubscriptionExpired } from "@/lib/subscriptionStatus";
+import { normalizeTin, validateTin, isDuplicateTin, TIN_TAKEN_ERROR } from "@/lib/ethiopianTin";
 import {
   VacancyFormState,
   validateVacancyForm,
@@ -1563,7 +1564,7 @@ export async function addEmployer(telegramId: number, businessName: string, busi
   return { success: true, employer: newEmp, authorizationNumber: authNumber };
 }
 
-export async function updateEmployer(employerId: string, businessName: string, businessType: string, dailyPostLimit: number, passwordAttempt: string, packageId?: string | null) {
+export async function updateEmployer(employerId: string, businessName: string, businessType: string, dailyPostLimit: number, passwordAttempt: string, packageId?: string | null, tinNumber?: string) {
   await requirePermission("manageEmployers");
 
   const supabase = getSupabase();
@@ -1579,6 +1580,21 @@ export async function updateEmployer(employerId: string, businessName: string, b
     business_type: businessType.trim(),
     daily_post_limit: dailyPostLimit,
   };
+
+  // Admin is the only party who can correct a TIN after onboarding -- the
+  // employer's own profile tab shows it read-only. Undefined means "not part
+  // of this edit"; an empty string clears it, which re-triggers the dashboard
+  // TIN gate for that employer rather than leaving a wrong number on file.
+  if (tinNumber !== undefined) {
+    const tin = normalizeTin(tinNumber);
+    if (tin) {
+      const tinError = validateTin(tin);
+      if (tinError) throw new Error(tinError);
+      updateFields.tin_number = tin;
+    } else {
+      updateFields.tin_number = null;
+    }
+  }
 
   if (packageId !== undefined) {
     if (!packageId) throw new Error("A package must be selected.");
@@ -1606,6 +1622,7 @@ export async function updateEmployer(employerId: string, businessName: string, b
     .select("*, users(telegram_id)")
     .single();
 
+  if (isDuplicateTin(error)) throw new Error(TIN_TAKEN_ERROR);
   if (error) throw error;
   if (packageId !== undefined) {
     await logActivity("assign_package", employerId, { packageId });
