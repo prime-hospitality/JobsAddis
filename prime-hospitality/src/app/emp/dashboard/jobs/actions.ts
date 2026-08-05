@@ -2,7 +2,7 @@
 
 import { getSupabase, requireEmployer, logEmployerActivity } from "../shared/employerServerUtils";
 import { isSubscriptionExpired } from "@/lib/subscriptionStatus";
-import { startOfAddisDay } from "@/lib/addisDay";
+import { startOfAddisDay, endOfAddisDay } from "@/lib/addisDay";
 import {
   VacancyFormState,
   buildJobDescription,
@@ -52,10 +52,27 @@ async function getEmployerPublishingRules(supabase: ReturnType<typeof getSupabas
 // Employers can't set a job deadline past their current plan's end date.
 // When they leave the deadline blank, default to 30 days out same as
 // before, but clamped to that same cutoff.
-function resolveDeadline(formDeadline: string | null | undefined, maxDeadline: string | null): string {
-  if (formDeadline) return formDeadline;
+//
+// The chosen date is stored as its closing instant in Addis rather than raw
+// (see endOfAddisDay), then clamped a second time against the plan's actual
+// expiry. That second clamp is what the date-only comparison above used to give
+// us for free: midnight-UTC of the plan's last day always fell before the plan
+// itself expired later that day, so "deadline can't outlive the plan" held by
+// accident. Now that the deadline runs to the end of that day it can overshoot,
+// so on the final day the job closes exactly when the subscription does.
+function resolveDeadline(
+  formDeadline: string | null | undefined,
+  maxDeadline: string | null,
+  maxDeadlineRaw: string | null
+): string {
   const fallback = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
-  return maxDeadline && fallback > maxDeadline ? maxDeadline : fallback;
+  const chosen = formDeadline || (maxDeadline && fallback > maxDeadline ? maxDeadline : fallback);
+  return clampToPlanEnd(endOfAddisDay(chosen), maxDeadlineRaw);
+}
+
+function clampToPlanEnd(deadlineIso: string, maxDeadlineRaw: string | null): string {
+  if (!maxDeadlineRaw) return deadlineIso;
+  return new Date(deadlineIso) > new Date(maxDeadlineRaw) ? new Date(maxDeadlineRaw).toISOString() : deadlineIso;
 }
 
 // Counts against last_posted_at (not created_at) so that a repost of an expired
@@ -283,7 +300,7 @@ export async function createEmployerJob(form: VacancyFormState): Promise<{ succe
     requirements: buildRequirementsJson(form),
     min_years_experience: form.min_years_experience,
     gender_preference: coerceGender(form.gender_preference),
-    deadline: resolveDeadline(form.deadline, rules.packageExpiresAt),
+    deadline: resolveDeadline(form.deadline, rules.packageExpiresAt, rules.packageExpiresAtRaw),
     quantity: form.quantity || 1,
     status: rules.autoPublish ? "active" : "pending",
   });
@@ -326,7 +343,7 @@ export async function updateEmployerJobPost(jobId: string, form: VacancyFormStat
       requirements: buildRequirementsJson(form),
       min_years_experience: form.min_years_experience,
       gender_preference: coerceGender(form.gender_preference),
-      deadline: resolveDeadline(form.deadline, rules.packageExpiresAt),
+      deadline: resolveDeadline(form.deadline, rules.packageExpiresAt, rules.packageExpiresAtRaw),
       quantity: form.quantity || 1,
     })
     .eq("id", jobId);
@@ -374,6 +391,9 @@ export async function repostEmployerJob(jobId: string, form: VacancyFormState): 
   const description = buildJobDescription(form);
   const { salary_min, salary_max } = resolveSalary(form);
   const newStatus: "active" | "pending" = rules.autoPublish ? "active" : "pending";
+  // Repost requires an explicit deadline, so there is nothing to default -- but
+  // it still needs the Addis end-of-day instant and the plan-end clamp.
+  const newDeadline = clampToPlanEnd(endOfAddisDay(form.deadline), rules.packageExpiresAtRaw);
 
   const { error } = await supabase
     .from("jobs")
@@ -391,7 +411,7 @@ export async function repostEmployerJob(jobId: string, form: VacancyFormState): 
       requirements: buildRequirementsJson(form),
       min_years_experience: form.min_years_experience,
       gender_preference: coerceGender(form.gender_preference),
-      deadline: form.deadline,
+      deadline: newDeadline,
       quantity: form.quantity || 1,
       status: newStatus,
       // Stamp the repost time: makes this count toward today's post limit,
@@ -423,7 +443,7 @@ export async function repostEmployerJob(jobId: string, form: VacancyFormState): 
     .eq("id", jobId);
 
   if (error) return { success: false, error: error.message || "Failed to repost job" };
-  await logEmployerActivity(session, "employer_repost_job", form.title, { status: newStatus, previousDeadline: existing.deadline, newDeadline: form.deadline });
+  await logEmployerActivity(session, "employer_repost_job", form.title, { status: newStatus, previousDeadline: existing.deadline, newDeadline });
   return { success: true, status: newStatus };
 }
 
@@ -574,7 +594,7 @@ export async function postJobFromEmployerTemplate(templateId: string) {
     requirements: buildRequirementsJson(tpl as any),
     min_years_experience: coerceYears((tpl as any).min_years_experience),
     gender_preference: coerceGender((tpl as any).gender_preference),
-    deadline: resolveDeadline(tpl.deadline, rules.packageExpiresAt),
+    deadline: resolveDeadline(tpl.deadline, rules.packageExpiresAt, rules.packageExpiresAtRaw),
     quantity: tpl.quantity || 1,
     status: rules.autoPublish ? "active" : "pending",
   });
@@ -619,7 +639,7 @@ export async function scheduleJobFromEmployerTemplate(templateId: string, schedu
     requirements: buildRequirementsJson(tpl as any),
     min_years_experience: coerceYears((tpl as any).min_years_experience),
     gender_preference: coerceGender((tpl as any).gender_preference),
-    deadline: resolveDeadline(tpl.deadline, rules.packageExpiresAt),
+    deadline: resolveDeadline(tpl.deadline, rules.packageExpiresAt, rules.packageExpiresAtRaw),
     quantity: tpl.quantity || 1,
     status: "scheduled",
     scheduled_at: scheduledAt,

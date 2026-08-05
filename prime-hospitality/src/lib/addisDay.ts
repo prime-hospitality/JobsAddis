@@ -25,3 +25,22 @@ export function startOfAddisDay(now: number = Date.now()): Date {
   const midnightAddisLocal = Math.floor(addisLocal / DAY_MS) * DAY_MS;
   return new Date(midnightAddisLocal - ADDIS_UTC_OFFSET_MS);
 }
+
+/** The closing instant for a date-only deadline, for the same reasons.
+ *
+ *  An employer picking "2026-08-06" in an <input type="date"> means
+ *  "applications close at the end of Aug 6". But that bare YYYY-MM-DD string
+ *  goes into a timestamptz column, where Postgres resolves it in the database's
+ *  timezone -- UTC on Supabase -- landing on the midnight that *starts* Aug 6,
+ *  which is 3am in Addis. The vacancy then closes before anyone in the country
+ *  is awake, while both the employer's card and the seeker's job detail screen
+ *  keep printing the date as Aug 6: a seeker who opens it during business hours
+ *  is told the deadline is today next to an apply button that refuses them.
+ *
+ *  Anything already carrying a time component is passed through untouched, so
+ *  this is safe to wrap around a value that may or may not be date-only.
+ */
+export function endOfAddisDay(dateOnly: string): string {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateOnly)) return dateOnly;
+  return `${dateOnly}T23:59:59+03:00`;
+}

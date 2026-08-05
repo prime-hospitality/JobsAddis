@@ -12,11 +12,13 @@ import { supabase } from "@/lib/supabase";
 import { runSilently } from "@/lib/silentFetch";
 import { AdminUiState, writeAdminUi, clearAdminUi } from "@/lib/adminUiCookie";
 import { isSubscriptionExpired } from "@/lib/subscriptionStatus";
+import { TIN_LENGTH, formatTin, normalizeTin } from "@/lib/ethiopianTin";
 import { clearTabUser } from "@/lib/adminTabSession";
 import ContentManagementTab from "./ContentManagementTab";
 import BroadcastTab from "./BroadcastTab";
 import ActivityLogTab from "./ActivityLogTab";
 import ReportingTab from "./ReportingTab";
+import PostForEmployerTab from "./PostForEmployerTab";
 import { JobStatusBadge, JobActionButtons } from "./JobStatusActions";
 import NotificationBell from "./NotificationBell";
 
@@ -638,7 +640,9 @@ type ConfigSubTab = "users" | "content" | "broadcast" | "activity";
 type SeekerSubTab = "user-config" | "tab2" | "tab3" | "tab4";
 type MonSubTab = "monetization" | "pricing";
 type EmpSubTab = "emp_config" | null;
-type EmpConfigSubTab = "view_emp" | "add_emp" | null;
+// "pfe" = Post For Employer: an admin types a vacancy on a registered
+// employer's behalf, and it posts under that employer's account.
+type EmpConfigSubTab = "view_emp" | "add_emp" | "pfe" | null;
 
 export default function AdminDashboard({ initialData, initialUi = {} }: { initialData: any; initialUi?: Partial<AdminUiState> }) {
   const [data, setData] = useState(initialData);
@@ -652,7 +656,7 @@ export default function AdminDashboard({ initialData, initialUi = {} }: { initia
   const [configSubTab, setConfigSubTab] = useState<ConfigSubTab>(() => seed(initialUi.configSubTab, ["users", "content", "broadcast", "activity"], "users"));
   const [monSubTab, setMonSubTab] = useState<MonSubTab>(() => seed(initialUi.monSubTab, ["monetization", "pricing"], "monetization"));
   const [empSubTab, setEmpSubTab] = useState<EmpSubTab>(() => seed(initialUi.empSubTab, ["emp_config", null], "emp_config"));
-  const [empConfigSubTab, setEmpConfigSubTab] = useState<EmpConfigSubTab>(() => seed(initialUi.empConfigSubTab, ["view_emp", "add_emp", null], null));
+  const [empConfigSubTab, setEmpConfigSubTab] = useState<EmpConfigSubTab>(() => seed(initialUi.empConfigSubTab, ["view_emp", "add_emp", "pfe", null], null));
   const [selectedEmployerId, setSelectedEmployerId] = useState<string | null>(null);
   const [loading, setLoading] = useState<string | null>(null);
 
@@ -688,10 +692,11 @@ export default function AdminDashboard({ initialData, initialUi = {} }: { initia
   const [userActionLoading, setUserActionLoading] = useState(false);
   const [userActionError, setUserActionError] = useState("");
 
-  const [editModal, setEditModal] = useState<{ id: string; name: string; type: string; postLimit: number; packageId: string; packageExpiresAt: string | null } | null>(null);
+  const [editModal, setEditModal] = useState<{ id: string; name: string; type: string; postLimit: number; packageId: string; packageExpiresAt: string | null; tin: string } | null>(null);
   const [renewLoading, setRenewLoading] = useState(false);
   const [editName, setEditName] = useState("");
   const [editType, setEditType] = useState("");
+  const [editTin, setEditTin] = useState("");
   const [editPostLimit, setEditPostLimit] = useState<number>(15);
   const [editPackageId, setEditPackageId] = useState<string>("");
   const [editLoading, setEditLoading] = useState(false);
@@ -1041,7 +1046,11 @@ export default function AdminDashboard({ initialData, initialUi = {} }: { initia
       // Only send a package id if the admin actually changed the selection —
       // otherwise the server leaves package/expiry untouched (see updateEmployer).
       const packageChanged = editPackageId !== editModal.packageId;
-      const res = await updateEmployer(editModal.id, editName, editType, editPostLimit, editPassword, packageChanged ? editPackageId : undefined);
+      // Same "only send what changed" rule for the TIN — leaving it untouched
+      // must never rewrite the column, and an admin clearing it on purpose
+      // sends "" so the employer is re-prompted on their next dashboard load.
+      const tinChanged = normalizeTin(editTin) !== normalizeTin(editModal.tin);
+      const res = await updateEmployer(editModal.id, editName, editType, editPostLimit, editPassword, packageChanged ? editPackageId : undefined, tinChanged ? editTin : undefined);
 
       if (res.success && res.employer) {
         const finalEmployer = { ...res.employer };
@@ -1969,6 +1978,18 @@ export default function AdminDashboard({ initialData, initialUi = {} }: { initia
                         Add
                       </span>
                     </button>
+                    <button
+                      onClick={() => setEmpConfigSubTab("pfe")}
+                      title="Post For Employer — post a vacancy on an employer's behalf"
+                      className={`px-4 py-2 text-sm font-medium rounded-t-md border-b-2 transition-all ${
+                        empConfigSubTab === "pfe"
+                          ? "border-[#141821] text-[#141821]"
+                          : "border-transparent text-[#4C5361] hover:text-[#141821]"
+                      }`}
+                      style={{ cursor: "pointer" }}
+                    >
+                      <span className="flex items-center gap-2"><FileText size={14} /> PFE</span>
+                    </button>
                   </div>
                 )}
               </div>
@@ -1984,6 +2005,10 @@ export default function AdminDashboard({ initialData, initialUi = {} }: { initia
                   className="px-3 py-2 border border-[#E2E5EC] rounded-lg text-sm w-48 md:w-64 focus:outline-none focus:ring-2 focus:ring-[#141821] focus:border-transparent transition-all"
                 />
               </div>
+            )}
+
+            {activeTab === "employers" && empSubTab === "emp_config" && empConfigSubTab === "pfe" && (
+              <PostForEmployerTab />
             )}
 
             {activeTab === "employers" && empSubTab === "emp_config" && empConfigSubTab === "add_emp" && (
@@ -2324,6 +2349,7 @@ export default function AdminDashboard({ initialData, initialUi = {} }: { initia
                       <>
                         <th style={{ padding: "12px 24px", color: "#4C5361", fontSize: 12, textTransform: "uppercase" }}>Business Name</th>
                         <th style={{ padding: "12px 24px", color: "#4C5361", fontSize: 12, textTransform: "uppercase" }}>Telegram ID</th>
+                        <th style={{ padding: "12px 24px", color: "#4C5361", fontSize: 12, textTransform: "uppercase" }}>TIN</th>
                         <th style={{ padding: "12px 24px", color: "#4C5361", fontSize: 12, textTransform: "uppercase" }}>Registered</th>
                         <th style={{ padding: "12px 24px", color: "#4C5361", fontSize: 12, textTransform: "uppercase" }}>Active Jobs</th>
                         <th style={{ padding: "12px 24px", color: "#4C5361", fontSize: 12, textTransform: "uppercase" }}>Subscription</th>
@@ -2356,6 +2382,13 @@ export default function AdminDashboard({ initialData, initialUi = {} }: { initia
                         {item.business_name}
                       </td>
                       <td style={{ padding: "16px 24px", color: "#4C5361" }}>{item.users?.telegram_id || "—"}</td>
+                      <td style={{ padding: "16px 24px" }}>
+                        {item.tin_number ? (
+                          <span style={{ fontFamily: "ui-monospace, monospace", fontSize: 13, color: "#141821" }}>{formatTin(item.tin_number)}</span>
+                        ) : (
+                          <span style={{ padding: "2px 8px", borderRadius: 100, fontSize: 11, fontWeight: 600, background: "#FDF1E7", color: "#B45309" }}>Missing</span>
+                        )}
+                      </td>
                       <td style={{ padding: "16px 24px", color: "#4C5361" }}>{new Date(item.created_at).toLocaleDateString()}</td>
                       <td style={{ padding: "16px 24px", color: "#141821" }}>{item.activeJobCount ?? 0}</td>
                       <td style={{ padding: "16px 24px" }}>
@@ -2394,7 +2427,7 @@ export default function AdminDashboard({ initialData, initialUi = {} }: { initia
                       </td>
                       <td style={{ padding: "16px 24px", textAlign: "right", display: "flex", gap: 8, justifyContent: "flex-end", alignItems: "center" }}>
                         <button
-                          onClick={() => { setEditModal({ id: item.id, name: item.business_name, type: item.business_type || "", postLimit: item.daily_post_limit ?? 15, packageId: item.active_package_id || "", packageExpiresAt: item.package_expires_at || null }); setEditName(item.business_name); setEditType(item.business_type || ""); setEditPostLimit(item.daily_post_limit ?? 15); setEditPackageId(item.active_package_id || ""); setEditLogoFile(null); setEditError(""); setEditPassword(""); setSettingsTab("edit"); }}
+                          onClick={() => { setEditModal({ id: item.id, name: item.business_name, type: item.business_type || "", postLimit: item.daily_post_limit ?? 15, packageId: item.active_package_id || "", packageExpiresAt: item.package_expires_at || null, tin: item.tin_number || "" }); setEditName(item.business_name); setEditType(item.business_type || ""); setEditTin(item.tin_number || ""); setEditPostLimit(item.daily_post_limit ?? 15); setEditPackageId(item.active_package_id || ""); setEditLogoFile(null); setEditError(""); setEditPassword(""); setSettingsTab("edit"); }}
                           style={{ background: "transparent", border: "none", cursor: "pointer", color: "#6E7686", padding: "6px", borderRadius: 6, display: "flex", alignItems: "center", justifyContent: "center" }}
                           title="Employer settings"
                         >
@@ -2463,6 +2496,9 @@ export default function AdminDashboard({ initialData, initialUi = {} }: { initia
                     <div>
                       <h4 className="font-semibold text-[#141821] m-0">{item.business_name}</h4>
                       <p className="text-xs text-[#4C5361] m-0 mt-1 font-mono">ID: {item.users?.telegram_id || "—"}</p>
+                      <p className="text-xs m-0 mt-1 font-mono" style={{ color: item.tin_number ? "#4C5361" : "#B45309" }}>
+                        TIN: {item.tin_number ? formatTin(item.tin_number) : "Missing"}
+                      </p>
                     </div>
                     <div className="flex flex-col items-end gap-1">
                       <span style={{
@@ -2501,7 +2537,7 @@ export default function AdminDashboard({ initialData, initialUi = {} }: { initia
                   })()}
                   <div className="flex gap-2 justify-end mt-2 pt-3 border-t border-[#EFF1F5]">
                     <button
-                      onClick={() => { setEditModal({ id: item.id, name: item.business_name, type: item.business_type || "", postLimit: item.daily_post_limit ?? 15, packageId: item.active_package_id || "", packageExpiresAt: item.package_expires_at || null }); setEditName(item.business_name); setEditType(item.business_type || ""); setEditPostLimit(item.daily_post_limit ?? 15); setEditPackageId(item.active_package_id || ""); setEditLogoFile(null); setEditError(""); setEditPassword(""); setSettingsTab("edit"); }}
+                      onClick={() => { setEditModal({ id: item.id, name: item.business_name, type: item.business_type || "", postLimit: item.daily_post_limit ?? 15, packageId: item.active_package_id || "", packageExpiresAt: item.package_expires_at || null, tin: item.tin_number || "" }); setEditName(item.business_name); setEditType(item.business_type || ""); setEditTin(item.tin_number || ""); setEditPostLimit(item.daily_post_limit ?? 15); setEditPackageId(item.active_package_id || ""); setEditLogoFile(null); setEditError(""); setEditPassword(""); setSettingsTab("edit"); }}
                       className="bg-[#f3f4f6] text-[#343A46] border-none px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5"
                     >
                       <Gear size={14} /> Settings
@@ -3160,6 +3196,25 @@ export default function AdminDashboard({ initialData, initialUi = {} }: { initia
                         setEditType(name);
                       }}
                     />
+                  </div>
+
+                  {/* TIN — admin is the only party who can correct one after
+                      onboarding; the employer's own profile shows it read-only. */}
+                  <div>
+                    <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#141821", marginBottom: 6 }}>TIN Number</label>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      value={editTin}
+                      onChange={e => { setEditTin(normalizeTin(e.target.value).replace(/\D/g, "").slice(0, TIN_LENGTH)); setEditError(""); }}
+                      placeholder={`${TIN_LENGTH}-digit TIN`}
+                      style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid #CBD0DA", fontSize: 14, boxSizing: "border-box", letterSpacing: "0.08em", fontWeight: 600 }}
+                    />
+                    <p style={{ margin: "6px 0 0 0", fontSize: 12, color: "#9AA1B1", lineHeight: 1.5 }}>
+                      {editTin
+                        ? "Admin-only — never shown to job seekers. Clear this field to make the employer re-enter it on their next dashboard visit."
+                        : "No TIN on file. This employer is blocked from the dashboard until they enter one."}
+                    </p>
                   </div>
 
                   {/* Logo Upload */}

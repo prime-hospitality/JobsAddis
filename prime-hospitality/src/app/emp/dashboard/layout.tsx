@@ -1,7 +1,8 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import EmployerDashboardLayout from "./EmployerDashboardLayout";
-import { validateEmployerSession, removeEmployerAccount } from "../actions";
+import TinRequiredGate from "./TinRequiredGate";
+import { validateEmployerSession, removeEmployerAccount, employerNeedsTin } from "../actions";
 import { verifySessionValue } from "@/lib/signedSession";
 import type { Metadata } from "next";
 
@@ -162,6 +163,14 @@ export default async function DashboardLayout({ children }: { children: React.Re
         </div>
       </>
     );
+  }
+
+  // Employers onboarded before the TIN was required have none on file; block
+  // the whole dashboard on a one-time form rather than letting them keep
+  // posting jobs without one. New accounts supply it during /emp setup, so
+  // they never land here.
+  if (await employerNeedsTin()) {
+    return <TinRequiredGate businessName={session.businessName} />;
   }
 
   return (
