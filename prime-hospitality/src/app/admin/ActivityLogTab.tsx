@@ -20,6 +20,8 @@ const ACTION_LABELS: Record<string, string> = {
   create_sub_admin: "Created sub-admin",
   update_sub_admin_permissions: "Updated sub-admin permissions",
   send_broadcast: "Sent broadcast",
+  edit_broadcast: "Edited broadcast",
+  delete_broadcast: "Deleted broadcast",
 };
 
 export default function ActivityLogTab() {
