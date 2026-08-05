@@ -7,6 +7,8 @@ import { ADMIN_UI_COOKIE } from "@/lib/adminUiCookie";
 import { resumeStoragePath } from "@/lib/cvStorage";
 import { verifyConfigPassword } from "@/lib/appConfigPassword";
 import { signSessionValue, verifySessionValue } from "@/lib/signedSession";
+import { startOfAddisDay } from "@/lib/addisDay";
+import { isSubscriptionExpired } from "@/lib/subscriptionStatus";
 import {
   VacancyFormState,
   validateVacancyForm,
@@ -1003,6 +1005,437 @@ export async function deletePlatformJob(jobId: string) {
   if (error) throw error;
   await logActivity("delete_platform_job", jobId, {});
   return { success: true };
+}
+
+// ── Post For Employer (PFE) ──────────────────────────────────────────────────
+//
+// An admin types a vacancy on a registered employer's behalf -- the employer
+// phoned it in, or doesn't want to use the Mini App. The row that comes out is
+// an ordinary employer job (their employer_id, their name and logo on the
+// seeker card, their applicants in their own dashboard); the only trace of how
+// it got there is jobs.posted_by_admin, which the admin dashboard reads and
+// nothing else does.
+//
+// Distinct from createPlatformJob above, which files a job under the *platform*
+// employer so the seeker sees "JobsAddis". That is for the platform's own
+// listings; this is for a real business's listing that an admin happened to
+// type.
+//
+// The rules an employer posts under are inherited, not waived -- a lapsed plan
+// blocks, and the post spends one of the employer's daily allowance -- because
+// PFE is a typing service, not a way to buy an employer something their package
+// didn't include. The one rule that *is* waived is the review queue: a job that
+// lands in `pending` waits for an admin to approve it, and this one was written
+// by an admin already.
+
+const PFE_DEFAULT_DAILY_LIMIT = 15;
+
+export type PfeEmployer = {
+  id: string;
+  businessName: string;
+  businessType: string | null;
+  telegramId: number | null;
+  /** Date-only (YYYY-MM-DD) -- it feeds the deadline input's `max` attribute. */
+  packageExpiresAt: string | null;
+  /** -1 means unlimited, matching the employer dashboard's convention. */
+  dailyPostLimit: number;
+  postedToday: number;
+  /** Why this employer can't be posted for right now, or null if they can. */
+  blockedReason: "expired" | "limit" | null;
+};
+
+/** Counted on last_posted_at rather than created_at, exactly as the employer's
+ *  own limit is: a repost spends one of today's posts too, and a job carried
+ *  over from an earlier day does not. */
+async function countPostedToday(
+  supabase: ReturnType<typeof getSupabase>,
+  employerIds: string[]
+): Promise<Record<string, number>> {
+  const counts: Record<string, number> = {};
+  if (employerIds.length === 0) return counts;
+  const { data } = await supabase
+    .from("jobs")
+    .select("employer_id")
+    .in("employer_id", employerIds)
+    .gte("last_posted_at", startOfAddisDay().toISOString());
+  for (const row of data || []) {
+    counts[(row as any).employer_id] = (counts[(row as any).employer_id] || 0) + 1;
+  }
+  return counts;
+}
+
+function toPfeEmployer(row: any, postedToday: number): PfeEmployer {
+  const dailyPostLimit = row.daily_post_limit ?? PFE_DEFAULT_DAILY_LIMIT;
+  const expired = isSubscriptionExpired(row.package_expires_at);
+  const atLimit = dailyPostLimit !== -1 && postedToday >= dailyPostLimit;
+  return {
+    id: row.id,
+    businessName: row.business_name,
+    businessType: row.business_type ?? null,
+    telegramId: row.users?.telegram_id ?? null,
+    packageExpiresAt: row.package_expires_at ? String(row.package_expires_at).split("T")[0] : null,
+    dailyPostLimit,
+    postedToday,
+    // Expiry is reported ahead of the limit: renewing fixes both, waiting for
+    // tomorrow only fixes one, so the more useful instruction wins.
+    blockedReason: expired ? "expired" : atLimit ? "limit" : null,
+  };
+}
+
+/** The employer picker on the PFE tab. Ordered by business name rather than by
+ *  signup date -- an admin arrives here already knowing which business they are
+ *  posting for, so alphabetical is what makes it findable. */
+export async function getPfeEmployers(search: string = "", page: number = 1, pageSize: number = 20) {
+  await requirePermission("manageEmployers");
+  const supabase = getSupabase();
+
+  let query = supabase
+    .from("employers")
+    // Same `!inner` + role filter as searchEmployers: it keeps admin-linked
+    // employer rows out at the DB level so `count` matches what comes back and
+    // pagination can't run past the real data.
+    .select("id, business_name, business_type, package_expires_at, daily_post_limit, users!inner(telegram_id, role)", { count: "exact" })
+    .neq("users.role", "admin");
+
+  const q = (search || "").trim();
+  if (q) {
+    if (/^\d+$/.test(q)) query = query.eq("users.telegram_id", q);
+    else query = query.ilike("business_name", `%${q}%`);
+  }
+
+  const from = (page - 1) * pageSize;
+  const { data, count, error } = await query
+    .order("business_name", { ascending: true })
+    .range(from, from + pageSize - 1);
+  if (error) throw new Error(error.message);
+
+  const rows = data || [];
+  const postedToday = await countPostedToday(supabase, rows.map((r: any) => r.id));
+
+  return {
+    employers: rows.map((r: any) => toPfeEmployer(r, postedToday[r.id] || 0)),
+    total: count || 0,
+    page,
+    pageSize,
+  };
+}
+
+/** One employer's current posting position, re-read at submit time. The picker
+ *  already showed this, but a plan can lapse and an allowance can be spent by
+ *  the employer themselves while the admin is still filling in the form. */
+async function loadPfeEmployer(
+  supabase: ReturnType<typeof getSupabase>,
+  employerId: string
+): Promise<PfeEmployer | null> {
+  const { data } = await supabase
+    .from("employers")
+    .select("id, business_name, business_type, package_expires_at, daily_post_limit, users(telegram_id)")
+    .eq("id", employerId)
+    .maybeSingle();
+  if (!data) return null;
+  const counts = await countPostedToday(supabase, [employerId]);
+  return toPfeEmployer(data, counts[employerId] || 0);
+}
+
+export async function getPfeEmployer(employerId: string): Promise<PfeEmployer | null> {
+  await requirePermission("manageEmployers");
+  return loadPfeEmployer(getSupabase(), employerId);
+}
+
+function pfeBlockedMessage(employer: PfeEmployer): string | null {
+  if (employer.blockedReason === "expired") {
+    return `${employer.businessName}'s subscription has expired. Renew their plan before posting for them.`;
+  }
+  if (employer.blockedReason === "limit") {
+    return `${employer.businessName} has used all ${employer.dailyPostLimit} of today's posts. Try again tomorrow.`;
+  }
+  return null;
+}
+
+/** Employers can't set a deadline past the end of the plan they're posting
+ *  under, and neither can an admin posting for them. Blank defaults to 30 days
+ *  out, clamped to the same cutoff. Mirrors resolveDeadline() on the employer
+ *  side. */
+function resolvePfeDeadline(formDeadline: string | null | undefined, maxDeadline: string | null): string {
+  if (formDeadline) return formDeadline;
+  const fallback = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+  return maxDeadline && fallback > maxDeadline ? maxDeadline : fallback;
+}
+
+/** Tells the employer a job appeared under their name that they didn't type.
+ *  Best-effort: a failed notification must not fail the post, since the job is
+ *  already live by the time this runs and there is nothing to roll back to. */
+async function notifyEmployerOfPfePost(
+  supabase: ReturnType<typeof getSupabase>,
+  employer: PfeEmployer,
+  jobId: string,
+  jobTitle: string
+) {
+  if (!employer.telegramId) return;
+  // company_name is NOT NULL on this table. It carries the employer's own
+  // business name here, matching every other notification about one of their
+  // jobs -- the bell's copy for this type names JobsAddis as the actor itself,
+  // so this field is the subject, not the sender.
+  const { error } = await supabase.from("notifications").insert({
+    user_telegram_id: employer.telegramId,
+    company_name: employer.businessName,
+    job_title: jobTitle,
+    job_id: jobId,
+    type: "posted_for_you",
+    read: false,
+  });
+  // Logged rather than thrown: the job is already live by the time this runs,
+  // so there is nothing to roll back to and failing the whole action would
+  // report a successful post as an error.
+  if (error) console.error("Failed to notify employer of PFE post:", error);
+}
+
+export async function createJobForEmployer(
+  employerId: string,
+  form: VacancyFormState
+): Promise<{ success: true; jobId: string } | { success: false; error: string }> {
+  await requirePermission("manageEmployers");
+  const admin = await getLoggedInAdmin();
+  if (!admin) return { success: false, error: "Unauthorized" };
+
+  const supabase = getSupabase();
+  const employer = await loadPfeEmployer(supabase, employerId);
+  if (!employer) return { success: false, error: "Employer not found." };
+
+  const blocked = pfeBlockedMessage(employer);
+  if (blocked) return { success: false, error: blocked };
+
+  const errors = validateVacancyForm(form, { maxDeadline: employer.packageExpiresAt });
+  if (errors) return { success: false, error: Object.values(errors)[0]! };
+
+  const description = buildJobDescription(form);
+  const { salary_min, salary_max } = resolveSalary(form);
+
+  const { data: inserted, error } = await supabase
+    .from("jobs")
+    .insert({
+      employer_id: employerId,
+      title: form.title,
+      category: form.job_category,
+      location: form.location || "Addis Ababa",
+      neighborhood: form.location || "Addis Ababa",
+      job_type: form.employment_type || "Full Time",
+      salary_min,
+      salary_max,
+      currency: "ETB",
+      description,
+      full_description: description,
+      requirements: buildRequirementsJson(form),
+      min_years_experience: coerceYears(form.min_years_experience),
+      gender_preference: coerceGender(form.gender_preference),
+      deadline: resolvePfeDeadline(form.deadline, employer.packageExpiresAt),
+      quantity: form.quantity || 1,
+      // Live immediately whatever the employer's auto_publish says. The review
+      // queue exists to check content nobody at JobsAddis has read, and an
+      // admin wrote this one -- queueing it would mean an admin approving their
+      // own work. last_posted_at is left to its now() default, which is what
+      // makes this count against the employer's allowance for today.
+      status: "active",
+      posted_by_admin: admin.username,
+    })
+    .select("id")
+    .single();
+
+  if (error) return { success: false, error: error.message || "Failed to post job" };
+
+  await logActivity("create_job_for_employer", inserted.id, {
+    employerId,
+    businessName: employer.businessName,
+    title: form.title,
+  });
+  await notifyEmployerOfPfePost(supabase, employer, inserted.id, form.title);
+
+  return { success: true, jobId: inserted.id };
+}
+
+export async function updateJobForEmployer(
+  jobId: string,
+  form: VacancyFormState
+): Promise<{ success: true } | { success: false; error: string }> {
+  await requirePermission("manageEmployers");
+  const supabase = getSupabase();
+
+  const { data: job } = await supabase
+    .from("jobs")
+    .select("id, employer_id, employers(business_name, package_expires_at)")
+    .eq("id", jobId)
+    .maybeSingle();
+  if (!job) return { success: false, error: "Job not found." };
+
+  const employer: any = Array.isArray((job as any).employers) ? (job as any).employers[0] : (job as any).employers;
+  const maxDeadline = employer?.package_expires_at ? String(employer.package_expires_at).split("T")[0] : null;
+
+  const errors = validateVacancyForm(form, { maxDeadline });
+  if (errors) return { success: false, error: Object.values(errors)[0]! };
+
+  const description = buildJobDescription(form);
+  const { salary_min, salary_max } = resolveSalary(form);
+
+  // Status and posted_by_admin are deliberately absent: editing the wording of
+  // a live job must not silently republish it, nor rewrite who first posted it.
+  const { error } = await supabase
+    .from("jobs")
+    .update({
+      title: form.title,
+      category: form.job_category,
+      location: form.location || "Addis Ababa",
+      neighborhood: form.location || "Addis Ababa",
+      job_type: form.employment_type || "Full Time",
+      salary_min,
+      salary_max,
+      currency: "ETB",
+      description,
+      full_description: description,
+      requirements: buildRequirementsJson(form),
+      min_years_experience: coerceYears(form.min_years_experience),
+      gender_preference: coerceGender(form.gender_preference),
+      deadline: resolvePfeDeadline(form.deadline, maxDeadline),
+      quantity: form.quantity || 1,
+    })
+    .eq("id", jobId);
+
+  if (error) return { success: false, error: error.message || "Failed to update job" };
+  await logActivity("edit_job_for_employer", jobId, {
+    employerId: (job as any).employer_id,
+    businessName: employer?.business_name,
+    title: form.title,
+  });
+  return { success: true };
+}
+
+/** Hard delete, which takes the job's applications with it -- the UI asks for
+ *  confirmation with the applicant count spelled out first. The count is read
+ *  here too so the activity log records what was actually destroyed, which is
+ *  the only place it survives afterwards. */
+export async function deleteJobForEmployer(
+  jobId: string
+): Promise<{ success: true } | { success: false; error: string }> {
+  await requirePermission("manageEmployers");
+  const supabase = getSupabase();
+
+  const { data: job } = await supabase
+    .from("jobs")
+    .select("id, title, employer_id, employers(business_name)")
+    .eq("id", jobId)
+    .maybeSingle();
+  if (!job) return { success: false, error: "Job not found." };
+
+  const { count: applicantCount } = await supabase
+    .from("applications")
+    .select("id", { count: "exact", head: true })
+    .eq("job_id", jobId);
+
+  const { error } = await supabase.from("jobs").delete().eq("id", jobId);
+  if (error) return { success: false, error: error.message || "Failed to delete job" };
+
+  const employer: any = Array.isArray((job as any).employers) ? (job as any).employers[0] : (job as any).employers;
+  await logActivity("delete_job_for_employer", jobId, {
+    employerId: (job as any).employer_id,
+    businessName: employer?.business_name,
+    title: (job as any).title,
+    applicantsDeleted: applicantCount || 0,
+  });
+  return { success: true };
+}
+
+export type PfeEmployerGroup = {
+  employerId: string;
+  businessName: string;
+  jobCount: number;
+  lastPostedAt: string | null;
+};
+
+/** The PFE tab's list, grouped by business the same way Job Posting Moderation
+ *  is. Only jobs an admin posted appear -- an employer's own postings are
+ *  already listed under moderation, and repeating them here would make this a
+ *  second copy of that tab rather than a record of what we typed for them. */
+export async function getPfeEmployerGroups(): Promise<PfeEmployerGroup[]> {
+  await requirePermission("manageEmployers");
+  const supabase = getSupabase();
+
+  const { data, error } = await supabase
+    .from("jobs")
+    .select("employer_id, last_posted_at, created_at, employers(business_name)")
+    .not("posted_by_admin", "is", null);
+  if (error) throw new Error(error.message);
+
+  const groups: Record<string, PfeEmployerGroup> = {};
+  for (const row of (data || []) as any[]) {
+    const employer = Array.isArray(row.employers) ? row.employers[0] : row.employers;
+    const existing = groups[row.employer_id];
+    const postedAt = row.last_posted_at || row.created_at || null;
+    if (!existing) {
+      groups[row.employer_id] = {
+        employerId: row.employer_id,
+        businessName: employer?.business_name || "Unknown employer",
+        jobCount: 1,
+        lastPostedAt: postedAt,
+      };
+    } else {
+      existing.jobCount += 1;
+      if (postedAt && (!existing.lastPostedAt || postedAt > existing.lastPostedAt)) {
+        existing.lastPostedAt = postedAt;
+      }
+    }
+  }
+
+  return Object.values(groups).sort((a, b) => a.businessName.localeCompare(b.businessName));
+}
+
+export type PfeJob = {
+  id: string;
+  title: string;
+  status: string;
+  deadline: string | null;
+  postedAt: string | null;
+  postedByAdmin: string | null;
+  applicantCount: number;
+  /** The raw `jobs` row, so the Edit modal can rebuild the form through
+   *  jobRowToForm() without a second fetch. */
+  raw: any;
+};
+
+/** One employer's admin-posted jobs, newest first, each with the applicant
+ *  count the delete confirmation needs. */
+export async function getPfeJobsForEmployer(employerId: string): Promise<PfeJob[]> {
+  await requirePermission("manageEmployers");
+  const supabase = getSupabase();
+
+  const { data, error } = await supabase
+    .from("jobs")
+    .select("*")
+    .eq("employer_id", employerId)
+    .not("posted_by_admin", "is", null)
+    .order("last_posted_at", { ascending: false });
+  if (error) throw new Error(error.message);
+
+  const jobs = (data || []) as any[];
+  const applicantCounts: Record<string, number> = {};
+  if (jobs.length > 0) {
+    const { data: apps } = await supabase
+      .from("applications")
+      .select("job_id")
+      .in("job_id", jobs.map((j) => j.id));
+    for (const row of (apps || []) as any[]) {
+      applicantCounts[row.job_id] = (applicantCounts[row.job_id] || 0) + 1;
+    }
+  }
+
+  return jobs.map((j) => ({
+    id: j.id,
+    title: j.title,
+    status: j.status,
+    deadline: j.deadline || null,
+    postedAt: j.last_posted_at || j.created_at || null,
+    postedByAdmin: j.posted_by_admin || null,
+    applicantCount: applicantCounts[j.id] || 0,
+    raw: j,
+  }));
 }
 
 export async function addEmployer(telegramId: number, businessName: string, businessType: string, packageId: string | null) {

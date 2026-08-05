@@ -394,6 +394,13 @@ export default function EmployerDashboardLayout({
                             } else if (notif.type === "broadcast") {
                               text = notif.job_title;
                               bg = "#f5f3ff";
+                            } else if (notif.type === "posted_for_you") {
+                              // An admin typed this vacancy on the employer's
+                              // behalf. Told plainly, because a job appearing
+                              // under their name that they never posted is
+                              // otherwise alarming rather than helpful.
+                              text = `JobsAddis posted "${notif.job_title}" for you. It's live now — tap to see it and its applicants.`;
+                              bg = "#EEF3FC";
                             } else {
                               text = `Someone applied to your "${notif.job_title}" position.`;
                               bg = "#EEF3FC";
@@ -413,6 +420,8 @@ export default function EmployerDashboardLayout({
                                   );
                                   if (notif.type === "new_applicant" || notif.type === "job_expiring") {
                                     router.push(notif.job_id ? `/emp/dashboard/applicants?job=${notif.job_id}` : "/emp/dashboard/jobs");
+                                  } else if (notif.type === "posted_for_you") {
+                                    router.push("/emp/dashboard/jobs");
                                   } else if (notif.type === "subscription_expiring" || notif.type === "subscription_expired") {
                                     router.push("/emp/dashboard/billing");
                                   }

@@ -17,6 +17,7 @@ import ContentManagementTab from "./ContentManagementTab";
 import BroadcastTab from "./BroadcastTab";
 import ActivityLogTab from "./ActivityLogTab";
 import ReportingTab from "./ReportingTab";
+import PostForEmployerTab from "./PostForEmployerTab";
 import { JobStatusBadge, JobActionButtons } from "./JobStatusActions";
 import NotificationBell from "./NotificationBell";
 
@@ -638,7 +639,9 @@ type ConfigSubTab = "users" | "content" | "broadcast" | "activity";
 type SeekerSubTab = "user-config" | "tab2" | "tab3" | "tab4";
 type MonSubTab = "monetization" | "pricing";
 type EmpSubTab = "emp_config" | null;
-type EmpConfigSubTab = "view_emp" | "add_emp" | null;
+// "pfe" = Post For Employer: an admin types a vacancy on a registered
+// employer's behalf, and it posts under that employer's account.
+type EmpConfigSubTab = "view_emp" | "add_emp" | "pfe" | null;
 
 export default function AdminDashboard({ initialData, initialUi = {} }: { initialData: any; initialUi?: Partial<AdminUiState> }) {
   const [data, setData] = useState(initialData);
@@ -652,7 +655,7 @@ export default function AdminDashboard({ initialData, initialUi = {} }: { initia
   const [configSubTab, setConfigSubTab] = useState<ConfigSubTab>(() => seed(initialUi.configSubTab, ["users", "content", "broadcast", "activity"], "users"));
   const [monSubTab, setMonSubTab] = useState<MonSubTab>(() => seed(initialUi.monSubTab, ["monetization", "pricing"], "monetization"));
   const [empSubTab, setEmpSubTab] = useState<EmpSubTab>(() => seed(initialUi.empSubTab, ["emp_config", null], "emp_config"));
-  const [empConfigSubTab, setEmpConfigSubTab] = useState<EmpConfigSubTab>(() => seed(initialUi.empConfigSubTab, ["view_emp", "add_emp", null], null));
+  const [empConfigSubTab, setEmpConfigSubTab] = useState<EmpConfigSubTab>(() => seed(initialUi.empConfigSubTab, ["view_emp", "add_emp", "pfe", null], null));
   const [selectedEmployerId, setSelectedEmployerId] = useState<string | null>(null);
   const [loading, setLoading] = useState<string | null>(null);
 
@@ -1969,6 +1972,18 @@ export default function AdminDashboard({ initialData, initialUi = {} }: { initia
                         Add
                       </span>
                     </button>
+                    <button
+                      onClick={() => setEmpConfigSubTab("pfe")}
+                      title="Post For Employer — post a vacancy on an employer's behalf"
+                      className={`px-4 py-2 text-sm font-medium rounded-t-md border-b-2 transition-all ${
+                        empConfigSubTab === "pfe"
+                          ? "border-[#141821] text-[#141821]"
+                          : "border-transparent text-[#4C5361] hover:text-[#141821]"
+                      }`}
+                      style={{ cursor: "pointer" }}
+                    >
+                      <span className="flex items-center gap-2"><FileText size={14} /> PFE</span>
+                    </button>
                   </div>
                 )}
               </div>
@@ -1984,6 +1999,10 @@ export default function AdminDashboard({ initialData, initialUi = {} }: { initia
                   className="px-3 py-2 border border-[#E2E5EC] rounded-lg text-sm w-48 md:w-64 focus:outline-none focus:ring-2 focus:ring-[#141821] focus:border-transparent transition-all"
                 />
               </div>
+            )}
+
+            {activeTab === "employers" && empSubTab === "emp_config" && empConfigSubTab === "pfe" && (
+              <PostForEmployerTab />
             )}
 
             {activeTab === "employers" && empSubTab === "emp_config" && empConfigSubTab === "add_emp" && (
