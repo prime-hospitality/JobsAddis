@@ -9,6 +9,7 @@ import { DEPARTMENTS_WITH_ROLES, ROLES_BY_DEPARTMENT, rolesMatchingKeyword, sugg
 import { SupabaseJob, mapSupabaseJobToJob, type SeekerYears } from "@/hooks/useJobs";
 import { useBusinessTypes } from "@/hooks/useBusinessTypes";
 import EmployerAvatar from "@/components/EmployerAvatar";
+import CompanyTap from "@/components/CompanyTap";
 import { useT, useLocale } from "@/lib/i18n";
 import {
   EXPERIENCE_BANDS,
@@ -40,6 +41,8 @@ interface SearchScreenProps {
   onJobSelect: (job: Job) => void;
   /** Signed-in seeker's role -> years. Drives the advisory experience badge. */
   seekerYears?: SeekerYears;
+  /** Opens an employer's company profile from a result card. */
+  onCompanySelect?: (employerId: string) => void;
   /** The roles this seeker signed up for. Pre-selects the Category filter. */
   seekerCategories?: string[];
   pageSize?: number;
@@ -463,7 +466,7 @@ function DateModal({
   );
 }
 
-export default function SearchScreen({ onJobSelect, seekerYears, seekerCategories, pageSize, enableAnimations = true }: SearchScreenProps) {
+export default function SearchScreen({ onJobSelect, onCompanySelect, seekerYears, seekerCategories, pageSize, enableAnimations = true }: SearchScreenProps) {
   const seekerYearsKey = JSON.stringify(seekerYears ?? {});
   const t = useT();
   const { lang } = useLocale();
@@ -1118,14 +1121,18 @@ export default function SearchScreen({ onJobSelect, seekerYears, seekerCategorie
                       >
                         <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
                           {/* Logo */}
-                          <EmployerAvatar name={job.businessName} logoUrl={job.logoUrl} size={46} radius={13} />
+                          <CompanyTap employerId={job.employerId} companyName={job.businessName} onOpen={onCompanySelect} display="flex">
+                            <EmployerAvatar name={job.businessName} logoUrl={job.logoUrl} size={46} radius={13} />
+                          </CompanyTap>
 
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <p style={{ fontSize: 15, fontWeight: 700, color: "var(--text-primary)", marginBottom: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                               {job.title}
                             </p>
                             <p style={{ fontSize: 13, color: "var(--brand)", marginBottom: 8, fontWeight: 600 }}>
-                              {job.businessName}
+                              <CompanyTap employerId={job.employerId} companyName={job.businessName} onOpen={onCompanySelect}>
+                                {job.businessName}
+                              </CompanyTap>
                             </p>
 
                             <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", marginTop: 4 }}>
@@ -1157,14 +1164,18 @@ export default function SearchScreen({ onJobSelect, seekerYears, seekerCategorie
                     >
                       <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
                         {/* Logo */}
-                        <EmployerAvatar name={job.businessName} logoUrl={job.logoUrl} size={46} radius={13} />
+                        <CompanyTap employerId={job.employerId} companyName={job.businessName} onOpen={onCompanySelect} display="flex">
+                          <EmployerAvatar name={job.businessName} logoUrl={job.logoUrl} size={46} radius={13} />
+                        </CompanyTap>
 
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <p style={{ fontSize: 15, fontWeight: 700, color: "var(--text-primary)", marginBottom: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                             {job.title}
                           </p>
                           <p style={{ fontSize: 13, color: "var(--brand)", marginBottom: 8, fontWeight: 600 }}>
-                            {job.businessName}
+                            <CompanyTap employerId={job.employerId} companyName={job.businessName} onOpen={onCompanySelect}>
+                              {job.businessName}
+                            </CompanyTap>
                           </p>
 
                           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>

@@ -1,9 +1,10 @@
 "use client";
 
 import { motion, useReducedMotion, LazyMotion, domAnimation } from "framer-motion";
-import { ArrowLeft, MapPin, Wallet, Briefcase, Calendar, CheckCircle, AlertCircle, Clock, Users } from "lucide-react";
+import { ArrowLeft, MapPin, Wallet, Briefcase, Calendar, CheckCircle, AlertCircle, Clock, Users, ChevronRight } from "lucide-react";
 import { Job } from "@/data/jobs";
 import EmployerAvatar from "@/components/EmployerAvatar";
+import CompanyTap from "@/components/CompanyTap";
 import { useT, timeAgo, formatDate, formatNumber } from "@/lib/i18n";
 import { minYearsLabel, yearsLabel, categoryLabel, meetsGender, normalizeGender, genderLabel, genderPreferenceLabel } from "@/lib/vocabulary";
 import type { SeekerYears } from "@/hooks/useJobs";
@@ -22,6 +23,8 @@ interface JobDetailScreenProps {
   applyError?: string | null;
   onBack: () => void;
   onApply: (job: Job) => void;
+  /** Opens the posting employer's company profile. */
+  onCompanySelect?: (employerId: string) => void;
 }
 
 function isDeadlinePassed(dateStr: string): boolean {
@@ -57,7 +60,7 @@ function renderWithLinks(text: string) {
   });
 }
 
-export default function JobDetailScreen({ job, isEmployer, seekerYears, seekerGender, hasApplied, applyError, onBack, onApply }: JobDetailScreenProps) {
+export default function JobDetailScreen({ job, isEmployer, seekerYears, seekerGender, hasApplied, applyError, onBack, onApply, onCompanySelect }: JobDetailScreenProps) {
   const t = useT();
   const shouldReduceMotion = useReducedMotion();
   const deadlinePassed = isDeadlinePassed(job.deadline);
@@ -205,7 +208,9 @@ export default function JobDetailScreen({ job, isEmployer, seekerYears, seekerGe
               gap: 16,
             }}
           >
-            <EmployerAvatar name={job.businessName} logoUrl={job.logoUrl} size={64} radius={16} />
+            <CompanyTap employerId={job.employerId} companyName={job.businessName} onOpen={onCompanySelect} display="flex">
+              <EmployerAvatar name={job.businessName} logoUrl={job.logoUrl} size={64} radius={16} />
+            </CompanyTap>
             <div>
               <h2
                 style={{
@@ -241,7 +246,13 @@ export default function JobDetailScreen({ job, isEmployer, seekerYears, seekerGe
               </h2>
               {job.businessName && (
                 <p style={{ fontSize: 14, color: "var(--brand)", fontWeight: 600 }}>
-                  {job.businessName}
+                  <CompanyTap employerId={job.employerId} companyName={job.businessName} onOpen={onCompanySelect}>
+                    {job.businessName}
+                    {/* The only affordance either tap target carries. A seeker
+                        has no reason to expect a company name to be a link, and
+                        an underline on a card would fight the badges. */}
+                    {onCompanySelect && <ChevronRight size={14} style={{ marginLeft: 1, flexShrink: 0 }} />}
+                  </CompanyTap>
                 </p>
               )}
               {job.businessType && (

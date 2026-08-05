@@ -5,11 +5,18 @@ import { motion, useReducedMotion } from "framer-motion";
 import { MapPin, Clock, Briefcase } from "lucide-react";
 import { Job } from "@/data/jobs";
 import EmployerAvatar from "@/components/EmployerAvatar";
+import CompanyTap from "@/components/CompanyTap";
 import { useT, timeAgo, type Translate } from "@/lib/i18n";
 
 interface JobCardProps {
   job: Job;
   onClick: (job: Job) => void;
+  /** Opens the employer's company profile. Optional: omitted on the company
+   *  profile's own job list, where the name would link back to this page. */
+  onCompanySelect?: (employerId: string) => void;
+  /** Set false on a company's own profile, where naming the employer above
+   *  every title just repeats the heading three inches higher up. */
+  showCompany?: boolean;
   index: number;
   enableAnimations?: boolean;
   skipEntranceAnimation?: boolean;
@@ -34,7 +41,7 @@ function formatSalary(min: number, max: number, t: Translate): string {
  * reduced-motion branch below, which are otherwise identical and used to be two
  * hand-kept copies of this markup.
  */
-function CardBody({ job }: { job: Job }) {
+function CardBody({ job, onCompanySelect, showCompany = true }: { job: Job; onCompanySelect?: (employerId: string) => void; showCompany?: boolean }) {
   const t = useT();
 
   return (
@@ -49,11 +56,13 @@ function CardBody({ job }: { job: Job }) {
       {/* Header row */}
       <div style={{ display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 12 }}>
         {/* Business logo */}
-        <EmployerAvatar name={job.businessName} logoUrl={job.logoUrl} size={48} radius={12} />
+        <CompanyTap employerId={job.employerId} companyName={job.businessName} onOpen={onCompanySelect} display="flex">
+          <EmployerAvatar name={job.businessName} logoUrl={job.logoUrl} size={48} radius={12} />
+        </CompanyTap>
 
         {/* Business + title */}
         <div style={{ flex: 1, minWidth: 0 }}>
-          <p
+          {showCompany && <p
             style={{
               fontSize: 12,
               color: "var(--text-secondary)",
@@ -64,8 +73,12 @@ function CardBody({ job }: { job: Job }) {
               textOverflow: "ellipsis",
             }}
           >
-            {job.businessName}
-          </p>
+            <CompanyTap employerId={job.employerId} companyName={job.businessName} onOpen={onCompanySelect}>
+              <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {job.businessName}
+              </span>
+            </CompanyTap>
+          </p>}
           <h3
             style={{
               fontSize: 16,
@@ -167,7 +180,7 @@ function CardBody({ job }: { job: Job }) {
   );
 }
 
-const JobCard = memo(function JobCard({ job, onClick, index, enableAnimations = true, skipEntranceAnimation = false }: JobCardProps) {
+const JobCard = memo(function JobCard({ job, onClick, onCompanySelect, showCompany = true, index, enableAnimations = true, skipEntranceAnimation = false }: JobCardProps) {
   const shouldReduceMotion = useReducedMotion();
   const skipAnimations = !enableAnimations || shouldReduceMotion;
 
@@ -194,7 +207,7 @@ const JobCard = memo(function JobCard({ job, onClick, index, enableAnimations = 
         onClick={() => onClick(job)}
         style={{ position: "relative" }}
       >
-        <CardBody job={job} />
+        <CardBody job={job} onCompanySelect={onCompanySelect} showCompany={showCompany} />
       </div>
     );
   }
@@ -208,7 +221,7 @@ const JobCard = memo(function JobCard({ job, onClick, index, enableAnimations = 
       onClick={() => onClick(job)}
       style={{ willChange: "transform", position: "relative" }}
     >
-      <CardBody job={job} />
+      <CardBody job={job} onCompanySelect={onCompanySelect} showCompany={showCompany} />
     </motion.div>
   );
 });

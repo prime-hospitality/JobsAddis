@@ -70,6 +70,9 @@ export default function VacancyTemplateTab({ data, loading, reload }: { data: Po
     setViewingTemplateJob({
       id: tpl.id,
       businessName,
+      // Preview of an unposted template -- no job and no employer
+      // behind it, so the company name stays inert.
+      employerId: "",
       businessLogo: "🏢",
       logoUrl: logoUrl || undefined,
       businessType: "Employer",

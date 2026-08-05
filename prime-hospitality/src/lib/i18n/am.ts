@@ -51,6 +51,20 @@ export const am: DeepPartial<Catalog> = {
     posted: "የተለጠፈው {when}",
   },
 
+  company: {
+    header: "ተቋም",
+    tabs: {
+      overview: "አጠቃላይ እይታ",
+      jobs: "ክፍት ሥራዎች",
+    },
+    aboutHeading: "ስለ ተቋሙ / ምን እንደሚሠሩ",
+    noAbout: "ይህ ተቋም እስካሁን መግለጫ አላከለም።",
+    noJobs: "በአሁኑ ጊዜ ክፍት ሥራ የለም።",
+    openCount: "{count} ክፍት ቦታ",
+    openCountPlural: "{count} ክፍት ቦታዎች",
+    notFound: "የዚህ ተቋም መገለጫ አይገኝም።",
+  },
+
   jobDetail: {
     header: "የሥራ ዝርዝር",
     labels: {
