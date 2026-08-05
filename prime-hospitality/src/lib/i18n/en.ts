@@ -63,6 +63,26 @@ export const en = {
     posted: "Posted {when}",
   },
 
+  // The company profile, reached only by tapping an employer's name or logo.
+  // "About / What You Do" is phrased as the employer's own answer rather than
+  // as a section label, because the text under it is theirs, not ours.
+  company: {
+    header: "Company",
+    tabs: {
+      overview: "Overview",
+      jobs: "Open Jobs",
+    },
+    aboutHeading: "About / What You Do",
+    // Stated as a fact about the page, not a shortcoming of the business --
+    // a seeker reading this can do nothing about it, so there is no reason to
+    // make it sound like something went wrong.
+    noAbout: "This company hasn't added a description yet.",
+    noJobs: "No open positions right now.",
+    openCount: "{count} open position",
+    openCountPlural: "{count} open positions",
+    notFound: "This company profile isn't available.",
+  },
+
   jobDetail: {
     header: "Job Detail",
     labels: {

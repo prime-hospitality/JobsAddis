@@ -20,6 +20,8 @@ interface HomeScreenProps {
   profileName?: string;
   /** Signed-in seeker's role -> years. Drives the advisory experience badge. */
   seekerYears?: Record<string, number>;
+  /** Opens an employer's company profile from a feed card. */
+  onCompanySelect?: (employerId: string) => void;
   pageSize?: number;
   enableAnimations?: boolean;
 }
@@ -36,7 +38,7 @@ let businessAnimationHasRun = false;
  */
 let savedScrollTop = 0;
 
-export default function HomeScreen({ onJobSelect, onSearchPress, onBellPress, unreadCount = 0, profileName, seekerYears, pageSize, enableAnimations }: HomeScreenProps) {
+export default function HomeScreen({ onJobSelect, onSearchPress, onBellPress, unreadCount = 0, profileName, seekerYears, onCompanySelect, pageSize, enableAnimations }: HomeScreenProps) {
   const t = useT();
 
   const shouldReduceMotion = useReducedMotion();
@@ -794,6 +796,7 @@ export default function HomeScreen({ onJobSelect, onSearchPress, onBellPress, un
                         <JobCard
                           job={job}
                           onClick={handleJobCardClick}
+                          onCompanySelect={onCompanySelect}
                           index={0}
                           enableAnimations={enableAnimations}
                           skipEntranceAnimation={true}

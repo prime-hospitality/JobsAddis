@@ -5,6 +5,10 @@ export type JobCategory = string;
 
 export interface Job {
   id: string;
+  /** Who posted it. Carried so the seeker can open the company profile from a
+   *  card or the job detail -- the column was already selected and joined for
+   *  the business name, it just never reached the UI shape. */
+  employerId: string;
   businessName: string;
   businessLogo: string; // emoji placeholder
   logoUrl?: string; // actual uploaded logo image URL
@@ -58,6 +62,7 @@ export interface Job {
 export const JOBS: Job[] = [
   {
     id: "job-001",
+    employerId: "demo-job-001",
     businessName: "Skylight Hotel",
     businessLogo: "🏨",
     businessType: "5-Star Hotel",
@@ -86,6 +91,7 @@ export const JOBS: Job[] = [
   },
   {
     id: "job-002",
+    employerId: "demo-job-002",
     businessName: "Tomoca Coffee",
     businessLogo: "☕",
     businessType: "Coffee House",
@@ -114,6 +120,7 @@ export const JOBS: Job[] = [
   },
   {
     id: "job-003",
+    employerId: "demo-job-003",
     businessName: "Radisson Blu Hotel",
     businessLogo: "🏩",
     businessType: "International Hotel",
@@ -142,6 +149,7 @@ export const JOBS: Job[] = [
   },
   {
     id: "job-004",
+    employerId: "demo-job-004",
     businessName: "Lime Tree Restaurant",
     businessLogo: "🌿",
     businessType: "Fine Dining",
@@ -170,6 +178,7 @@ export const JOBS: Job[] = [
   },
   {
     id: "job-005",
+    employerId: "demo-job-005",
     businessName: "Hyatt Regency Addis",
     businessLogo: "🌟",
     businessType: "Luxury Hotel",
@@ -198,6 +207,7 @@ export const JOBS: Job[] = [
   },
   {
     id: "job-006",
+    employerId: "demo-job-006",
     businessName: "Kaldis Coffee",
     businessLogo: "🫘",
     businessType: "Coffee Chain",
@@ -226,6 +236,7 @@ export const JOBS: Job[] = [
   },
   {
     id: "job-007",
+    employerId: "demo-job-007",
     businessName: "Sheraton Addis",
     businessLogo: "✨",
     businessType: "5-Star Luxury Hotel",
@@ -254,6 +265,7 @@ export const JOBS: Job[] = [
   },
   {
     id: "job-008",
+    employerId: "demo-job-008",
     businessName: "Four Points by Sheraton",
     businessLogo: "🍽️",
     businessType: "Business Hotel",

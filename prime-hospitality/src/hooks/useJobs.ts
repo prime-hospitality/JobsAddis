@@ -127,6 +127,7 @@ export function mapSupabaseJobToJob(sj: SupabaseJob, seekerYears?: SeekerYears):
 
   return {
     id: sj.id,
+    employerId: sj.employer_id,
     businessName: emp?.business_name ?? "Hiring Partner",
     businessLogo: categoryEmojiMap[sj.category] ?? "🏨",
     logoUrl: emp?.logo_url || undefined,

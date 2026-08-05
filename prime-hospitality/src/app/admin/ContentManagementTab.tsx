@@ -400,6 +400,9 @@ export default function ContentManagementTab({
                       setViewingTemplateJob({
                         id: tpl.id,
                         businessName: platformProfile.businessName,
+                        // Preview of an unposted template -- no job and no employer
+                        // behind it, so the company name stays inert.
+                        employerId: "",
                         businessLogo: "🏢",
                         logoUrl: platformProfile.logoUrl || undefined,
                         businessType: "Platform",

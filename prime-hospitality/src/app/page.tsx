@@ -16,6 +16,7 @@ import { mapSupabaseJobToJob, JOB_SELECT } from "@/hooks/useJobs";
 import BottomNav, { NavTab } from "@/components/BottomNav";
 import HomeScreen from "@/screens/HomeScreen";
 import JobDetailScreen from "@/screens/JobDetailScreen";
+import CompanyProfileScreen from "@/screens/CompanyProfileScreen";
 import ApplicationScreen from "@/screens/ApplicationScreen";
 import ConfirmationScreen from "@/screens/ConfirmationScreen";
 import OnboardingScreen from "@/screens/OnboardingScreen";
@@ -33,7 +34,11 @@ type AppView =
   | { screen: "jobDetail"; job: Job }
   | { screen: "application"; job: Job; profile: JobSeekerProfile }
   | { screen: "confirmation"; job: Job }
-  | { screen: "applicantManagement"; jobId: string; jobTitle: string };
+  | { screen: "applicantManagement"; jobId: string; jobTitle: string }
+  /** Not reachable from the tab bar by design -- a company is somewhere you
+   *  arrive at from a job, so `back` carries the view to return to rather than
+   *  dumping the seeker on the home feed and losing their place. */
+  | { screen: "companyProfile"; employerId: string; back: AppView };
 
 // Keys to wipe when a user is deleted or needs to re-onboard.
 const USER_LOCAL_KEYS = ["profile_privacy_dismissed", "theme", "lang"];
@@ -248,6 +253,15 @@ export default function App() {
     setActiveTab("applications");
   };
 
+  const openCompany = (employerId: string) =>
+    setView((current) =>
+      // Guard against stacking a profile on a profile if a name is somehow
+      // tapped twice -- Back should always lead out, never deeper in.
+      current.screen === "companyProfile"
+        ? current
+        : { screen: "companyProfile", employerId, back: current }
+    );
+
   const handleJobSelect = (job: Job) => {
     setApplyError(null);
     setView({ screen: "jobDetail", job });
@@ -420,6 +434,7 @@ export default function App() {
           applyError={applyError}
           onBack={goBackToList}
           onApply={handleApply}
+          onCompanySelect={openCompany}
         />
       );
     }
@@ -450,6 +465,18 @@ export default function App() {
       );
     }
 
+    if (view.screen === "companyProfile") {
+      return (
+        <CompanyProfileScreen
+          key={`company-${view.employerId}`}
+          employerId={view.employerId}
+          seekerYears={userProfile?.experience_years}
+          onBack={() => setView(view.back)}
+          onJobSelect={handleJobSelect}
+        />
+      );
+    }
+
     if (view.screen === "applicantManagement") {
       return (
         <ApplicantManagementScreen
@@ -473,12 +500,13 @@ export default function App() {
             unreadCount={unreadCount}
             profileName={userProfile?.full_name}
             seekerYears={userProfile?.experience_years}
+            onCompanySelect={openCompany}
             pageSize={pageSize}
             enableAnimations={enableAnimations}
           />
         );
       case "search":
-        return <SearchScreen key="search" onJobSelect={handleJobSelect} seekerYears={userProfile?.experience_years} seekerCategories={userProfile?.selected_categories} pageSize={pageSize} enableAnimations={enableAnimations} />;
+        return <SearchScreen key="search" onJobSelect={handleJobSelect} onCompanySelect={openCompany} seekerYears={userProfile?.experience_years} seekerCategories={userProfile?.selected_categories} pageSize={pageSize} enableAnimations={enableAnimations} />;
       case "applications":
         return <ApplicationsScreen key="applications" />;
       case "notifications":
@@ -497,6 +525,7 @@ export default function App() {
             unreadCount={unreadCount}
             profileName={userProfile?.full_name}
             seekerYears={userProfile?.experience_years}
+            onCompanySelect={openCompany}
             pageSize={pageSize}
             enableAnimations={enableAnimations}
           />
