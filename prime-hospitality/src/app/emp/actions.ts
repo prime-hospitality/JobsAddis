@@ -493,9 +493,15 @@ export async function getEmployerNotifications() {
   if (!session) return [];
 
   const supabase = getSupabase();
+  // The job's deadline comes along so an expiry warning can say how long is
+  // actually left. The text used to be a hardcoded "2 days", which was only
+  // ever right at the moment the cron wrote it -- and not even then, since the
+  // cron fires for anything inside 48 hours. jobs is a real FK
+  // (notifications.job_id -> jobs.id, ON DELETE CASCADE), so this is a join
+  // rather than a second query, and a notification cannot outlive its job.
   const { data, error } = await supabase
     .from("notifications")
-    .select("*")
+    .select("*, jobs(deadline, status)")
     .eq("user_telegram_id", session.telegramId)
     .order("created_at", { ascending: false })
     .limit(50);
