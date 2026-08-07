@@ -165,6 +165,15 @@ async function requirePermission(perm: keyof AdminPermissions) {
   if (!admin.permissions[perm]) throw new Error("Permission denied");
 }
 
+/** For reads that back more than one screen -- the packages list is edited from
+ *  Monetization (manageConfiguration) but also read when assigning a plan to an
+ *  employer (manageEmployers), so either permission is enough to see it. */
+async function requireAnyPermission(...perms: (keyof AdminPermissions)[]) {
+  const admin = await getLoggedInAdmin();
+  if (!admin) throw new Error("Unauthorized");
+  if (!perms.some((perm) => admin.permissions[perm])) throw new Error("Permission denied");
+}
+
 /** Columns on `employers` that must never reach a browser: the login hash, and
  *  the onboarding code (which is a live credential until the employer redeems
  *  it). `select("*")` picks both up, so strip them on the way out. */
@@ -2144,7 +2153,9 @@ export async function getProfessionCounts() {
 }
 
 export async function getPackages() {
-  await requirePermission("manageEmployers");
+  // Monetization edits packages with manageConfiguration, so gating the read on
+  // manageEmployers alone left that tab looking at an empty list.
+  await requireAnyPermission("manageEmployers", "manageConfiguration");
   const { data, error } = await getSupabase()
     .from("packages")
     .select("*")
