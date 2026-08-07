@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { toggleUserBan, toggleJobStatus, scheduleJobPost, repostJob, approveScheduledJob, cancelScheduledJob, logoutAdmin, addEmployer, deleteEmployer, updateEmployer, updateEmployerAutoPublish, adminUpdateEmployerLogo, deleteUser, approveSpecialRequest, getPricingConfig, updatePricingConfig, getLoggedInAdmin, createSubAdmin, updateSubAdminPermissions, deleteSubAdmin, listSubAdmins, searchUsers, getProfessionCounts, searchEmployers, getPackages, upsertPackage, deletePackage, getBusinessTypes, addBusinessType, getPlatformEmployerProfile, updatePlatformEmployerLogo, getAdminData, acknowledgeEmployerRenewal, acknowledgeSpecialRequest } from "./actions";
+import { toggleUserBan, toggleJobStatus, scheduleJobPost, repostJob, approveScheduledJob, cancelScheduledJob, logoutAdmin, addEmployer, deleteEmployer, updateEmployer, updateEmployerAutoPublish, adminUpdateEmployerLogo, deleteUser, approveSpecialRequest, getPricingConfig, updatePricingConfig, getLoggedInAdmin, createSubAdmin, updateSubAdminPermissions, updateSubAdminCredentials, deleteSubAdmin, listSubAdmins, searchUsers, getProfessionCounts, searchEmployers, getPackages, upsertPackage, deletePackage, getBusinessTypes, addBusinessType, getPlatformEmployerProfile, updatePlatformEmployerLogo, getAdminData, acknowledgeEmployerRenewal, acknowledgeSpecialRequest } from "./actions";
 import type { AdminPermissions, SubAdmin } from "./actions";
 import { Trash2, Pencil, Image as ImageIcon, Menu, X, LayoutDashboard, Briefcase, FileText, Users, LogOut, Settings, CreditCard, CheckCircle, BookOpen, User, Building2, Hourglass, ChevronDown, Check, Plus, Megaphone, History, BarChart3 } from "lucide-react";
 import EmployerAvatar from "@/components/EmployerAvatar";
@@ -734,6 +734,12 @@ export default function AdminDashboard({ initialData, initialUi = {} }: { initia
   const [showSubAdminForm, setShowSubAdminForm] = useState(false);
   const [expandedSubAdmins, setExpandedSubAdmins] = useState<Record<string, boolean>>({});
   const [deleteSubAdminModal, setDeleteSubAdminModal] = useState<{ id: string; username: string } | null>(null);
+  const [editSubAdminModal, setEditSubAdminModal] = useState<{ id: string; username: string } | null>(null);
+  const [editSubName, setEditSubName] = useState("");
+  const [editSubNewPassword, setEditSubNewPassword] = useState("");
+  const [editSubOwnPassword, setEditSubOwnPassword] = useState("");
+  const [editSubError, setEditSubError] = useState("");
+  const [editSubSaving, setEditSubSaving] = useState(false);
 
   // Scheduled publication state
   const [scheduleModal, setScheduleModal] = useState<{ id: string; title: string; scheduledAt?: string } | null>(null);
@@ -968,6 +974,11 @@ export default function AdminDashboard({ initialData, initialUi = {} }: { initia
 
   const perms = loggedInAdmin?.permissions;
   const isSuperAdmin = loggedInAdmin?.role === "super_admin";
+  // Whoever is actually signed in on this tab. `data.adminUsername` is the
+  // super admin's name from app_config, so it is wrong for every sub-admin.
+  const currentUsername = loggedInAdmin?.username || data.adminUsername || "Admin";
+  // The posting picture is an employer record, so editing it needs that permission.
+  const canManageEmployers = isSuperAdmin || !!perms?.manageEmployers;
 
   const allNavItems = [
     { id: "overview", label: "Admin Overview", icon: LayoutDashboard, perm: null },
@@ -984,6 +995,29 @@ export default function AdminDashboard({ initialData, initialUi = {} }: { initia
     if (isSuperAdmin) return true;
     return perms?.[item.perm] ?? false;
   });
+
+  const canOpenTab = (tab: Tab) => navItems.some((item) => item.id === tab);
+
+  // The tab is seeded from a cookie and permissions can be revoked mid-session,
+  // so a tab the admin may no longer open can still be the active one. Fall
+  // back to Overview, which everyone has.
+  useEffect(() => {
+    if (activeTab !== "settings" && !canOpenTab(activeTab)) setActiveTab("overview");
+  }, [activeTab, isSuperAdmin, perms]);
+
+  // Job seeker profiles carry names and phone numbers, so that sub-tab belongs
+  // to manageUsers even though it lives under Configuration.
+  const canSeeSeekerProfiles = isSuperAdmin || !!perms?.manageUsers;
+  const configSubTabs = [
+    { id: "users" as const, label: "Job Seeker Profiles", icon: Users, allowed: canSeeSeekerProfiles },
+    { id: "content" as const, label: "Content Management", icon: BookOpen, allowed: true },
+    { id: "broadcast" as const, label: "Broadcast", icon: Megaphone, allowed: true },
+    { id: "activity" as const, label: "Activity Log", icon: History, allowed: true },
+  ].filter((t) => t.allowed);
+
+  useEffect(() => {
+    if (!canSeeSeekerProfiles && configSubTab === "users") setConfigSubTab("content");
+  }, [canSeeSeekerProfiles, configSubTab]);
 
   const POST_LIMIT_OPTIONS = [
     { value: 15, label: "15 / day", description: "Standard" },
@@ -1341,6 +1375,50 @@ export default function AdminDashboard({ initialData, initialUi = {} }: { initia
     }
   };
 
+  const openEditSubAdmin = (admin: { id: string; username: string }) => {
+    setEditSubAdminModal(admin);
+    setEditSubName(admin.username);
+    setEditSubNewPassword("");
+    setEditSubOwnPassword("");
+    setEditSubError("");
+  };
+
+  const handleEditSubAdmin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editSubAdminModal) return;
+
+    const renamed = editSubName.trim() && editSubName.trim() !== editSubAdminModal.username;
+    const changes = {
+      ...(renamed ? { username: editSubName.trim() } : {}),
+      ...(editSubNewPassword.trim() ? { password: editSubNewPassword.trim() } : {}),
+    };
+    if (Object.keys(changes).length === 0) {
+      setEditSubError("Change the username or set a new password first.");
+      return;
+    }
+
+    setEditSubSaving(true);
+    setEditSubError("");
+    try {
+      const res = await updateSubAdminCredentials(editSubAdminModal.id, changes, editSubOwnPassword);
+      if (res.success) {
+        setSubAdmins((prev) => prev.map((a) => (a.id === editSubAdminModal.id ? { ...a, username: res.username! } : a)));
+        setEditSubAdminModal(null);
+        setSubAdminSuccess(
+          renamed
+            ? `Admin renamed to "${res.username}". They will need to sign in again.`
+            : `Password updated for "${res.username}".`
+        );
+      } else {
+        setEditSubError(res.error || "Failed to update admin");
+      }
+    } catch (err: any) {
+      setEditSubError(err.message || "Failed to update admin");
+    } finally {
+      setEditSubSaving(false);
+    }
+  };
+
   const handleApproveSpecialRequest = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!approveReqModal) return;
@@ -1592,6 +1670,43 @@ export default function AdminDashboard({ initialData, initialUi = {} }: { initia
           })}
         </nav>
 
+        {/* Account — the desktop header carries this in its profile menu, which
+            is hidden on mobile, so without these the whole of Admin Settings
+            was unreachable from a phone. */}
+        <div className="md:hidden px-4 pt-4 border-t border-[#EFF1F5] shrink-0">
+          <div className="flex items-center gap-3 px-3 pb-3">
+            <img
+              src={`https://ui-avatars.com/api/?name=${encodeURIComponent(currentUsername)}&background=random`}
+              alt={currentUsername}
+              className="w-9 h-9 rounded-full object-cover border border-[#E2E5EC]"
+            />
+            <div className="flex flex-col min-w-0">
+              <span className="text-sm font-bold text-black leading-none mb-1 truncate">{currentUsername}</span>
+              <span className="text-xs text-[#4C5361] font-medium leading-none">{isSuperAdmin ? "Super Admin" : "Sub Admin"}</span>
+            </div>
+          </div>
+          {isSuperAdmin && (
+            <button
+              onClick={() => { setMobileMenuOpen(false); setSettingsOpen(true); }}
+              className="w-full flex items-center px-3 py-2.5 text-sm font-medium text-[#141821] rounded-lg hover:bg-[#EFF1F5] hover:text-black transition-colors"
+              style={{ border: "none", cursor: "pointer", textAlign: "left" }}
+            >
+              <Settings className="mr-3 flex-shrink-0 h-5 w-5 text-[#9AA1B1]" />
+              Admin Settings
+            </button>
+          )}
+          {canManageEmployers && (
+            <button
+              onClick={() => { setMobileMenuOpen(false); openProfileModal(); }}
+              className="w-full flex items-center px-3 py-2.5 text-sm font-medium text-[#141821] rounded-lg hover:bg-[#EFF1F5] hover:text-black transition-colors"
+              style={{ border: "none", cursor: "pointer", textAlign: "left" }}
+            >
+              <User className="mr-3 flex-shrink-0 h-5 w-5 text-[#9AA1B1]" />
+              Posting Picture
+            </button>
+          )}
+        </div>
+
         {/* Logout */}
         <div className="p-4 border-t border-[#EFF1F5] shrink-0">
           <button
@@ -1655,9 +1770,9 @@ export default function AdminDashboard({ initialData, initialUi = {} }: { initia
                 onClick={() => setProfileMenuOpen(!profileMenuOpen)}
                 className="flex items-center gap-3 focus:outline-none hover:bg-[#F7F8FA] rounded-lg p-1.5 -m-1.5 transition-colors cursor-pointer"
               >
-                <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(data.adminUsername || "Admin")}&background=random`} alt={data.adminUsername || "Admin"} className="w-10 h-10 rounded-full object-cover border border-[#E2E5EC]" />
+                <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(currentUsername)}&background=random`} alt={currentUsername} className="w-10 h-10 rounded-full object-cover border border-[#E2E5EC]" />
                 <div className="flex flex-col text-left">
-                  <span className="text-sm font-bold text-black leading-none mb-1">{data.adminUsername || "Admin"}</span>
+                  <span className="text-sm font-bold text-black leading-none mb-1">{currentUsername}</span>
                   <span className="text-xs text-[#4C5361] font-medium leading-none">{isSuperAdmin ? "Super Admin" : "Sub Admin"}</span>
                 </div>
               </button>
@@ -1674,12 +1789,14 @@ export default function AdminDashboard({ initialData, initialUi = {} }: { initia
                         <Settings className="w-4 h-4" /> Settings
                       </button>
                     )}
-                    <button
-                      onClick={() => { setProfileMenuOpen(false); openProfileModal(); }}
-                      className="w-full text-left px-4 py-2.5 text-sm font-semibold text-[#141821] hover:bg-[#F7F8FA] hover:text-[#1B5CBF] transition-colors flex items-center gap-2"
-                    >
-                      <User className="w-4 h-4" /> Profile
-                    </button>
+                    {canManageEmployers && (
+                      <button
+                        onClick={() => { setProfileMenuOpen(false); openProfileModal(); }}
+                        className="w-full text-left px-4 py-2.5 text-sm font-semibold text-[#141821] hover:bg-[#F7F8FA] hover:text-[#1B5CBF] transition-colors flex items-center gap-2"
+                      >
+                        <User className="w-4 h-4" /> Profile
+                      </button>
+                    )}
                   </div>
                 </>
               )}
@@ -2073,50 +2190,23 @@ export default function AdminDashboard({ initialData, initialUi = {} }: { initia
               <div>
                 {/* Sub-tab switcher */}
                 <div className="flex border-b border-[#E2E5EC] bg-[#F7F8FA]/60 px-6 pt-4 gap-1">
-                  <button
-                    onClick={() => setConfigSubTab("users")}
-                    className={`px-5 py-2.5 text-sm font-semibold rounded-t-lg border border-b-0 transition-all ${
-                      configSubTab === "users"
-                        ? "bg-white border-[#E2E5EC] text-[#141821] shadow-sm -mb-px"
-                        : "bg-transparent border-transparent text-[#4C5361] hover:text-[#141821]"
-                    }`}
-                    style={{ cursor: "pointer" }}
-                  >
-                    <span className="flex items-center gap-2"><Users size={15} /> Job Seeker Profiles</span>
-                  </button>
-                  <button
-                    onClick={() => setConfigSubTab("content")}
-                    className={`px-5 py-2.5 text-sm font-semibold rounded-t-lg border border-b-0 transition-all ${
-                      configSubTab === "content"
-                        ? "bg-white border-[#E2E5EC] text-[#141821] shadow-sm -mb-px"
-                        : "bg-transparent border-transparent text-[#4C5361] hover:text-[#141821]"
-                    }`}
-                    style={{ cursor: "pointer" }}
-                  >
-                    <span className="flex items-center gap-2"><BookOpen size={15} /> Content Management</span>
-                  </button>
-                  <button
-                    onClick={() => setConfigSubTab("broadcast")}
-                    className={`px-5 py-2.5 text-sm font-semibold rounded-t-lg border border-b-0 transition-all ${
-                      configSubTab === "broadcast"
-                        ? "bg-white border-[#E2E5EC] text-[#141821] shadow-sm -mb-px"
-                        : "bg-transparent border-transparent text-[#4C5361] hover:text-[#141821]"
-                    }`}
-                    style={{ cursor: "pointer" }}
-                  >
-                    <span className="flex items-center gap-2"><Megaphone size={15} /> Broadcast</span>
-                  </button>
-                  <button
-                    onClick={() => setConfigSubTab("activity")}
-                    className={`px-5 py-2.5 text-sm font-semibold rounded-t-lg border border-b-0 transition-all ${
-                      configSubTab === "activity"
-                        ? "bg-white border-[#E2E5EC] text-[#141821] shadow-sm -mb-px"
-                        : "bg-transparent border-transparent text-[#4C5361] hover:text-[#141821]"
-                    }`}
-                    style={{ cursor: "pointer" }}
-                  >
-                    <span className="flex items-center gap-2"><History size={15} /> Activity Log</span>
-                  </button>
+                  {configSubTabs.map((tab) => {
+                    const TabIcon = tab.icon;
+                    return (
+                      <button
+                        key={tab.id}
+                        onClick={() => setConfigSubTab(tab.id)}
+                        className={`px-5 py-2.5 text-sm font-semibold rounded-t-lg border border-b-0 transition-all ${
+                          configSubTab === tab.id
+                            ? "bg-white border-[#E2E5EC] text-[#141821] shadow-sm -mb-px"
+                            : "bg-transparent border-transparent text-[#4C5361] hover:text-[#141821]"
+                        }`}
+                        style={{ cursor: "pointer" }}
+                      >
+                        <span className="flex items-center gap-2"><TabIcon size={15} /> {tab.label}</span>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -2953,12 +3043,12 @@ export default function AdminDashboard({ initialData, initialUi = {} }: { initia
             </p>
             <form onSubmit={handleDeleteEmployer} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
               <div>
-                <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#141821", marginBottom: 6 }}>Admin Password Required</label>
+                <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#141821", marginBottom: 6 }}>Your Admin Password</label>
                 <input 
                   type="password" 
                   value={adminPassword}
                   onChange={(e) => setAdminPassword(e.target.value)}
-                  placeholder="Enter admin password"
+                  placeholder="Confirm with your own password"
                   required
                   style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid #CBD0DA", fontSize: 14, boxSizing: "border-box" }}
                 />
@@ -3316,12 +3406,12 @@ export default function AdminDashboard({ initialData, initialUi = {} }: { initia
 
                   {/* Super Admin Password */}
                   <div>
-                    <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#141821", marginBottom: 6 }}>Admin Password Required</label>
+                    <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#141821", marginBottom: 6 }}>Your Admin Password</label>
                     <input
                       type="password"
                       value={editPassword}
                       onChange={e => setEditPassword(e.target.value)}
-                      placeholder="Enter admin password"
+                      placeholder="Confirm with your own password"
                       required
                       style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid #CBD0DA", fontSize: 14, boxSizing: "border-box" }}
                     />
@@ -3411,12 +3501,12 @@ export default function AdminDashboard({ initialData, initialUi = {} }: { initia
             </p>
             <form onSubmit={handleDeleteUser} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
               <div>
-                <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#141821", marginBottom: 6 }}>Admin Password Required</label>
+                <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#141821", marginBottom: 6 }}>Your Admin Password</label>
                 <input 
                   type="password" 
                   value={userActionPassword}
                   onChange={(e) => setUserActionPassword(e.target.value)}
-                  placeholder="Enter admin password"
+                  placeholder="Confirm with your own password"
                   required
                   style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid #CBD0DA", fontSize: 14, boxSizing: "border-box" }}
                 />
@@ -3445,6 +3535,69 @@ export default function AdminDashboard({ initialData, initialUi = {} }: { initia
         </div>
       )}
 
+      {/* Edit Sub Admin Modal — rename and/or reset password. Without this the
+          only recovery from a forgotten sub-admin password was delete-and-recreate. */}
+      {editSubAdminModal && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 10000, padding: "0 16px" }}>
+          <div style={{ background: "#fff", borderRadius: 12, padding: 24, width: "100%", maxWidth: 400, maxHeight: "90vh", overflowY: "auto", boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1)" }}>
+            <h3 style={{ margin: "0 0 6px 0", fontSize: 18, fontWeight: 700, color: "#111827" }}>Edit Admin</h3>
+            <p style={{ margin: "0 0 20px 0", fontSize: 13, color: "#6E7686", lineHeight: 1.5 }}>
+              Rename <strong>{editSubAdminModal.username}</strong> or give them a new password. Renaming signs them out of any open session.
+            </p>
+            <form onSubmit={handleEditSubAdmin} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              <div>
+                <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#141821", marginBottom: 6 }}>Username</label>
+                <input
+                  type="text"
+                  value={editSubName}
+                  onChange={(e) => setEditSubName(e.target.value)}
+                  style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid #CBD0DA", fontSize: 14, boxSizing: "border-box" }}
+                />
+              </div>
+              <div>
+                <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#141821", marginBottom: 6 }}>New Password <span style={{ fontWeight: 500, color: "#9AA1B1" }}>(leave blank to keep)</span></label>
+                <input
+                  type="password"
+                  value={editSubNewPassword}
+                  onChange={(e) => setEditSubNewPassword(e.target.value)}
+                  placeholder="Set a new password"
+                  style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid #CBD0DA", fontSize: 14, boxSizing: "border-box" }}
+                />
+              </div>
+              <div>
+                <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#141821", marginBottom: 6 }}>Your Admin Password</label>
+                <input
+                  type="password"
+                  value={editSubOwnPassword}
+                  onChange={(e) => setEditSubOwnPassword(e.target.value)}
+                  placeholder="Confirm with your own password"
+                  required
+                  style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid #CBD0DA", fontSize: 14, boxSizing: "border-box" }}
+                />
+              </div>
+              {editSubError && <p style={{ color: "#E5484D", margin: 0, fontSize: 13 }}>{editSubError}</p>}
+              <div style={{ display: "flex", gap: 12, justifyContent: "flex-end", marginTop: 8 }}>
+                <button
+                  type="button"
+                  onClick={() => setEditSubAdminModal(null)}
+                  disabled={editSubSaving}
+                  style={{ background: "#f3f4f6", color: "#141821", border: "none", padding: "8px 16px", borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: "pointer" }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={editSubSaving || !editSubOwnPassword}
+                  style={{ background: "#1B5CBF", color: "#fff", border: "none", padding: "8px 16px", borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: (editSubSaving || !editSubOwnPassword) ? "not-allowed" : "pointer", opacity: (editSubSaving || !editSubOwnPassword) ? 0.5 : 1 }}
+                >
+                  {editSubSaving ? "Saving…" : "Save Changes"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* Delete Sub Admin Modal */}
       {deleteSubAdminModal && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 10000 }}>
@@ -3455,12 +3608,12 @@ export default function AdminDashboard({ initialData, initialUi = {} }: { initia
             </p>
             <form onSubmit={handleDeleteSubAdmin} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
               <div>
-                <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#141821", marginBottom: 6 }}>Admin Password Required</label>
+                <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#141821", marginBottom: 6 }}>Your Admin Password</label>
                 <input 
                   type="password" 
                   value={userActionPassword}
                   onChange={(e) => setUserActionPassword(e.target.value)}
-                  placeholder="Enter admin password"
+                  placeholder="Confirm with your own password"
                   required
                   style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid #CBD0DA", fontSize: 14, boxSizing: "border-box" }}
                 />
@@ -3499,12 +3652,12 @@ export default function AdminDashboard({ initialData, initialUi = {} }: { initia
             </p>
             <form onSubmit={handleToggleBan} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
               <div>
-                <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#141821", marginBottom: 6 }}>Admin Password Required</label>
+                <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#141821", marginBottom: 6 }}>Your Admin Password</label>
                 <input 
                   type="password" 
                   value={userActionPassword}
                   onChange={(e) => setUserActionPassword(e.target.value)}
-                  placeholder="Enter admin password"
+                  placeholder="Confirm with your own password"
                   required
                   style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid #CBD0DA", fontSize: 14, boxSizing: "border-box" }}
                 />
@@ -3866,17 +4019,25 @@ export default function AdminDashboard({ initialData, initialUi = {} }: { initia
                           <p style={{ fontSize: 11, color: "#9AA1B1", margin: 0, marginTop: 1 }}>Sub Admin · Created {new Date(admin.createdAt).toLocaleDateString()}</p>
                         </div>
                         {isSuperAdmin && (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setDeleteSubAdminModal({ id: admin.id, username: admin.username });
-                              setUserActionPassword("");
-                              setUserActionError("");
-                            }}
-                            style={{ marginLeft: "auto", padding: "6px 10px", borderRadius: 8, border: "1px solid #fecaca", background: "#FDECEC", color: "#E5484D", fontSize: 12, fontWeight: 600, cursor: "pointer" }}
-                          >
-                            Remove
-                          </button>
+                          <div style={{ marginLeft: "auto", display: "flex", gap: 8, flexShrink: 0 }}>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); openEditSubAdmin({ id: admin.id, username: admin.username }); }}
+                              style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid #E2E5EC", background: "#F7F8FA", color: "#343A46", fontSize: 12, fontWeight: 600, cursor: "pointer" }}
+                            >
+                              Edit
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setDeleteSubAdminModal({ id: admin.id, username: admin.username });
+                                setUserActionPassword("");
+                                setUserActionError("");
+                              }}
+                              style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid #fecaca", background: "#FDECEC", color: "#E5484D", fontSize: 12, fontWeight: 600, cursor: "pointer" }}
+                            >
+                              Remove
+                            </button>
+                          </div>
                         )}
                       </div>
                       {/* Permissions toggles */}

@@ -19,6 +19,8 @@ const ACTION_LABELS: Record<string, string> = {
   assign_package: "Assigned package",
   create_sub_admin: "Created sub-admin",
   update_sub_admin_permissions: "Updated sub-admin permissions",
+  update_sub_admin_credentials: "Updated sub-admin credentials",
+  delete_sub_admin: "Deleted sub-admin",
   send_broadcast: "Sent broadcast",
   edit_broadcast: "Edited broadcast",
   delete_broadcast: "Deleted broadcast",
