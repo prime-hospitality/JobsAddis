@@ -179,12 +179,15 @@ async function requireAnyPermission(...perms: (keyof AdminPermissions)[]) {
  *  it). `select("*")` picks both up, so strip them on the way out. */
 const EMPLOYER_SECRET_COLUMNS = ["password_hash", "authorization_number"] as const;
 
+function stripEmployerSecretsRow<T extends Record<string, unknown>>(row: T | null | undefined): T | null {
+  if (!row) return null;
+  const safe = { ...row };
+  for (const col of EMPLOYER_SECRET_COLUMNS) delete safe[col];
+  return safe;
+}
+
 function stripEmployerSecrets<T extends Record<string, unknown>>(rows: T[] | null | undefined): T[] {
-  return (rows || []).map((row) => {
-    const safe = { ...row };
-    for (const col of EMPLOYER_SECRET_COLUMNS) delete safe[col];
-    return safe;
-  });
+  return (rows || []).map((row) => stripEmployerSecretsRow(row) as T);
 }
 
 async function logActivity(action: string, target?: string, metadata?: Record<string, any>) {
@@ -1736,7 +1739,9 @@ export async function addEmployer(telegramId: number, businessName: string, busi
     newEmp = empWithPkg;
   }
 
-  return { success: true, employer: newEmp, authorizationNumber: authNumber };
+  // The authorization number is handed back explicitly (the UI shows it once);
+  // it has no business riding along inside the employer row as well.
+  return { success: true, employer: stripEmployerSecretsRow(newEmp), authorizationNumber: authNumber };
 }
 
 export async function updateEmployer(employerId: string, businessName: string, businessType: string, dailyPostLimit: number, passwordAttempt: string, packageId?: string | null, tinNumber?: string) {
@@ -1802,7 +1807,7 @@ export async function updateEmployer(employerId: string, businessName: string, b
   if (packageId !== undefined) {
     await logActivity("assign_package", employerId, { packageId });
   }
-  return { success: true, employer: data };
+  return { success: true, employer: stripEmployerSecretsRow(data) };
 }
 
 // Marks an employer's pending renewal request as seen -- tells the employer
@@ -1821,7 +1826,7 @@ export async function acknowledgeEmployerRenewal(employerId: string) {
     .single();
   if (error) throw error;
   await logActivity("acknowledge_renewal_request", employerId);
-  return { success: true, employer: data };
+  return { success: true, employer: stripEmployerSecretsRow(data) };
 }
 
 export async function updateEmployerAutoPublish(employerId: string, autoPublish: boolean) {
