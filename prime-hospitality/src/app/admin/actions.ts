@@ -1,6 +1,7 @@
 "use server";
 
 import { cookies } from "next/headers";
+import { randomUUID } from "crypto";
 import { createClient } from "@supabase/supabase-js";
 import bcrypt from "bcryptjs";
 import { ADMIN_UI_COOKIE } from "@/lib/adminUiCookie";
@@ -49,27 +50,94 @@ export type SubAdmin = {
 };
 
 // ── Sub-admin helpers ────────────────────────────────────────────────────────
-async function getSubAdmins(): Promise<SubAdmin[]> {
+async function readSubAdminsRow(): Promise<{ raw: string | null; admins: SubAdmin[] }> {
   const supabase = getSupabase();
   const { data } = await supabase.from("app_config").select("value").eq("key", "sub_admins").maybeSingle();
-  try { return data?.value ? JSON.parse(data.value) : []; } catch { return []; }
+  const raw = data?.value ?? null;
+  try { return { raw, admins: raw ? JSON.parse(raw) : [] }; } catch { return { raw, admins: [] }; }
 }
 
-async function saveSubAdmins(admins: SubAdmin[]): Promise<void> {
-  await getSupabase().from("app_config").upsert({ key: "sub_admins", value: JSON.stringify(admins), updated_at: new Date().toISOString() }, { onConflict: "key" });
+async function getSubAdmins(): Promise<SubAdmin[]> {
+  return (await readSubAdminsRow()).admins;
+}
+
+/** Every sub-admin lives in a single JSON blob, so a plain read-modify-write
+ *  loses whichever concurrent change landed first -- and logins write to this
+ *  blob too (the plaintext upgrade below), so the race is not hypothetical.
+ *  The update is therefore a compare-and-swap against the exact value we read;
+ *  if someone else moved it, we re-read and re-apply the change on top. */
+async function mutateSubAdmins<T>(
+  apply: (current: SubAdmin[]) => { next: SubAdmin[]; result: T } | { error: string },
+): Promise<{ success: true; result: T } | { success: false; error: string }> {
+  const supabase = getSupabase();
+
+  for (let attempt = 0; attempt < 4; attempt++) {
+    const { raw, admins } = await readSubAdminsRow();
+    const outcome = apply(admins);
+    if ("error" in outcome) return { success: false, error: outcome.error };
+
+    const value = JSON.stringify(outcome.next);
+    const updated_at = new Date().toISOString();
+
+    if (raw === null) {
+      // No row yet. A plain insert lets a concurrent creator lose the race
+      // loudly (unique violation) instead of silently overwriting.
+      const { error } = await supabase.from("app_config").insert({ key: "sub_admins", value, updated_at });
+      if (!error) return { success: true, result: outcome.result };
+      continue;
+    }
+
+    const { data: written, error } = await supabase
+      .from("app_config")
+      .update({ value, updated_at })
+      .eq("key", "sub_admins")
+      .eq("value", raw)
+      .select("key");
+    if (error) return { success: false, error: "Failed to save admin changes." };
+    if (written && written.length > 0) return { success: true, result: outcome.result };
+    // 0 rows: the blob changed under us -- loop and re-apply.
+  }
+
+  return { success: false, error: "Admin list is being changed elsewhere. Please try again." };
 }
 
 // Sub-admin passwords live inside the sub_admins JSON blob rather than one
 // app_config row each, so they can't reuse verifyConfigPassword directly.
 // Same idea though: bcrypt going forward, with older plaintext rows
 // upgraded to a hash the moment they successfully match.
-async function matchAndMaybeUpgradeSubAdminPassword(allSubs: SubAdmin[], record: SubAdmin, passwordAttempt: string): Promise<boolean> {
+async function matchAndMaybeUpgradeSubAdminPassword(record: SubAdmin, passwordAttempt: string): Promise<boolean> {
   const looksHashed = /^\$2[aby]\$/.test(record.password);
   if (looksHashed) return bcrypt.compare(passwordAttempt, record.password);
   if (passwordAttempt !== record.password) return false;
   const upgraded = await bcrypt.hash(passwordAttempt, 10);
-  await saveSubAdmins(allSubs.map((s) => (s.id === record.id ? { ...s, password: upgraded } : s)));
+  await mutateSubAdmins((current) => ({
+    next: current.map((s) => (s.id === record.id ? { ...s, password: upgraded } : s)),
+    result: null,
+  }));
   return true;
+}
+
+/** The username the super admin logs in with. Sub-admins must not be able to
+ *  take it -- login checks the super admin first, so a collision would lock the
+ *  sub-admin out permanently and make the two indistinguishable everywhere the
+ *  session is keyed by username. */
+async function getSuperAdminUsername(): Promise<string> {
+  const { data } = await getSupabase().from("app_config").select("value").eq("key", "admin_username").maybeSingle();
+  return data?.value?.trim() || "admin";
+}
+
+/** Confirmation prompts ask for "your admin password". For the super admin
+ *  that's the app_config password; for a sub-admin it's their own, not the
+ *  super admin's -- which they have no way of knowing. */
+async function verifyActingAdminPassword(passwordAttempt: string): Promise<boolean> {
+  const session = await getSession();
+  if (!session) return false;
+  if (session.role === "super_admin") {
+    return verifyConfigPassword("admin_password", passwordAttempt, ADMIN_PASSWORD_FALLBACK);
+  }
+  const record = (await getSubAdmins()).find((s) => s.username === session.username);
+  if (!record) return false;
+  return matchAndMaybeUpgradeSubAdminPassword(record, passwordAttempt);
 }
 
 // ── Session helpers ─────────────────────────────────────────────────────────
@@ -95,6 +163,31 @@ async function requirePermission(perm: keyof AdminPermissions) {
   const admin = await getLoggedInAdmin();
   if (!admin) throw new Error("Unauthorized");
   if (!admin.permissions[perm]) throw new Error("Permission denied");
+}
+
+/** For reads that back more than one screen -- the packages list is edited from
+ *  Monetization (manageConfiguration) but also read when assigning a plan to an
+ *  employer (manageEmployers), so either permission is enough to see it. */
+async function requireAnyPermission(...perms: (keyof AdminPermissions)[]) {
+  const admin = await getLoggedInAdmin();
+  if (!admin) throw new Error("Unauthorized");
+  if (!perms.some((perm) => admin.permissions[perm])) throw new Error("Permission denied");
+}
+
+/** Columns on `employers` that must never reach a browser: the login hash, and
+ *  the onboarding code (which is a live credential until the employer redeems
+ *  it). `select("*")` picks both up, so strip them on the way out. */
+const EMPLOYER_SECRET_COLUMNS = ["password_hash", "authorization_number"] as const;
+
+function stripEmployerSecretsRow<T extends Record<string, unknown>>(row: T | null | undefined): T | null {
+  if (!row) return null;
+  const safe = { ...row };
+  for (const col of EMPLOYER_SECRET_COLUMNS) delete safe[col];
+  return safe;
+}
+
+function stripEmployerSecrets<T extends Record<string, unknown>>(rows: T[] | null | undefined): T[] {
+  return (rows || []).map((row) => stripEmployerSecretsRow(row) as T);
 }
 
 async function logActivity(action: string, target?: string, metadata?: Record<string, any>) {
@@ -131,8 +224,7 @@ export async function loginAdmin(username: string, password: string) {
   }
 
   // Check super admin first
-  const { data: uCfg } = await supabase.from("app_config").select("value").eq("key", "admin_username").single();
-  const storedUsername = uCfg?.value?.trim() || "admin";
+  const storedUsername = await getSuperAdminUsername();
 
   if (username.toLowerCase() === storedUsername.toLowerCase() && await verifyConfigPassword("admin_password", password, ADMIN_PASSWORD_FALLBACK)) {
     if (attemptRow) await supabase.from("admin_login_attempts").delete().eq("username", attemptKey);
@@ -149,7 +241,7 @@ export async function loginAdmin(username: string, password: string) {
   // upgrade to a hash the moment one of those matches.
   const subs = await getSubAdmins();
   const subRecord = subs.find((s) => s.username.toLowerCase() === username.toLowerCase());
-  const subMatched = subRecord ? await matchAndMaybeUpgradeSubAdminPassword(subs, subRecord, password) : false;
+  const subMatched = subRecord ? await matchAndMaybeUpgradeSubAdminPassword(subRecord, password) : false;
   if (subRecord && subMatched) {
     if (attemptRow) await supabase.from("admin_login_attempts").delete().eq("username", attemptKey);
     const sessionData = signSessionValue({ username: subRecord.username, role: "sub_admin" });
@@ -182,48 +274,118 @@ export async function getCurrentAdminUsername(): Promise<string | null> {
 export async function createSubAdmin(username: string, password: string) {
   const session = await getSession();
   if (!session || session.role !== "super_admin") return { success: false, error: "Only the super admin can create sub-admins" };
-  if (!username.trim() || !password.trim()) return { success: false, error: "Username and password are required" };
 
-  const subs = await getSubAdmins();
-  if (subs.some((s) => s.username.toLowerCase() === username.toLowerCase())) {
-    return { success: false, error: "An admin with that username already exists" };
+  const trimmedName = username.trim();
+  const trimmedPassword = password.trim();
+  if (!trimmedName || !trimmedPassword) return { success: false, error: "Username and password are required" };
+  if (trimmedName.toLowerCase() === (await getSuperAdminUsername()).toLowerCase()) {
+    return { success: false, error: "That username belongs to the super admin. Choose another." };
   }
 
   const newSub: SubAdmin = {
-    id: Date.now().toString(),
-    username: username.trim(),
-    password: await bcrypt.hash(password.trim(), 10),
+    id: randomUUID(),
+    username: trimmedName,
+    password: await bcrypt.hash(trimmedPassword, 10),
     permissions: { manageEmployers: false, manageJobs: false, manageUsers: false, manageConfiguration: false, manageReports: false },
     createdAt: new Date().toISOString(),
   };
 
-  await saveSubAdmins([...subs, newSub]);
+  const saved = await mutateSubAdmins((current) => {
+    if (current.some((s) => s.username.toLowerCase() === newSub.username.toLowerCase())) {
+      return { error: "An admin with that username already exists" };
+    }
+    return { next: [...current, newSub], result: null };
+  });
+  if (!saved.success) return { success: false, error: saved.error };
+
   await logActivity("create_sub_admin", newSub.username);
-  return { success: true, subAdmin: newSub };
+  // The caller is a browser -- hand back the masked record, never the hash.
+  return { success: true, subAdmin: { ...newSub, password: "***" } };
 }
 
 export async function updateSubAdminPermissions(id: string, permissions: AdminPermissions) {
   const session = await getSession();
   if (!session || session.role !== "super_admin") return { success: false, error: "Only the super admin can update permissions" };
 
-  const subs = await getSubAdmins();
-  const updated = subs.map((s) => s.id === id ? { ...s, permissions } : s);
-  await saveSubAdmins(updated);
-  const target = subs.find((s) => s.id === id);
-  await logActivity("update_sub_admin_permissions", target?.username || id, { permissions });
+  const saved = await mutateSubAdmins((current) => {
+    const target = current.find((s) => s.id === id);
+    if (!target) return { error: "That admin no longer exists. Refresh and try again." };
+    return { next: current.map((s) => (s.id === id ? { ...s, permissions } : s)), result: target.username };
+  });
+  if (!saved.success) return { success: false, error: saved.error };
+
+  await logActivity("update_sub_admin_permissions", saved.result, { permissions });
   return { success: true };
+}
+
+/** Rename a sub-admin and/or set a new password. Without this the only way to
+ *  recover a forgotten sub-admin password is to delete and recreate the
+ *  account, which loses its permissions and its place in the audit trail. */
+export async function updateSubAdminCredentials(
+  id: string,
+  changes: { username?: string; password?: string },
+  passwordAttempt: string,
+) {
+  const session = await getSession();
+  if (!session || session.role !== "super_admin") return { success: false, error: "Only the super admin can change admin credentials" };
+
+  const newName = changes.username?.trim();
+  const newPassword = changes.password?.trim();
+  if (!newName && !newPassword) return { success: false, error: "Nothing to change" };
+
+  if (!(await verifyActingAdminPassword(passwordAttempt))) {
+    return { success: false, error: "Incorrect admin password" };
+  }
+  if (newName && newName.toLowerCase() === (await getSuperAdminUsername()).toLowerCase()) {
+    return { success: false, error: "That username belongs to the super admin. Choose another." };
+  }
+
+  const hashed = newPassword ? await bcrypt.hash(newPassword, 10) : null;
+
+  const saved = await mutateSubAdmins<{ previousUsername: string; username: string }>((current) => {
+    const target = current.find((s) => s.id === id);
+    if (!target) return { error: "That admin no longer exists. Refresh and try again." };
+    if (newName && current.some((s) => s.id !== id && s.username.toLowerCase() === newName.toLowerCase())) {
+      return { error: "An admin with that username already exists" };
+    }
+    const updated: SubAdmin = {
+      ...target,
+      ...(newName ? { username: newName } : {}),
+      ...(hashed ? { password: hashed } : {}),
+    };
+    return {
+      next: current.map((s) => (s.id === id ? updated : s)),
+      result: { previousUsername: target.username, username: updated.username },
+    };
+  });
+  if (!saved.success) return { success: false, error: saved.error };
+
+  await logActivity("update_sub_admin_credentials", saved.result.username, {
+    renamed: Boolean(newName && newName !== saved.result.previousUsername),
+    previousUsername: saved.result.previousUsername,
+    passwordReset: Boolean(hashed),
+  });
+  // A rename invalidates that admin's session: getLoggedInAdmin looks them up
+  // by the username baked into their cookie, which no longer resolves.
+  return { success: true, username: saved.result.username };
 }
 
 export async function deleteSubAdmin(id: string, passwordAttempt: string) {
   const session = await getSession();
   if (!session || session.role !== "super_admin") return { success: false, error: "Only the super admin can delete sub-admins" };
 
-  if (!(await verifyConfigPassword("admin_password", passwordAttempt, ADMIN_PASSWORD_FALLBACK))) {
+  if (!(await verifyActingAdminPassword(passwordAttempt))) {
     return { success: false, error: "Incorrect admin password" };
   }
 
-  const subs = await getSubAdmins();
-  await saveSubAdmins(subs.filter((s) => s.id !== id));
+  const saved = await mutateSubAdmins<SubAdmin>((current) => {
+    const target = current.find((s) => s.id === id);
+    if (!target) return { error: "That admin no longer exists. Refresh and try again." };
+    return { next: current.filter((s) => s.id !== id), result: target };
+  });
+  if (!saved.success) return { success: false, error: saved.error };
+
+  await logActivity("delete_sub_admin", saved.result.username, { permissions: saved.result.permissions });
   return { success: true };
 }
 
@@ -245,41 +407,59 @@ export async function getAdminData() {
   const admin = await getLoggedInAdmin();
   if (!admin) throw new Error("Unauthorized");
 
+  // This is the dashboard's whole bootstrap payload, so it is scoped to what
+  // the admin is allowed to open. Without this a sub-admin with no permissions
+  // at all still received every employer, job and seeker count, because the
+  // Overview tab is visible to everyone.
+  const p = admin.permissions;
+  const canSeeBusinessData = p.manageEmployers || p.manageJobs;
+
   // Fetch all employers (exclude system/admin employers)
-  const { data: rawEmployers } = await getSupabase()
-    .from("employers")
-    .select("*, users(telegram_id, role)")
-    .order("created_at", { ascending: false });
-  const employers = (rawEmployers || []).filter((e: any) => e.users?.role !== "admin");
+  const employers = canSeeBusinessData
+    ? await (async () => {
+        const { data: rawEmployers } = await getSupabase()
+          .from("employers")
+          .select("*, users(telegram_id, role)")
+          .order("created_at", { ascending: false });
+        return stripEmployerSecrets((rawEmployers || []).filter((e: any) => e.users?.role !== "admin"));
+      })()
+    : [];
 
   // Fetch all jobs
-  const { data: jobs } = await getSupabase()
-    .from("jobs")
-    .select("*, employers(business_name)")
-    .order("created_at", { ascending: false });
+  const jobs = canSeeBusinessData
+    ? (await getSupabase()
+        .from("jobs")
+        .select("*, employers(business_name)")
+        .order("created_at", { ascending: false })).data
+    : [];
 
   // Fetch employer-originated activity (written by employer server actions,
   // tagged metadata.source = "employer") for the Overview "Employer Activity"
   // panel -- a real actor/time-accurate trail, not inferred from jobs rows.
-  const { data: employerActivityLog } = await getSupabase()
-    .from("activity_log")
-    .select("*")
-    .contains("metadata", { source: "employer" })
-    .order("created_at", { ascending: false })
-    .limit(200);
+  const employerActivityLog = canSeeBusinessData
+    ? (await getSupabase()
+        .from("activity_log")
+        .select("*")
+        .contains("metadata", { source: "employer" })
+        .order("created_at", { ascending: false })
+        .limit(200)).data
+    : [];
 
   // Fetch total job seekers count for overview stats
-  const { count: userCount } = await getSupabase()
-    .from("users")
-    .select("*", { count: 'exact', head: true })
-    .eq("role", "job_seeker");
+  const userCount = (p.manageUsers || p.manageReports)
+    ? (await getSupabase()
+        .from("users")
+        .select("*", { count: 'exact', head: true })
+        .eq("role", "job_seeker")).count
+    : 0;
 
   const supabase = getSupabase();
-  const { data: uCfg } = await supabase.from("app_config").select("value").eq("key", "admin_username").single();
-  const adminUsername = uCfg?.value?.trim() || "admin";
+  const adminUsername = await getSuperAdminUsername();
 
   // Fetch special requests from app_config
-  const { data: srCfg } = await supabase.from("app_config").select("value").eq("key", "special_requests").maybeSingle();
+  const { data: srCfg } = p.manageUsers
+    ? await supabase.from("app_config").select("value").eq("key", "special_requests").maybeSingle()
+    : { data: null };
   let specialRequests = [];
   try {
     if (srCfg?.value) {
@@ -298,9 +478,9 @@ export async function getAdminData() {
     }
   } catch (e) {}
   
-  // Fetch pricing config
-  const pricingConfig = await getPricingConfig();
-  
+  // Fetch pricing config (only the Monetization tab reads it)
+  const pricingConfig = p.manageConfiguration ? await readPricingConfig() : null;
+
   // Fetch sub-admins if super admin
   let subAdmins: any[] = [];
   if (admin.role === "super_admin") {
@@ -324,8 +504,7 @@ export async function getAdminData() {
 }
 
 export async function searchUsers(queryName: string, queryPhone: string, page: number = 1, pageSize: number = 25) {
-  const admin = await getLoggedInAdmin();
-  if (!admin) throw new Error("Unauthorized");
+  await requirePermission("manageUsers");
 
   let query = getSupabase()
     .from("users")
@@ -357,8 +536,7 @@ export async function searchUsers(queryName: string, queryPhone: string, page: n
 }
 
 export async function searchEmployers(queryBusinessName: string = "", page: number = 1, pageSize: number = 20) {
-  const admin = await getLoggedInAdmin();
-  if (!admin) throw new Error("Unauthorized");
+  await requirePermission("manageEmployers");
 
   let query = getSupabase()
     .from("employers")
@@ -388,7 +566,7 @@ export async function searchEmployers(queryBusinessName: string = "", page: numb
 
   if (error) throw new Error(error.message);
 
-  const employers = data || [];
+  const employers = stripEmployerSecrets(data);
 
   // Active job counts are fetched separately (only for the current page of
   // employers) since a filtered embedded count would turn this into an inner
@@ -427,8 +605,7 @@ export async function toggleUserBan(userId: string, isBanned: boolean, passwordA
   if (!admin) return { success: false, error: "Unauthorized" };
   if (!admin.permissions.manageUsers) return { success: false, error: "Permission denied" };
 
-  // Only verify password for super admin; sub-admins with permission can act directly
-  if (admin.role === "super_admin" && !(await verifyConfigPassword("admin_password", passwordAttempt, ADMIN_PASSWORD_FALLBACK))) {
+  if (!(await verifyActingAdminPassword(passwordAttempt))) {
     return { success: false, error: "Incorrect admin password" };
   }
 
@@ -444,7 +621,7 @@ export async function deleteUser(userId: string, passwordAttempt: string) {
   if (!admin.permissions.manageUsers) return { success: false, error: "Permission denied" };
 
   const supabase = getSupabase();
-  if (!(await verifyConfigPassword("admin_password", passwordAttempt, ADMIN_PASSWORD_FALLBACK))) {
+  if (!(await verifyActingAdminPassword(passwordAttempt))) {
     return { success: false, error: "Incorrect admin password" };
   }
 
@@ -598,7 +775,7 @@ export async function cancelScheduledJob(jobId: string) {
 }
 
 export async function checkTemplateStatus(templateId: string) {
-  if (!verifySessionValue((await cookies()).get("admin_session")?.value)) throw new Error("Unauthorized");
+  await requirePermission("manageConfiguration");
 
   const supabase = getSupabase();
   const { data: tpl } = await supabase.from("vacancy_templates").select("title, updated_at").eq("id", templateId).single();
@@ -803,7 +980,8 @@ export async function createPlatformJob(form: VacancyFormState): Promise<{ succe
 }
 
 export async function postJobFromTemplate(templateId: string) {
-  if (!verifySessionValue((await cookies()).get("admin_session")?.value)) return { success: false, error: "Unauthorized" };
+  // Publishes a live job under the platform identity, same as createPlatformJob.
+  await requirePermission("manageJobs");
 
   const supabase = getSupabase();
 
@@ -848,7 +1026,7 @@ export async function postJobFromTemplate(templateId: string) {
 }
 
 export async function scheduleJobFromTemplate(templateId: string, scheduledAt: string) {
-  if (!verifySessionValue((await cookies()).get("admin_session")?.value)) return { success: false, error: "Unauthorized" };
+  await requirePermission("manageJobs");
 
   const supabase = getSupabase();
   const { data: tpl, error: tplErr } = await supabase
@@ -896,7 +1074,7 @@ export async function scheduleJobFromTemplate(templateId: string, scheduledAt: s
 // employer (via postJobFromTemplate / scheduleJobFromTemplate above).
 
 export async function getPlatformJobs() {
-  if (!verifySessionValue((await cookies()).get("admin_session")?.value)) throw new Error("Unauthorized");
+  await requirePermission("manageJobs");
 
   const supabase = getSupabase();
   const employerResult = await getPlatformEmployerId(supabase);
@@ -1561,14 +1739,16 @@ export async function addEmployer(telegramId: number, businessName: string, busi
     newEmp = empWithPkg;
   }
 
-  return { success: true, employer: newEmp, authorizationNumber: authNumber };
+  // The authorization number is handed back explicitly (the UI shows it once);
+  // it has no business riding along inside the employer row as well.
+  return { success: true, employer: stripEmployerSecretsRow(newEmp), authorizationNumber: authNumber };
 }
 
 export async function updateEmployer(employerId: string, businessName: string, businessType: string, dailyPostLimit: number, passwordAttempt: string, packageId?: string | null, tinNumber?: string) {
   await requirePermission("manageEmployers");
 
   const supabase = getSupabase();
-  if (!(await verifyConfigPassword("admin_password", passwordAttempt, ADMIN_PASSWORD_FALLBACK))) {
+  if (!(await verifyActingAdminPassword(passwordAttempt))) {
     throw new Error("Incorrect admin password");
   }
 
@@ -1627,7 +1807,7 @@ export async function updateEmployer(employerId: string, businessName: string, b
   if (packageId !== undefined) {
     await logActivity("assign_package", employerId, { packageId });
   }
-  return { success: true, employer: data };
+  return { success: true, employer: stripEmployerSecretsRow(data) };
 }
 
 // Marks an employer's pending renewal request as seen -- tells the employer
@@ -1646,7 +1826,7 @@ export async function acknowledgeEmployerRenewal(employerId: string) {
     .single();
   if (error) throw error;
   await logActivity("acknowledge_renewal_request", employerId);
-  return { success: true, employer: data };
+  return { success: true, employer: stripEmployerSecretsRow(data) };
 }
 
 export async function updateEmployerAutoPublish(employerId: string, autoPublish: boolean) {
@@ -1664,7 +1844,7 @@ export async function deleteEmployer(employerId: string, passwordAttempt: string
   if (!admin.permissions.manageEmployers) return { success: false, error: "Permission denied" };
 
   const supabase = getSupabase();
-  if (!(await verifyConfigPassword("admin_password", passwordAttempt, ADMIN_PASSWORD_FALLBACK))) {
+  if (!(await verifyActingAdminPassword(passwordAttempt))) {
     return { success: false, error: "Incorrect admin password" };
   }
 
@@ -1740,7 +1920,7 @@ export async function approveSpecialRequest(userId: string, passwordAttempt: str
   if (!admin) return { success: false, error: "Unauthorized" };
   if (!admin.permissions.manageUsers) return { success: false, error: "Permission denied" };
 
-  if (admin.role === "super_admin" && !(await verifyConfigPassword("admin_password", passwordAttempt, ADMIN_PASSWORD_FALLBACK))) {
+  if (!(await verifyActingAdminPassword(passwordAttempt))) {
     return { success: false, error: "Incorrect admin password" };
   }
 
@@ -1790,8 +1970,7 @@ export async function approveSpecialRequest(userId: string, passwordAttempt: str
 // this the moment an admin opens the request rather than requiring a
 // separate deliberate action.
 export async function acknowledgeSpecialRequest(userId: string) {
-  const admin = await getLoggedInAdmin();
-  if (!admin) return { success: false, error: "Unauthorized" };
+  await requirePermission("manageUsers");
 
   const supabase = getSupabase();
   const { data: srCfg } = await supabase.from("app_config").select("value").eq("key", "special_requests").maybeSingle();
@@ -1814,7 +1993,7 @@ export async function acknowledgeSpecialRequest(userId: string) {
 // ── Content Management ────────────────────────────────────────────────────────
 
 export async function getContentData() {
-  if (!verifySessionValue((await cookies()).get("admin_session")?.value)) throw new Error("Unauthorized");
+  await requirePermission("manageConfiguration");
 
   const supabase = getSupabase();
   const [faqs, templates, config] = await Promise.all([
@@ -1831,7 +2010,7 @@ export async function getContentData() {
 }
 
 export async function upsertFaq(id: string | null, question: string, answer: string, display_order: number) {
-  if (!verifySessionValue((await cookies()).get("admin_session")?.value)) throw new Error("Unauthorized");
+  await requirePermission("manageConfiguration");
 
   const { error } = await getSupabase().from("faqs").upsert({
     ...(id ? { id } : {}),
@@ -1846,7 +2025,7 @@ export async function upsertFaq(id: string | null, question: string, answer: str
 }
 
 export async function deleteFaq(id: string) {
-  if (!verifySessionValue((await cookies()).get("admin_session")?.value)) throw new Error("Unauthorized");
+  await requirePermission("manageConfiguration");
 
   const { error } = await getSupabase().from("faqs").delete().eq("id", id);
   if (error) throw error;
@@ -1855,7 +2034,7 @@ export async function deleteFaq(id: string) {
 
 
 export async function upsertVacancyTemplate(payload: VacancyFormState) {
-  if (!verifySessionValue((await cookies()).get("admin_session")?.value)) throw new Error("Unauthorized");
+  await requirePermission("manageConfiguration");
 
   const errors = validateVacancyForm(payload);
   if (errors) return { success: false, error: Object.values(errors)[0] };
@@ -1915,7 +2094,7 @@ export async function updateOnboardingConfig(key: string, label: string, value: 
   return { success: true };
 }
 
-export async function getPricingConfig() {
+async function readPricingConfig() {
   const supabase = getSupabase();
   const { data: pCfg } = await supabase.from("app_config").select("value").eq("key", "pricing_config").maybeSingle();
   let pricingConfig = null;
@@ -1923,6 +2102,13 @@ export async function getPricingConfig() {
     if (pCfg?.value) pricingConfig = JSON.parse(pCfg.value);
   } catch (e) {}
   return pricingConfig;
+}
+
+export async function getPricingConfig() {
+  // Exported server actions are reachable over HTTP by anyone -- this one used
+  // to answer unauthenticated callers.
+  await requirePermission("manageConfiguration");
+  return readPricingConfig();
 }
 
 export async function updatePricingConfig(config: any) {
@@ -1972,7 +2158,9 @@ export async function getProfessionCounts() {
 }
 
 export async function getPackages() {
-  await requirePermission("manageEmployers");
+  // Monetization edits packages with manageConfiguration, so gating the read on
+  // manageEmployers alone left that tab looking at an empty list.
+  await requireAnyPermission("manageEmployers", "manageConfiguration");
   const { data, error } = await getSupabase()
     .from("packages")
     .select("*")
