@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { loginAdmin } from "./actions";
 import { setTabUser } from "@/lib/adminTabSession";
 
@@ -10,6 +10,14 @@ export default function AdminLogin() {
   const [error, setError] = useState("");
   const [hasError, setHasError] = useState(false);
   const [loading, setLoading] = useState(false);
+  // This form is server-rendered, so it is on screen before React takes over.
+  // A click in that gap would fire the browser's own form submit — a bare GET
+  // reload of /admin that silently throws the typed credentials away, which is
+  // what made logging in take two clicks. Keeping the submit button disabled
+  // until we've mounted blocks that: with no enabled default button the browser
+  // also refuses implicit (Enter key) submission.
+  const [ready, setReady] = useState(false);
+  useEffect(() => setReady(true), []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -215,7 +223,7 @@ export default function AdminLogin() {
 
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || !ready}
               style={{
                 background: "#1d4ed8",
                 color: "white",

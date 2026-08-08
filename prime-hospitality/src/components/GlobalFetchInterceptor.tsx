@@ -11,6 +11,11 @@ const MIN_VISIBLE_MS = 400;
 
 export function GlobalFetchInterceptor() {
   const [isLoading, setIsLoading] = useState(false);
+  // True while the overlay is only still up to see out MIN_VISIBLE_MS — nothing
+  // is actually in flight. It must not swallow clicks during that stretch: the
+  // result is already on screen, so this is exactly when someone reaches for the
+  // button they just got an error about.
+  const [lingering, setLingering] = useState(false);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -35,9 +40,11 @@ export function GlobalFetchInterceptor() {
         setIsLoading(false);
         return;
       }
+      setLingering(true);
       hideTimer = setTimeout(() => {
         hideTimer = null;
         shownAt = 0;
+        setLingering(false);
         setIsLoading(false);
       }, remaining);
     };
@@ -56,6 +63,7 @@ export function GlobalFetchInterceptor() {
           if (hideTimer) {
             clearTimeout(hideTimer);
             hideTimer = null;
+            setLingering(false);
           }
           if (!shownAt && !showTimer) {
             showTimer = setTimeout(() => {
@@ -99,6 +107,7 @@ export function GlobalFetchInterceptor() {
         justifyContent: "center",
         background: "rgba(255, 255, 255, 0.4)",
         backdropFilter: "blur(2px)",
+        pointerEvents: lingering ? "none" : "auto",
       }}
     >
       <div
