@@ -10,6 +10,7 @@ import { verifyConfigPassword } from "@/lib/appConfigPassword";
 import { signSessionValue, verifySessionValue } from "@/lib/signedSession";
 import { startOfAddisDay } from "@/lib/addisDay";
 import { isSubscriptionExpired } from "@/lib/subscriptionStatus";
+import { computeSubscriptionWindow, parseCalendarDate, todayCalendarDate, validateSubscriptionStart } from "@/lib/subscriptionWindow";
 import { normalizeTin, validateTin, isDuplicateTin, TIN_TAKEN_ERROR } from "@/lib/ethiopianTin";
 import {
   VacancyFormState,
@@ -1617,7 +1618,11 @@ export async function getPfeJobsForEmployer(employerId: string): Promise<PfeJob[
   }));
 }
 
-export async function addEmployer(telegramId: number, businessName: string, businessType: string, packageId: string | null) {
+/** `registrationDate` is the day the business actually started, as "YYYY-MM-DD"
+ *  -- usually before today, since admins enter employers after the fact. It
+ *  anchors the package window rather than merely being recorded: see
+ *  src/lib/subscriptionWindow.ts. */
+export async function addEmployer(telegramId: number, businessName: string, businessType: string, packageId: string | null, registrationDate: string) {
   await requirePermission("manageEmployers");
 
   // Validate telegramId format (positive integer, 5-12 digits, no leading 0)
@@ -1626,9 +1631,10 @@ export async function addEmployer(telegramId: number, businessName: string, busi
     throw new Error("Telegram ID must be a valid number between 5 and 12 digits, and cannot start with 0.");
   }
   if (!packageId) throw new Error("A package must be selected.");
+  if (!parseCalendarDate(registrationDate)) throw new Error("Enter a valid registration date.");
 
   const supabase = getSupabase();
-  
+
   // 1. Check if user exists
   const { data: existingUser, error: userErr } = await supabase
     .from("users")
@@ -1687,23 +1693,37 @@ export async function addEmployer(telegramId: number, businessName: string, busi
     authNumber = generateAuthNumber();
   }
 
+  // Package duration is read defensively: prod may not have the packages table
+  // yet, in which case the employer is still created, just with no expiry.
+  let pkg: { name: string; duration_days: number } | null = null;
+  try {
+    const { data, error: pkgErr } = await supabase
+      .from("packages")
+      .select("name, duration_days")
+      .eq("id", packageId)
+      .maybeSingle();
+    if (!pkgErr) pkg = data;
+  } catch (_) {
+    // packages table not yet migrated – skip silently
+  }
+
   let packageExpiresAt: string | null = null;
-  // Try to resolve package duration (only if packages table exists in prod)
-  if (packageId) {
-    try {
-      const { data: pkg, error: pkgErr } = await supabase
-        .from("packages")
-        .select("duration_days")
-        .eq("id", packageId)
-        .maybeSingle();
-      if (!pkgErr && pkg) {
-        const now = new Date();
-        now.setDate(now.getDate() + pkg.duration_days);
-        packageExpiresAt = now.toISOString();
-      }
-    } catch (_) {
-      // packages table not yet migrated – skip silently
-    }
+  let subscriptionStartedAt: string | null;
+
+  if (pkg) {
+    // Re-runs the check the form already previewed. The admin confirmed a
+    // days-left count in the browser; this is what makes sure that count is
+    // what actually gets stored -- and that a date old enough to have used the
+    // whole package up can't create an employer who is expired on arrival.
+    const invalid = validateSubscriptionStart(registrationDate, pkg.duration_days, pkg.name);
+    if (invalid) throw new Error(invalid);
+    const window = computeSubscriptionWindow(registrationDate, pkg.duration_days)!;
+    subscriptionStartedAt = window.startsAt.toISOString();
+    packageExpiresAt = window.expiresAt.toISOString();
+  } else {
+    // Nothing to measure the term against, so the start date is all there is
+    // to honestly record.
+    subscriptionStartedAt = parseCalendarDate(registrationDate)!.toISOString();
   }
 
   // 3. Try inserting with package fields; fall back without them if columns don't exist yet
@@ -1718,13 +1738,13 @@ export async function addEmployer(telegramId: number, businessName: string, busi
 
   const { data: empWithPkg, error: insertEmpErrFull } = await supabase
     .from("employers")
-    .insert({ ...baseInsert, active_package_id: packageId || null, package_expires_at: packageExpiresAt })
+    .insert({ ...baseInsert, active_package_id: packageId || null, package_expires_at: packageExpiresAt, subscription_started_at: subscriptionStartedAt })
     .select("*, users(telegram_id)")
     .single();
 
   if (insertEmpErrFull) {
     // If error is about unknown column (migration not applied), retry without package fields
-    if (insertEmpErrFull.code === "42703" || insertEmpErrFull.message?.includes("active_package_id") || insertEmpErrFull.message?.includes("package_expires_at")) {
+    if (insertEmpErrFull.code === "42703" || insertEmpErrFull.message?.includes("active_package_id") || insertEmpErrFull.message?.includes("package_expires_at") || insertEmpErrFull.message?.includes("subscription_started_at")) {
       const { data: empFallback, error: insertEmpErrFallback } = await supabase
         .from("employers")
         .insert(baseInsert)
@@ -1744,7 +1764,10 @@ export async function addEmployer(telegramId: number, businessName: string, busi
   return { success: true, employer: stripEmployerSecretsRow(newEmp), authorizationNumber: authNumber };
 }
 
-export async function updateEmployer(employerId: string, businessName: string, businessType: string, dailyPostLimit: number, passwordAttempt: string, packageId?: string | null, tinNumber?: string) {
+/** `subscriptionStartedAt` ("YYYY-MM-DD") re-anchors the employer's term when
+ *  an admin corrects a registration date that was entered wrong; leaving it
+ *  undefined keeps whatever is on file. */
+export async function updateEmployer(employerId: string, businessName: string, businessType: string, dailyPostLimit: number, passwordAttempt: string, packageId?: string | null, tinNumber?: string, subscriptionStartedAt?: string) {
   await requirePermission("manageEmployers");
 
   const supabase = getSupabase();
@@ -1776,23 +1799,53 @@ export async function updateEmployer(employerId: string, businessName: string, b
     }
   }
 
-  if (packageId !== undefined) {
-    if (!packageId) throw new Error("A package must be selected.");
+  // The package and the start date share one calculation, because expiry is
+  // always start + duration:
+  //
+  //   - a new package (and the Renew button) opens a fresh term today;
+  //   - a corrected registration date re-anchors the term the employer is
+  //     already on, measured against the package they hold after this save.
+  if (packageId !== undefined || subscriptionStartedAt !== undefined) {
+    let effectivePackageId = packageId;
+    if (effectivePackageId === undefined) {
+      const { data: current, error: currentErr } = await supabase
+        .from("employers")
+        .select("active_package_id")
+        .eq("id", employerId)
+        .maybeSingle();
+      if (currentErr) throw currentErr;
+      effectivePackageId = current?.active_package_id ?? null;
+    }
+    if (!effectivePackageId) throw new Error("A package must be selected.");
+
     const { data: pkg, error: pkgErr } = await supabase
       .from("packages")
-      .select("duration_days")
-      .eq("id", packageId)
+      .select("name, duration_days")
+      .eq("id", effectivePackageId)
       .maybeSingle();
     if (pkgErr) throw pkgErr;
     if (!pkg) throw new Error("Selected package not found.");
-    const now = new Date();
-    now.setDate(now.getDate() + pkg.duration_days);
-    updateFields.active_package_id = packageId;
-    updateFields.package_expires_at = now.toISOString();
-    updateFields.renewal_requested = false;
-    updateFields.renewal_requested_at = null;
-    updateFields.renewal_seen_at = null;
+
+    // No date supplied means "start the term now" -- the renewal the package
+    // dropdown and the Renew button have always performed.
+    const startDate = subscriptionStartedAt ?? todayCalendarDate();
+    const invalid = validateSubscriptionStart(startDate, pkg.duration_days, pkg.name);
+    if (invalid) throw new Error(invalid);
+    const window = computeSubscriptionWindow(startDate, pkg.duration_days)!;
+
+    if (packageId !== undefined) updateFields.active_package_id = packageId;
+    updateFields.subscription_started_at = window.startsAt.toISOString();
+    updateFields.package_expires_at = window.expiresAt.toISOString();
+    // The warning flag tracks "have we warned about the expiry that was on
+    // file", and that expiry has just moved, so any earlier warning is spent.
     updateFields.expiry_warning_sent = false;
+    // A pending renewal request is only answered by an actual renewal. Fixing a
+    // mistyped start date isn't one, and must not dismiss the request.
+    if (packageId !== undefined) {
+      updateFields.renewal_requested = false;
+      updateFields.renewal_requested_at = null;
+      updateFields.renewal_seen_at = null;
+    }
   }
 
   const { data, error } = await supabase
@@ -1806,6 +1859,8 @@ export async function updateEmployer(employerId: string, businessName: string, b
   if (error) throw error;
   if (packageId !== undefined) {
     await logActivity("assign_package", employerId, { packageId });
+  } else if (subscriptionStartedAt !== undefined) {
+    await logActivity("correct_subscription_start", employerId, { subscriptionStartedAt });
   }
   return { success: true, employer: stripEmployerSecretsRow(data) };
 }
