@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { loginAdmin } from "./actions";
-import { setTabUser } from "@/lib/adminTabSession";
 
-export default function AdminLogin() {
+/** onSuccess hands the tab to AdminSessionGate, which marks it unlocked and
+ *  swaps in the dashboard. It used to be a full page reload from here. */
+export default function AdminLogin({ onSuccess }: { onSuccess: (username: string) => void }) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -39,10 +40,17 @@ export default function AdminLogin() {
 
     try {
       const res = await loginAdmin(username, password);
+      if (res.success && res.username) {
+        // Hands THIS tab to the gate as unlocked for the account that just
+        // logged in, so the dashboard appears here (and a new tab still
+        // requires a login of its own). The gate unmounts this form on the next
+        // render, so the button never comes back alive under the pointer.
+        onSuccess(res.username);
+        return;
+      }
       if (res.success) {
-        // Mark THIS tab as unlocked for the account that just logged in, so the
-        // gate shows the dashboard here (and a new tab still requires login).
-        if (res.username) setTabUser(res.username);
+        // No username came back to unlock the tab with — shouldn't happen, but
+        // a reload at least re-reads the cookie rather than hanging here.
         window.location.reload();
       } else {
         setError(res.error || "Login failed.");
