@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import AdminDashboard from "./AdminDashboard";
+import dynamic from "next/dynamic";
 import AdminLogin from "./AdminLogin";
 import { getAdminData, getCurrentAdminUsername } from "./actions";
 import { runSilently } from "@/lib/silentFetch";
@@ -9,6 +9,17 @@ import { AdminUiState } from "@/lib/adminUiCookie";
 import { getTabUser, clearTabUser } from "@/lib/adminTabSession";
 
 type Status = "checking" | "locked" | "unlocked";
+
+// The dashboard is by far the heaviest thing on this route. Statically importing
+// it put all of it in the initial bundle, so the server-rendered login form sat
+// there un-hydrated until it had all downloaded — and a click in that window did
+// a native form submit (a bare page reload), which is why logging in took two
+// clicks. Loading it on demand keeps the login page's bundle small enough to
+// hydrate before anyone can reach for the button.
+const AdminDashboard = dynamic(() => import("./AdminDashboard"), {
+  ssr: false,
+  loading: () => <AdminLoadingScreen />,
+});
 
 // Decides, per browser tab, whether to show the dashboard or the login page.
 // The auth cookie alone is not enough — a tab must have been "unlocked" by an
@@ -91,38 +102,7 @@ export default function AdminSessionGate({ initialUi }: { initialUi: Partial<Adm
   }, [status]);
 
   if (status === "checking") {
-    return (
-      <div
-        style={{
-          position: "fixed",
-          inset: 0,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          background: "#fff",
-        }}
-      >
-        {/* The mark sits bare on the brand's yellow field — it is a fill, never
-            an ink colour, so the blue mark reads directly against it. */}
-        <div
-          style={{
-            width: 80, height: 80, borderRadius: "50%",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            background: "#F2F012",
-            border: "1.5px solid #E2E5EC",
-            boxShadow: "0 4px 12px rgba(20, 24, 33, 0.05)",
-            animation: "pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite",
-          }}
-        >
-          <img
-            src="/addis_jobs_logo.webp"
-            alt="Loading…"
-            style={{ width: 56, height: 56, objectFit: "contain" }}
-          />
-        </div>
-        <style>{`@keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: .5; transform: scale(0.95); } }`}</style>
-      </div>
-    );
+    return <AdminLoadingScreen />;
   }
 
   if (status === "locked") {
@@ -130,4 +110,41 @@ export default function AdminSessionGate({ initialUi }: { initialUi: Partial<Adm
   }
 
   return <AdminDashboard initialData={data} initialUi={initialUi} />;
+}
+
+// Shown while this tab's session is being checked, and again while the
+// dashboard chunk itself is downloading.
+function AdminLoadingScreen() {
+  return (
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        background: "#fff",
+      }}
+    >
+      {/* The mark sits bare on the brand's yellow field — it is a fill, never
+          an ink colour, so the blue mark reads directly against it. */}
+      <div
+        style={{
+          width: 80, height: 80, borderRadius: "50%",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          background: "#F2F012",
+          border: "1.5px solid #E2E5EC",
+          boxShadow: "0 4px 12px rgba(20, 24, 33, 0.05)",
+          animation: "pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite",
+        }}
+      >
+        <img
+          src="/addis_jobs_logo.webp"
+          alt="Loading…"
+          style={{ width: 56, height: 56, objectFit: "contain" }}
+        />
+      </div>
+      <style>{`@keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: .5; transform: scale(0.95); } }`}</style>
+    </div>
+  );
 }
