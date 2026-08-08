@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { toggleUserBan, toggleJobStatus, scheduleJobPost, repostJob, approveScheduledJob, cancelScheduledJob, logoutAdmin, addEmployer, deleteEmployer, updateEmployer, updateEmployerAutoPublish, adminUpdateEmployerLogo, deleteUser, approveSpecialRequest, getPricingConfig, updatePricingConfig, getLoggedInAdmin, createSubAdmin, updateSubAdminPermissions, updateSubAdminCredentials, deleteSubAdmin, listSubAdmins, searchUsers, getProfessionCounts, searchEmployers, getPackages, upsertPackage, deletePackage, getBusinessTypes, addBusinessType, getPlatformEmployerProfile, updatePlatformEmployerLogo, getAdminData, acknowledgeEmployerRenewal, acknowledgeSpecialRequest } from "./actions";
 import type { AdminPermissions, SubAdmin } from "./actions";
 import { Trash2, Pencil, Image as ImageIcon, Menu, X, LayoutDashboard, Briefcase, FileText, Users, LogOut, Settings, CreditCard, CheckCircle, BookOpen, User, Building2, Hourglass, ChevronDown, Check, Plus, Megaphone, History, BarChart3 } from "lucide-react";
@@ -12,6 +13,7 @@ import { supabase } from "@/lib/supabase";
 import { runSilently } from "@/lib/silentFetch";
 import { AdminUiState, writeAdminUi, clearAdminUi } from "@/lib/adminUiCookie";
 import { isSubscriptionExpired } from "@/lib/subscriptionStatus";
+import { computeSubscriptionWindow, describeSubscriptionWindow, formatWindowDate, toCalendarDate, todayCalendarDate, validateSubscriptionStart } from "@/lib/subscriptionWindow";
 import { TIN_LENGTH, formatTin, normalizeTin } from "@/lib/ethiopianTin";
 import { clearTabUser } from "@/lib/adminTabSession";
 import ContentManagementTab from "./ContentManagementTab";
@@ -39,6 +41,23 @@ function getSubscriptionStatus(packageExpiresAt: string | null | undefined) {
     label: expired ? "Expired" : `${daysLeft} day${daysLeft === 1 ? "" : "s"} left`,
     color: expired ? "#E5484D" : "#0E8442",
     bg: expired ? "#fee2e2" : "#E7F7EE",
+  };
+}
+
+/** What the "Registered" column shows. The admin-entered start date is the one
+ *  the business itself would recognise; created_at only records when someone
+ *  got round to typing them in, so it's the fallback for the employers who
+ *  predate the field. */
+function registeredOn(employer: { subscription_started_at?: string | null; created_at?: string | null }) {
+  const started = employer.subscription_started_at;
+  const shown = started || employer.created_at;
+  return {
+    label: shown ? formatWindowDate(new Date(shown)) : "—",
+    // Only worth saying when the two differ, which is the normal case: an
+    // employer entered late reads as registered before they exist here.
+    title: started && employer.created_at && toCalendarDate(started) !== toCalendarDate(employer.created_at)
+      ? `Entered into the dashboard on ${formatWindowDate(new Date(employer.created_at))}`
+      : undefined,
   };
 }
 
@@ -238,15 +257,96 @@ function CustomSelect({ value, onChange, options, placeholder, className = "", s
   );
 }
 
+// ── Dropdown panels that escape their card ────────────────────────────────
+//
+// These menus used to be absolutely positioned inside their trigger, which put
+// them at the mercy of the nearest ancestor with `overflow: hidden`. The
+// employers/companies card is one, so the package list was cut off at the edge
+// of the card instead of floating over it. Measuring the trigger and rendering
+// the panel into <body> in viewport coordinates takes it out of every clipping
+// and stacking context on the way up.
+const DROPDOWN_PANEL_MAX_HEIGHT = 260;
+
+type PanelAnchor = { top: number; bottom: number; left: number; width: number; openUp: boolean };
+
+function useAnchoredPanel(open: boolean, triggerRef: React.RefObject<HTMLElement | null>): PanelAnchor | null {
+  const [anchor, setAnchor] = useState<PanelAnchor | null>(null);
+
+  useEffect(() => {
+    if (!open) { setAnchor(null); return; }
+
+    const measure = () => {
+      const el = triggerRef.current;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      const spaceBelow = window.innerHeight - rect.bottom;
+      // Flip above the trigger only when the panel genuinely fits better there.
+      const openUp = spaceBelow < DROPDOWN_PANEL_MAX_HEIGHT && rect.top > spaceBelow;
+      setAnchor({
+        top: rect.bottom + 6,
+        bottom: window.innerHeight - rect.top + 6,
+        left: rect.left,
+        width: rect.width,
+        openUp,
+      });
+    };
+
+    measure();
+    // Capture phase: the trigger can sit inside a scrolling panel, and only a
+    // capturing listener hears that panel's scroll events.
+    window.addEventListener("scroll", measure, true);
+    window.addEventListener("resize", measure);
+    return () => {
+      window.removeEventListener("scroll", measure, true);
+      window.removeEventListener("resize", measure);
+    };
+  }, [open, triggerRef]);
+
+  return anchor;
+}
+
+/** Renders a panel into <body>, but only once mounted -- `document` doesn't
+ *  exist while Next server-renders this client component, and createPortal
+ *  reaches for it during render rather than in an effect. */
+function PanelPortal({ children }: { children: React.ReactNode }) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  if (!mounted) return null;
+  return createPortal(children, document.body);
+}
+
+function anchoredPanelStyle(anchor: PanelAnchor): React.CSSProperties {
+  return {
+    position: "fixed",
+    top: anchor.openUp ? undefined : anchor.top,
+    bottom: anchor.openUp ? anchor.bottom : undefined,
+    left: anchor.left,
+    width: anchor.width,
+    zIndex: 400,
+    background: "#ffffff",
+    borderRadius: 12,
+    border: "1px solid #EFF1F5",
+    boxShadow: "0 10px 25px rgba(0,0,0,0.08)",
+    overflow: "hidden",
+  };
+}
+
 function PackageDropdown({ packages, selectedId, onSelect }: { packages: any[], selectedId: string, onSelect: (id: string) => void }) {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const anchor = useAnchoredPanel(isOpen, triggerRef);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
-      }
+      const target = event.target as Node;
+      // The panel is portaled out of dropdownRef, so it needs checking
+      // separately -- otherwise picking an option would count as clicking away
+      // and close the menu before the click landed on it.
+      const insideTrigger = dropdownRef.current?.contains(target);
+      const insidePanel = panelRef.current?.contains(target);
+      if (!insideTrigger && !insidePanel) setIsOpen(false);
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
@@ -257,6 +357,7 @@ function PackageDropdown({ packages, selectedId, onSelect }: { packages: any[], 
   return (
     <div ref={dropdownRef} style={{ position: "relative", width: "100%" }}>
       <button
+        ref={triggerRef}
         type="button"
         onClick={() => setIsOpen(!isOpen)}
         className="admin-input"
@@ -271,20 +372,18 @@ function PackageDropdown({ packages, selectedId, onSelect }: { packages: any[], 
         </span>
         <ChevronDown size={16} color="#4C5361" style={{ transform: isOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }} />
       </button>
-      
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: -5, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -5, scale: 0.98 }}
-            transition={{ duration: 0.15, ease: "easeOut" }}
-            style={{
-              position: "absolute", top: "calc(100% + 6px)", left: 0, right: 0, zIndex: 50,
-              background: "#ffffff", borderRadius: 12, border: "1px solid #EFF1F5",
-              boxShadow: "0 10px 25px rgba(0,0,0,0.08)", overflow: "hidden"
-            }}
-          >
+
+      <PanelPortal>
+        <AnimatePresence>
+          {isOpen && anchor && (
+            <motion.div
+              ref={panelRef}
+              initial={{ opacity: 0, y: -5, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -5, scale: 0.98 }}
+              transition={{ duration: 0.15, ease: "easeOut" }}
+              style={anchoredPanelStyle(anchor)}
+            >
             <div style={{ maxHeight: 240, overflowY: "auto", padding: 6 }}>
               {packages.map(pkg => (
                 <button
@@ -314,9 +413,10 @@ function PackageDropdown({ packages, selectedId, onSelect }: { packages: any[], 
                 </button>
               ))}
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </PanelPortal>
     </div>
   );
 }
@@ -326,12 +426,18 @@ function BusinessTypeSelect({ value, onChange, businessTypes, onAddType }: { val
   const [showOtherInput, setShowOtherInput] = useState(false);
   const [otherValue, setOtherValue] = useState("");
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const anchor = useAnchoredPanel(isOpen, triggerRef);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
-      }
+      const target = event.target as Node;
+      // Same portal caveat as PackageDropdown: the panel isn't inside
+      // dropdownRef any more, so it has to be tested on its own.
+      const insideTrigger = dropdownRef.current?.contains(target);
+      const insidePanel = panelRef.current?.contains(target);
+      if (!insideTrigger && !insidePanel) setIsOpen(false);
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
@@ -349,6 +455,7 @@ function BusinessTypeSelect({ value, onChange, businessTypes, onAddType }: { val
     <div>
       <div ref={dropdownRef} style={{ position: "relative", width: "100%" }}>
         <button
+          ref={triggerRef}
           type="button"
           onClick={() => setIsOpen(!isOpen)}
           style={{
@@ -363,19 +470,17 @@ function BusinessTypeSelect({ value, onChange, businessTypes, onAddType }: { val
           <ChevronDown size={16} color="#4C5361" style={{ transform: isOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }} />
         </button>
 
-        <AnimatePresence>
-          {isOpen && (
-            <motion.div
-              initial={{ opacity: 0, y: -5, scale: 0.98 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -5, scale: 0.98 }}
-              transition={{ duration: 0.15, ease: "easeOut" }}
-              style={{
-                position: "absolute", top: "calc(100% + 6px)", left: 0, right: 0, zIndex: 50,
-                background: "#ffffff", borderRadius: 12, border: "1px solid #EFF1F5",
-                boxShadow: "0 10px 25px rgba(0,0,0,0.08)", overflow: "hidden"
-              }}
-            >
+        <PanelPortal>
+          <AnimatePresence>
+            {isOpen && anchor && (
+              <motion.div
+                ref={panelRef}
+                initial={{ opacity: 0, y: -5, scale: 0.98 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -5, scale: 0.98 }}
+                transition={{ duration: 0.15, ease: "easeOut" }}
+                style={anchoredPanelStyle(anchor)}
+              >
               <div style={{ maxHeight: 240, overflowY: "auto", padding: 6 }}>
                 {businessTypes.map(bt => (
                   <button
@@ -413,9 +518,10 @@ function BusinessTypeSelect({ value, onChange, businessTypes, onAddType }: { val
                   <span style={{ fontSize: 14, fontWeight: 500, color: "#1B5CBF" }}>Other</span>
                 </button>
               </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </PanelPortal>
       </div>
 
       {showOtherInput && (
@@ -674,6 +780,11 @@ export default function AdminDashboard({ initialData, initialUi = {} }: { initia
   const [newBusinessType, setNewBusinessType] = useState("");
   const [packages, setPackages] = useState<any[]>([]);
   const [selectedPackageId, setSelectedPackageId] = useState<string>("");
+  // The day the business actually started, which is usually before today --
+  // admins enter employers after the fact, and the package is measured from
+  // here rather than from whenever this form gets filled in.
+  const [newRegistrationDate, setNewRegistrationDate] = useState(() => todayCalendarDate());
+  const [confirmAddEmployer, setConfirmAddEmployer] = useState(false);
   const [businessTypes, setBusinessTypes] = useState<{ id: string, name: string }[]>([]);
   const [formLoading, setFormLoading] = useState(false);
   const [formError, setFormError] = useState("");
@@ -692,13 +803,14 @@ export default function AdminDashboard({ initialData, initialUi = {} }: { initia
   const [userActionLoading, setUserActionLoading] = useState(false);
   const [userActionError, setUserActionError] = useState("");
 
-  const [editModal, setEditModal] = useState<{ id: string; name: string; type: string; postLimit: number; packageId: string; packageExpiresAt: string | null; tin: string } | null>(null);
+  const [editModal, setEditModal] = useState<{ id: string; name: string; type: string; postLimit: number; packageId: string; packageExpiresAt: string | null; tin: string; startDate: string } | null>(null);
   const [renewLoading, setRenewLoading] = useState(false);
   const [editName, setEditName] = useState("");
   const [editType, setEditType] = useState("");
   const [editTin, setEditTin] = useState("");
   const [editPostLimit, setEditPostLimit] = useState<number>(15);
   const [editPackageId, setEditPackageId] = useState<string>("");
+  const [editStartDate, setEditStartDate] = useState<string>("");
   const [editLoading, setEditLoading] = useState(false);
   const [editLogoFile, setEditLogoFile] = useState<File | null>(null);
   const [editCropFile, setEditCropFile] = useState<File | null>(null);
@@ -1084,7 +1196,12 @@ export default function AdminDashboard({ initialData, initialUi = {} }: { initia
       // must never rewrite the column, and an admin clearing it on purpose
       // sends "" so the employer is re-prompted on their next dashboard load.
       const tinChanged = normalizeTin(editTin) !== normalizeTin(editModal.tin);
-      const res = await updateEmployer(editModal.id, editName, editType, editPostLimit, editPassword, packageChanged ? editPackageId : undefined, tinChanged ? editTin : undefined);
+      // And again for the registration date: an untouched one must leave the
+      // employer's existing term exactly where it is. Sending it only when it
+      // changed is also what keeps "change the package" meaning "renew from
+      // today" rather than "re-run the old start date against a new package".
+      const startDateChanged = !!editStartDate && editStartDate !== editModal.startDate;
+      const res = await updateEmployer(editModal.id, editName, editType, editPostLimit, editPassword, packageChanged ? editPackageId : undefined, tinChanged ? editTin : undefined, startDateChanged ? editStartDate : undefined);
 
       if (res.success && res.employer) {
         const finalEmployer = { ...res.employer };
@@ -1252,8 +1369,39 @@ export default function AdminDashboard({ initialData, initialUi = {} }: { initia
     }
   };
 
-  const handleAddEmployer = async (e: React.FormEvent) => {
+  // What the Add Employer form is about to write, recomputed from current state
+  // by the same helper the server uses. Drives the live preview, the
+  // confirmation modal and the submit button, so the admin can only send a
+  // registration the server would accept.
+  const addEmpPackage = packages.find((p: any) => p.id === selectedPackageId) || null;
+  const addEmpWindow = computeSubscriptionWindow(newRegistrationDate, addEmpPackage?.duration_days ?? null);
+  const addEmpDateError = addEmpPackage
+    ? validateSubscriptionStart(newRegistrationDate, addEmpPackage.duration_days, addEmpPackage.name)
+    : null;
+
+  // The same arithmetic for the employer editor, where the date is a
+  // correction rather than an entry: it only means anything once the admin has
+  // moved it off what's already on file.
+  const editPackage = packages.find((p: any) => p.id === (editPackageId || editModal?.packageId)) || null;
+  const editStartMoved = !!editModal && !!editStartDate && editStartDate !== editModal.startDate;
+  const editStartWindow = editStartMoved ? computeSubscriptionWindow(editStartDate, editPackage?.duration_days ?? null) : null;
+  const editStartError = editStartMoved && editPackage
+    ? validateSubscriptionStart(editStartDate, editPackage.duration_days, editPackage.name)
+    : null;
+
+  // Submitting the form only opens the recap -- registering is a decision the
+  // admin confirms against the dates, not a side effect of pressing Enter.
+  const handleReviewEmployer = (e: React.FormEvent) => {
     e.preventDefault();
+    setFormError("");
+    if (addEmpDateError) {
+      setFormError(addEmpDateError);
+      return;
+    }
+    setConfirmAddEmployer(true);
+  };
+
+  const handleAddEmployer = async () => {
     setFormLoading(true);
     setFormError("");
     try {
@@ -1279,7 +1427,7 @@ export default function AdminDashboard({ initialData, initialUi = {} }: { initia
         }
       }
 
-      const res = await addEmployer(parsedTelegramId, newBusinessName, newBusinessType, selectedPackageId || null);
+      const res = await addEmployer(parsedTelegramId, newBusinessName, newBusinessType, selectedPackageId || null, newRegistrationDate);
       if (res.success && res.employer) {
         setData((prev: any) => ({
           ...prev,
@@ -1290,12 +1438,17 @@ export default function AdminDashboard({ initialData, initialUi = {} }: { initia
         setEmpTotal((prev: number) => prev + 1);
         setEmpConfigSubTab("view_emp");
         setAuthNumberResult({ name: newBusinessName, number: res.authorizationNumber });
+        setConfirmAddEmployer(false);
         setNewTelegramId("");
         setNewBusinessName("");
         setNewBusinessType("");
         setSelectedPackageId("");
+        setNewRegistrationDate(todayCalendarDate());
       }
     } catch (err: any) {
+      // Back to the form, where the banner is visible and the dates can be
+      // corrected -- the recap has nothing left to confirm once it failed.
+      setConfirmAddEmployer(false);
       setFormError(err.message || "Failed to add employer");
     } finally {
       setFormLoading(false);
@@ -2132,7 +2285,7 @@ export default function AdminDashboard({ initialData, initialUi = {} }: { initia
               <div style={{ padding: "32px 24px", maxWidth: 600, margin: "0 auto" }}>
                 <div style={{ background: "#fff", borderRadius: 16, padding: 32, border: "1px solid #E2E5EC", boxShadow: "0 4px 12px rgba(0,0,0,0.05)" }}>
                   <h3 style={{ margin: "0 0 24px 0", fontSize: 20, fontWeight: 800, color: "#141821", letterSpacing: "-0.02em" }}>Add New Employer</h3>
-                  <form onSubmit={handleAddEmployer} style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+                  <form onSubmit={handleReviewEmployer} style={{ display: "flex", flexDirection: "column", gap: 18 }}>
                     <div>
                       <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#141821", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.05em" }}>Telegram ID</label>
                       <input
@@ -2174,11 +2327,57 @@ export default function AdminDashboard({ initialData, initialUi = {} }: { initia
                       <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#141821", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.05em" }}>Subscription Package</label>
                       <PackageDropdown packages={packages} selectedId={selectedPackageId} onSelect={setSelectedPackageId} />
                     </div>
+                    {/* Registration date — the day the business actually
+                        started, which is rarely the day it gets typed in here.
+                        The package runs from this date, so entering an employer
+                        a week late costs them that week rather than handing
+                        them a fresh full term. */}
+                    <div>
+                      <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#141821", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.05em" }}>Registration Date</label>
+                      <input
+                        type="date"
+                        value={newRegistrationDate}
+                        onChange={e => { setNewRegistrationDate(e.target.value); setFormError(""); }}
+                        required
+                        style={{ width: "100%", padding: "12px 14px", borderRadius: 10, border: `1.5px solid ${addEmpDateError ? "#fca5a5" : "#E2E5EC"}`, fontSize: 14, fontWeight: 500, color: "#141821", background: "#F7F8FA", boxSizing: "border-box", outline: "none" }}
+                      />
+                      <p style={{ margin: "5px 0 0 0", fontSize: 11, color: "#9AA1B1" }}>The day this business actually started — not today, unless they started today.</p>
+                    </div>
+                    {/* Live read-out of what that date and package add up to, so
+                        the days-left number is on screen before it is agreed to. */}
+                    {addEmpWindow && addEmpPackage && (
+                      <div style={{ padding: "14px 16px", borderRadius: 12, background: addEmpDateError ? "#FDECEC" : "#F7F8FA", border: `1px solid ${addEmpDateError ? "#fecaca" : "#E2E5EC"}` }}>
+                        {addEmpDateError ? (
+                          <p style={{ margin: 0, fontSize: 13, color: "#E5484D", lineHeight: 1.5 }}>{addEmpDateError}</p>
+                        ) : (
+                          <>
+                            <div style={{ fontSize: 12, fontWeight: 700, color: "#4C5361", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 8 }}>Subscription</div>
+                            <div style={{ display: "flex", gap: 20, flexWrap: "wrap" }}>
+                              <div>
+                                <div style={{ fontSize: 22, fontWeight: 800, color: "#0E8442", lineHeight: 1.1 }}>{addEmpWindow.daysLeft}</div>
+                                <div style={{ fontSize: 11, color: "#6E7686", marginTop: 2 }}>{addEmpWindow.state === "future" ? "days once it starts" : "days left"}</div>
+                              </div>
+                              <div>
+                                <div style={{ fontSize: 22, fontWeight: 800, color: "#141821", lineHeight: 1.1 }}>{addEmpWindow.state === "future" ? addEmpWindow.startsInDays : addEmpWindow.elapsedDays}</div>
+                                <div style={{ fontSize: 11, color: "#6E7686", marginTop: 2 }}>{addEmpWindow.state === "future" ? "days until it starts" : "days already used"}</div>
+                              </div>
+                              <div>
+                                <div style={{ fontSize: 15, fontWeight: 700, color: "#141821", lineHeight: 1.5 }}>{formatWindowDate(addEmpWindow.expiresAt)}</div>
+                                <div style={{ fontSize: 11, color: "#6E7686", marginTop: 2 }}>expires</div>
+                              </div>
+                            </div>
+                            <p style={{ margin: "10px 0 0 0", fontSize: 12, color: "#4C5361" }}>
+                              {addEmpPackage.name} runs {addEmpPackage.duration_days} days from {formatWindowDate(addEmpWindow.startsAt)}. {describeSubscriptionWindow(addEmpWindow)}
+                            </p>
+                          </>
+                        )}
+                      </div>
+                    )}
                     {formError && <p style={{ margin: 0, fontSize: 13, color: "#E5484D", background: "#FDECEC", padding: "10px 14px", borderRadius: 8, border: "1px solid #fecaca" }}>{formError}</p>}
                     <div style={{ display: "flex", gap: 10, marginTop: 4 }}>
                       <button type="button" onClick={() => setEmpConfigSubTab("view_emp")} disabled={formLoading} style={{ flex: 1, padding: "12px", borderRadius: 10, border: "1.5px solid #E2E5EC", background: "#F7F8FA", color: "#6E7686", fontSize: 14, fontWeight: 600, cursor: "pointer" }}>Cancel</button>
-                      <button type="submit" disabled={formLoading || !newTelegramId || !newBusinessName || !newBusinessType || !selectedPackageId} style={{ flex: 2, padding: "12px", borderRadius: 10, border: "none", background: formLoading ? "#93c5fd" : "linear-gradient(135deg, #141821, #2c2c2e)", color: "#fff", fontSize: 14, fontWeight: 700, cursor: formLoading ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, boxShadow: "0 4px 12px rgba(0,0,0,0.12)" }}>
-                        {formLoading ? (<><svg style={{ animation: "spin 1s linear infinite" }} xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Registering...</>) : (<>Register Employer</>)}
+                      <button type="submit" disabled={formLoading || !newTelegramId || !newBusinessName || !newBusinessType || !selectedPackageId || !newRegistrationDate || !!addEmpDateError} style={{ flex: 2, padding: "12px", borderRadius: 10, border: "none", background: formLoading ? "#93c5fd" : "linear-gradient(135deg, #141821, #2c2c2e)", color: "#fff", fontSize: 14, fontWeight: 700, cursor: formLoading ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, boxShadow: "0 4px 12px rgba(0,0,0,0.12)" }}>
+                        {formLoading ? (<><svg style={{ animation: "spin 1s linear infinite" }} xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Registering...</>) : (<>Review &amp; Register</>)}
                       </button>
                     </div>
                   </form>
@@ -2479,7 +2678,7 @@ export default function AdminDashboard({ initialData, initialUi = {} }: { initia
                           <span style={{ padding: "2px 8px", borderRadius: 100, fontSize: 11, fontWeight: 600, background: "#FDF1E7", color: "#B45309" }}>Missing</span>
                         )}
                       </td>
-                      <td style={{ padding: "16px 24px", color: "#4C5361" }}>{new Date(item.created_at).toLocaleDateString()}</td>
+                      <td style={{ padding: "16px 24px", color: "#4C5361" }} title={registeredOn(item).title}>{registeredOn(item).label}</td>
                       <td style={{ padding: "16px 24px", color: "#141821" }}>{item.activeJobCount ?? 0}</td>
                       <td style={{ padding: "16px 24px" }}>
                         {(() => {
@@ -2517,7 +2716,7 @@ export default function AdminDashboard({ initialData, initialUi = {} }: { initia
                       </td>
                       <td style={{ padding: "16px 24px", textAlign: "right", display: "flex", gap: 8, justifyContent: "flex-end", alignItems: "center" }}>
                         <button
-                          onClick={() => { setEditModal({ id: item.id, name: item.business_name, type: item.business_type || "", postLimit: item.daily_post_limit ?? 15, packageId: item.active_package_id || "", packageExpiresAt: item.package_expires_at || null, tin: item.tin_number || "" }); setEditName(item.business_name); setEditType(item.business_type || ""); setEditTin(item.tin_number || ""); setEditPostLimit(item.daily_post_limit ?? 15); setEditPackageId(item.active_package_id || ""); setEditLogoFile(null); setEditError(""); setEditPassword(""); setSettingsTab("edit"); }}
+                          onClick={() => { const startDate = toCalendarDate(item.subscription_started_at); setEditModal({ id: item.id, name: item.business_name, type: item.business_type || "", postLimit: item.daily_post_limit ?? 15, packageId: item.active_package_id || "", packageExpiresAt: item.package_expires_at || null, tin: item.tin_number || "", startDate }); setEditName(item.business_name); setEditType(item.business_type || ""); setEditTin(item.tin_number || ""); setEditPostLimit(item.daily_post_limit ?? 15); setEditPackageId(item.active_package_id || ""); setEditStartDate(startDate); setEditLogoFile(null); setEditError(""); setEditPassword(""); setSettingsTab("edit"); }}
                           style={{ background: "transparent", border: "none", cursor: "pointer", color: "#6E7686", padding: "6px", borderRadius: 6, display: "flex", alignItems: "center", justifyContent: "center" }}
                           title="Employer settings"
                         >
@@ -2607,7 +2806,7 @@ export default function AdminDashboard({ initialData, initialUi = {} }: { initia
                     </div>
                   </div>
                   <div className="flex items-center justify-between text-xs text-[#4C5361] pt-1">
-                    <span>Registered {new Date(item.created_at).toLocaleDateString()}</span>
+                    <span title={registeredOn(item).title}>Registered {registeredOn(item).label}</span>
                     <span>{item.activeJobCount ?? 0} Active Job{(item.activeJobCount ?? 0) === 1 ? "" : "s"}</span>
                   </div>
                   {(() => {
@@ -2627,7 +2826,7 @@ export default function AdminDashboard({ initialData, initialUi = {} }: { initia
                   })()}
                   <div className="flex gap-2 justify-end mt-2 pt-3 border-t border-[#EFF1F5]">
                     <button
-                      onClick={() => { setEditModal({ id: item.id, name: item.business_name, type: item.business_type || "", postLimit: item.daily_post_limit ?? 15, packageId: item.active_package_id || "", packageExpiresAt: item.package_expires_at || null, tin: item.tin_number || "" }); setEditName(item.business_name); setEditType(item.business_type || ""); setEditTin(item.tin_number || ""); setEditPostLimit(item.daily_post_limit ?? 15); setEditPackageId(item.active_package_id || ""); setEditLogoFile(null); setEditError(""); setEditPassword(""); setSettingsTab("edit"); }}
+                      onClick={() => { const startDate = toCalendarDate(item.subscription_started_at); setEditModal({ id: item.id, name: item.business_name, type: item.business_type || "", postLimit: item.daily_post_limit ?? 15, packageId: item.active_package_id || "", packageExpiresAt: item.package_expires_at || null, tin: item.tin_number || "", startDate }); setEditName(item.business_name); setEditType(item.business_type || ""); setEditTin(item.tin_number || ""); setEditPostLimit(item.daily_post_limit ?? 15); setEditPackageId(item.active_package_id || ""); setEditStartDate(startDate); setEditLogoFile(null); setEditError(""); setEditPassword(""); setSettingsTab("edit"); }}
                       className="bg-[#f3f4f6] text-[#343A46] border-none px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5"
                     >
                       <Gear size={14} /> Settings
@@ -3344,6 +3543,34 @@ export default function AdminDashboard({ initialData, initialUi = {} }: { initia
                     </select>
                   </div>
 
+                  {/* Registration date — the anchor the whole term is measured
+                      from, so a wrong one is corrected here rather than by
+                      renewing early. Left untouched it changes nothing; moved,
+                      it re-runs the package from the new date and the expiry
+                      follows. */}
+                  <div>
+                    <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#141821", marginBottom: 6 }}>Registration Date</label>
+                    <input
+                      type="date"
+                      value={editStartDate}
+                      onChange={e => { setEditStartDate(e.target.value); setEditError(""); }}
+                      style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: `1px solid ${editStartError ? "#fca5a5" : "#CBD0DA"}`, fontSize: 14, boxSizing: "border-box" }}
+                    />
+                    {editStartError ? (
+                      <p style={{ margin: "6px 0 0 0", fontSize: 12, color: "#E5484D", lineHeight: 1.5 }}>{editStartError}</p>
+                    ) : editStartWindow ? (
+                      <p style={{ margin: "6px 0 0 0", fontSize: 12, color: "#B45309", lineHeight: 1.5 }}>
+                        Saving moves their expiry to {formatWindowDate(editStartWindow.expiresAt)} — {describeSubscriptionWindow(editStartWindow)}
+                      </p>
+                    ) : (
+                      <p style={{ margin: "6px 0 0 0", fontSize: 12, color: "#9AA1B1", lineHeight: 1.5 }}>
+                        {editModal.startDate
+                          ? "The subscription runs from this date. Change it only to correct a date entered wrong."
+                          : "Not on record — this employer was registered before the date was collected. Setting it re-anchors their subscription."}
+                      </p>
+                    )}
+                  </div>
+
                   {/* Renew Subscription */}
                   {(() => {
                     const sub = getSubscriptionStatus(editModal.packageExpiresAt);
@@ -3429,7 +3656,7 @@ export default function AdminDashboard({ initialData, initialUi = {} }: { initia
                     </button>
                     <button
                       type="submit"
-                      disabled={editLoading || !editName.trim() || !editPackageId || !editPassword}
+                      disabled={editLoading || !editName.trim() || !editPackageId || !editPassword || !!editStartError}
                       style={{ background: "#141821", color: "#fff", border: "none", padding: "8px 16px", borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 8 }}
                     >
                       <Pencil size={14} />
@@ -3861,6 +4088,65 @@ export default function AdminDashboard({ initialData, initialUi = {} }: { initia
       )}
 
       {/* Authorization Number Success Modal */}
+      {/* Registration recap. The registration date decides how much of the
+          package the employer actually gets, and a mistyped one is invisible
+          until they complain about a short subscription -- so the arithmetic is
+          restated here and agreed to before anything is written. */}
+      {confirmAddEmployer && addEmpWindow && addEmpPackage && (
+        <div style={{ position: "fixed", inset: 0, backdropFilter: "blur(4px)", background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 300, padding: "0 16px" }}>
+          <div style={{ background: "#fff", borderRadius: 14, width: "100%", maxWidth: 420, border: "1px solid #E2E5EC", overflow: "hidden" }}>
+            <div style={{ padding: "22px 26px 16px" }}>
+              <p style={{ margin: "0 0 4px 0", fontSize: 17, fontWeight: 700, color: "#111827" }}>Is this right?</p>
+              <p style={{ margin: 0, fontSize: 12.5, color: "#6E7686" }}>Check the dates before the account is created.</p>
+            </div>
+
+            <div style={{ borderTop: "1px solid #EFF1F5", padding: "16px 26px", display: "flex", flexDirection: "column", gap: 10 }}>
+              {[
+                { label: "Business", value: newBusinessName },
+                { label: "Telegram ID", value: newTelegramId },
+                { label: "Business type", value: newBusinessType },
+                { label: "Package", value: `${addEmpPackage.name} — ${addEmpPackage.duration_days} days` },
+                { label: "Registered on", value: formatWindowDate(addEmpWindow.startsAt) },
+              ].map(row => (
+                <div key={row.label} style={{ display: "flex", justifyContent: "space-between", gap: 16, fontSize: 13 }}>
+                  <span style={{ color: "#6E7686" }}>{row.label}</span>
+                  <span style={{ color: "#141821", fontWeight: 600, textAlign: "right" }}>{row.value}</span>
+                </div>
+              ))}
+            </div>
+
+            <div style={{ borderTop: "1.5px dashed #E2E5EC", padding: "18px 26px", background: "#F7F8FA" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 16 }}>
+                <span style={{ fontSize: 13, color: "#4C5361" }}>{addEmpWindow.state === "future" ? "Term once it starts" : "Days left today"}</span>
+                <span style={{ fontSize: 26, fontWeight: 800, color: "#0E8442", lineHeight: 1.1 }}>{addEmpWindow.daysLeft}</span>
+              </div>
+              <p style={{ margin: "8px 0 0 0", fontSize: 12.5, color: "#4C5361", lineHeight: 1.5 }}>
+                {describeSubscriptionWindow(addEmpWindow)} Expires {formatWindowDate(addEmpWindow.expiresAt)}.
+              </p>
+            </div>
+
+            <div style={{ padding: "16px 26px 22px", display: "flex", gap: 10 }}>
+              <button
+                type="button"
+                onClick={() => setConfirmAddEmployer(false)}
+                disabled={formLoading}
+                style={{ flex: 1, padding: "10px", borderRadius: 8, border: "1.5px solid #E2E5EC", background: "#fff", color: "#6E7686", fontSize: 14, fontWeight: 600, cursor: formLoading ? "not-allowed" : "pointer" }}
+              >
+                Go back
+              </button>
+              <button
+                type="button"
+                onClick={handleAddEmployer}
+                disabled={formLoading}
+                style={{ flex: 2, padding: "10px", borderRadius: 8, border: "none", background: formLoading ? "#93c5fd" : "#111827", color: "#fff", fontSize: 14, fontWeight: 700, cursor: formLoading ? "not-allowed" : "pointer" }}
+              >
+                {formLoading ? "Registering..." : "Yes, register"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {authNumberResult && (
         <div style={{ position: "fixed", inset: 0, backdropFilter: "blur(4px)", background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 300, padding: "0 16px" }}>
           <div style={{ background: "#fff", borderRadius: 14, width: "100%", maxWidth: 360, border: "1px solid #E2E5EC", overflow: "hidden" }}>
