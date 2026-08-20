@@ -12,6 +12,7 @@ import { startOfAddisDay } from "@/lib/addisDay";
 import { isSubscriptionExpired } from "@/lib/subscriptionStatus";
 import { computeSubscriptionWindow, parseCalendarDate, todayCalendarDate, validateSubscriptionStart } from "@/lib/subscriptionWindow";
 import { normalizeTin, validateTin, isDuplicateTin, TIN_TAKEN_ERROR } from "@/lib/ethiopianTin";
+import { MAX_BONUS_DAYS, unspentBonusDays } from "@/lib/bonusDays";
 import {
   VacancyFormState,
   validateVacancyForm,
@@ -1767,7 +1768,7 @@ export async function addEmployer(telegramId: number, businessName: string, busi
 /** `subscriptionStartedAt` ("YYYY-MM-DD") re-anchors the employer's term when
  *  an admin corrects a registration date that was entered wrong; leaving it
  *  undefined keeps whatever is on file. */
-export async function updateEmployer(employerId: string, businessName: string, businessType: string, dailyPostLimit: number, passwordAttempt: string, packageId?: string | null, tinNumber?: string, subscriptionStartedAt?: string) {
+export async function updateEmployer(employerId: string, businessName: string, businessType: string, dailyPostLimit: number, passwordAttempt: string, packageId?: string | null, tinNumber?: string, subscriptionStartedAt?: string, bonusDays?: number) {
   await requirePermission("manageEmployers");
 
   const supabase = getSupabase();
@@ -1799,6 +1800,17 @@ export async function updateEmployer(employerId: string, businessName: string, b
     }
   }
 
+  // Bonus posting days. Absolute, not a delta -- the field shows the bank the
+  // employer is currently owed and saving replaces it, so an admin correcting a
+  // mistyped 50 to 5 gets 5 rather than 55. Days already running are a separate
+  // column and are not touched here (see the bank-back below).
+  if (bonusDays !== undefined) {
+    if (!Number.isInteger(bonusDays) || bonusDays < 0 || bonusDays > MAX_BONUS_DAYS) {
+      throw new Error(`Bonus days must be a whole number between 0 and ${MAX_BONUS_DAYS}.`);
+    }
+    updateFields.bonus_days = bonusDays;
+  }
+
   // The package and the start date share one calculation, because expiry is
   // always start + duration:
   //
@@ -1806,17 +1818,29 @@ export async function updateEmployer(employerId: string, businessName: string, b
   //   - a corrected registration date re-anchors the term the employer is
   //     already on, measured against the package they hold after this save.
   if (packageId !== undefined || subscriptionStartedAt !== undefined) {
-    let effectivePackageId = packageId;
-    if (effectivePackageId === undefined) {
-      const { data: current, error: currentErr } = await supabase
-        .from("employers")
-        .select("active_package_id")
-        .eq("id", employerId)
-        .maybeSingle();
-      if (currentErr) throw currentErr;
-      effectivePackageId = current?.active_package_id ?? null;
-    }
+    const { data: current, error: currentErr } = await supabase
+      .from("employers")
+      .select("active_package_id, bonus_days, bonus_expires_at, bonus_days_active")
+      .eq("id", employerId)
+      .maybeSingle();
+    if (currentErr) throw currentErr;
+
+    const effectivePackageId = packageId === undefined ? (current?.active_package_id ?? null) : packageId;
     if (!effectivePackageId) throw new Error("A package must be selected.");
+
+    // A running bonus term lives inside package_expires_at, which this block is
+    // about to overwrite. Its unspent days go back into the bank instead of
+    // vanishing: the employer was granted them, and renewing their plan (or
+    // fixing a date typed wrong) is not a decision to take them away. They
+    // start again behind whatever term this save opens.
+    const unspent = unspentBonusDays(current);
+    if (unspent > 0) {
+      const bank = bonusDays !== undefined ? bonusDays : (Number(current?.bonus_days) || 0);
+      updateFields.bonus_days = Math.min(MAX_BONUS_DAYS, bank + unspent);
+      updateFields.bonus_started_at = null;
+      updateFields.bonus_expires_at = null;
+      updateFields.bonus_days_active = 0;
+    }
 
     const { data: pkg, error: pkgErr } = await supabase
       .from("packages")
@@ -1857,12 +1881,41 @@ export async function updateEmployer(employerId: string, businessName: string, b
 
   if (isDuplicateTin(error)) throw new Error(TIN_TAKEN_ERROR);
   if (error) throw error;
+
+  // Bonus days granted to an employer whose plan has already lapsed should let
+  // them post now, not whenever the platform sweep next comes round -- an admin
+  // usually types that number with the business on the phone. This is the same
+  // function the sweep calls, so there stays one definition of what opening a
+  // term means; the row is re-read afterwards because the function moves the
+  // very columns this action is about to hand back to the dashboard. A no-op
+  // for anyone whose subscription is still running.
+  let employerRow: any = data;
+  if ((updateFields.bonus_days ?? 0) > 0) {
+    const { error: bonusErr } = await supabase.rpc("activate_due_bonus_days", { p_employer_id: employerId });
+    if (bonusErr) {
+      console.error("Bonus day activation failed:", bonusErr);
+    } else {
+      const { data: refreshed } = await supabase
+        .from("employers")
+        .select("*, users(telegram_id)")
+        .eq("id", employerId)
+        .maybeSingle();
+      if (refreshed) employerRow = refreshed;
+    }
+  }
+
   if (packageId !== undefined) {
     await logActivity("assign_package", employerId, { packageId });
   } else if (subscriptionStartedAt !== undefined) {
     await logActivity("correct_subscription_start", employerId, { subscriptionStartedAt });
   }
-  return { success: true, employer: stripEmployerSecretsRow(data) };
+  // Logged separately from the package: a bonus is free days somebody decided
+  // to hand out, so which admin handed them out is worth its own trail entry
+  // even when it rode along with an ordinary edit.
+  if (bonusDays !== undefined) {
+    await logActivity("set_bonus_days", employerId, { bonusDays, banked: employerRow?.bonus_days ?? bonusDays });
+  }
+  return { success: true, employer: stripEmployerSecretsRow(employerRow) };
 }
 
 // Marks an employer's pending renewal request as seen -- tells the employer

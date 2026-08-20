@@ -428,6 +428,31 @@ serve(async (req) => {
     const publishedCount = toActive.length;
     const sentToReviewCount = toPending.length;
 
+    // 0b. Open bonus terms that have come due.
+    //
+    // Must run before step 1, and that ordering is the whole point rather than
+    // a tidiness preference: an employer with bonus days has not lapsed, they
+    // have carried on, and telling them "Subscription Expired" in the same
+    // minute the free days they were promised took over is the one message
+    // that would make the feature look broken. The activation pushes
+    // package_expires_at forward, so by the time step 1 runs its query these
+    // employers are simply not in it.
+    //
+    // All the work is inside the SQL function -- set-based, so overlapping
+    // sweeps can't start the same bonus twice. See
+    // 20260820000000_employer_bonus_days.sql.
+    let bonusTermsStarted = 0;
+    const { data: bonusStarted, error: bonusErr } = await supabase.rpc("activate_due_bonus_days");
+    if (bonusErr) {
+      // Not fatal: the sweep's other work still needs doing, and the next run a
+      // minute from now retries this. Loud, though -- an employer sitting on
+      // unstarted bonus days is locked out of posting.
+      console.error("[Bonus] Failed to start due bonus terms:", bonusErr);
+    } else {
+      bonusTermsStarted = Number(bonusStarted) || 0;
+      if (bonusTermsStarted > 0) console.log(`[Bonus] Started ${bonusTermsStarted} bonus term(s)`);
+    }
+
     // 1. Notify employers whose subscription has newly lapsed. Jobs are never
     // force-expired here -- each job stays active through its OWN deadline
     // regardless of subscription status, so status='expired' (step 2 below)
@@ -612,6 +637,7 @@ serve(async (req) => {
       success: true,
       publishedCount,
       sentToReviewCount,
+      bonusTermsStarted,
       subscriptionExpiredNoticesSent,
       expiredDeadlineCount,
       warningsSent: expiringWarningsSent,

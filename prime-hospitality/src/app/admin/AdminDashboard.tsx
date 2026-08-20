@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { toggleUserBan, toggleJobStatus, scheduleJobPost, repostJob, approveScheduledJob, cancelScheduledJob, logoutAdmin, addEmployer, deleteEmployer, updateEmployer, updateEmployerAutoPublish, adminUpdateEmployerLogo, deleteUser, approveSpecialRequest, getPricingConfig, updatePricingConfig, getLoggedInAdmin, createSubAdmin, updateSubAdminPermissions, updateSubAdminCredentials, deleteSubAdmin, listSubAdmins, searchUsers, getProfessionCounts, searchEmployers, getPackages, upsertPackage, deletePackage, getBusinessTypes, addBusinessType, getPlatformEmployerProfile, updatePlatformEmployerLogo, getAdminData, acknowledgeEmployerRenewal, acknowledgeSpecialRequest } from "./actions";
 import type { AdminPermissions, SubAdmin } from "./actions";
-import { Trash2, Pencil, Image as ImageIcon, Menu, X, LayoutDashboard, Briefcase, FileText, Users, LogOut, Settings, CreditCard, CheckCircle, BookOpen, User, Building2, Hourglass, ChevronDown, Check, Plus, Megaphone, History, BarChart3 } from "lucide-react";
+import { Trash2, Pencil, Image as ImageIcon, Menu, X, LayoutDashboard, Briefcase, FileText, Users, LogOut, Settings, CreditCard, CheckCircle, BookOpen, User, Building2, Hourglass, ChevronDown, Check, Plus, Megaphone, History, BarChart3, Gift } from "lucide-react";
 import EmployerAvatar from "@/components/EmployerAvatar";
 import AvatarCropModal from "@/components/AvatarCropModal";
 import { motion, AnimatePresence } from "framer-motion";
@@ -15,6 +15,7 @@ import { AdminUiState, writeAdminUi, clearAdminUi } from "@/lib/adminUiCookie";
 import { isSubscriptionExpired } from "@/lib/subscriptionStatus";
 import { computeSubscriptionWindow, describeSubscriptionWindow, formatWindowDate, toCalendarDate, todayCalendarDate, validateSubscriptionStart } from "@/lib/subscriptionWindow";
 import { TIN_LENGTH, formatTin, normalizeTin } from "@/lib/ethiopianTin";
+import { MAX_BONUS_DAYS, parseBonusDays, readBonusStatus, sanitizeBonusInput, validateBonusDays } from "@/lib/bonusDays";
 import { clearTabUser } from "@/lib/adminTabSession";
 import ContentManagementTab from "./ContentManagementTab";
 import BroadcastTab from "./BroadcastTab";
@@ -42,6 +43,32 @@ function getSubscriptionStatus(packageExpiresAt: string | null | undefined) {
     color: expired ? "#E5484D" : "#0E8442",
     bg: expired ? "#fee2e2" : "#E7F7EE",
   };
+}
+
+/** The at-a-glance bonus read-out in the employers table, sitting beside the
+ *  subscription badge because that is the number it extends. An admin looking
+ *  at "Expired" and reaching for the phone needs to see that this business has
+ *  ten free days waiting before they chase them for a payment. */
+function BonusBadge({ employer }: { employer: { bonus_days?: number | null; bonus_expires_at?: string | null; bonus_days_active?: number | null } }) {
+  const bonus = readBonusStatus(employer);
+  if (!bonus.hasAny) return null;
+  return (
+    <span
+      title={bonus.running
+        ? `Bonus days running — ${bonus.daysLeft} of ${bonus.activeDays} left, ending ${formatWindowDate(bonus.endsAt!)}`
+        : "Bonus days waiting for this subscription to end"}
+      style={{
+        display: "inline-flex", alignItems: "center", gap: 4,
+        padding: "2px 8px", borderRadius: 100, fontSize: 11, fontWeight: 600,
+        background: bonus.running ? "#E7F7EE" : "#EEF3FC",
+        color: bonus.running ? "#0E8442" : "#164A9C",
+        border: `1px solid ${bonus.running ? "#B7E4CB" : "#D9E5F8"}`,
+      }}
+    >
+      <Gift size={11} />
+      {bonus.running ? `${bonus.daysLeft} bonus left` : `+${bonus.banked} bonus`}
+    </span>
+  );
 }
 
 /** What the "Registered" column shows. The admin-entered start date is the one
@@ -803,7 +830,7 @@ export default function AdminDashboard({ initialData, initialUi = {} }: { initia
   const [userActionLoading, setUserActionLoading] = useState(false);
   const [userActionError, setUserActionError] = useState("");
 
-  const [editModal, setEditModal] = useState<{ id: string; name: string; type: string; postLimit: number; packageId: string; packageExpiresAt: string | null; tin: string; startDate: string } | null>(null);
+  const [editModal, setEditModal] = useState<{ id: string; name: string; type: string; postLimit: number; packageId: string; packageExpiresAt: string | null; tin: string; startDate: string; bonusDays: number; bonusExpiresAt: string | null; bonusDaysActive: number } | null>(null);
   const [renewLoading, setRenewLoading] = useState(false);
   const [editName, setEditName] = useState("");
   const [editType, setEditType] = useState("");
@@ -811,6 +838,10 @@ export default function AdminDashboard({ initialData, initialUi = {} }: { initia
   const [editPostLimit, setEditPostLimit] = useState<number>(15);
   const [editPackageId, setEditPackageId] = useState<string>("");
   const [editStartDate, setEditStartDate] = useState<string>("");
+  // Held as the raw digit string the field shows, not a number: "" and "0" are
+  // different things to look at, and round-tripping through Number would turn
+  // a half-typed field into a 0 under the admin's cursor.
+  const [editBonusDays, setEditBonusDays] = useState<string>("");
   const [editLoading, setEditLoading] = useState(false);
   const [editLogoFile, setEditLogoFile] = useState<File | null>(null);
   const [editCropFile, setEditCropFile] = useState<File | null>(null);
@@ -1201,7 +1232,10 @@ export default function AdminDashboard({ initialData, initialUi = {} }: { initia
       // changed is also what keeps "change the package" meaning "renew from
       // today" rather than "re-run the old start date against a new package".
       const startDateChanged = !!editStartDate && editStartDate !== editModal.startDate;
-      const res = await updateEmployer(editModal.id, editName, editType, editPostLimit, editPassword, packageChanged ? editPackageId : undefined, tinChanged ? editTin : undefined, startDateChanged ? editStartDate : undefined);
+      // And for the bonus bank, so an edit that never touched the field can't
+      // overwrite days the server banked back in the meantime.
+      const bonusChanged = parseBonusDays(editBonusDays) !== editModal.bonusDays;
+      const res = await updateEmployer(editModal.id, editName, editType, editPostLimit, editPassword, packageChanged ? editPackageId : undefined, tinChanged ? editTin : undefined, startDateChanged ? editStartDate : undefined, bonusChanged ? parseBonusDays(editBonusDays) : undefined);
 
       if (res.success && res.employer) {
         const finalEmployer = { ...res.employer };
@@ -1230,7 +1264,8 @@ export default function AdminDashboard({ initialData, initialUi = {} }: { initia
     setRenewLoading(true);
     setEditError("");
     try {
-      const res = await updateEmployer(editModal.id, editName, editType, editPostLimit, editPassword, editPackageId);
+      const bonusChanged = parseBonusDays(editBonusDays) !== editModal.bonusDays;
+      const res = await updateEmployer(editModal.id, editName, editType, editPostLimit, editPassword, editPackageId, undefined, undefined, bonusChanged ? parseBonusDays(editBonusDays) : undefined);
       if (res.success && res.employer) {
         const finalEmployer = res.employer;
         setData((prev: any) => ({
@@ -1238,7 +1273,18 @@ export default function AdminDashboard({ initialData, initialUi = {} }: { initia
           employers: prev.employers.map((emp: any) => emp.id === editModal.id ? finalEmployer : emp)
         }));
         setEmpResults((prev: any[]) => prev.map((emp: any) => emp.id === editModal.id ? { ...emp, ...finalEmployer } : emp));
-        setEditModal({ ...editModal, packageExpiresAt: finalEmployer.package_expires_at || null });
+        // The modal stays open after a renewal, so its snapshot has to follow
+        // the row: renewing closes any running bonus term and banks the unspent
+        // days, and the field beneath must show that new bank rather than the
+        // number the admin was looking at a second ago.
+        setEditModal({
+          ...editModal,
+          packageExpiresAt: finalEmployer.package_expires_at || null,
+          bonusDays: finalEmployer.bonus_days ?? 0,
+          bonusExpiresAt: finalEmployer.bonus_expires_at || null,
+          bonusDaysActive: finalEmployer.bonus_days_active ?? 0,
+        });
+        setEditBonusDays(finalEmployer.bonus_days ? String(finalEmployer.bonus_days) : "");
         setEditPassword("");
       }
     } catch (err: any) {
@@ -1388,6 +1434,13 @@ export default function AdminDashboard({ initialData, initialUi = {} }: { initia
   const editStartError = editStartMoved && editPackage
     ? validateSubscriptionStart(editStartDate, editPackage.duration_days, editPackage.name)
     : null;
+
+  // Bonus days: what the employer is owed right now, read from the row rather
+  // than from the field, so the "already running" read-out doesn't move while
+  // the admin is typing a number for the term after this one.
+  const editBonus = readBonusStatus(editModal ? { bonus_days: editModal.bonusDays, bonus_expires_at: editModal.bonusExpiresAt, bonus_days_active: editModal.bonusDaysActive } : null);
+  const editBonusError = validateBonusDays(editBonusDays);
+  const editSubExpiresAt = editModal?.packageExpiresAt ? new Date(editModal.packageExpiresAt) : null;
 
   // Submitting the form only opens the recap -- registering is a decision the
   // admin confirms against the dates, not a side effect of pressing Enter.
@@ -2688,6 +2741,7 @@ export default function AdminDashboard({ initialData, initialUi = {} }: { initia
                               <span style={{ padding: "2px 8px", borderRadius: 100, fontSize: 12, fontWeight: 600, background: sub.bg, color: sub.color }}>
                                 {sub.label}
                               </span>
+                              <BonusBadge employer={item} />
                               {item.renewal_requested && (
                                 <span style={{ padding: "2px 8px", borderRadius: 100, fontSize: 11, fontWeight: 600, background: "#FDF1E7", color: "#B45309" }}>
                                   Renewal Requested
@@ -2716,7 +2770,7 @@ export default function AdminDashboard({ initialData, initialUi = {} }: { initia
                       </td>
                       <td style={{ padding: "16px 24px", textAlign: "right", display: "flex", gap: 8, justifyContent: "flex-end", alignItems: "center" }}>
                         <button
-                          onClick={() => { const startDate = toCalendarDate(item.subscription_started_at); setEditModal({ id: item.id, name: item.business_name, type: item.business_type || "", postLimit: item.daily_post_limit ?? 15, packageId: item.active_package_id || "", packageExpiresAt: item.package_expires_at || null, tin: item.tin_number || "", startDate }); setEditName(item.business_name); setEditType(item.business_type || ""); setEditTin(item.tin_number || ""); setEditPostLimit(item.daily_post_limit ?? 15); setEditPackageId(item.active_package_id || ""); setEditStartDate(startDate); setEditLogoFile(null); setEditError(""); setEditPassword(""); setSettingsTab("edit"); }}
+                          onClick={() => { const startDate = toCalendarDate(item.subscription_started_at); setEditModal({ id: item.id, name: item.business_name, type: item.business_type || "", postLimit: item.daily_post_limit ?? 15, packageId: item.active_package_id || "", packageExpiresAt: item.package_expires_at || null, tin: item.tin_number || "", startDate, bonusDays: item.bonus_days ?? 0, bonusExpiresAt: item.bonus_expires_at || null, bonusDaysActive: item.bonus_days_active ?? 0 }); setEditName(item.business_name); setEditType(item.business_type || ""); setEditTin(item.tin_number || ""); setEditPostLimit(item.daily_post_limit ?? 15); setEditPackageId(item.active_package_id || ""); setEditStartDate(startDate); setEditBonusDays(item.bonus_days ? String(item.bonus_days) : ""); setEditLogoFile(null); setEditError(""); setEditPassword(""); setSettingsTab("edit"); }}
                           style={{ background: "transparent", border: "none", cursor: "pointer", color: "#6E7686", padding: "6px", borderRadius: 6, display: "flex", alignItems: "center", justifyContent: "center" }}
                           title="Employer settings"
                         >
@@ -2816,6 +2870,7 @@ export default function AdminDashboard({ initialData, initialUi = {} }: { initia
                         <span style={{ padding: "2px 8px", borderRadius: 100, fontSize: 11, fontWeight: 600, background: sub.bg, color: sub.color }}>
                           {sub.label}
                         </span>
+                        <BonusBadge employer={item} />
                         {item.renewal_requested && (
                           <span style={{ padding: "2px 8px", borderRadius: 100, fontSize: 11, fontWeight: 600, background: "#FDF1E7", color: "#B45309" }}>
                             Renewal Requested
@@ -2826,7 +2881,7 @@ export default function AdminDashboard({ initialData, initialUi = {} }: { initia
                   })()}
                   <div className="flex gap-2 justify-end mt-2 pt-3 border-t border-[#EFF1F5]">
                     <button
-                      onClick={() => { const startDate = toCalendarDate(item.subscription_started_at); setEditModal({ id: item.id, name: item.business_name, type: item.business_type || "", postLimit: item.daily_post_limit ?? 15, packageId: item.active_package_id || "", packageExpiresAt: item.package_expires_at || null, tin: item.tin_number || "", startDate }); setEditName(item.business_name); setEditType(item.business_type || ""); setEditTin(item.tin_number || ""); setEditPostLimit(item.daily_post_limit ?? 15); setEditPackageId(item.active_package_id || ""); setEditStartDate(startDate); setEditLogoFile(null); setEditError(""); setEditPassword(""); setSettingsTab("edit"); }}
+                      onClick={() => { const startDate = toCalendarDate(item.subscription_started_at); setEditModal({ id: item.id, name: item.business_name, type: item.business_type || "", postLimit: item.daily_post_limit ?? 15, packageId: item.active_package_id || "", packageExpiresAt: item.package_expires_at || null, tin: item.tin_number || "", startDate, bonusDays: item.bonus_days ?? 0, bonusExpiresAt: item.bonus_expires_at || null, bonusDaysActive: item.bonus_days_active ?? 0 }); setEditName(item.business_name); setEditType(item.business_type || ""); setEditTin(item.tin_number || ""); setEditPostLimit(item.daily_post_limit ?? 15); setEditPackageId(item.active_package_id || ""); setEditStartDate(startDate); setEditBonusDays(item.bonus_days ? String(item.bonus_days) : ""); setEditLogoFile(null); setEditError(""); setEditPassword(""); setSettingsTab("edit"); }}
                       className="bg-[#f3f4f6] text-[#343A46] border-none px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5"
                     >
                       <Gear size={14} /> Settings
@@ -3462,7 +3517,7 @@ export default function AdminDashboard({ initialData, initialUi = {} }: { initia
             </div>
             {settingsTab === "edit" && (
               <>
-                <p style={{ margin: "-12px 0 20px 0", fontSize: 13, color: "#4C5361" }}>Update business details and daily job post limit.</p>
+                <p style={{ margin: "-12px 0 20px 0", fontSize: 13, color: "#4C5361" }}>Update business details, subscription, bonus days and daily job post limit.</p>
                 <form onSubmit={handleEditEmployer} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
                   <div>
                     <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#141821", marginBottom: 6 }}>Business Name</label>
@@ -3604,6 +3659,55 @@ export default function AdminDashboard({ initialData, initialUi = {} }: { initia
                     );
                   })()}
 
+                  {/* Bonus posting days. Free days that only begin once the
+                      paid term in front of them has lapsed -- and when they do,
+                      nothing about the plan changes: the same package and the
+                      same daily limit carry over, because a bonus day is this
+                      subscription running longer rather than a different one.
+                      A plain text box, not a set of preset buttons: the number
+                      is whatever was negotiated with the business, and it is
+                      held to digits only rather than to `type="number"`, which
+                      would accept "1e5" and "-4" and then report them blank. */}
+                  <div>
+                    <label htmlFor="edit-bonus-days" style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#141821", marginBottom: 6 }}>Bonus Posting Days</label>
+                    {editBonus.running && (
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 12px", borderRadius: 8, background: "#E7F7EE", border: "1px solid #B7E4CB", marginBottom: 8 }}>
+                        <Gift size={15} color="#0E8442" style={{ flexShrink: 0 }} />
+                        <span style={{ fontSize: 12, color: "#0E8442", fontWeight: 600, lineHeight: 1.5 }}>
+                          Running now — {editBonus.daysLeft} of {editBonus.activeDays} bonus days left, ending {formatWindowDate(editBonus.endsAt!)}.
+                        </span>
+                      </div>
+                    )}
+                    <div style={{ position: "relative" }}>
+                      <input
+                        id="edit-bonus-days"
+                        type="text"
+                        inputMode="numeric"
+                        autoComplete="off"
+                        value={editBonusDays}
+                        onChange={e => { setEditBonusDays(sanitizeBonusInput(e.target.value)); setEditError(""); }}
+                        placeholder="0"
+                        style={{ width: "100%", padding: "10px 54px 10px 12px", borderRadius: 8, border: `1px solid ${editBonusError ? "#fca5a5" : "#CBD0DA"}`, fontSize: 14, fontWeight: 600, boxSizing: "border-box" }}
+                      />
+                      <span style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", fontSize: 12, fontWeight: 600, color: "#9AA1B1", pointerEvents: "none" }}>days</span>
+                    </div>
+                    {editBonusError ? (
+                      <p style={{ margin: "6px 0 0 0", fontSize: 12, color: "#E5484D", lineHeight: 1.5 }}>{editBonusError}</p>
+                    ) : (
+                      <p style={{ margin: "6px 0 0 0", fontSize: 12, color: "#9AA1B1", lineHeight: 1.5 }}>
+                        {editBonus.running
+                          ? "Days set here are banked for after the run above finishes — they don't extend it."
+                          : parseBonusDays(editBonusDays) === 0
+                            ? `Free posting days that start on their own the moment this employer's paid subscription lapses, keeping the same package and daily limit. 0 for none, up to ${MAX_BONUS_DAYS}.`
+                            : !editSubExpiresAt
+                              ? "Banked — they'll start once this employer has a subscription for them to follow."
+                              : editSubExpiresAt.getTime() > Date.now()
+                                ? `Banked — they start on their own when the subscription expires on ${formatWindowDate(editSubExpiresAt)}, keeping the same package and daily limit.`
+                                : "This subscription has already lapsed, so saving starts these days straight away — the full count, measured from now."}
+                      </p>
+                    )}
+                  </div>
+
                   {/* Daily Post Limit */}
                   <div>
                     <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#141821", marginBottom: 8 }}>Daily Job Post Limit</label>
@@ -3656,7 +3760,7 @@ export default function AdminDashboard({ initialData, initialUi = {} }: { initia
                     </button>
                     <button
                       type="submit"
-                      disabled={editLoading || !editName.trim() || !editPackageId || !editPassword || !!editStartError}
+                      disabled={editLoading || !editName.trim() || !editPackageId || !editPassword || !!editStartError || !!editBonusError}
                       style={{ background: "#141821", color: "#fff", border: "none", padding: "8px 16px", borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 8 }}
                     >
                       <Pencil size={14} />
