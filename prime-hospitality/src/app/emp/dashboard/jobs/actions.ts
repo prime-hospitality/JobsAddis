@@ -1,6 +1,6 @@
 "use server";
 
-import { getSupabase, requireEmployer, logEmployerActivity } from "../shared/employerServerUtils";
+import { getSupabase, requireEmployer, logEmployerActivity, activateBonusDays } from "../shared/employerServerUtils";
 import { isSubscriptionExpired } from "@/lib/subscriptionStatus";
 import { startOfAddisDay } from "@/lib/addisDay";
 import {
@@ -21,6 +21,12 @@ import {
 const GROUP_BOOSTS_PER_DAY = { standard: 3, premium: 5 } as const;
 
 async function getEmployerPublishingRules(supabase: ReturnType<typeof getSupabase>, employerId: string) {
+  // Before the read, not after: every rule below is derived from
+  // package_expires_at, and starting a due bonus term is precisely what moves
+  // it. Reading first would gate this employer on a lapse the bonus has
+  // already covered.
+  await activateBonusDays(supabase, employerId);
+
   const { data } = await supabase
     .from("employers")
     .select("auto_publish, daily_post_limit, package_expires_at, renewal_requested_at, renewal_seen_at, packages(category)")

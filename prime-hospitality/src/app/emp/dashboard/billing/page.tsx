@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
 import RenewSubscriptionButton from "../RenewSubscriptionButton";
 import { verifySessionValue } from "@/lib/signedSession";
+import { readBonusStatus } from "@/lib/bonusDays";
 
 async function getSession() {
   const sessionCookie = (await cookies()).get("employer_session");
@@ -21,17 +22,37 @@ export default async function BillingPage() {
   if (!session) redirect("/emp");
 
   const supabase = getSupabase();
-  
+
+  // This is the page an employer opens the morning their plan ran out, so the
+  // bonus term is opened here rather than left to the next platform sweep --
+  // otherwise the page they came to for exactly this answer could spend a
+  // minute telling them "Expired" with the bonus days sitting beside it,
+  // unstarted. Idempotent; see 20260820000000_employer_bonus_days.sql.
+  try {
+    await supabase.rpc("activate_due_bonus_days", { p_employer_id: session.employerId });
+  } catch (err) {
+    console.error("Bonus day activation failed:", err);
+  }
+
   // Fetch employer's active package
   const { data: employer } = await supabase
     .from("employers")
-    .select("active_package_id, package_expires_at, renewal_requested_at, renewal_seen_at, packages(name, duration_days, price)")
+    .select("active_package_id, package_expires_at, renewal_requested_at, renewal_seen_at, daily_post_limit, bonus_days, bonus_started_at, bonus_expires_at, bonus_days_active, packages(name, duration_days, price)")
     .eq("id", session.employerId)
     .maybeSingle();
 
   const pkgData = employer?.packages as any;
   const activePackage = Array.isArray(pkgData) ? pkgData[0] : pkgData;
   const expiresAt = employer?.package_expires_at ? new Date(employer.package_expires_at) : null;
+
+  // Bonus days. While a bonus term runs it IS package_expires_at -- the days
+  // were added to the subscription rather than parked next to it -- so
+  // everything below that reads the expiry keeps working, and the only thing
+  // this changes is what the page calls the days it's counting.
+  const bonus = readBonusStatus(employer);
+  const dailyPostLimit = employer?.daily_post_limit ?? 15;
+  const limitPhrase = dailyPostLimit === -1 ? "unlimited posts a day" : `${dailyPostLimit} posts a day`;
+
   // Deliberately NOT the shared isSubscriptionExpired() null-is-expired
   // convention: this page needs to tell "never subscribed" (Free Tier /
   // Upgrade copy) apart from "subscribed, then lapsed" (Renew copy), so no
@@ -42,9 +63,22 @@ export default async function BillingPage() {
   // the Renew button only needs to show up once renewing is actually relevant.
   const showRenewalNudge = !expiresAt || expiresAt.getTime() - Date.now() <= 24 * 60 * 60 * 1000;
 
-  const statusLabel = !activePackage ? "Free Tier" : isExpired ? "Expired" : "Active";
-  const statusBg = !activePackage ? "rgba(255,255,255,0.15)" : isExpired ? "#fee2e2" : "#dcfce3";
-  const statusColor = !activePackage ? "#fff" : isExpired ? "#E5484D" : "#166534";
+  // "Bonus Days" outranks "Active" here: both mean they can post, but only one
+  // of them explains why the plan they last paid for is still letting them.
+  const statusLabel = !activePackage ? "Free Tier" : bonus.running ? "Bonus Days" : isExpired ? "Expired" : "Active";
+  const statusBg = !activePackage ? "rgba(255,255,255,0.15)" : bonus.running ? "#D9E5F8" : isExpired ? "#fee2e2" : "#dcfce3";
+  const statusColor = !activePackage ? "#fff" : bonus.running ? "#113978" : isExpired ? "#E5484D" : "#166534";
+
+  const bonusHeadline = bonus.running
+    ? "Your bonus days are running"
+    : `${bonus.banked} bonus day${bonus.banked === 1 ? "" : "s"} waiting for you`;
+
+  const bonusBody = bonus.running
+    ? `${bonus.daysLeft} of ${bonus.activeDays} left — they end on ${bonus.endsAt!.toLocaleDateString()}. Nothing else changed when they started: you're still posting on your ${activePackage?.name || "current"} terms, with the same ${limitPhrase}.` +
+      (bonus.banked > 0 ? ` Another ${bonus.banked} start once these finish.` : "")
+    : expiresAt
+      ? `Free posting days from JobsAddis. They start on their own the moment your ${activePackage?.name || "current"} plan ends on ${expiresAt.toLocaleDateString()} — and while they run you post exactly the way you do today: same plan, same ${limitPhrase}.`
+      : "Free posting days from JobsAddis. They'll start on their own once you're on a plan and that plan runs out, and while they run you'll post on those same terms.";
 
   const features = [
     { label: "Post job openings", icon: "briefcase" },
@@ -82,9 +116,11 @@ export default async function BillingPage() {
             {activePackage ? activePackage.name : "Free / Manual Tier"}
           </h2>
           <p style={{ fontSize: 14, color: "rgba(255,255,255,0.7)", margin: "6px 0 0 0" }}>
-            {activePackage
-              ? `${activePackage.duration_days} day plan${activePackage.price ? ` · ${Number(activePackage.price).toLocaleString("en-US")} ETB` : ""}`
-              : "Upgrade to unlock job postings and applicant tracking."}
+            {!activePackage
+              ? "Upgrade to unlock job postings and applicant tracking."
+              : bonus.running
+                ? `Your ${activePackage.duration_days} day plan has ended — you're posting on bonus days, on the same terms.`
+                : `${activePackage.duration_days} day plan${activePackage.price ? ` · ${Number(activePackage.price).toLocaleString("en-US")} ETB` : ""}`}
           </p>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", color: "#fff" }}>
@@ -128,20 +164,60 @@ export default async function BillingPage() {
         </div>
 
         <div style={{ background: "#fff", borderRadius: 12, padding: "20px 22px", border: "1px solid #E2E5EC", display: "flex", alignItems: "center", gap: 16, boxShadow: "0 1px 4px rgba(0,0,0,0.04)" }}>
-          <div style={{ width: 48, height: 48, borderRadius: 12, background: `${isExpired ? "#E5484D" : "#12A150"}18`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-            <div style={{ color: isExpired ? "#E5484D" : "#12A150" }}>
+          <div style={{ width: 48, height: 48, borderRadius: 12, background: `${isExpired ? "#E5484D" : bonus.running ? "#164A9C" : "#12A150"}18`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <div style={{ color: isExpired ? "#E5484D" : bonus.running ? "#164A9C" : "#12A150" }}>
               <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
             </div>
           </div>
           <div>
-            <div style={{ fontSize: 11, fontWeight: 600, color: "#9AA1B1", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 4 }}>{isExpired ? "Expired On" : "Renews / Expires"}</div>
+            <div style={{ fontSize: 11, fontWeight: 600, color: "#9AA1B1", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 4 }}>{bonus.running ? "Bonus Ends" : isExpired ? "Expired On" : "Renews / Expires"}</div>
             <div style={{ fontSize: 22, fontWeight: 900, color: isExpired ? "#E5484D" : "#141821", letterSpacing: "-0.02em", lineHeight: 1 }}>{expiresAt ? expiresAt.toLocaleDateString() : "—"}</div>
             {daysLeft !== null && !isExpired && (
-              <div style={{ fontSize: 12, color: "#9AA1B1", marginTop: 4 }}>{daysLeft} day{daysLeft === 1 ? "" : "s"} left</div>
+              <div style={{ fontSize: 12, color: "#9AA1B1", marginTop: 4 }}>{daysLeft} {bonus.running ? "bonus " : ""}day{daysLeft === 1 ? "" : "s"} left</div>
             )}
           </div>
         </div>
+
+        {/* Only worth a tile when there is something in it. An employer with no
+            bonus should not be shown a permanent "0 Days" reminder of a thing
+            they were never given. */}
+        {bonus.hasAny && (
+          <div style={{ background: "#fff", borderRadius: 12, padding: "20px 22px", border: "1px solid #E2E5EC", display: "flex", alignItems: "center", gap: 16, boxShadow: "0 1px 4px rgba(0,0,0,0.04)" }}>
+            <div style={{ width: 48, height: 48, borderRadius: 12, background: "#12A15018", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              <div style={{ color: "#12A150" }}>
+                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg>
+              </div>
+            </div>
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 600, color: "#9AA1B1", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 4 }}>{bonus.running ? "Bonus Days Left" : "Bonus Days"}</div>
+              <div style={{ fontSize: 22, fontWeight: 900, color: "#141821", letterSpacing: "-0.02em", lineHeight: 1 }}>
+                {bonus.running ? `${bonus.daysLeft} of ${bonus.activeDays}` : bonus.banked}
+              </div>
+              <div style={{ fontSize: 12, color: "#9AA1B1", marginTop: 4 }}>
+                {bonus.running
+                  ? bonus.banked > 0 ? `${bonus.banked} more waiting after` : "Running now"
+                  : "Waiting — free"}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
+
+      {/* Bonus days. Worth a panel of its own rather than a line in a tile:
+          "free days, which begin later, on the terms you have now" is three
+          separate facts, and an employer who gets any one of them wrong turns a
+          gift into a support call. */}
+      {bonus.hasAny && (
+        <div style={{ background: "#fff", borderRadius: 14, border: `1px solid ${bonus.running ? "#B7E4CB" : "#E2E5EC"}`, marginBottom: 24, boxShadow: "0 1px 4px rgba(0,0,0,0.04)", display: "flex", alignItems: "flex-start", gap: 16, padding: "20px 22px" }}>
+          <div style={{ width: 42, height: 42, borderRadius: 12, background: "#12A15018", color: "#12A150", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg>
+          </div>
+          <div style={{ minWidth: 0 }}>
+            <h3 style={{ fontSize: 15, fontWeight: 700, color: "#141821", margin: 0 }}>{bonusHeadline}</h3>
+            <p style={{ fontSize: 13, color: "#4C5361", margin: "6px 0 0 0", lineHeight: 1.6 }}>{bonusBody}</p>
+          </div>
+        </div>
+      )}
 
       {/* What's included */}
       <div style={{ background: "#fff", borderRadius: 14, border: "1px solid #E2E5EC", overflow: "hidden", boxShadow: "0 1px 4px rgba(0,0,0,0.04)" }}>

@@ -17,6 +17,8 @@ const ACTION_LABELS: Record<string, string> = {
   pre_approve_scheduled_job: "Pre-approved scheduled job",
   cancel_scheduled_job: "Cancelled scheduled job",
   assign_package: "Assigned package",
+  set_bonus_days: "Set bonus days",
+  bonus_days_started: "Bonus days started",
   create_sub_admin: "Created sub-admin",
   update_sub_admin_permissions: "Updated sub-admin permissions",
   update_sub_admin_credentials: "Updated sub-admin credentials",
