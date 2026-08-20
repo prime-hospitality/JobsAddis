@@ -4,10 +4,29 @@ import type { DeepPartial } from "./types";
 /**
  * Amharic catalog. Typed as a deep partial of `en`, so any key left out here
  * falls back to English rather than rendering a raw key path.
+ *
+ * Two conventions this file holds to, because breaking either is what made the
+ * earlier pass read like a translation rather than like Amharic:
+ *
+ * 1. **One register: the polite form (የአክብሮት), everywhere — buttons included.**
+ *    The readers are working adults being asked for their phone number and
+ *    their work history, and the app addresses them as such. Mixing forms is
+ *    worse than either choice on its own: "እንደገና ሞክር" on one screen and
+ *    "እንደገና ይሞክሩ" on the next is the same sentence spoken two ways, and that
+ *    is what a reader notices.
+ *
+ * 2. **"Hospitality" is an industry, not a personal quality.** It renders as
+ *    "የሆቴልና መስተንግዶ". The literal "እንግዳ ተቀባይነት" means the virtue of being
+ *    welcoming to guests, so "የእንግዳ ተቀባይነት ሥራዎች" reads as "jobs in being
+ *    hospitable" — which is not a job category anyone searches for.
+ *
+ * Brand names (JobsAdis, Prime Hospitality) stay in Latin script. Transliterating
+ * a brand makes it unsearchable and is not what Ethiopian products do with their
+ * own names.
  */
 export const am: DeepPartial<Catalog> = {
   nav: {
-    home: "ዋና ገጽ",
+    home: "መነሻ",
     search: "ፍለጋ",
     applications: "ያመለከቱት",
     notifications: "ማሳወቂያ",
@@ -17,15 +36,17 @@ export const am: DeepPartial<Catalog> = {
 
   common: {
     appLanguage: "የመተግበሪያ ቋንቋ",
-    cancel: "ሰርዝ",
-    save: "አስቀምጥ",
+    cancel: "ይቅር",
+    save: "ያስቀምጡ",
     saving: "በማስቀመጥ ላይ…",
-    close: "ዝጋ",
-    done: "ተጠናቅቋል",
-    back: "ተመለስ",
+    close: "ይዝጉ",
+    // A button that ends a selection, not a report that something finished --
+    // "ተጠናቅቋል" would be the latter.
+    done: "እሺ",
+    back: "ይመለሱ",
     next: "ቀጣይ",
-    continue: "ቀጥል",
-    retry: "እንደገና ሞክር",
+    continue: "ይቀጥሉ",
+    retry: "እንደገና ይሞክሩ",
     loading: "በመጫን ላይ…",
   },
 
@@ -36,8 +57,8 @@ export const am: DeepPartial<Catalog> = {
     yearsPlus: "{years}+ ዓመታት",
     notSpecified: "አልተገለጸም",
     anyExperience: "ማንኛውም ልምድ",
-    earnedAt: "ይህን ልምድ የት አገኙት?",
-    earnedAtShort: "የሥራ ቦታ ዓይነት",
+    earnedAt: "ይህን ልምድ ያገኙት የት ነው?",
+    earnedAtShort: "የሥራ ቦታው ዓይነት",
   },
 
   gender: {
@@ -49,9 +70,11 @@ export const am: DeepPartial<Catalog> = {
 
   jobCard: {
     posted: "የተለጠፈው {when}",
-    closesInDays: "በ{days} ቀናት ውስጥ ይዘጋል",
+    // Badge-width text: "ውስጥ" was dropped because the badge is narrow and the
+    // phrase is unambiguous without it.
+    closesInDays: "በ{days} ቀናት ይዘጋል",
     closesTomorrow: "ነገ ይዘጋል",
-    closesToday: "የማመልከቻ የመጨረሻ ቀን",
+    closesToday: "ዛሬ የመጨረሻ ቀን",
     closed: "ማመልከቻ ተዘግቷል",
     openings: "{count} ክፍት ቦታ",
     openingsPlural: "{count} ክፍት ቦታዎች",
@@ -63,7 +86,7 @@ export const am: DeepPartial<Catalog> = {
       overview: "አጠቃላይ እይታ",
       jobs: "ክፍት ሥራዎች",
     },
-    aboutHeading: "ስለ ተቋሙ / ምን እንደሚሠሩ",
+    aboutHeading: "ስለ ተቋሙ",
     noAbout: "ይህ ተቋም እስካሁን መግለጫ አላከለም።",
     noJobs: "በአሁኑ ጊዜ ክፍት ሥራ የለም።",
     openCount: "{count} ክፍት ቦታ",
@@ -77,7 +100,7 @@ export const am: DeepPartial<Catalog> = {
       location: "ቦታ",
       salary: "ደመወዝ",
       jobType: "የሥራ ዓይነት",
-      deadline: "የማመልከቻ ጊዜ",
+      deadline: "የመጨረሻ ቀን",
       workingHours: "የሥራ ሰዓት",
       openings: "ክፍት ቦታዎች",
       experience: "የሥራ ልምድ",
@@ -85,17 +108,22 @@ export const am: DeepPartial<Catalog> = {
       education: "የትምህርት ደረጃ",
       languages: "ቋንቋዎች",
     },
-    salaryPerScale: "በተቋሙ የደመወዝ ስኬል",
+    // "እርከን" is the standard Amharic for a pay scale; "ስኬል" was the English
+    // word in Ethiopic letters.
+    salaryPerScale: "በተቋሙ የደመወዝ እርከን",
     salaryNegotiable: "በስምምነት",
     salarySingle: "{amount} ብር/ወር",
     salaryRange: "{min}–{max} ብር/ወር",
     openingsCount: "{count} ክፍት ቦታ",
     openingsCountPlural: "{count} ክፍት ቦታዎች",
-    experienceGapTag: "{min}+ ዓመት ተጠቅሷል",
+    experienceGapTag: "{min}+ ዓመት ተጠይቋል",
+    // States the two figures and stops, exactly as the English does. The verb
+    // is "ይጠይቃል" (asks for) rather than "ተጠቅሷል" (was mentioned), because the
+    // employer asked for it -- it did not merely get mentioned somewhere.
     experienceNote:
-      "ይህ ሥራ {min}+ ዓመታት ልምድ ተጠቅሷል። መገለጫዎ በ{role} {actual} ያሳያል።",
+      "ይህ የሥራ መደብ {min}+ ዓመት ልምድ ይጠይቃል። መገለጫዎ በ{role} {actual} እንዳለዎት ያሳያል።",
     genderNote:
-      "ይህ ሥራ ለ{required} አመልካቾች ተጠቅሷል። መገለጫዎ {actual} መሆንዎን ያሳያል።",
+      "ይህ የሥራ መደብ ለ{required} አመልካቾች የተገለጸ ነው። መገለጫዎ {actual} መሆንዎን ያሳያል።",
     aboutHeading: "ስለዚህ ሥራ",
     requirementsHeading: "መስፈርቶች",
     postedAndHiring: "የተለጠፈው {when} · በንቃት እየቀጠሩ ነው",
@@ -119,17 +147,17 @@ export const am: DeepPartial<Catalog> = {
     bodyShortlisted: "{company} ለ{job} ያቀረቡትን ማመልከቻ መርጧል።",
     bodyRejected: "{company} ለ{job} ያቀረቡትን ማመልከቻ ገምግሟል።",
     bodyVacancyAlert: "{company} {job} እየቀጠረ ነው።",
-    bodyDefault: "ከ{company} ስለ {job} ማሻሻያ።",
+    bodyDefault: "ከ{company} ስለ {job} የተላከ ማሻሻያ።",
   },
 
   avatarCrop: {
-    title: "ፎቶ አስተካክል",
-    instructions: "ሳጥኑን በመጎተት ቦታውን ይቀይሩ፣ ጥግ በመጎተት መጠኑን ያስተካክሉ። እንደ ካሬ ይቀመጣል።",
+    title: "ፎቶ ያስተካክሉ",
+    instructions: "ሳጥኑን በመጎተት ቦታውን ይቀይሩ፣ ጥጉን በመጎተት መጠኑን ያስተካክሉ። እንደ ካሬ ይቀመጣል።",
     qualityGood: "ጥሩ — ግልጽ",
-    qualityOkay: "ሲጎላ ትንሽ ደብዛዛ",
-    qualityBad: "በጣም ትንሽ — ደብዛዛ ይሆናል",
+    qualityOkay: "ሲጎላ በትንሹ ይደበዝዛል",
+    qualityBad: "በጣም ትንሽ ነው — ደብዛዛ ይሆናል",
     saving: "በማስቀመጥ ላይ…",
-    usePhoto: "ፎቶውን ተጠቀም",
+    usePhoto: "ፎቶውን ይጠቀሙ",
   },
 
   app: {
@@ -140,7 +168,7 @@ export const am: DeepPartial<Catalog> = {
     cvUploaded: "ሲቪ ተጭኗል!",
     cvUploadFailed: "መጫን አልተሳካም",
     cvUploading: "ሲቪ በመጫን ላይ…",
-    cvTooLarge: "ፋይሉ በጣም ትልቅ ነው። ከፍተኛው 5MB።",
+    cvTooLarge: "ፋይሉ በጣም ትልቅ ነው። ከፍተኛው 5MB ነው።",
     cvWrongType: "እባክዎ PDF ወይም Word ሰነድ ይጫኑ።",
     cvUploadedSuccess: "ሲቪዎ በተሳካ ሁኔታ ተጭኗል!",
     cvUploadGenericError: "ሲቪ መጫን አልተሳካም",
@@ -169,20 +197,20 @@ export const am: DeepPartial<Catalog> = {
     willingToRelocate: "ቦታ ለመቀየር ፈቃደኛ",
     localOnly: "በአካባቢው ብቻ",
     noPhoneWarning:
-      "ዋና ስልክ ቁጥር አለማጋራት መገለጫዎን ይጎዳል — ቀጣሪዎች እንዴት እንደሚያገኙዎት አያውቁም።",
-    uploadingCv: "ሲቪ በመጫን ላይ...",
+      "ዋና ስልክ ቁጥር አለማጋራት መገለጫዎን ያዳክማል — ቀጣሪዎች እንዴት እንደሚያገኙዎት አያውቁም።",
+    uploadingCv: "ሲቪ በመጫን ላይ…",
     noCvWarning:
-      "ሲቪ አለመጫን የመቀጠር ዕድልዎን ይቀንሳል፤ ቀጣሪዎች ዝርዝር የሥራ ልምድና ብቃት ይፈልጋሉ። ለመጫን ይጫኑ።",
-    showPrivacyNotice: "የግላዊነት ማስታወሻ አሳይ",
+      "ሲቪ አለመጫን የመቀጠር ዕድልዎን ይቀንሳል፤ ቀጣሪዎች ዝርዝር የሥራ ልምድና ብቃት ማየት ይፈልጋሉ። ለመጫን ይጫኑ።",
+    showPrivacyNotice: "የግላዊነት ማስታወሻ ይመልከቱ",
     onlyVisibleToEmployers: "ለቀጣሪዎች ብቻ የሚታይ",
     privacyBody:
       "የመገለጫዎና የስልክ ቁጥርዎ መረጃ ሙሉ በሙሉ ሚስጥራዊ ነው። በተረጋገጡ ተቋማት ብቻ የሚታይ ሲሆን በሌሎች ሥራ ፈላጊዎች ፈጽሞ አይታይም።",
-    shareNow: "አሁን አጋሩ",
+    shareNow: "አሁን ያጋሩ",
     contactNotShared: "የስልክ ቁጥር አልተጋራም",
     needPrimaryFirst: "ሁለተኛ ስልክ ከመጨመርዎ በፊት ዋና ስልክ ቁጥርዎን ማጋራት አለብዎት።",
-    change: "ቀይር",
+    change: "ይቀይሩ",
     viewCv: "ሲቪ ይመልከቱ",
-    downloadCv: "ሲቪ አውርድ",
+    downloadCv: "ሲቪ ያውርዱ",
     notSet: "አልተቀመጠም",
 
     settings: "ቅንብሮች",
@@ -198,38 +226,38 @@ export const am: DeepPartial<Catalog> = {
     helpAndFaq: "እገዛና ተደጋጋሚ ጥያቄዎች",
     faqSubtitle: "በተደጋጋሚ የሚጠየቁ ጥያቄዎች",
     selectExperience: "ልምድ ይምረጡ",
-    changeLocation: "አካባቢ ቀይር",
+    changeLocation: "አካባቢ ይቀይሩ",
 
-    editExp: "ልምድ አርትዕ",
-    remove: "አስወግድ",
-    addRole: "ሥራ ጨምር",
-    searchRoles: "ሥራዎችን ይፈልጉ...",
+    editExp: "ልምድ ያስተካክሉ",
+    remove: "ያስወግዱ",
+    addRole: "ሥራ ይጨምሩ",
+    searchRoles: "ሥራዎችን ይፈልጉ…",
     noRolesFound: "ምንም ሥራ አልተገኘም።",
     maxThreeRoles: "እስከ 3 የሥራ ዘርፎች ብቻ መምረጥ ይችላሉ።",
-    saving: "በማስቀመጥ ላይ...",
-    saveChanges: "ለውጦችን አስቀምጥ",
+    saving: "በማስቀመጥ ላይ…",
+    saveChanges: "ለውጦችን ያስቀምጡ",
     selectExperienceForRole: "በዚህ ሥራ ስንት ዓመት ሠርተዋል?",
     pickExperience: "እባክዎ የዓመታት ብዛት ይምረጡ።",
-    updateExperience: "ልምድ አዘምን",
-    searchLocation: "አካባቢ ይፈልጉ...",
+    updateExperience: "ልምድ ያዘምኑ",
+    searchLocation: "አካባቢ ይፈልጉ…",
     noLocationsFound: "ምንም አካባቢ አልተገኘም።",
-    saveLocation: "አካባቢ አስቀምጥ",
+    saveLocation: "አካባቢ ያስቀምጡ",
 
-    loadingFaqs: "ተደጋጋሚ ጥያቄዎችን በመጫን ላይ...",
+    loadingFaqs: "ተደጋጋሚ ጥያቄዎችን በመጫን ላይ…",
     noFaqs: "አሁን ምንም ተደጋጋሚ ጥያቄ የለም።",
     contactSupport: "ድጋፍ ያግኙ",
     supportTelegram: "ቴሌግራም",
     supportPhone: "ስልክ",
     supportEmail: "ኢሜይል",
 
-    editPhone: "ስልክ ቁጥር አርትዕ",
-    addPhone: "ስልክ ቁጥር ጨምር",
-    editSecondaryPhone: "ሁለተኛ ስልክ አርትዕ",
-    addSecondaryPhone: "ሁለተኛ ስልክ ጨምር",
+    editPhone: "ስልክ ቁጥር ያስተካክሉ",
+    addPhone: "ስልክ ቁጥር ይጨምሩ",
+    editSecondaryPhone: "ሁለተኛ ስልክ ያስተካክሉ",
+    addSecondaryPhone: "ሁለተኛ ስልክ ይጨምሩ",
     phonePlaceholder: "+251 9XX XXX XXXX",
     sharedWithEmployers: "ይህ ለቀጣሪዎች ይጋራል",
     sharedWithEmployersBackup: "ይህ ለቀጣሪዎች እንደ አማራጭ ስልክ ቁጥር ይጋራል",
-    savePhone: "ስልክ ቁጥር አስቀምጥ",
+    savePhone: "ስልክ ቁጥር ያስቀምጡ",
 
     toastSuccess: "ተሳክቷል!",
     toastError: "የሆነ ችግር ተፈጥሯል",
@@ -265,14 +293,14 @@ export const am: DeepPartial<Catalog> = {
 
     step2Title: "ስልክ ቁጥርዎን ለቀጣሪዎች ልናጋራ እንችላለን?",
     step2Subtitle: "ይህ ቀጣሪዎች ሊቀጥሩዎት ሲፈልጉ በፍጥነት እንዲያገኙዎት ይረዳል።",
-    shareYes: "አዎ፣ ቁጥሬን አጋሩ",
+    shareYes: "አዎ፣ ቁጥሬን ያጋሩ",
     shareYesHint: "ቀጣሪዎች በቀጥታ ሊያገኙዎት ይችላሉ",
     shareNo: "አይ፣ ሚስጥር ይሁን",
     shareNoHint: "በመተግበሪያው በኩል ብቻ ይገናኙዎታል",
 
     step3Title: "ስንት ዓመት ሠርተዋል?",
     step3Subtitle:
-      "ለእያንዳንዱ ሥራ የዓመታት ብዛት ይስጡ። የሥራ መጠሪያዎች ከቦታ ቦታ ስለሚለያዩ ዓመታትን እንጠይቃለን።",
+      "ለእያንዳንዱ ሥራ የዓመታት ብዛት ይስጡ። የሥራ መጠሪያዎች ከቦታ ቦታ ስለሚለያዩ በምትኩ ዓመታትን እንጠይቃለን።",
     selectExperience: "ዓመታት ይምረጡ…",
 
     step4Title: "ስለ እርስዎ ጥቂት ይንገሩን",
@@ -284,9 +312,9 @@ export const am: DeepPartial<Catalog> = {
     male: "ወንድ",
     female: "ሴት",
     locationLabel: "አካባቢ (ሰፈር)",
-    searchYourArea: "አካባቢዎን ይፈልጉ...",
+    searchYourArea: "አካባቢዎን ይፈልጉ…",
     selectLocation: "አካባቢ ይምረጡ",
-    searchAreaPlaceholder: "ሰፈር ወይም ክፍለ ከተማ ይፈልጉ...",
+    searchAreaPlaceholder: "ሰፈር ወይም ክፍለ ከተማ ይፈልጉ…",
     noLocationsFound: '"{search}" የሚዛመድ አካባቢ አልተገኘም።',
     willingToRelocate: "ቦታ ለመቀየር ፈቃደኛ ነዎት?",
     willingToRelocateHint: "ከአካባቢዎ ውጪ ላሉ ሥራዎች ያመልክቱ",
@@ -297,39 +325,40 @@ export const am: DeepPartial<Catalog> = {
     ageRange: "ዕድሜ ከ16 እስከ 60 መሆን አለበት።",
 
     step5Title: "ሲቪዎን ይጫኑ",
-    step5Subtitle: "PDF ወይም Word ሰነድ። ከፍተኛው 5MB።",
+    step5Subtitle: "PDF ወይም Word ሰነድ። ከፍተኛው 5MB ነው።",
     tapToSelect: "ፋይል ለመምረጥ ይጫኑ",
     tapToChange: "ፋይል ለመቀየር ይጫኑ",
-    fileTooLarge: "ፋይሉ በጣም ትልቅ ነው። ከፍተኛው 5MB።",
+    fileTooLarge: "ፋይሉ በጣም ትልቅ ነው። ከፍተኛው 5MB ነው።",
     wrongFileType: "እባክዎ PDF ወይም Word ሰነድ ይጫኑ።",
-    submittingSetup: "በመላክ ላይ...",
-    finishSetup: "ማጠናቀቅ",
+    submittingSetup: "በመላክ ላይ…",
+    finishSetup: "ያጠናቅቁ",
     continueWithoutCv: "ያለ ሲቪ ይቀጥሉ",
-    skipForNow: "ለአሁን ዝለለው",
+    skipForNow: "ለአሁን ይለፉት",
 
     step6Headline: "እንኳን ደህና መጡ {name}!",
-    step6Body: "ወደ ጆብስአዲስ በፕራይም ሆስፒታሊቲ እንኳን ደህና መጡ። መገለጫዎ ተዘጋጅቷል። ተስማሚውን ሥራ እናፈላልግልዎ።",
-    findJobs: "ሥራ ፈልግ",
+    step6Body:
+      "ወደ JobsAdis በPrime Hospitality እንኳን ደህና መጡ። መገለጫዎ ተዘጋጅቷል። የሚስማማዎትን ሥራ እንፈልግልዎ።",
+    findJobs: "ሥራ ይፈልጉ",
   },
 
   search: {
     title: "ሥራዎን ያግኙ",
-    subtitle: "በሁሉም ንቁ የእንግዳ ተቀባይነት ሥራዎች ውስጥ ይፈልጉ",
+    subtitle: "በሁሉም ክፍት የሆቴልና መስተንግዶ ሥራዎች ውስጥ ይፈልጉ",
     placeholder: "የሥራ መጠሪያ፣ ሆቴል፣ አካባቢ…",
-    clear: "አጽዳ",
+    clear: "ያጽዱ",
     typeChip: "ዓይነት",
     categoryChip: "ዘርፍ",
     experienceChip: "የሥራ ልምድ",
     postedWithinChip: "የተለጠፈበት ጊዜ",
-    updateResults: "ውጤቶችን አዘምን",
-    selectType: "የድርጅት ዓይነት ይምረጡ",
-    searchAllTypes: "የድርጅት ዓይነቶችን ይፈልጉ...",
-    noTypesFound: "ምንም የድርጅት ዓይነት አልተገኘም።",
+    updateResults: "ውጤቶችን ያዘምኑ",
+    selectType: "የተቋም ዓይነት ይምረጡ",
+    searchAllTypes: "የተቋም ዓይነቶችን ይፈልጉ…",
+    noTypesFound: "ምንም የተቋም ዓይነት አልተገኘም።",
     selectCategory: "ዘርፍ ይምረጡ",
-    searchAllCategories: "ሁሉንም ዘርፎች ይፈልጉ...",
+    searchAllCategories: "ሁሉንም ዘርፎች ይፈልጉ…",
     noCategoriesFound: "ምንም ዘርፍ አልተገኘም።",
     noRolesInTeam: "በዚህ ክፍል ውስጥ ገና ሥራ የለም።",
-    backToMainCategory: "ወደ ዋና ዘርፍ ተመለስ",
+    backToMainCategory: "ወደ ዋና ዘርፍ ይመለሱ",
     roleCount: "{count} ሥራ",
     roleCountPlural: "{count} ሥራዎች",
     selectedSuffix: " · {count} ተመርጠዋል",
@@ -340,16 +369,16 @@ export const am: DeepPartial<Catalog> = {
     emptyBody: "የተለየ ቃል ይሞክሩ፣ ወይም ከታች ካሉት ሥራዎች ይምረጡ።",
     emptyBecauseFilters: "{count} ሥራ ከፍለጋዎ ጋር ይዛመዳል፣ ነገር ግን ማጣሪያዎችዎ አግልለውታል።",
     emptyBecauseFiltersPlural: "{count} ሥራዎች ከፍለጋዎ ጋር ይዛመዳሉ፣ ነገር ግን ማጣሪያዎችዎ አግልለዋቸዋል።",
-    clearFiltersAction: "ማጣሪያዎችን አጽዳ",
+    clearFiltersAction: "ማጣሪያዎችን ያጽዱ",
     emptyFilteredNoKeyword: "አሁን {count} ክፍት ሥራ አለ፣ ነገር ግን ማጣሪያዎችዎ አግልለውታል።",
     emptyFilteredNoKeywordPlural: "አሁን {count} ክፍት ሥራዎች አሉ፣ ነገር ግን ማጣሪያዎችዎ አግልለዋቸዋል።",
-    showAllJobsAction: "ሁሉንም ሥራዎች አሳይ",
+    showAllJobsAction: "ሁሉንም ሥራዎች ይመልከቱ",
     didYouMean: "ይህን ማለትዎ ነው?",
     rolesHiringNow: "አሁን እየቀጠሩ ያሉ ሥራዎች",
     resultCount: "{count} ውጤት",
     resultCountPlural: "{count} ውጤቶች",
     resultCountShowing: "ከ{total} ውጤቶች {shown} እየታዩ ነው",
-    loadMore: "ተጨማሪ ሥራዎችን ጫን",
+    loadMore: "ተጨማሪ ሥራዎችን ይጫኑ",
     loadingMore: "በመጫን ላይ…",
     failed: "ፍለጋው አልተሳካም። እባክዎ እንደገና ይሞክሩ።",
     experience: {
@@ -364,14 +393,19 @@ export const am: DeepPartial<Catalog> = {
       last7: "ባለፉት 7 ቀናት",
       last30: "ባለፉት 30 ቀናት",
     },
+    // Hotel department names as the industry says them in Amharic, not as the
+    // English decomposes. "Front Office" is the guest-reception department, so
+    // it is "የእንግዳ አቀባበል" -- the literal "የፊት ለፊት አገልግሎት" describes a
+    // counter's position in a building. "Management & Administration" is
+    // "አመራርና አስተዳደር"; rendering it "ማኔጅመንትና አስተዳደር" said administration twice.
     teams: {
       foodAndBeverage: "የምግብና መጠጥ አገልግሎት",
       kitchen: "ኩሽናና ምግብ ዝግጅት",
-      frontOffice: "የፊት ለፊት አገልግሎት",
-      housekeeping: "የክፍል አያያዝና ልብስ ማጠቢያ",
+      frontOffice: "የእንግዳ አቀባበል",
+      housekeeping: "የክፍል ንጽሕናና ልብስ እጥበት",
       financeAccounting: "ፋይናንስና ሒሳብ",
-      management: "አስተዳደርና ማኔጅመንት",
-      marketing: "ሽያጭና ማርኬቲንግ",
+      management: "አመራርና አስተዳደር",
+      marketing: "ሽያጭና ግብይት",
       humanResources: "የሰው ኃይል አስተዳደር",
       engineering: "ኢንጂነሪንግ",
       it: "አይቲ",
@@ -391,7 +425,7 @@ export const am: DeepPartial<Catalog> = {
       "በ{company} ለ{job} የሥራ መደብ ተመርጠዋል! በቅርቡ ያገኝዎታል።",
     bodyVacancyAlert:
       "ከማንቂያ ምዝገባዎ ጋር የሚዛመድ አዲስ ክፍት ሥራ፦ {company} {job} እየፈለገ ነው።",
-    bodyDefault: "በ{company} ለ{job} ስላቀረቡት ማመልከቻ ማሻሻያ።",
+    bodyDefault: "በ{company} ለ{job} ስላቀረቡት ማመልከቻ የተላከ ማሻሻያ።",
     viewJob: "ሥራውን ይመልከቱ",
     settingsTitle: "የማንቂያ ምርጫዎች",
     settingsSubtitle: "ተዛማጅ ሥራዎች ሲለጠፉ ማሳወቂያ ያግኙ",
@@ -402,11 +436,11 @@ export const am: DeepPartial<Catalog> = {
     maxSelected: "ከፍተኛው 3 ዘርፎች ተመርጠዋል",
     noResults: "ምንም ውጤት የለም",
     maxReached: "ገደቡ ደርሷል",
-    experienceLevel: "እስከዚህ ዓመት የሚጠይቁ ሥራዎችን ብቻ አሳውቀኝ",
+    experienceLevel: "እስከዚህ ዓመት ልምድ የሚጠይቁ ሥራዎችን ብቻ አሳውቁኝ",
     anyLevel: "ማንኛውም መጠን",
     saving: "በማስቀመጥ ላይ…",
     saved: "ተቀምጧል!",
-    savePreferences: "ምርጫዎችን አስቀምጥ",
+    savePreferences: "ምርጫዎችን ያስቀምጡ",
   },
 
   home: {
@@ -414,19 +448,19 @@ export const am: DeepPartial<Catalog> = {
     // highlighted fragment on the second line as the design expects.
     heroLine1: "ቀጣዩን",
     heroLine2: "ሥራ ያግኙ",
-    heroSubtitle: "በኢትዮጵያ ምርጥ የእንግዳ ተቀባይነት ሥራዎች።",
-    trustedBy: "የታመኑብን",
+    heroSubtitle: "በኢትዮጵያ ምርጥ የሆቴልና መስተንግዶ ሥራዎች።",
+    trustedBy: "ያመኑብን",
     hero2Line1: "የሚስማማዎትን",
     hero2Line2: "የሆቴል ሥራዎች",
     hero2Line3: "ያግኙ።",
-    hero2Subtitle: "በኢትዮጵያ ምርጥ እድሎችን አግኝተው መጻዒዎትን ይገንቡ።",
-    findJobs: "ሥራ ፈልግ",
+    hero2Subtitle: "በኢትዮጵያ ምርጥ የሥራ ዕድሎችን አግኝተው የወደፊት ሕይወትዎን ይገንቡ።",
+    findJobs: "ሥራ ይፈልጉ",
     searchPlaceholder: "ሥራ፣ ሆቴል፣ የሥራ መደብ ይፈልጉ…",
     statOpenJobs: "ክፍት ሥራዎች",
     statBusinesses: "ተቋማት",
     statJobSeekers: "ሥራ ፈላጊዎች",
     allJobs: "ሁሉም ሥራዎች",
-    refresh: "አድስ",
+    refresh: "ያድሱ",
     tryAgain: "እንደገና ይሞክሩ",
     noJobs: "ምንም ክፍት ሥራ አልተገኘም።",
   },
@@ -438,7 +472,7 @@ export const am: DeepPartial<Catalog> = {
     phoneNumber: "ስልክ ቁጥር",
     experienceLevel: "የሥራ ልምድ",
     location: "ቦታ",
-    locationValue: "{neighborhood}, አዲስ አበባ",
+    locationValue: "{neighborhood}፣ አዲስ አበባ",
     locationMismatch: "⚠️ አይዛመድም",
     preFilled: "አስቀድሞ ተሞልቷል",
     coverNoteLabel: "የመግቢያ ማስታወሻ (አማራጭ)",
@@ -447,8 +481,8 @@ export const am: DeepPartial<Catalog> = {
     privacyNote:
       "📋 የመገለጫዎ መረጃ ለ{business} ይጋራል። ከተመረጡ በቴሌግራምዎ ወይም በስልክ ቁጥርዎ ያገኝዎታል።",
     submitting: "በመላክ ላይ…",
-    submit: "ማመልከቻ ላክ ✓",
-    errorRateLimit: "የማመልከቻ ገደብ ደርሰዋል (10/በሰዓት)። እባክዎ ቆይተው ይሞክሩ።",
+    submit: "ማመልከቻ ይላኩ ✓",
+    errorRateLimit: "የማመልከቻ ገደብ ደርሰዋል (በሰዓት 10)። እባክዎ ቆይተው ይሞክሩ።",
     errorUnauthorized: "ማረጋገጥ አልተሳካም። እባክዎ መተግበሪያውን ከቴሌግራም እንደገና ይክፈቱ።",
     errorGeneric: "የሆነ ችግር ተፈጥሯል። እባክዎ እንደገና ይሞክሩ።",
   },
@@ -480,15 +514,19 @@ export const am: DeepPartial<Catalog> = {
     milestoneAwaitingReview: "ግምገማ በመጠባበቅ ላይ",
     browseMore: "ተጨማሪ ሥራዎችን ይመልከቱ",
     viewApplications: "ማመልከቻዎቼን ይመልከቱ",
-    footer: "🌟 ፕራይም ሆስፒታሊቲ — ተሰጥኦን ከኢትዮጵያ ምርጥ የእንግዳ ተቀባይነት ተቋማት ጋር እናገናኛለን",
+    footer: "🌟 Prime Hospitality — ተሰጥኦን ከኢትዮጵያ ምርጥ የሆቴልና መስተንግዶ ተቋማት ጋር እናገናኛለን",
   },
 
+  // The English is abbreviated ("5m ago") because it sits in tight corners of a
+  // card. Amharic has no equally short form, so the preposition "ከ" is dropped
+  // instead -- "5 ደቂቃ በፊት" is idiomatic on its own and saves a character where
+  // the space is tightest.
   time: {
     justNow: "አሁን",
-    minutesAgo: "ከ{count} ደቂቃ በፊት",
-    hoursAgo: "ከ{count} ሰዓት በፊት",
+    minutesAgo: "{count} ደቂቃ በፊት",
+    hoursAgo: "{count} ሰዓት በፊት",
     yesterday: "ትናንት",
-    daysAgo: "ከ{count} ቀን በፊት",
-    weeksAgo: "ከ{count} ሳምንት በፊት",
+    daysAgo: "{count} ቀን በፊት",
+    weeksAgo: "{count} ሳምንት በፊት",
   },
 };
