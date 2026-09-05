@@ -433,43 +433,31 @@ export default function ProfileScreen() {
     try {
       const tg = (window as any).Telegram?.WebApp;
       if (tg && tg.requestContact) {
-        // NOTE: Telegram's requestContact callback only receives (granted: boolean).
-        // The phone number is NOT passed as a second argument — it must be read
-        // from tg.initDataUnsafe.contact after the user approves.
+        // The Telegram requestContact flow works like this:
+        //   1. User taps the native "Share Contact" dialog → Telegram sends the
+        //      contact to the BOT via the Bot API (webhook → telegram_contacts + profiles tables).
+        //   2. The callback fires with granted=true/false ONLY — the phone number
+        //      is NEVER present in the browser JS environment.
+        //   3. The webhook (telegram-webhook/index.ts) already updates profiles.phone_number.
+        // So on granted=true we just refresh the profile to pick up what the webhook saved.
         tg.requestContact(async (granted: boolean) => {
           if (!granted) return;
 
-          let phone: string = tg.initDataUnsafe?.contact?.phone_number || "";
-          if (phone && !phone.startsWith("+")) {
-            phone = "+" + phone;
-          }
-
-          if (!phone) {
-            // Rare: user approved but Telegram gave no number — open manual modal
-            openPhoneModal();
-            return;
-          }
-
-          if (profile?.telegram_id) {
-            setIsLoading(true);
-            try {
-              const { error } = await supabase
-                .from("profiles")
-                .update({ contact_shared: true, phone_number: phone })
-                .eq("telegram_id", profile.telegram_id);
-              if (error) throw error;
-              await fetchProfile();
-              showToast("success", t("profile.phoneShared"));
-            } catch (err: any) {
-              console.error("Error updating phone:", err);
-              showToast("error", t("profile.phoneSaveFailed"));
-            } finally {
-              setIsLoading(false);
-            }
+          // Give the webhook a moment to land, then refresh
+          setIsLoading(true);
+          try {
+            await new Promise((r) => setTimeout(r, 1500));
+            await fetchProfile();
+            showToast("success", t("profile.phoneShared"));
+          } catch (err: any) {
+            console.error("Error refreshing profile after contact share:", err);
+            showToast("error", t("profile.phoneSaveFailed"));
+          } finally {
+            setIsLoading(false);
           }
         });
       } else {
-        // Fallback for dev/browser environment
+        // Fallback: not inside Telegram — open manual entry modal
         openPhoneModal();
       }
     } catch (e) {
