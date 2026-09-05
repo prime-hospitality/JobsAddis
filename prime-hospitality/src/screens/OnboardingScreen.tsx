@@ -477,7 +477,6 @@ function Step2_Contact({ state, updateState, onNext, config }: StepProps) {
       setPhoneError(t("profile.phoneInvalid"));
       return;
     }
-    
     setPhoneError("");
     updateState({ contactShared: true, phoneNumber: normalized });
     onNext();
@@ -487,20 +486,25 @@ function Step2_Contact({ state, updateState, onNext, config }: StepProps) {
     try {
       const tg = (window as any).Telegram?.WebApp;
       if (tg && tg.requestContact) {
-        tg.requestContact((shared: boolean, data: any) => {
-          if (shared) {
-            let phone = data?.contact?.phone_number || data?.phone_number || "";
-            if (phone) {
-              if (!phone.startsWith("+")) phone = "+" + phone;
-              updateState({ contactShared: true, phoneNumber: phone });
-              onNext();
-            } else {
-              // Bug fallback: Telegram returned true but provided no phone number
-              setShowManual(true);
-            }
-          } else {
-            // User dismissed the native prompt — just stay on the page
+        // NOTE: Telegram's requestContact callback only receives (granted: boolean).
+        // The phone number is NOT passed as a second argument — it must be read
+        // from tg.initDataUnsafe.contact after the user approves.
+        tg.requestContact((granted: boolean) => {
+          if (!granted) {
+            // User dismissed the native prompt — stay on the page
             return;
+          }
+          // Read phone from initDataUnsafe.contact (the correct place)
+          let phone: string =
+            tg.initDataUnsafe?.contact?.phone_number ||
+            "";
+          if (phone) {
+            if (!phone.startsWith("+")) phone = "+" + phone;
+            updateState({ contactShared: true, phoneNumber: phone });
+            onNext();
+          } else {
+            // Rare: user approved but Telegram still gave no number — show manual input
+            setShowManual(true);
           }
         });
         return;
@@ -509,7 +513,7 @@ function Step2_Contact({ state, updateState, onNext, config }: StepProps) {
       console.warn("Telegram SDK requestContact error:", e);
     }
 
-    // Fallback for browser/dev environment where API doesn't exist
+    // Fallback for browser/dev environment where Telegram SDK is unavailable
     setShowManual(true);
   };
 
@@ -530,88 +534,104 @@ function Step2_Contact({ state, updateState, onNext, config }: StepProps) {
         {config?.step2_subtitle || t("onboarding.step2Subtitle")}
       </p>
 
-      {showManual ? (
-        <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: 16 }}>
-          <p style={{ fontSize: 14, color: "var(--text-secondary)", marginBottom: 8 }}>
-            Please type your phone number manually:
-          </p>
-          <input
-            type="tel"
-            value={phoneInput}
-            onChange={(e) => { setPhoneInput(e.target.value); setPhoneError(""); }}
-            placeholder="+251 911 223344"
-            style={{
-              padding: "16px", borderRadius: 12, border: phoneError ? "1.5px solid var(--warning)" : "1.5px solid var(--border)",
-              background: "var(--card)", color: "var(--text-primary)", fontSize: 16,
-              width: "100%", outline: "none"
-            }}
-            autoFocus
-          />
-          <AnimatePresence>
-            {phoneError && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                exit={{ opacity: 0, height: 0 }}
-                style={{ overflow: "hidden" }}
-              >
-                <div style={{ display: "flex", gap: 6, alignItems: "flex-start", color: "var(--warning)", fontSize: 13 }}>
-                  <span style={{ fontSize: 14 }}>⚠️</span>
-                  <span style={{ lineHeight: 1.4 }}>{phoneError}</span>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-          <motion.button
-            whileTap={{ scale: 0.98 }}
-            onClick={handleManualSubmit}
-            disabled={phoneInput.length < 9}
-            style={{
-              padding: 16, borderRadius: 12, background: "var(--brand)", color: "#fff",
-              fontWeight: 700, fontSize: 16, border: "none", cursor: phoneInput.length < 9 ? "not-allowed" : "pointer",
-              opacity: phoneInput.length < 9 ? 0.5 : 1
-            }}
+      <AnimatePresence mode="wait">
+        {showManual ? (
+          <motion.div
+            key="manual"
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -12 }}
+            style={{ width: "100%", display: "flex", flexDirection: "column", gap: 16 }}
           >
-            Continue
-          </motion.button>
-        </div>
-      ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: 16, width: "100%" }}>
-        <motion.button
-          whileTap={{ scale: 0.96 }}
-          onClick={handleYes}
-          style={{
-            padding: 20, borderRadius: 16, background: "var(--card)", border: "1px solid var(--brand)",
-            display: "flex", alignItems: "center", gap: 16, cursor: "pointer", textAlign: "left"
-          }}
-        >
-          <div style={{ width: 40, height: 40, borderRadius: "50%", background: "var(--brand)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <CheckCircle size={20} color="#FFFFFF" />
-          </div>
-          <div>
-            <p style={{ fontSize: 16, fontWeight: 700, color: "var(--text-primary)", marginBottom: 4 }}>{t("onboarding.shareYes")}</p>
-            <p style={{ fontSize: 13, color: "var(--text-secondary)" }}>{t("onboarding.shareYesHint")}</p>
-          </div>
-        </motion.button>
+            <p style={{ fontSize: 14, color: "var(--text-secondary)", marginBottom: 4 }}>
+              Please enter your phone number manually:
+            </p>
+            <input
+              type="tel"
+              value={phoneInput}
+              onChange={(e) => { setPhoneInput(e.target.value); setPhoneError(""); }}
+              placeholder="+251 911 223344"
+              style={{
+                padding: "16px", borderRadius: 12,
+                border: phoneError ? "1.5px solid var(--warning)" : "1.5px solid var(--border)",
+                background: "var(--card)", color: "var(--text-primary)", fontSize: 16,
+                width: "100%", outline: "none", boxSizing: "border-box"
+              }}
+              autoFocus
+            />
+            <AnimatePresence>
+              {phoneError && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  style={{ overflow: "hidden" }}
+                >
+                  <div style={{ display: "flex", gap: 6, alignItems: "flex-start", color: "var(--warning)", fontSize: 13 }}>
+                    <span>⚠️</span>
+                    <span style={{ lineHeight: 1.4 }}>{phoneError}</span>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+            <motion.button
+              whileTap={{ scale: 0.98 }}
+              onClick={handleManualSubmit}
+              disabled={phoneInput.trim().length < 9}
+              style={{
+                padding: 16, borderRadius: 12, background: "var(--brand)", color: "#fff",
+                fontWeight: 700, fontSize: 16, border: "none",
+                cursor: phoneInput.trim().length < 9 ? "not-allowed" : "pointer",
+                opacity: phoneInput.trim().length < 9 ? 0.5 : 1,
+              }}
+            >
+              Continue
+            </motion.button>
+          </motion.div>
+        ) : (
+          <motion.div
+            key="buttons"
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -12 }}
+            style={{ display: "flex", flexDirection: "column", gap: 16, width: "100%" }}
+          >
+            <motion.button
+              whileTap={{ scale: 0.96 }}
+              onClick={handleYes}
+              style={{
+                padding: 20, borderRadius: 16, background: "var(--card)", border: "1px solid var(--brand)",
+                display: "flex", alignItems: "center", gap: 16, cursor: "pointer", textAlign: "left"
+              }}
+            >
+              <div style={{ width: 40, height: 40, borderRadius: "50%", background: "var(--brand)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <CheckCircle size={20} color="#FFFFFF" />
+              </div>
+              <div>
+                <p style={{ fontSize: 16, fontWeight: 700, color: "var(--text-primary)", marginBottom: 4 }}>{t("onboarding.shareYes")}</p>
+                <p style={{ fontSize: 13, color: "var(--text-secondary)" }}>{t("onboarding.shareYesHint")}</p>
+              </div>
+            </motion.button>
 
-        <motion.button
-          whileTap={{ scale: 0.96 }}
-          onClick={handleNo}
-          style={{
-            padding: 20, borderRadius: 16, background: "var(--card)", border: "1px solid var(--border)",
-            display: "flex", alignItems: "center", gap: 16, cursor: "pointer", textAlign: "left"
-          }}
-        >
-          <div style={{ width: 40, height: 40, borderRadius: "50%", background: "var(--surface-elevated)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <Lock size={20} color="var(--text-muted)" />
-          </div>
-          <div>
-            <p style={{ fontSize: 16, fontWeight: 700, color: "var(--text-primary)", marginBottom: 4 }}>{t("onboarding.shareNo")}</p>
-            <p style={{ fontSize: 13, color: "var(--text-secondary)" }}>{t("onboarding.shareNoHint")}</p>
-          </div>
-        </motion.button>
-      </div>
-      )}
+            <motion.button
+              whileTap={{ scale: 0.96 }}
+              onClick={handleNo}
+              style={{
+                padding: 20, borderRadius: 16, background: "var(--card)", border: "1px solid var(--border)",
+                display: "flex", alignItems: "center", gap: 16, cursor: "pointer", textAlign: "left"
+              }}
+            >
+              <div style={{ width: 40, height: 40, borderRadius: "50%", background: "var(--surface-elevated)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <Lock size={20} color="var(--text-muted)" />
+              </div>
+              <div>
+                <p style={{ fontSize: 16, fontWeight: 700, color: "var(--text-primary)", marginBottom: 4 }}>{t("onboarding.shareNo")}</p>
+                <p style={{ fontSize: 13, color: "var(--text-secondary)" }}>{t("onboarding.shareNoHint")}</p>
+              </div>
+            </motion.button>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
