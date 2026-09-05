@@ -436,30 +436,36 @@ export default function ProfileScreen() {
         tg.requestContact(async (shared: boolean, data: any) => {
           if (shared) {
             let phone = data?.contact?.phone_number || data?.phone_number || "";
-            if (phone && !phone.startsWith("+")) {
-              phone = "+" + phone;
-            }
-            if (profile?.telegram_id) {
-              setIsLoading(true);
-              try {
-                const { error } = await supabase
-                  .from("profiles")
-                  .update({ contact_shared: true, phone_number: phone })
-                  .eq("telegram_id", profile.telegram_id);
-                if (error) throw error;
-                await fetchProfile();
-                showToast("success", t("profile.phoneShared"));
-              } catch (err: any) {
-                console.error("Error updating phone:", err);
-                showToast("error", t("profile.phoneSaveFailed"));
-              } finally {
-                setIsLoading(false);
+            if (phone) {
+              if (!phone.startsWith("+")) {
+                phone = "+" + phone;
               }
+              if (profile?.telegram_id) {
+                setIsLoading(true);
+                try {
+                  const { error } = await supabase
+                    .from("profiles")
+                    .update({ contact_shared: true, phone_number: phone })
+                    .eq("telegram_id", profile.telegram_id);
+                  if (error) throw error;
+                  await fetchProfile();
+                  showToast("success", t("profile.phoneShared"));
+                } catch (err: any) {
+                  console.error("Error updating phone:", err);
+                  showToast("error", t("profile.phoneSaveFailed"));
+                } finally {
+                  setIsLoading(false);
+                }
+              }
+            } else {
+              // Telegram returned true but provided no phone number
+              openPhoneModal();
             }
           }
         });
       } else {
-        showToast("error", t("profile.telegramOnly"));
+        // Fallback for dev/browser environment
+        openPhoneModal();
       }
     } catch (e) {
       console.warn("Telegram SDK requestContact error:", e);

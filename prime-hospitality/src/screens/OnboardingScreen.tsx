@@ -17,6 +17,7 @@ import {
 } from "@/lib/vocabulary";
 import { useBusinessTypes } from "@/hooks/useBusinessTypes";
 import YearsPicker from "@/components/YearsPicker";
+import { validateEthiopianPhoneNumber } from "@/lib/phone";
 
 // --- Types ---
 interface StepProps {
@@ -466,6 +467,21 @@ function Step1_JobField({ state, updateState, onNext, config }: StepProps) {
 function Step2_Contact({ state, updateState, onNext, config }: StepProps) {
   const t = useT();
   const { isReady } = useTelegram();
+  const [showManual, setShowManual] = useState(false);
+  const [phoneInput, setPhoneInput] = useState("");
+  const [phoneError, setPhoneError] = useState("");
+
+  const handleManualSubmit = () => {
+    const { isValid, normalized } = validateEthiopianPhoneNumber(phoneInput);
+    if (!isValid || !normalized) {
+      setPhoneError(t("profile.phoneInvalid"));
+      return;
+    }
+    
+    setPhoneError("");
+    updateState({ contactShared: true, phoneNumber: normalized });
+    onNext();
+  };
 
   const handleYes = () => {
     try {
@@ -474,11 +490,14 @@ function Step2_Contact({ state, updateState, onNext, config }: StepProps) {
         tg.requestContact((shared: boolean, data: any) => {
           if (shared) {
             let phone = data?.contact?.phone_number || data?.phone_number || "";
-            if (phone && !phone.startsWith("+")) {
-              phone = "+" + phone;
+            if (phone) {
+              if (!phone.startsWith("+")) phone = "+" + phone;
+              updateState({ contactShared: true, phoneNumber: phone });
+              onNext();
+            } else {
+              // Bug fallback: Telegram returned true but provided no phone number
+              setShowManual(true);
             }
-            updateState({ contactShared: true, phoneNumber: phone });
-            onNext();
           } else {
             // User dismissed the native prompt — just stay on the page
             return;
@@ -490,9 +509,8 @@ function Step2_Contact({ state, updateState, onNext, config }: StepProps) {
       console.warn("Telegram SDK requestContact error:", e);
     }
 
-    // Fallback for browser/dev environment
-    updateState({ contactShared: true, phoneNumber: "" });
-    onNext();
+    // Fallback for browser/dev environment where API doesn't exist
+    setShowManual(true);
   };
 
   const handleNo = () => {
@@ -512,7 +530,53 @@ function Step2_Contact({ state, updateState, onNext, config }: StepProps) {
         {config?.step2_subtitle || t("onboarding.step2Subtitle")}
       </p>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 16, width: "100%" }}>
+      {showManual ? (
+        <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: 16 }}>
+          <p style={{ fontSize: 14, color: "var(--text-secondary)", marginBottom: 8 }}>
+            Please type your phone number manually:
+          </p>
+          <input
+            type="tel"
+            value={phoneInput}
+            onChange={(e) => { setPhoneInput(e.target.value); setPhoneError(""); }}
+            placeholder="+251 911 223344"
+            style={{
+              padding: "16px", borderRadius: 12, border: phoneError ? "1.5px solid var(--warning)" : "1.5px solid var(--border)",
+              background: "var(--card)", color: "var(--text-primary)", fontSize: 16,
+              width: "100%", outline: "none"
+            }}
+            autoFocus
+          />
+          <AnimatePresence>
+            {phoneError && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                style={{ overflow: "hidden" }}
+              >
+                <div style={{ display: "flex", gap: 6, alignItems: "flex-start", color: "var(--warning)", fontSize: 13 }}>
+                  <span style={{ fontSize: 14 }}>⚠️</span>
+                  <span style={{ lineHeight: 1.4 }}>{phoneError}</span>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+          <motion.button
+            whileTap={{ scale: 0.98 }}
+            onClick={handleManualSubmit}
+            disabled={phoneInput.length < 9}
+            style={{
+              padding: 16, borderRadius: 12, background: "var(--brand)", color: "#fff",
+              fontWeight: 700, fontSize: 16, border: "none", cursor: phoneInput.length < 9 ? "not-allowed" : "pointer",
+              opacity: phoneInput.length < 9 ? 0.5 : 1
+            }}
+          >
+            Continue
+          </motion.button>
+        </div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 16, width: "100%" }}>
         <motion.button
           whileTap={{ scale: 0.96 }}
           onClick={handleYes}
@@ -547,6 +611,7 @@ function Step2_Contact({ state, updateState, onNext, config }: StepProps) {
           </div>
         </motion.button>
       </div>
+      )}
     </div>
   );
 }
