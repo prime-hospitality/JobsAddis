@@ -486,26 +486,22 @@ function Step2_Contact({ state, updateState, onNext, config }: StepProps) {
     try {
       const tg = (window as any).Telegram?.WebApp;
       if (tg && tg.requestContact) {
-        // NOTE: Telegram's requestContact callback only receives (granted: boolean).
-        // The phone number is NOT passed as a second argument — it must be read
-        // from tg.initDataUnsafe.contact after the user approves.
+        // The Telegram requestContact flow works like this:
+        //   1. User taps the native "Share Contact" dialog → Telegram sends the
+        //      contact to the BOT via the Bot API (webhook → telegram_contacts table).
+        //   2. The callback here fires with granted=true/false ONLY — the phone
+        //      number is never present in the browser JS environment.
+        //   3. The backend (validate-telegram-auth) already handles phoneNumber=""
+        //      with contactShared=true by falling back to the telegram_contacts table.
+        // So on granted=true we just advance — no phone needed here.
         tg.requestContact((granted: boolean) => {
           if (!granted) {
             // User dismissed the native prompt — stay on the page
             return;
           }
-          // Read phone from initDataUnsafe.contact (the correct place)
-          let phone: string =
-            tg.initDataUnsafe?.contact?.phone_number ||
-            "";
-          if (phone) {
-            if (!phone.startsWith("+")) phone = "+" + phone;
-            updateState({ contactShared: true, phoneNumber: phone });
-            onNext();
-          } else {
-            // Rare: user approved but Telegram still gave no number — show manual input
-            setShowManual(true);
-          }
+          // Contact was shared. Phone will arrive at the backend via webhook.
+          updateState({ contactShared: true, phoneNumber: "" });
+          onNext();
         });
         return;
       }
@@ -513,7 +509,7 @@ function Step2_Contact({ state, updateState, onNext, config }: StepProps) {
       console.warn("Telegram SDK requestContact error:", e);
     }
 
-    // Fallback for browser/dev environment where Telegram SDK is unavailable
+    // Fallback: not running inside Telegram — let the user type their number
     setShowManual(true);
   };
 
