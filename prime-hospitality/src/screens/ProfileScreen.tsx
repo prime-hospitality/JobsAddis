@@ -433,33 +433,38 @@ export default function ProfileScreen() {
     try {
       const tg = (window as any).Telegram?.WebApp;
       if (tg && tg.requestContact) {
-        tg.requestContact(async (shared: boolean, data: any) => {
-          if (shared) {
-            let phone = data?.contact?.phone_number || data?.phone_number || "";
-            if (phone) {
-              if (!phone.startsWith("+")) {
-                phone = "+" + phone;
-              }
-              if (profile?.telegram_id) {
-                setIsLoading(true);
-                try {
-                  const { error } = await supabase
-                    .from("profiles")
-                    .update({ contact_shared: true, phone_number: phone })
-                    .eq("telegram_id", profile.telegram_id);
-                  if (error) throw error;
-                  await fetchProfile();
-                  showToast("success", t("profile.phoneShared"));
-                } catch (err: any) {
-                  console.error("Error updating phone:", err);
-                  showToast("error", t("profile.phoneSaveFailed"));
-                } finally {
-                  setIsLoading(false);
-                }
-              }
-            } else {
-              // Telegram returned true but provided no phone number
-              openPhoneModal();
+        // NOTE: Telegram's requestContact callback only receives (granted: boolean).
+        // The phone number is NOT passed as a second argument — it must be read
+        // from tg.initDataUnsafe.contact after the user approves.
+        tg.requestContact(async (granted: boolean) => {
+          if (!granted) return;
+
+          let phone: string = tg.initDataUnsafe?.contact?.phone_number || "";
+          if (phone && !phone.startsWith("+")) {
+            phone = "+" + phone;
+          }
+
+          if (!phone) {
+            // Rare: user approved but Telegram gave no number — open manual modal
+            openPhoneModal();
+            return;
+          }
+
+          if (profile?.telegram_id) {
+            setIsLoading(true);
+            try {
+              const { error } = await supabase
+                .from("profiles")
+                .update({ contact_shared: true, phone_number: phone })
+                .eq("telegram_id", profile.telegram_id);
+              if (error) throw error;
+              await fetchProfile();
+              showToast("success", t("profile.phoneShared"));
+            } catch (err: any) {
+              console.error("Error updating phone:", err);
+              showToast("error", t("profile.phoneSaveFailed"));
+            } finally {
+              setIsLoading(false);
             }
           }
         });
