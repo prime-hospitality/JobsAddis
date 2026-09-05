@@ -110,6 +110,11 @@ serve(async (req: Request) => {
     }
 
     // ── 2. Text messages ─────────────────────────────────────────────────────
+    // Only respond to direct 1-on-1 DMs with the bot. Never reply to messages in groups/channels!
+    if (message.chat?.type && message.chat.type !== "private") {
+      return new Response("OK", { status: 200 });
+    }
+
     const text: string = (message.text || "").trim();
     const chatId = message.chat?.id;
     if (!text || !chatId) return new Response("OK", { status: 200 });
