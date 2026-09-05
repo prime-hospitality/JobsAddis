@@ -250,7 +250,7 @@ export async function sendGroupAnnouncement(
   if (genderText) detailLines.push(`Gender: ${genderText}`);
   detailLines.push(`Deadline: <b>${deadlineText}</b>`);
 
-  const message = `<b>NEW VACANCY</b>
+  const message = `🔸 <b>NEW VACANCY</b>
 
 <b>${escapeHtml(businessName)}</b>
 Job Title: <b>${escapeHtml(job.title)}</b>
