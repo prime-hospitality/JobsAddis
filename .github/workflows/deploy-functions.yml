@@ -41,7 +41,11 @@ jobs:
           # function that imports it, so it is not listed here.
           for fn in validate-telegram-auth telegram-webhook shortlist-applicant job-expiration-cron; do
             echo "::group::Deploying $fn"
-            supabase functions deploy "$fn" --project-ref "$SUPABASE_PROJECT_REF" --use-api
+            EXTRA_FLAGS=""
+            if [ "$fn" = "telegram-webhook" ]; then
+              EXTRA_FLAGS="--no-verify-jwt"
+            fi
+            supabase functions deploy "$fn" --project-ref "$SUPABASE_PROJECT_REF" $EXTRA_FLAGS --use-api
             echo "::endgroup::"
           done
         env:
