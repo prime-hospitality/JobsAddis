@@ -181,23 +181,12 @@ const CATEGORY_EMOJI: Record<string, string> = {
  *  active down four different routes (employer web post, admin approval, the
  *  scheduled-publish sweep, and the Telegram-surface post_job action), and all
  *  of them must announce identically. */
-export async function sendGroupAnnouncement(
+/** Formats the vacancy announcement message text and inline button.
+ *  Shared between sendGroupAnnouncement (initial post) and editGroupAnnouncement (edits). */
+export function buildAnnouncementContent(
   job: AnnounceableJob,
   businessName: string,
-): Promise<number | null> {
-  const chatId = Deno.env.get("TELEGRAM_GROUP_CHAT_ID");
-
-  if (!chatId || !TELEGRAM_BOT_TOKEN) {
-    console.warn("[Telegram Group] TELEGRAM_GROUP_CHAT_ID or TELEGRAM_BOT_TOKEN is not configured.");
-    return null;
-  }
-
-  // -1 and -2 are the sentinels resolveSalary() writes; everything else is a
-  // real figure. The old version tested `min > 0` first, so a job with the
-  // amount only in salary_max -- which is what filling just the Maximum box
-  // produced -- fell through to the negotiable wording and announced a fixed
-  // 25,000 salary as having none. Each side falls back to the other, and a
-  // single figure prints once rather than as "25,000 - 25,000".
+): { message: string; replyMarkup: { inline_keyboard: { text: string; url: string }[][] } | undefined } {
   const min = Number(job.salary_min) || 0;
   const max = Number(job.salary_max) || 0;
   const money = (n: number) => `${n.toLocaleString()} ETB`;
@@ -208,18 +197,10 @@ export async function sendGroupAnnouncement(
   else if (min > 0 || max > 0) salaryText = money(min > 0 ? min : max);
   else salaryText = "Negotiable / Scale";
 
-  // The years the employer asked for. Absent means they did not state one, and
-  // that stays absent rather than becoming "any" -- an announcement is a
-  // summary, and a line saying nothing is required is not worth a line.
   const years = job.min_years_experience;
   const experienceText =
     years == null ? null : years <= 0 ? "No experience required" : `${years}+ years experience`;
 
-  // Same rule as the experience line: stated or absent, never "any". Worth a
-  // line of its own because the group is where most people meet a vacancy for
-  // the first time, and it is the one requirement a reader cannot act on after
-  // the fact. Normalised here rather than trusted: the cron passes a raw `jobs`
-  // row straight through.
   const gender = String(job.gender_preference ?? "").trim().toLowerCase();
   const genderText =
     gender === "female" ? "Female applicants only" : gender === "male" ? "Male applicants only" : null;
@@ -238,7 +219,6 @@ export async function sendGroupAnnouncement(
   }
 
   const description = (job.description || "").trim();
-  // Short teaser — enough to spark interest, not enough to skip the app
   const teaser = description.length > 50 ? `${description.slice(0, 50)}...` : description;
 
   const detailLines = [
@@ -257,15 +237,32 @@ Job Title: <b>${escapeHtml(job.title)}</b>
 
 ${detailLines.join("\n")}${teaser ? `\n\n<i>${escapeHtml(teaser)}</i>` : ""}`;
 
-  // If TELEGRAM_MINI_APP_URL is unset, miniAppUrl() logs loudly and returns
-  // null, and the announcement goes out with no button. It deliberately does
-  // NOT fall back to another bot's URL: that used to point at a development
-  // bot, so a misconfigured deploy silently sent every reader of the client's
-  // group into the wrong app, with no error anywhere.
   const webAppUrl = miniAppUrl(`job_${job.id}`);
   const replyMarkup = webAppUrl
     ? { inline_keyboard: [[{ text: "View Details / ዝርዝሩን ይመልከቱ", url: webAppUrl }]] }
     : undefined;
+
+  return { message, replyMarkup };
+}
+
+/** Broadcasts an active job to the Telegram group.
+ *
+ *  Lives here rather than inside one edge function because a job can become
+ *  active down four different routes (employer web post, admin approval, the
+ *  scheduled-publish sweep, and the Telegram-surface post_job action), and all
+ *  of them must announce identically. */
+export async function sendGroupAnnouncement(
+  job: AnnounceableJob,
+  businessName: string,
+): Promise<number | null> {
+  const chatId = Deno.env.get("TELEGRAM_GROUP_CHAT_ID");
+
+  if (!chatId || !TELEGRAM_BOT_TOKEN) {
+    console.warn("[Telegram Group] TELEGRAM_GROUP_CHAT_ID or TELEGRAM_BOT_TOKEN is not configured.");
+    return null;
+  }
+
+  const { message, replyMarkup } = buildAnnouncementContent(job, businessName);
 
   // A group post is a one-shot event -- unlike a DM there is no second chance
   // later from a different notification -- and the failure that prompted this
@@ -318,6 +315,59 @@ ${detailLines.join("\n")}${teaser ? `\n\n<i>${escapeHtml(teaser)}</i>` : ""}`;
 
   console.error(`[Telegram Group] Giving up on job ${job.id} after ${MAX_ATTEMPTS} attempts.`);
   return null;
+}
+
+/** Edits an existing announcement in the Telegram group when an active job is modified.
+ *
+ *  `gone` marks terminal cases where the message cannot be edited because it was deleted
+ *  or is already identical, so the sweep doesn't retry forever. */
+export async function editGroupAnnouncement(
+  job: AnnounceableJob,
+  businessName: string,
+  messageId: number,
+): Promise<{ ok: boolean; gone: boolean; error?: string }> {
+  const chatId = Deno.env.get("TELEGRAM_GROUP_CHAT_ID");
+
+  if (!chatId || !TELEGRAM_BOT_TOKEN) {
+    console.warn("[Telegram Group] Cannot edit message -- chat id or bot token missing.");
+    return { ok: false, gone: false, error: "not configured" };
+  }
+
+  const { message, replyMarkup } = buildAnnouncementContent(job, businessName);
+
+  try {
+    const res = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/editMessageText`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        chat_id: chatId,
+        message_id: messageId,
+        text: message,
+        parse_mode: "HTML",
+        reply_markup: replyMarkup,
+        disable_web_page_preview: true,
+      }),
+    });
+
+    if (res.ok) {
+      console.log(`[Telegram Group] Edited announcement for job ${job.id} (msg ${messageId})`);
+      return { ok: true, gone: false };
+    }
+
+    const body = await res.json().catch(() => ({}));
+    const description: string = body?.description || `HTTP ${res.status}`;
+    // Message already identical, deleted by hand, or rejected with 400 are terminal outcomes
+    const gone = res.status === 400 || /message to edit not found|message is not modified/i.test(description);
+    if (gone) {
+      console.log(`[Telegram Group] Message ${messageId} edit terminal:`, redact(description));
+    } else {
+      console.error(`[Telegram Group] Edit of ${messageId} failed:`, redact(description));
+    }
+    return { ok: false, gone, error: description };
+  } catch (err) {
+    console.error(`[Telegram Group] Edit of ${messageId} threw:`, redact(err));
+    return { ok: false, gone: false, error: redact(err) };
+  }
 }
 
 /** Removes a previously announced vacancy from the group.

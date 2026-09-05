@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { deleteGroupMessage, escapeHtml, sendDirectMessage, sendGroupAnnouncement } from "../_shared/telegram.ts";
+import { deleteGroupMessage, editGroupAnnouncement, escapeHtml, sendDirectMessage, sendGroupAnnouncement } from "../_shared/telegram.ts";
 import { serviceKey } from "../_shared/serviceKey.ts";
 
 // The every-minute platform sweep, invoked by pg_cron (see migration
@@ -300,6 +300,71 @@ async function retractDeletedAnnouncements(supabase: any) {
   }
 
   return { retracted };
+}
+
+/** Edits group announcements for active jobs that were modified after being posted.
+ *
+ *  Claim-then-act, like announceNewlyActiveJobs: sets announcement_needs_update=false
+ *  before calling Telegram editMessageText, and resets to true only on transient failure. */
+async function syncEditedAnnouncements(supabase: any) {
+  const { data: candidates, error } = await supabase
+    .from("jobs")
+    .select("id")
+    .eq("status", "active")
+    .eq("announcement_needs_update", true)
+    .not("announced_message_id", "is", null)
+    .limit(ANNOUNCE_BATCH_LIMIT);
+
+  if (error) {
+    console.error("[Edit Announce] Failed to load pending job edits:", error);
+    return { edited: 0 };
+  }
+  if (!candidates || candidates.length === 0) return { edited: 0 };
+
+  const { data: claimed, error: claimErr } = await supabase
+    .from("jobs")
+    .update({ announcement_needs_update: false })
+    .in("id", candidates.map((c: any) => c.id))
+    .eq("announcement_needs_update", true)
+    .select("id, title, category, neighborhood, job_type, salary_min, salary_max, quantity, deadline, description, min_years_experience, gender_preference, requirements, employer_id, announced_message_id, employers(business_name)");
+
+  if (claimErr) {
+    console.error("[Edit Announce] Failed to claim edited jobs:", claimErr);
+    return { edited: 0 };
+  }
+
+  let edited = 0;
+
+  for (const job of claimed || []) {
+    const emp = (job as any).employers;
+    const businessName = (Array.isArray(emp) ? emp[0]?.business_name : emp?.business_name) || "JobsAddis";
+    const messageId = Number(job.announced_message_id);
+
+    if (!messageId) continue;
+
+    let result: { ok: boolean; gone: boolean; error?: string };
+    try {
+      result = await editGroupAnnouncement(job as any, businessName, messageId);
+    } catch (err) {
+      console.error(`[Edit Announce] Edit threw for job ${job.id}:`, err);
+      result = { ok: false, gone: false, error: String(err) };
+    }
+
+    if (result.ok || result.gone) {
+      edited++;
+    } else {
+      // Transient failure (network/rate limit) - re-queue for next sweep
+      const { error: resetErr } = await supabase
+        .from("jobs")
+        .update({ announcement_needs_update: true })
+        .eq("id", job.id);
+      if (resetErr) {
+        console.error(`[Edit Announce] Failed to re-queue job ${job.id}:`, resetErr);
+      }
+    }
+  }
+
+  return { edited };
 }
 
 /** Sends the bot DM for notification rows that are due and not yet dispatched.
@@ -620,6 +685,14 @@ serve(async (req) => {
       console.error("[Retract] Unexpected failure:", retErr);
     }
 
+    // 5c. Sync edits for active jobs that were modified.
+    let editResult = { edited: 0 };
+    try {
+      editResult = await syncEditedAnnouncements(supabase);
+    } catch (editErr) {
+      console.error("[Edit Announce] Unexpected failure:", editErr);
+    }
+
     // 6. Dispatch pending Telegram DMs.
     // Runs last so notifications created earlier in this same sweep (expiry
     // warnings and the vacancy alerts just queued above) go out without
@@ -645,6 +718,7 @@ serve(async (req) => {
       jobsAnnounced: announceResult.announced,
       vacancyAlertsQueued: announceResult.alerted,
       announcementsRetracted: retractResult.retracted,
+      announcementsEdited: editResult.edited,
       dmAttempted: dmResult.attempted,
       dmSent: dmResult.sent
     }), {

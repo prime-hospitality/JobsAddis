@@ -310,7 +310,7 @@ export async function updateEmployerJobPost(jobId: string, form: VacancyFormStat
   const validationError = validateVacancyForm(form, { maxDeadline: rules.packageExpiresAt });
   if (validationError) return { success: false, error: validationError };
 
-  const { data: existing } = await supabase.from("jobs").select("id, employer_id").eq("id", jobId).maybeSingle();
+  const { data: existing } = await supabase.from("jobs").select("id, employer_id, announced_message_id").eq("id", jobId).maybeSingle();
   if (!existing || existing.employer_id !== session.employerId) return { success: false, error: "Job not found" };
 
   const description = buildJobDescription(form);
@@ -334,6 +334,7 @@ export async function updateEmployerJobPost(jobId: string, form: VacancyFormStat
       gender_preference: coerceGender(form.gender_preference),
       deadline: resolveDeadline(form.deadline, rules.packageExpiresAt),
       quantity: form.quantity || 1,
+      ...(existing.announced_message_id ? { announcement_needs_update: true } : {}),
     })
     .eq("id", jobId);
 
