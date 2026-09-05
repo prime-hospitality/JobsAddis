@@ -237,18 +237,25 @@ export async function sendGroupAnnouncement(
     }
   }
 
-  const emoji = CATEGORY_EMOJI[job.category] || "🏨";
   const description = (job.description || "").trim();
-  const excerpt = description.length > 200 ? `${description.slice(0, 200)}...` : description;
+  // Short teaser — enough to spark interest, not enough to skip the app
+  const teaser = description.length > 50 ? `${description.slice(0, 50)}...` : description;
 
-  const message = `🆕 <b>New Job Opening</b>
+  const detailLines = [
+    `Salary: ${salaryText}`,
+    `Type: ${escapeHtml(job.job_type || "Full Time")}`,
+    `Openings: ${Number(job.quantity) || 1} position(s)`,
+  ];
+  if (experienceText) detailLines.push(`Experience: ${experienceText}`);
+  if (genderText) detailLines.push(`Gender: ${genderText}`);
+  detailLines.push(`Deadline: <b>${deadlineText}</b>`);
 
-🏢 <b>${escapeHtml(businessName)}</b>
-${emoji} <b>${escapeHtml(job.title)}</b> (${escapeHtml(job.category)})
-📍 ${escapeHtml(job.neighborhood || "Addis Ababa")}, Addis Ababa
-💰 ${salaryText} · ${escapeHtml(job.job_type || "Full Time")}${experienceText ? `\n🎓 ${experienceText}` : ""}${genderText ? `\n👤 ${genderText}` : ""}
-👥 ${Number(job.quantity) || 1} opening(s)
-📅 Deadline: <b>${deadlineText}</b>${excerpt ? `\n\n📝 <i>${escapeHtml(excerpt)}</i>` : ""}`;
+  const message = `🔸 <b>NEW VACANCY</b>
+
+<b>${escapeHtml(businessName)}</b>
+Job Title: <b>${escapeHtml(job.title)}</b>
+
+${detailLines.join("\n")}${teaser ? `\n\n<i>${escapeHtml(teaser)}</i>` : ""}`;
 
   // If TELEGRAM_MINI_APP_URL is unset, miniAppUrl() logs loudly and returns
   // null, and the announcement goes out with no button. It deliberately does
@@ -257,7 +264,7 @@ ${emoji} <b>${escapeHtml(job.title)}</b> (${escapeHtml(job.category)})
   // group into the wrong app, with no error anywhere.
   const webAppUrl = miniAppUrl(`job_${job.id}`);
   const replyMarkup = webAppUrl
-    ? { inline_keyboard: [[{ text: "🔍 View & Apply →", url: webAppUrl }]] }
+    ? { inline_keyboard: [[{ text: "View Details / ዝርዝሩን ይመልከቱ", url: webAppUrl }]] }
     : undefined;
 
   // A group post is a one-shot event -- unlike a DM there is no second chance
