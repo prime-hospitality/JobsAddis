@@ -628,7 +628,7 @@ export default function HomeScreen({ onJobSelect, onSearchPress, onBellPress, un
                 valueColor: "var(--brand)",
               },
               {
-                value: "50k+",
+                value: "56k+",
                 label: t("home.statJobSeekers"),
                 valueColor: "var(--brand)",
               },
