@@ -458,7 +458,7 @@ export const am: DeepPartial<Catalog> = {
     searchPlaceholder: "ሥራ፣ ሆቴል፣ የሥራ መደብ ይፈልጉ…",
     statOpenJobs: "ክፍት ሥራዎች",
     statBusinesses: "ተቋማት",
-    statJobSeekers: "ሥራ ፈላጊዎች",
+    statJobSeekers: "ተከታዮች",
     allJobs: "ሁሉም ሥራዎች",
     refresh: "ያድሱ",
     tryAgain: "እንደገና ይሞክሩ",

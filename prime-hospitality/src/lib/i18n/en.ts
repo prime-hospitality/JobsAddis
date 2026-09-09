@@ -462,7 +462,7 @@ export const en = {
     searchPlaceholder: "Search jobs, hotels, roles…",
     statOpenJobs: "Open Jobs",
     statBusinesses: "Businesses",
-    statJobSeekers: "Job Seekers",
+    statJobSeekers: "Followers",
     allJobs: "All Jobs",
     refresh: "Refresh",
     tryAgain: "Try again",
