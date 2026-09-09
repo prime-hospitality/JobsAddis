@@ -146,21 +146,24 @@ export default function App() {
         }
       }
 
-      // Track device performance silently
+      // Track device performance silently — only once we have a real class from the SDK
       if (initData && user?.id) {
+        // Use deviceInfo.performanceClass directly (raw from SDK) rather than the
+        // derived value, which defaults to "medium" before the SDK value arrives.
+        const rawClass = deviceInfo.performanceClass ?? "medium";
         fetch("/api/device", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             telegramId: user.id,
-            performanceClass: performanceClass
+            performanceClass: rawClass
           })
         }).catch(e => console.error("Telemetry error:", e));
       }
     }
 
     checkOnboarding();
-  }, [isTelegramReady, initData]);
+  }, [isTelegramReady, initData, deviceInfo.performanceClass]);
 
   // Check deep link status (directing to specific job if app launched via button)
   useEffect(() => {

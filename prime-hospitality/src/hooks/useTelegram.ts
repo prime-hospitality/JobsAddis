@@ -126,7 +126,7 @@ export function useTelegram(): UseTelegramReturn {
               appVersion: di.app_version ?? tgWebApp.version ?? null,
               sdkVersion: di.sdk_version ?? null,
               model: di.model ?? null,
-              performanceClass: di.performance_class ?? null,
+              performanceClass: di.performanceClass ?? null,
             });
           } else {
             // Older SDK: read what we can from the top-level WebApp object
