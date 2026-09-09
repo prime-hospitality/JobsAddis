@@ -1769,11 +1769,13 @@ export async function addEmployer(telegramId: number, businessName: string, busi
  *  an admin corrects a registration date that was entered wrong; leaving it
  *  undefined keeps whatever is on file. */
 export async function updateEmployer(employerId: string, businessName: string, businessType: string, dailyPostLimit: number, passwordAttempt: string, packageId?: string | null, tinNumber?: string, subscriptionStartedAt?: string, bonusDays?: number) {
-  await requirePermission("manageEmployers");
+  const admin = await getLoggedInAdmin();
+  if (!admin) return { success: false, error: "Unauthorized" };
+  if (!admin.permissions.manageEmployers) return { success: false, error: "You don't have permission to manage employers" };
 
   const supabase = getSupabase();
   if (!(await verifyActingAdminPassword(passwordAttempt))) {
-    throw new Error("Incorrect admin password");
+    return { success: false, error: "Incorrect admin password" };
   }
 
   if (!businessName.trim()) throw new Error("Business name cannot be empty.");
@@ -1924,7 +1926,9 @@ export async function updateEmployer(employerId: string, businessName: string, b
 // renewal_requested itself (the request is still open until an admin
 // actually renews the package via updateEmployer).
 export async function acknowledgeEmployerRenewal(employerId: string) {
-  await requirePermission("manageEmployers");
+  const admin = await getLoggedInAdmin();
+  if (!admin) return { success: false, error: "Unauthorized" };
+  if (!admin.permissions.manageEmployers) return { success: false, error: "You don't have permission to manage employers" };
 
   const { data, error } = await getSupabase()
     .from("employers")
@@ -1932,7 +1936,7 @@ export async function acknowledgeEmployerRenewal(employerId: string) {
     .eq("id", employerId)
     .select("*, users(telegram_id)")
     .single();
-  if (error) throw error;
+  if (error) return { success: false, error: "Database error: " + error.message };
   await logActivity("acknowledge_renewal_request", employerId);
   return { success: true, employer: stripEmployerSecretsRow(data) };
 }

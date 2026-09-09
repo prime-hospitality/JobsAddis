@@ -1781,6 +1781,8 @@ export default function AdminDashboard({ initialData, initialUi = {} }: { initia
           ...prev,
           employers: prev.employers.map((e: any) => e.id === employerId ? { ...e, ...res.employer } : e)
         }));
+      } else if (!res.success) {
+        alert(res.error || "Failed to acknowledge renewal request");
       }
     } catch (err) {
       console.error("Failed to acknowledge renewal request:", err);
